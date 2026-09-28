@@ -3,7 +3,6 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Pill, Stethoscope, ClipboardList, FolderOpen, History, ClipboardCheck, Lock, CheckCircle2, AlertTriangle, Printer, ShieldCheck, Timer, ArrowLeftRight, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BreadcrumbBar } from "@/components/BreadcrumbBar";
-import { AdmissionDialog } from "@/components/AdmissionDialog";
 import { AdmissionConsultDialog } from "@/components/AdmissionConsultDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -190,7 +189,6 @@ export default function PacienteHubPage() {
     }
   })();
   const [statusLoading, setStatusLoading] = useState(!ctx.initialAdmissionStatus);
-  const [admissionOpen, setAdmissionOpen] = useState(false);
   const [consultOpen, setConsultOpen] = useState(false);
   const [department, setDepartment] = useState<string | null>(null);
   const [sapsPending, setSapsPending] = useState(false);
@@ -216,7 +214,7 @@ export default function PacienteHubPage() {
     window.addEventListener("storage", onStorage);
     const t = setInterval(check, 1500);
     return () => { window.removeEventListener("storage", onStorage); clearInterval(t); };
-  }, [registryId, admissionOpen]);
+  }, [registryId]);
 
   // Memoizado: sem isso a funcao se recria a cada render, o useCallback de
   // refreshHubState muda junto, e o listener de foco seria desanexado e
@@ -541,7 +539,36 @@ export default function PacienteHubPage() {
             {/* ADMISSÃO — gate */}
             <div className="relative group">
               <button
-                onClick={() => isAdmitted ? setConsultOpen(true) : setAdmissionOpen(true)}
+                onClick={() => {
+                  if (isAdmitted) { setConsultOpen(true); return; }
+                  const id = ctx.patientId;
+                  // Admissao agora e PAGINA (/admissao), aberta como as demais
+                  // abas clinicas: mesmos search params (patientSector = CODIGO
+                  // do setor) + state {patient, returnTo}.
+                  navigate(
+                    `/admissao?patientId=${id}` +
+                    `&patientName=${encodeURIComponent(ctx.patientName)}` +
+                    `&patientBed=${encodeURIComponent(ctx.patientBed)}` +
+                    `&patientSector=${encodeURIComponent(ctx.patientSector)}` +
+                    `&patientAge=${encodeURIComponent(ctx.patientAge)}`,
+                    {
+                      state: {
+                        patient: {
+                          id: ctx.patientId,
+                          name: ctx.patientName,
+                          bed: ctx.patientBed,
+                          sector: ctx.patientSector,
+                          age: ctx.patientAge,
+                          department: department || undefined,
+                          // patient_registry_id e essencial para vincular a
+                          // evolucao de admissao ao prontuario permanente.
+                          patient_registry_id: identifiers.registry?.id ?? undefined,
+                        },
+                        returnTo: `/paciente?patientId=${id}`,
+                      },
+                    },
+                  );
+                }}
                 disabled={statusLoading}
                 className="relative w-full text-left disabled:cursor-wait"
               >
@@ -800,30 +827,6 @@ export default function PacienteHubPage() {
           queryClient.invalidateQueries({ queryKey: ["internal-transfer-requests"] });
         }}
       />
-
-      {ctx.patientId && (
-        <AdmissionDialog
-          open={admissionOpen}
-          onOpenChange={setAdmissionOpen}
-          patient={{
-            id: ctx.patientId,
-            name: ctx.patientName,
-            bed: ctx.patientBed,
-            sector: ctx.patientSector,
-            age: ctx.patientAge,
-            department: department || undefined,
-            // patient_registry_id é essencial para vincular a evolução de admissão
-            // ao prontuário permanente do paciente. Sem isso, clinical_evolutions
-            // fica sem o campo registry e fica inacessível pelo hook useEvolutions.
-            patient_registry_id: identifiers.registry?.id ?? undefined,
-          }}
-          onSuccess={() => {
-            setAdmissionOpen(false);
-            fetchStatus();
-            toast.success("Admissão hospitalar registrada. Módulos clínicos liberados.");
-          }}
-        />
-      )}
 
       {ctx.patientId && (
         <AdmissionConsultDialog

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { Pill, NotebookPen, FileText, FolderOpen, Clock, Activity, AlertTriangle } from "lucide-react";
+import { Pill, NotebookPen, FileText, FolderOpen, Clock, Activity, AlertTriangle, Stethoscope } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUnsavedPrescription } from "@/contexts/UnsavedPrescriptionContext";
 import {
@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 const MODULE_TABS = [
+  { label: "Admissão", path: "/admissao", icon: Stethoscope },
   { label: "Prescrição", path: "/prescricao", icon: Pill },
   { label: "Evolução", path: "/evolucao", icon: NotebookPen },
   { label: "Requisições", path: "/requisicoes", icon: FileText },

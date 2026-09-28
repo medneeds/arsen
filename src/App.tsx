@@ -71,6 +71,7 @@ const RelatorioPage = lazy(() => import("./pages/RelatorioPage"));
 const RequisicaoUnificadaPage = lazy(() => import("./pages/RequisicaoUnificadaPage"));
 const PrescricaoPage = lazy(() => import("./pages/PrescricaoPage"));
 const EvolucaoPage = lazy(() => import("./pages/EvolucaoPage"));
+const AdmissaoPage = lazy(() => import("./pages/AdmissaoPage"));
 const MovimentacoesPage = lazy(() => import("./pages/MovimentacoesPage"));
 const MedicationCatalogPage = lazy(() => import("./pages/MedicationCatalogPage"));
 const GestorPanelPage = lazy(() => import("./pages/GestorPanelPage"));
@@ -209,6 +210,11 @@ function EvolucaoPageWrapper() {
   return <EvolucaoPage key={key} />;
 }
 
+function AdmissaoPageWrapper() {
+  const key = usePatientKey();
+  return <AdmissaoPage key={key} />;
+}
+
 // O Hub e a tela inicial do paciente e agora tem o PatientSwitcher. Sem esta
 // key ele nao remontaria ao trocar de paciente: os estados derivados (status de
 // admissao, evolucao do dia, prescricao validada, requisicoes pendentes) so se
@@ -323,6 +329,7 @@ const App = () => {
               <Route path="/documentos" element={<ProtectedRoute><MainLayout><DocumentosPageWrapper /></MainLayout></ProtectedRoute>} />
               <Route path="/prescricao" element={<ProtectedRoute><MainLayout><PrescricaoPageWrapper /></MainLayout></ProtectedRoute>} />
               <Route path="/evolucao" element={<ProtectedRoute><MainLayout><EvolucaoPageWrapper /></MainLayout></ProtectedRoute>} />
+              <Route path="/admissao" element={<ProtectedRoute><MainLayout><AdmissaoPageWrapper /></MainLayout></ProtectedRoute>} />
               <Route path="/movimentacoes" element={<ProtectedRoute><MainLayout><MovimentacoesPage /></MainLayout></ProtectedRoute>} />
               <Route path="/catalogo-medicamentos" element={<ProtectedRoute><MainLayout><MedicationCatalogPage /></MainLayout></ProtectedRoute>} />
               <Route path="/painel-gestor" element={<ProtectedRoute><IpRestricted moduleKey="gestor" moduleLabel="Painel Gestor"><GestorPanelPage /></IpRestricted></ProtectedRoute>} />
