@@ -26,9 +26,9 @@ export interface ExtraCategoryOption {
 // Paleta unificada azul institucional. Apenas `high_alert` permanece vermelho
 // (convenção ISMP-Brasil para Medicamentos de Alta Vigilância).
 const BLUE_BASE = {
-  color: 'text-[hsl(217,70%,40%)]',
-  bg: 'bg-[hsl(217,55%,96%)]/30',
-  border: 'border-[hsl(217,55%,82%)] hover:border-[hsl(217,60%,60%)]',
+  color: 'text-primary',
+  bg: 'bg-primary/5',
+  border: 'border-primary/30 hover:border-primary/50',
 };
 
 const OPTIONS: ExtraCategoryOption[] = [
@@ -119,7 +119,7 @@ export function ExtraPrescriptionChooserDialog({
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Zap className="h-5 w-5 text-[hsl(217,70%,40%)]" />
+            <Zap className="h-5 w-5 text-primary" />
             Prescrição Extra — escolha o tipo
           </DialogTitle>
           <DialogDescription>

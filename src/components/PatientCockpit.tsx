@@ -285,10 +285,10 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
           "w-8 h-auto min-h-[120px]",
           "flex flex-col items-center justify-center gap-2 py-3",
           "rounded-l-lg",
-          "border border-r-0 border-[hsl(217,30%,78%)]",
+          "border border-r-0 border-primary/30",
           "bg-card",
           "shadow-[-3px_2px_12px_rgba(10,22,56,0.14)]",
-          "hover:bg-[hsl(217,55%,97%)]",
+          "hover:bg-primary/5",
           "transition-colors duration-150 cursor-pointer"
         )}
       >
@@ -302,12 +302,12 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
         />
 
         {/* Seta indicando abertura */}
-        <ChevronLeft className="h-3 w-3 text-[hsl(217,72%,45%)] group-hover:text-[hsl(217,72%,28%)] shrink-0 transition-colors" />
+        <ChevronLeft className="h-3 w-3 text-primary/70 group-hover:text-primary shrink-0 transition-colors" />
 
         {/* Leito — info principal */}
         {patient.bedNumber && (
           <span
-            className="text-xs font-semibold text-[hsl(217,72%,32%)] shrink-0 leading-none"
+            className="text-xs font-semibold text-primary shrink-0 leading-none"
             style={{ writingMode: "vertical-rl" as any, transform: "rotate(180deg)" }}
           >
             {patient.bedNumber}
@@ -326,7 +326,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
 
         {/* Label VER */}
         <span
-          className="text-xs font-semibold tracking-[0.15em] uppercase text-[hsl(217,40%,55%)] shrink-0"
+          className="text-xs font-semibold tracking-[0.15em] uppercase text-primary/60 shrink-0"
           style={{ writingMode: "vertical-rl" as any, transform: "rotate(180deg)" }}
         >
           ver
@@ -370,7 +370,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
             "transition-[width] duration-300 ease-out",
             isExpanded ? "w-[min(24rem,85vw)]" : "w-11",
           ],
-          variant === "inline" && "w-full h-full bg-card border border-[hsl(217,30%,82%)]/70 rounded-lg overflow-hidden",
+          variant === "inline" && "w-full h-full bg-card border border-primary/20 rounded-lg overflow-hidden",
           "flex-col print:hidden",
           className
         )}
@@ -392,7 +392,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
               // Fundo: degradê sutil cabeçalho institucional
               "bg-gradient-to-b from-[#0a1628]/5 via-[#0f2847]/8 to-[#1a3a5c]/5",
               // Borda sutil em todos os lados
-              "border border-[hsl(217,30%,75%)]/40",
+              "border border-primary/15",
               // Hover: ligeiramente mais opaco
               "hover:bg-gradient-to-b hover:from-[#0a1628]/10 hover:via-[#0f2847]/15 hover:to-[#1a3a5c]/10",
               "relative overflow-hidden",
@@ -412,7 +412,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
             <div className="flex flex-col items-center justify-center h-full w-full gap-3 py-6">
 
               {/* Chevron */}
-              <ChevronLeft className="h-4 w-4 text-[hsl(217,72%,42%)] group-hover:text-[hsl(217,72%,28%)] transition-colors shrink-0" />
+              <ChevronLeft className="h-4 w-4 text-primary/70 group-hover:text-primary transition-colors shrink-0" />
 
               {/* Status dot */}
               <div className={cn("h-2.5 w-2.5 rounded-full shrink-0", status.dot)} title={status.label} />
@@ -424,7 +424,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
               >
                 <div className="flex flex-col items-center gap-3">
                   {patient.bedNumber && (
-                    <span className="text-xs font-semibold tracking-[0.18em] text-[hsl(217,72%,30%)] group-hover:text-[hsl(217,72%,20%)]">
+                    <span className="text-xs font-semibold tracking-[0.18em] text-primary group-hover:text-primary">
                       {patient.bedNumber}
                     </span>
                   )}
@@ -451,7 +451,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
 
               {/* Label VER */}
               <span
-                className="text-xs font-semibold tracking-[0.2em] uppercase text-[hsl(217,72%,52%)]/70 group-hover:text-[hsl(217,72%,32%)] transition-colors shrink-0"
+                className="text-xs font-semibold tracking-[0.2em] uppercase text-primary/50 group-hover:text-primary transition-colors shrink-0"
                 style={{ writingMode: "vertical-rl" as any, transform: "rotate(180deg)" }}
               >
                 ver
@@ -467,7 +467,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
           variant === "fixed" && !isExpanded && "hidden"
         )}>
         {variant === "fixed" && isExpanded && (
-          <div className="flex justify-end px-2 pt-2 bg-gradient-to-b from-[hsl(217,55%,40%)]/[0.06] via-[hsl(217,55%,40%)]/[0.03] to-transparent border-b border-[hsl(217,30%,86%)]/40">
+          <div className="flex justify-end px-2 pt-2 bg-gradient-to-b from-primary/[0.06] via-primary/[0.03] to-transparent border-b border-primary/10">
             <button
               type="button"
               title={pinned ? "Desafixar (recolher ao tirar o mouse)" : "Fixar painel aberto"}
@@ -475,8 +475,8 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
               className={cn(
                 "inline-flex items-center gap-1 text-xs uppercase tracking-wider px-3 py-1 rounded-full transition-all duration-200",
                 pinned
-                  ? "bg-gradient-to-r from-[hsl(217,70%,40%)] to-[hsl(217,72%,36%)] text-white shadow-sm hover:shadow-md"
-                  : "bg-muted/60 text-muted-foreground hover:bg-[hsl(217,55%,40%)]/10 hover:text-[hsl(217,72%,32%)]"
+                  ? "bg-primary text-primary-foreground shadow-sm hover:shadow-md"
+                  : "bg-muted/60 text-muted-foreground hover:bg-primary/10 hover:text-primary"
               )}
             >
               <ChevronRight className={cn("h-3 w-3 transition-transform", pinned ? "rotate-90" : "rotate-180")} />

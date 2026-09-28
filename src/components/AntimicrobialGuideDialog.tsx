@@ -292,8 +292,8 @@ function AntimicrobialCombobox({
                   onSelect={() => { onSelectMed(med); setOpen(false); }}
                   className="text-xs"
                 >
-                  <Check className={cn("mr-2 h-3.5 w-3.5", value === med.name ? "opacity-100 text-[hsl(217,70%,40%)]" : "opacity-0")} />
-                  <Pill className="mr-2 h-3 w-3 text-[hsl(217,65%,45%)] shrink-0" />
+                  <Check className={cn("mr-2 h-3.5 w-3.5", value === med.name ? "opacity-100 text-primary" : "opacity-0")} />
+                  <Pill className="mr-2 h-3 w-3 text-primary shrink-0" />
                   <div className="flex flex-col flex-1 min-w-0">
                     <span className="font-medium truncate">{med.name}</span>
                     <span className="text-xs text-muted-foreground truncate">
@@ -771,9 +771,9 @@ export function AntimicrobialGuideDialog({
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-5xl w-[96vw] h-[88vh] flex flex-col p-0 gap-0 overflow-hidden">
-          <DialogHeader className="px-6 py-3 border-b shrink-0 bg-[hsl(217,55%,96%)]/50">
+          <DialogHeader className="px-6 py-3 border-b shrink-0 bg-primary/5">
             <DialogTitle className="flex items-center gap-2 text-base">
-              <Shield className="h-5 w-5 text-[hsl(217,65%,45%)]" />
+              <Shield className="h-5 w-5 text-primary" />
               GUIA DE USO DE ANTIMICROBIANOS — CCIH
             </DialogTitle>
             <DialogDescription className="text-xs">
@@ -785,7 +785,7 @@ export function AntimicrobialGuideDialog({
           <ScrollArea className="flex-1 min-h-0">
             <div className="px-6 py-4 space-y-4">
               {/* Patient Summary */}
-              <div className="rounded-lg border border-[hsl(217,55%,82%)]/70 bg-[hsl(217,55%,96%)]/50 p-3">
+              <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
                 <div className="grid grid-cols-4 gap-2 text-xs">
                   <div><span className="text-muted-foreground">Paciente:</span> <strong>{patient.name}</strong></div>
                   <div><span className="text-muted-foreground">Leito:</span> <strong>{patient.bed}</strong></div>
@@ -874,7 +874,7 @@ export function AntimicrobialGuideDialog({
                 >
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <h3 className="text-sm font-medium flex items-center gap-2 min-w-0">
-                      <Badge variant="outline" className="text-[hsl(217,70%,40%)] border-[hsl(217,55%,72%)] shrink-0">ATM {idx + 1}</Badge>
+                      <Badge variant="outline" className="text-primary border-primary/40 shrink-0">ATM {idx + 1}</Badge>
                       <span className="truncate">{entry.medication || "Novo antimicrobiano"}</span>
                       {mode === 'prescribe' && (
                         isComplete ? (
@@ -1277,7 +1277,7 @@ export function AntimicrobialGuideDialog({
                     variant="outline" size="sm"
                     onClick={handleAttachOnly}
                     title={allValid ? "Anexar à prescrição" : "Clique para ver o que falta preencher"}
-                    className="gap-2 border-[hsl(217,55%,72%)] text-[hsl(217,72%,36%)] hover:bg-[hsl(217,55%,96%)]"
+                    className="gap-2 border-primary/40 text-primary hover:bg-primary/5"
                   >
                     <Shield className="h-3.5 w-3.5" /> Anexar antibióticos à prescrição
                   </Button>
@@ -1285,7 +1285,7 @@ export function AntimicrobialGuideDialog({
                     size="sm"
                     onClick={handleAttachAndPrint}
                     title={allValid ? "Anexar e imprimir Guia ATM" : "Clique para ver o que falta preencher"}
-                    className="gap-2 bg-[hsl(217,70%,40%)] hover:bg-[hsl(217,72%,36%)] text-white"
+                    className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
                   >
                     <Printer className="h-3.5 w-3.5" /> Anexar + Imprimir Guia
                   </Button>
