@@ -122,7 +122,11 @@ const ClinicalDashboardPage = () => {
             paciente:pacientes ( nome_completo, nome_social )
           `) as any)
           .is("data_alta", null)
-          .eq("leito.setor.ala.hospital_id", hospitalUnitId),
+          .eq("leito.setor.ala.hospital_id", hospitalUnitId)
+          // Filtra o setor no servidor: antes vinham as internacoes ativas do
+          // hospital inteiro e o setor era recortado no navegador, atrasando a
+          // entrada em qualquer setor. O filtro local abaixo fica como rede.
+          .eq("leito.setor.tipo", activeSector),
         (supabase
           .from("solicitacoes_leito")
           .select(`
@@ -145,7 +149,7 @@ const ClinicalDashboardPage = () => {
       const bedRequests = (bedRequestsRes.data as any[]) || [];
 
       // Filtra as internações ativas pelo setor ativo (setores.tipo guarda o código
-      // de setor — red/yellow/blue/...).
+      // de setor — red/yellow/blue/...). Redundante com o filtro do servidor.
       const internacoes = allInternacoes.filter(
         (i) => i.leito?.setor?.tipo === activeSector,
       );
