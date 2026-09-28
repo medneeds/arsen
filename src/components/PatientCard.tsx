@@ -1484,21 +1484,14 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-xs md:text-xs font-medium text-muted-foreground">Paciente</span>
                   {stayTimer && currentDepartment !== "UTI" && (
-                    <div 
+                    <div
                       className={cn(
-                        "inline-flex items-center gap-1 px-2 py-0 rounded-full text-xs font-medium border print:hidden",
-                        stayTimer.level === "normal"
-                          ? "dark:!text-foreground dark:!border-border/60"
-                          : stayTimer.colorClasses
+                        "inline-flex items-center gap-0.5 px-1.5 py-px rounded-full text-[11px] font-medium leading-none border print:hidden",
+                        stayTimer.colorClasses
                       )}
-                      style={stayTimer.level === "normal" ? {
-                        color: sectorColorMap[patient.sector],
-                        backgroundColor: `${sectorColorMap[patient.sector]}15`,
-                        borderColor: `${sectorColorMap[patient.sector]}40`,
-                      } : undefined}
                       title={`Permanência no setor: ${stayTimer.display}${stayTimer.level === "warning" ? " >24h" : stayTimer.level === "orange" ? " >48h" : stayTimer.level === "critical" || stayTimer.level === "pulsing" ? " >72h" : ""}`}
                     >
-                      <Clock className="h-2 w-2" />
+                      <Clock className="h-2.5 w-2.5" />
                       <span>{stayTimer.displayShort}</span>
                     </div>
                   )}

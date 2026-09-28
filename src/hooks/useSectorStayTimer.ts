@@ -68,18 +68,23 @@ function getLevel(totalMinutes: number): StayTimerData["level"] {
   return "normal";
 }
 
+// Formal e discreto, na identidade da plataforma: usa os tokens de sinal clinico
+// (warning/critical, soft/on-soft/border), que ja adaptam claro/escuro. Sem
+// cores cruas do Tailwind e SEM animacao (o "brilho"/pulse foi removido —
+// pedido: pilula mais sobria). A escalada segue em duas familias: ambar (>24h,
+// >48h) e vermelho (>72h, >96h), com intensidade crescente pela borda.
 function getColorClasses(level: StayTimerData["level"]): string {
   switch (level) {
     case "normal":
-      return "text-muted-foreground bg-muted/50";
+      return "text-muted-foreground bg-muted/60 border-border";
     case "warning":
-      return "text-yellow-700 dark:text-yellow-400 bg-yellow-100/80 dark:bg-yellow-900/30 border-yellow-300 dark:border-yellow-700";
+      return "text-warning-on-soft bg-warning-soft/70 border-warning-border";
     case "orange":
-      return "text-orange-700 dark:text-orange-400 bg-orange-100/80 dark:bg-orange-900/30 border-orange-300 dark:border-orange-700";
+      return "text-warning-on-soft bg-warning-soft border-warning/40";
     case "critical":
-      return "text-red-700 dark:text-red-400 bg-red-100/80 dark:bg-red-900/30 border-red-300 dark:border-red-700";
+      return "text-critical-on-soft bg-critical-soft/80 border-critical-border";
     case "pulsing":
-      return "text-red-700 dark:text-red-400 bg-red-100/80 dark:bg-red-900/30 border-red-300 dark:border-red-700 animate-pulse";
+      return "text-critical-on-soft bg-critical-soft border-critical/50";
   }
 }
 
