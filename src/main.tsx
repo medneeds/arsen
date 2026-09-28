@@ -14,14 +14,13 @@ const buildInfo = { commit: __ARSEN_COMMIT__, buildTime: __ARSEN_BUILD_TIME__ };
 (window as unknown as { __ARSEN_BUILD__: typeof buildInfo }).__ARSEN_BUILD__ = buildInfo;
 console.info(`[Arsen] build ${buildInfo.commit} — ${buildInfo.buildTime}`);
 
-// forcedTheme="light": o Arsen tem UM padrao visual.
-// Antes havia enableSystem, entao quem tinha o sistema operacional em modo
-// escuro via a plataforma escura — e a interface nunca foi desenhada para isso.
-// Contraste, sobreposicao e hierarquia so podem ser avaliados com um padrao
-// unico. O provider permanece porque componentes de terceiros (sonner) chamam
-// useTheme e quebrariam sem ele.
+// Tema: o app NASCE claro (defaultTheme="light") e so vai para o escuro por
+// ESCOLHA explicita do usuario, via toggle no PlatformHeader. enableSystem
+// fica FALSE de proposito — seguir o modo escuro do sistema operacional
+// surpreendia quem nunca pediu (motivo de o dark ter sido desligado antes).
+// disableTransitionOnChange evita o flash de cores ao alternar.
 createRoot(document.getElementById("root")!).render(
-  <ThemeProvider attribute="class" forcedTheme="light">
+  <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
     <BrowserRouter>
       <AuthProvider>
         <HospitalProvider>

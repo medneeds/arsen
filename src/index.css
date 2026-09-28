@@ -162,6 +162,80 @@
     --sidebar-ring: 210 65% 40%;
   }
 
+  /* ── Modo escuro ──
+     Reativado com a MESMA arquitetura de tokens: navy-slate confortavel (sem
+     preto puro), texto off-white, e os sinais clinicos preservando o
+     significado — o `soft` escurece, o `on-soft` clareia, mantendo contraste.
+     Vars nao listadas (radius, fonte, transicoes) herdam do :root. */
+  .dark {
+    color-scheme: dark;
+
+    /* ── Estrutura ── */
+    --background: 216 28% 10%;
+    --foreground: 210 22% 92%;
+    --card: 216 26% 13%;
+    --card-foreground: 210 22% 92%;
+    --popover: 216 28% 12%;
+    --popover-foreground: 210 22% 92%;
+    --primary: 210 72% 60%;
+    --primary-foreground: 216 40% 10%;
+    --secondary: 216 20% 20%;
+    --secondary-foreground: 210 22% 92%;
+    --muted: 216 20% 17%;
+    --muted-foreground: 214 14% 63%;
+    --border: 216 18% 24%;
+    --input: 216 18% 24%;
+
+    --accent: 210 45% 24%;
+    --accent-foreground: 210 55% 84%;
+    --ring: 210 72% 55%;
+
+    /* ── Sinal clinico ── */
+    --critical: 0 68% 58%;
+    --critical-foreground: 0 0% 100%;
+    --critical-soft: 0 42% 17%;
+    --critical-on-soft: 0 78% 82%;
+    --critical-border: 0 38% 30%;
+
+    --warning: 33 82% 55%;
+    --warning-foreground: 30 45% 10%;
+    --warning-soft: 32 45% 16%;
+    --warning-on-soft: 38 88% 72%;
+    --warning-border: 33 38% 30%;
+
+    --released: 157 52% 46%;
+    --released-foreground: 0 0% 100%;
+    --released-soft: 156 38% 15%;
+    --released-on-soft: 155 55% 74%;
+    --released-border: 156 30% 28%;
+
+    --destructive: 0 68% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --stable: 214 14% 63%;
+    --stable-foreground: 216 40% 10%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(210 60% 26%) 0%, hsl(214 55% 18%) 100%);
+    --gradient-card: linear-gradient(to bottom, hsl(216 26% 14% / 0.98) 0%, hsl(216 28% 12%));
+
+    --shadow-sm: 0 1px 2px 0 hsl(216 45% 3% / 0.5);
+    --shadow-md: 0 4px 8px -2px hsl(216 45% 3% / 0.55);
+    --shadow-lg: 0 12px 24px -4px hsl(216 45% 3% / 0.6);
+
+    --status-pending: 33 82% 55%;
+    --status-discussing: 210 72% 60%;
+    --status-rejected: 0 68% 58%;
+
+    --sidebar-background: 216 28% 12%;
+    --sidebar-foreground: 210 20% 82%;
+    --sidebar-primary: 210 72% 60%;
+    --sidebar-primary-foreground: 216 40% 10%;
+    --sidebar-accent: 216 22% 18%;
+    --sidebar-accent-foreground: 210 20% 88%;
+    --sidebar-border: 216 18% 22%;
+    --sidebar-ring: 210 72% 55%;
+  }
+
 
   * {
     @apply border-border;

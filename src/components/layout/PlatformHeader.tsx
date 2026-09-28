@@ -2,6 +2,7 @@ import { ReactNode } from "react";
 import { LucideIcon, Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SectorSelector } from "@/components/SectorSelector";
+import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import type { Department } from "@/contexts/DepartmentContext";
 
 interface PlatformHeaderProps {
@@ -145,21 +146,21 @@ export function PlatformHeader({
           )}
         </div>
 
-        {(showSectorSelector || actions) && (
-          <div className={cn(
-            "flex items-center gap-2 shrink-0",
-            isInstitutional && "institutional-actions"
-          )}>
-            {showSectorSelector && (
-              <SectorSelector
-                variant={isInstitutional ? "dark" : "light"}
-                navigateOnSelect={navigateOnSectorSelect}
-                onSelect={onSectorSelect}
-              />
-            )}
-            {actions}
-          </div>
-        )}
+        <div className={cn(
+          "flex items-center gap-2 shrink-0",
+          isInstitutional && "institutional-actions"
+        )}>
+          {showSectorSelector && (
+            <SectorSelector
+              variant={isInstitutional ? "dark" : "light"}
+              navigateOnSelect={navigateOnSectorSelect}
+              onSelect={onSectorSelect}
+            />
+          )}
+          {actions}
+          {/* Toggle de tema — discreto, sempre visivel no header */}
+          <ThemeToggle onDark={isInstitutional} />
+        </div>
       </div>
     </header>
   );
