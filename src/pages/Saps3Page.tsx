@@ -13,6 +13,14 @@ import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { cn, asUuidOrNull } from "@/lib/utils";
 import { alocarPreAdmissaoNoLeito, carregarPreAdmissao } from "@/lib/alocarPreAdmissao";
+import {
+  calculateSbpScore,
+  contagemParaMil,
+  formatarContagem,
+  milParaContagem,
+  plaquetasParaBanco,
+  somenteDigitos,
+} from "@/lib/saps3";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { useDepartment } from "@/contexts/DepartmentContext";
@@ -53,7 +61,7 @@ function humanizeSaveError(err: any): string {
       : "Há um campo obrigatório não preenchido. Verifique a checklist de validação.";
   }
   if (code === "23514" || /check constraint/i.test(msg)) {
-    return "Algum valor está fora da faixa esperada (ex.: GCS 3-15, RASS -5 a +4, idade ≥ 0). Revise os campos numéricos.";
+    return "Algum valor está fora da faixa esperada (ex.: GCS 3-15, idade ≥ 0). Revise os campos numéricos.";
   }
   if (code === "23505" || /duplicate key/i.test(msg)) {
     return "Já existe um registro idêntico para este paciente. Recarregue a página.";
@@ -153,16 +161,6 @@ function calculateHrScore(hr: number | null): number {
   if (hr < 120) return 0;
   if (hr < 160) return 4;
   return 7;
-}
-
-function calculateSbpScore(sbp: number | null): number {
-  if (!sbp) return 0;
-  if (sbp < 40) return 11;
-  if (sbp < 70) return 8;
-  if (sbp < 100) return 3;
-  if (sbp < 120) return 0;
-  if (sbp < 200) return 2;
-  return 3;
 }
 
 function calculateBilirubinScore(bil: number | null): number {
@@ -272,68 +270,6 @@ const COMORBIDITY_OPTIONS = [
   { id: "chemotherapy", label: "Quimioterapia recente", points: 3 },
 ];
 
-// ───── Antecedentes clínicos NÃO-SAPS (não pontuam, opcionais) ─────
-const CLINICAL_HISTORY_OPTIONS = [
-  { id: "has", label: "Hipertensão arterial (HAS)" },
-  { id: "dm2", label: "Diabetes tipo 2" },
-  { id: "dm1", label: "Diabetes tipo 1" },
-  { id: "dpoc", label: "DPOC" },
-  { id: "asma", label: "Asma" },
-  { id: "avc_previo", label: "AVC prévio" },
-  { id: "iam_previo", label: "IAM prévio" },
-  { id: "fa", label: "Fibrilação atrial" },
-  { id: "icc_nao_iv", label: "ICC (não NYHA IV)" },
-  { id: "dislipidemia", label: "Dislipidemia" },
-  { id: "obesidade", label: "Obesidade" },
-  { id: "hipotireoidismo", label: "Hipotireoidismo" },
-  { id: "chagas", label: "Doença de Chagas" },
-  { id: "epilepsia", label: "Epilepsia" },
-  { id: "depressao_ansiedade", label: "Depressão / Ansiedade" },
-  { id: "hepatopatia_nao_cirrose", label: "Hepatopatia (não cirrótica)" },
-  { id: "drc_nao_dialise", label: "DRC não dialítica" },
-];
-
-// ───── Drogas vasoativas (não pontuam SAPS — perfil hemodinâmico) ─────
-const VASOACTIVE_OPTIONS = [
-  { id: "noradrenalina", label: "Noradrenalina" },
-  { id: "adrenalina", label: "Adrenalina" },
-  { id: "vasopressina", label: "Vasopressina" },
-  { id: "dobutamina", label: "Dobutamina" },
-  { id: "dopamina", label: "Dopamina" },
-  { id: "milrinona", label: "Milrinona" },
-];
-
-interface VasoactiveEntry {
-  id: string;
-  dose?: string; // mcg/kg/min
-  hours?: string; // horas de uso
-}
-
-interface LifestyleHabits {
-  tabagismo: "" | "nunca" | "ex" | "atual";
-  macos_ano?: string;
-  etilismo: "" | "nunca" | "social" | "abuso" | "dependencia";
-  drogas: "" | "nunca" | "ex" | "atual";
-  drogas_detalhe?: string;
-}
-
-interface ClinicalHistoryData {
-  selected: string[];
-  livre?: string; // texto livre para condições adicionais
-}
-
-const RASS_LABELS: Record<number, string> = {
-  [-5]: "Não responsivo",
-  [-4]: "Sedação profunda",
-  [-3]: "Sedação moderada",
-  [-2]: "Sedação leve",
-  [-1]: "Sonolento",
-  [0]: "Alerta e calmo",
-  [1]: "Inquieto",
-  [2]: "Agitado",
-  [3]: "Muito agitado",
-  [4]: "Combativo",
-};
 
 // Bed config per critical-care sector (UTI / UCI / UCC)
 const UTI_SECTORS = [
@@ -431,20 +367,12 @@ export default function Saps3Page() {
   const [patientName, setPatientName] = useState("");
   const [age, setAge] = useState<string>("");
   const [comorbidities, setComorbidities] = useState<string[]>([]);
-  // Antecedentes / hábitos / vasoativos — opcionais e NÃO pontuam no SAPS
-  const [clinicalHistory, setClinicalHistory] = useState<ClinicalHistoryData>({ selected: [], livre: "" });
-  const [lifestyleHabits, setLifestyleHabits] = useState<LifestyleHabits>({
-    tabagismo: "", macos_ano: "", etilismo: "", drogas: "", drogas_detalhe: "",
-  });
-  const [vasoactiveOnAdmission, setVasoactiveOnAdmission] = useState<boolean>(false);
-  const [vasoactiveDrugs, setVasoactiveDrugs] = useState<VasoactiveEntry[]>([]);
   const [losBeforeIcu, setLosBeforeIcu] = useState<string>("");
   const [admissionSource, setAdmissionSource] = useState<string>("");
   const [plannedAdmission, setPlannedAdmission] = useState(false);
 
   // Box II
   const [admissionReason, setAdmissionReason] = useState<string>("");
-  const [admissionReasonDetail, setAdmissionReasonDetail] = useState("");
   const [surgicalStatus, setSurgicalStatus] = useState<string>("");
   const [surgeryType, setSurgeryType] = useState<string>("");
   const [infectionAtAdmission, setInfectionAtAdmission] = useState<string>("");
@@ -455,11 +383,9 @@ export default function Saps3Page() {
   const [gcsO, setGcsO] = useState<string>("");
   const [gcsV, setGcsV] = useState<string>("");
   const [gcsM, setGcsM] = useState<string>("");
-  const [rassScore, setRassScore] = useState<string>("");
-  const [consciousnessReason, setConsciousnessReason] = useState<string>("");
   const [gcsPreSedation, setGcsPreSedation] = useState<string>("");
 
-  // Derived GCS total ("8T" if intubated_no_sedation, numeric otherwise, "" if RASS)
+  // Derived GCS total ("8T" if intubated_no_sedation, numeric otherwise, "" if sedated)
   const gcsTotal = useMemo(() => {
     if (sedationStatus === "sedated") return "";
     const o = parseInt(gcsO) || 0;
@@ -478,6 +404,8 @@ export default function Saps3Page() {
   const [bilirubinHighest, setBilirubinHighest] = useState<string>("");
   const [tempLowest, setTempLowest] = useState<string>("");
   const [creatinineHighest, setCreatinineHighest] = useState<string>("");
+  // Leucócitos e plaquetas: CONTAGEM COMPLETA por mm³ (só dígitos). Banco e
+  // pontuação seguem em milhares — ver src/lib/saps3.ts.
   const [leukocytes, setLeukocytes] = useState<string>("");
   const [phLowest, setPhLowest] = useState<string>("");
   const [plateletsLowest, setPlateletsLowest] = useState<string>("");
@@ -508,9 +436,9 @@ export default function Saps3Page() {
     const bilN = bilirubinHighest ? parseFloat(bilirubinHighest) : null;
     const tempN = tempLowest ? parseFloat(tempLowest) : null;
     const crN = creatinineHighest ? parseFloat(creatinineHighest) : null;
-    const leukN = leukocytes ? parseFloat(leukocytes) : null;
+    const leukN = contagemParaMil(leukocytes);
     const phN = phLowest ? parseFloat(phLowest) : null;
-    const pltN = plateletsLowest ? parseInt(plateletsLowest) : null;
+    const pltN = contagemParaMil(plateletsLowest);
     const oxyN = pao2Fio2 ? parseFloat(pao2Fio2) : null;
 
     const box1 = 16 +
@@ -674,14 +602,12 @@ export default function Saps3Page() {
         setPatientName(namePref);
         setAge(r.idade != null ? String(r.idade) : (patientAgeFromContext ? String(patientAgeFromContext).replace(/\D/g, "") : ""));
         setComorbidities(Array.isArray(r.comorbidades) ? r.comorbidades : []);
-        // MIGRAÇÃO: clinical_history, lifestyle_habits, vasoactive_drugs e
-        // escala_consciencia NÃO têm colunas em avaliacoes_saps3 → não hidratam
-        // (seções opcionais e avaliação de consciência voltam ao estado inicial).
+        // MIGRAÇÃO: escala_consciencia NÃO tem coluna em avaliacoes_saps3 → não
+        // hidrata (a avaliação de consciência volta ao estado inicial).
         setLosBeforeIcu(r.dias_hospital_antes_uti != null ? String(r.dias_hospital_antes_uti) : "");
         setAdmissionSource(r.origem_admissao || "");
         setPlannedAdmission(!!r.admissao_planejada);
         setAdmissionReason(r.motivo_admissao || "");
-        setAdmissionReasonDetail(r.motivo_admissao_detalhe || "");
         setSurgicalStatus(r.status_cirurgico || "");
         setSurgeryType(r.tipo_cirurgia || "");
         setInfectionAtAdmission(r.infeccao_na_admissao || "");
@@ -691,9 +617,9 @@ export default function Saps3Page() {
         setBilirubinHighest(r.bilirrubina_mais_alta != null ? String(r.bilirrubina_mais_alta) : "");
         setTempLowest(r.temperatura_mais_baixa != null ? String(r.temperatura_mais_baixa) : "");
         setCreatinineHighest(r.creatinina_mais_alta != null ? String(r.creatinina_mais_alta) : "");
-        setLeukocytes(r.leucocitos != null ? String(r.leucocitos) : "");
+        setLeukocytes(milParaContagem(r.leucocitos));
         setPhLowest(r.ph_mais_baixo != null ? String(r.ph_mais_baixo) : "");
-        setPlateletsLowest(r.plaquetas_mais_baixas != null ? String(r.plaquetas_mais_baixas) : "");
+        setPlateletsLowest(milParaContagem(r.plaquetas_mais_baixas));
         setPao2Fio2(r.relacao_pao2_fio2 != null ? String(r.relacao_pao2_fio2) : "");
         setIsVentilated(!!r.ventilacao_mecanica);
 
@@ -750,11 +676,8 @@ export default function Saps3Page() {
     setSelectedSector(sectorFromUrl || resolveSectorFromContext(destinationSectorFromContext || patientSectorParam, currentSectorCode || currentDepartment));
     setSelectedBed(bedFromUrl || patientBedParam || "");
     setComorbidities([]); setLosBeforeIcu(""); setAdmissionSource(""); setPlannedAdmission(false);
-    setClinicalHistory({ selected: [], livre: "" });
-    setLifestyleHabits({ tabagismo: "", macos_ano: "", etilismo: "", drogas: "", drogas_detalhe: "" });
-    setVasoactiveOnAdmission(false); setVasoactiveDrugs([]);
-    setAdmissionReason(""); setAdmissionReasonDetail(""); setSurgicalStatus(""); setSurgeryType("");
-    setInfectionAtAdmission(""); setSedationStatus(""); setGcsO(""); setGcsV(""); setGcsM(""); setRassScore(""); setConsciousnessReason(""); setGcsPreSedation(""); setHrHighest(""); setSbpLowest(""); setBilirubinHighest("");
+    setAdmissionReason(""); setSurgicalStatus(""); setSurgeryType("");
+    setInfectionAtAdmission(""); setSedationStatus(""); setGcsO(""); setGcsV(""); setGcsM(""); setGcsPreSedation(""); setHrHighest(""); setSbpLowest(""); setBilirubinHighest("");
     setTempLowest(""); setCreatinineHighest(""); setLeukocytes(""); setPhLowest(""); setPlateletsLowest("");
     setPao2Fio2(""); setIsVentilated(false);
     setBox1Open(true); setBox2Open(true); setBox3Open(true);
@@ -783,15 +706,10 @@ export default function Saps3Page() {
       if (draft.patientName) setPatientName(draft.patientName);
       if (draft.age != null) setAge(draft.age);
       if (Array.isArray(draft.comorbidities)) setComorbidities(draft.comorbidities);
-      if (draft.clinicalHistory) setClinicalHistory(draft.clinicalHistory);
-      if (draft.lifestyleHabits) setLifestyleHabits(draft.lifestyleHabits);
-      if (typeof draft.vasoactiveOnAdmission === "boolean") setVasoactiveOnAdmission(draft.vasoactiveOnAdmission);
-      if (Array.isArray(draft.vasoactiveDrugs)) setVasoactiveDrugs(draft.vasoactiveDrugs);
       if (draft.losBeforeIcu != null) setLosBeforeIcu(draft.losBeforeIcu);
       if (draft.admissionSource != null) setAdmissionSource(draft.admissionSource);
       if (typeof draft.plannedAdmission === "boolean") setPlannedAdmission(draft.plannedAdmission);
       if (draft.admissionReason != null) setAdmissionReason(draft.admissionReason);
-      if (draft.admissionReasonDetail != null) setAdmissionReasonDetail(draft.admissionReasonDetail);
       if (draft.surgicalStatus != null) setSurgicalStatus(draft.surgicalStatus);
       if (draft.surgeryType != null) setSurgeryType(draft.surgeryType);
       if (draft.infectionAtAdmission != null) setInfectionAtAdmission(draft.infectionAtAdmission);
@@ -799,17 +717,17 @@ export default function Saps3Page() {
       if (draft.gcsO != null) setGcsO(draft.gcsO);
       if (draft.gcsV != null) setGcsV(draft.gcsV);
       if (draft.gcsM != null) setGcsM(draft.gcsM);
-      if (draft.rassScore != null) setRassScore(draft.rassScore);
-      if (draft.consciousnessReason != null) setConsciousnessReason(draft.consciousnessReason);
       if (draft.gcsPreSedation != null) setGcsPreSedation(draft.gcsPreSedation);
       if (draft.hrHighest != null) setHrHighest(draft.hrHighest);
       if (draft.sbpLowest != null) setSbpLowest(draft.sbpLowest);
       if (draft.bilirubinHighest != null) setBilirubinHighest(draft.bilirubinHighest);
       if (draft.tempLowest != null) setTempLowest(draft.tempLowest);
       if (draft.creatinineHighest != null) setCreatinineHighest(draft.creatinineHighest);
-      if (draft.leukocytes != null) setLeukocytes(draft.leukocytes);
+      // Rascunhos antigos guardavam leucócitos/plaquetas em milhares (chaves
+      // leukocytes/plateletsLowest); são ignorados para não ler 12.5 como 12 células.
+      if (draft.leucocitosMm3 != null) setLeukocytes(draft.leucocitosMm3);
       if (draft.phLowest != null) setPhLowest(draft.phLowest);
-      if (draft.plateletsLowest != null) setPlateletsLowest(draft.plateletsLowest);
+      if (draft.plaquetasMm3 != null) setPlateletsLowest(draft.plaquetasMm3);
       if (draft.pao2Fio2 != null) setPao2Fio2(draft.pao2Fio2);
       if (typeof draft.isVentilated === "boolean") setIsVentilated(draft.isVentilated);
       if (draft.selectedSector) setSelectedSector(draft.selectedSector);
@@ -828,14 +746,13 @@ export default function Saps3Page() {
     if (!draftKey || !draftRestored) return;
     const payload = {
       patientName, age, comorbidities,
-      clinicalHistory, lifestyleHabits,
-      vasoactiveOnAdmission, vasoactiveDrugs,
       losBeforeIcu, admissionSource, plannedAdmission,
-      admissionReason, admissionReasonDetail, surgicalStatus, surgeryType,
+      admissionReason, surgicalStatus, surgeryType,
       infectionAtAdmission,
-      sedationStatus, gcsO, gcsV, gcsM, rassScore, consciousnessReason, gcsPreSedation,
-      hrHighest, sbpLowest, bilirubinHighest, tempLowest, creatinineHighest, leukocytes,
-      phLowest, plateletsLowest, pao2Fio2, isVentilated,
+      sedationStatus, gcsO, gcsV, gcsM, gcsPreSedation,
+      hrHighest, sbpLowest, bilirubinHighest, tempLowest, creatinineHighest,
+      leucocitosMm3: leukocytes,
+      phLowest, plaquetasMm3: plateletsLowest, pao2Fio2, isVentilated,
       selectedSector, selectedBed,
       savedAt: new Date().toISOString(),
     };
@@ -853,12 +770,10 @@ export default function Saps3Page() {
     return () => clearTimeout(t);
   }, [draftKey, draftRestored,
     patientName, age, comorbidities,
-    clinicalHistory, lifestyleHabits,
-    vasoactiveOnAdmission, vasoactiveDrugs,
     losBeforeIcu, admissionSource, plannedAdmission,
-    admissionReason, admissionReasonDetail, surgicalStatus, surgeryType,
+    admissionReason, surgicalStatus, surgeryType,
     infectionAtAdmission,
-    sedationStatus, gcsO, gcsV, gcsM, rassScore, consciousnessReason, gcsPreSedation,
+    sedationStatus, gcsO, gcsV, gcsM, gcsPreSedation,
     hrHighest, sbpLowest, bilirubinHighest, tempLowest, creatinineHighest, leukocytes,
     phLowest, plateletsLowest, pao2Fio2, isVentilated,
     selectedSector, selectedBed]);
@@ -889,65 +804,18 @@ export default function Saps3Page() {
     // Reset rest
     setSelectedBed("");
     setComorbidities([]); setLosBeforeIcu(""); setAdmissionSource(""); setPlannedAdmission(false);
-    setClinicalHistory({ selected: [], livre: "" });
-    setLifestyleHabits({ tabagismo: "", macos_ano: "", etilismo: "", drogas: "", drogas_detalhe: "" });
-    setVasoactiveOnAdmission(false); setVasoactiveDrugs([]);
-    setInfectionAtAdmission(""); setSedationStatus(""); setGcsO(""); setGcsV(""); setGcsM(""); setRassScore(""); setConsciousnessReason(""); setGcsPreSedation(""); setHrHighest(""); setSbpLowest(""); setBilirubinHighest("");
+    setInfectionAtAdmission(""); setSedationStatus(""); setGcsO(""); setGcsV(""); setGcsM(""); setGcsPreSedation(""); setHrHighest(""); setSbpLowest(""); setBilirubinHighest("");
     setTempLowest(""); setCreatinineHighest(""); setLeukocytes(""); setPhLowest(""); setPlateletsLowest("");
     setPao2Fio2(""); setIsVentilated(false);
     setBox1Open(true); setBox2Open(true); setBox3Open(true);
-  };
-
-  // ─── Build escala_consciencia (estrutura obrigatória) ───
-  const buildEscalaConsciencia = () => {
-    if (sedationStatus === "no") {
-      const O = parseInt(gcsO) || null;
-      const V = parseInt(gcsV) || null;
-      const M = parseInt(gcsM) || null;
-      const total = O && V && M ? O + V + M : null;
-      return {
-        tipo: "GCS" as const,
-        glasgow_score: total,
-        glasgow_parciais: O && V && M ? { O, V, M } : null,
-        rass_score: null,
-        glasgow_nao_aplicavel: false,
-        motivo: null,
-        gcs_pre_sedacao: null,
-      };
-    }
-    if (sedationStatus === "intubated_no_sedation") {
-      const O = parseInt(gcsO) || null;
-      const M = parseInt(gcsM) || null;
-      const total = O && M ? O + 1 + M : null;
-      return {
-        tipo: "GCS-T" as const,
-        glasgow_score: total,
-        glasgow_parciais: O && M ? { O, V: 1, M } : null,
-        rass_score: null,
-        glasgow_nao_aplicavel: false,
-        motivo: "Via aérea artificial — Verbal = 1T",
-        gcs_pre_sedacao: null,
-      };
-    }
-    if (sedationStatus === "sedated") {
-      return {
-        tipo: "RASS" as const,
-        glasgow_score: null,
-        glasgow_parciais: null,
-        rass_score: rassScore !== "" ? parseInt(rassScore) : null,
-        glasgow_nao_aplicavel: true,
-        motivo: consciousnessReason || "Não aplicável – Sedoanalgesia contínua",
-        gcs_pre_sedacao: gcsPreSedation ? parseInt(gcsPreSedation) : null,
-      };
-    }
-    return null;
   };
 
   // ─── Build SAPS payload ───
   // MIGRAÇÃO: saps3_assessments → avaliacoes_saps3 (colunas em português).
   // Requer internacao_id. Degradados por falta de coluna: patient_name,
   // hospital_unit_id/state_id, status/pending_since (workflow "pendente" não
-  // persiste), clinical_history/lifestyle_habits/vasoactive_drugs/escala_consciencia.
+  // persiste), escala_consciencia. motivo_admissao_detalhe saiu da ficha (não é
+  // SAPS) e fica FORA do payload para o update não apagar o valor já gravado.
   const buildSapsPayload = (internacaoId: string, criadoPor: string | null) => ({
     internacao_id: internacaoId,
     criado_por: criadoPor,
@@ -957,7 +825,6 @@ export default function Saps3Page() {
     origem_admissao: admissionSource || null,
     admissao_planejada: plannedAdmission,
     motivo_admissao: admissionReason || null,
-    motivo_admissao_detalhe: admissionReasonDetail || null,
     status_cirurgico: surgicalStatus || null,
     tipo_cirurgia: surgeryType || null,
     infeccao_na_admissao: infectionAtAdmission || null,
@@ -967,9 +834,9 @@ export default function Saps3Page() {
     bilirrubina_mais_alta: bilirubinHighest ? parseFloat(bilirubinHighest) : null,
     temperatura_mais_baixa: tempLowest ? parseFloat(tempLowest) : null,
     creatinina_mais_alta: creatinineHighest ? parseFloat(creatinineHighest) : null,
-    leucocitos: leukocytes ? parseFloat(leukocytes) : null,
+    leucocitos: contagemParaMil(leukocytes),
     ph_mais_baixo: phLowest ? parseFloat(phLowest) : null,
-    plaquetas_mais_baixas: plateletsLowest ? parseInt(plateletsLowest) : null,
+    plaquetas_mais_baixas: plaquetasParaBanco(plateletsLowest),
     relacao_pao2_fio2: pao2Fio2 ? parseFloat(pao2Fio2) : null,
     ventilacao_mecanica: isVentilated,
     escore_box1: scores.box1,
@@ -995,11 +862,9 @@ export default function Saps3Page() {
       out.push({ id: "gcs", label: "Glasgow completo (O, V, M)", anchor: "saps-conscious", hint: "Preencha as 3 componentes (faixas: O 1-4, V 1-5, M 1-6)" });
     } else if (sedationStatus === "intubated_no_sedation" && (!gcsO || !gcsM)) {
       out.push({ id: "gcst", label: "Glasgow-T (Ocular e Motor)", anchor: "saps-conscious", hint: "V é fixo em 1T quando intubado sem sedação" });
-    } else if (sedationStatus === "sedated" && rassScore === "") {
-      out.push({ id: "rass", label: "Pontuação RASS", anchor: "saps-conscious", hint: "Selecione um valor de -5 a +4" });
     }
     return out;
-  }, [patientName, hospitalId, stateId, completingSapsId, selectedSector, selectedBed, sedationStatus, gcsO, gcsV, gcsM, rassScore]);
+  }, [patientName, hospitalId, stateId, completingSapsId, selectedSector, selectedBed, sedationStatus, gcsO, gcsV, gcsM]);
 
   const focusAnchor = (anchor: string) => {
     if (typeof document === "undefined") return;
@@ -1365,7 +1230,7 @@ export default function Saps3Page() {
                     <p className="font-medium mb-1">Quando usar cada caminho de consciência</p>
                     <ul className="list-disc pl-4 space-y-1">
                       <li><b>Não (GCS completo)</b> — paciente acordado/colaborativo. Faixas: Ocular 1-4, Verbal 1-5, Motor 1-6.</li>
-                      <li><b>Sedoanalgesia ± VM (RASS)</b> — paciente sedado. Selecione o RASS atual (-5 a +4). O GCS pré-sedação é opcional, mas ajuda no cálculo.</li>
+                      <li><b>Sedoanalgesia ± VM</b> — paciente sedado. Informe o GCS pré-sedação; sem ele, o cálculo assume 15.</li>
                       <li><b>Intubado sem sedação (GCS-T)</b> — IOT sem sedação contínua. Preencha apenas Ocular e Motor; Verbal vira <b>1T</b> automaticamente.</li>
                     </ul>
                   </div>
@@ -1376,7 +1241,7 @@ export default function Saps3Page() {
                       <li>Reabrir uma ficha pendente e clicar “Validar” antes de revisar — o sistema agora rehidrata os campos automaticamente, mas confira a checklist abaixo.</li>
                       <li>Tentar validar com hospital/estado vazio no seletor superior (toca a sessão).</li>
                       <li>Leito que ficou ocupado por outro fluxo desde que você abriu a tela — o sistema avisa e basta escolher outro.</li>
-                      <li>Valores fora da faixa (RASS &gt; +4, GCS &gt; 15, idade negativa). O banco bloqueia e a mensagem agora aparece traduzida.</li>
+                      <li>Valores fora da faixa (GCS &gt; 15, idade negativa). O banco bloqueia e a mensagem agora aparece traduzida.</li>
                     </ul>
                   </div>
                   <div className="rounded-md bg-white/70 border border-border p-3">
@@ -1595,123 +1460,6 @@ export default function Saps3Page() {
                     </div>
                   </div>
 
-                  {/* ─── Antecedentes clínicos (NÃO pontuam) ─── */}
-                  <div className="rounded-lg border border-warning-border bg-warning-soft/60 p-3 space-y-3">
-                    <div className="flex items-start gap-2 flex-wrap">
-                      <AlertTriangle className="h-4 w-4 text-warning-on-soft mt-1 shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium text-warning-on-soft normal-case">
-                          Antecedentes clínicos — opcional
-                        </p>
-                        <p className="text-xs text-warning-on-soft normal-case">
-                          Não obrigatório · Não pontua no escore SAPS 3 · Útil para perfil epidemiológico do paciente.
-                        </p>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                      {CLINICAL_HISTORY_OPTIONS.map(c => (
-                        <label key={c.id} className="flex items-center gap-2 text-sm cursor-pointer">
-                          <Checkbox
-                            checked={clinicalHistory.selected.includes(c.id)}
-                            onCheckedChange={(checked) => {
-                              setClinicalHistory(prev => ({
-                                ...prev,
-                                selected: checked
-                                  ? [...prev.selected, c.id]
-                                  : prev.selected.filter(x => x !== c.id),
-                              }));
-                            }}
-                          />
-                          <span className="normal-case">{c.label}</span>
-                        </label>
-                      ))}
-                    </div>
-                    <div>
-                      <Label className="text-xs text-warning-on-soft normal-case">Outros antecedentes (texto livre)</Label>
-                      <Input
-                        value={clinicalHistory.livre || ""}
-                        onChange={(e) => setClinicalHistory(prev => ({ ...prev, livre: e.target.value }))}
-                        placeholder="Ex.: Lupus, Doença de Crohn, transplante renal 2018..."
-                        className="bg-white"
-                      />
-                    </div>
-                  </div>
-
-                  {/* ─── Hábitos de vida (NÃO pontuam) ─── */}
-                  <div className="rounded-lg border border-warning-border bg-warning-soft/60 p-3 space-y-3">
-                    <div className="flex items-start gap-2">
-                      <AlertTriangle className="h-4 w-4 text-warning-on-soft mt-1 shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium text-warning-on-soft normal-case">
-                          Hábitos de vida — opcional
-                        </p>
-                        <p className="text-xs text-warning-on-soft normal-case">
-                          Não obrigatório · Não pontua no escore SAPS 3.
-                        </p>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      <div>
-                        <Label className="text-xs normal-case">Tabagismo</Label>
-                        <Select
-                          value={lifestyleHabits.tabagismo}
-                          onValueChange={(v: any) => setLifestyleHabits(prev => ({ ...prev, tabagismo: v }))}
-                        >
-                          <SelectTrigger className="bg-white"><SelectValue placeholder="Selecione" /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="nunca">Nunca fumou</SelectItem>
-                            <SelectItem value="ex">Ex-tabagista</SelectItem>
-                            <SelectItem value="atual">Tabagista atual</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        {(lifestyleHabits.tabagismo === "ex" || lifestyleHabits.tabagismo === "atual") && (
-                          <Input
-                            className="mt-1 bg-white"
-                            placeholder="Maços-ano"
-                            value={lifestyleHabits.macos_ano || ""}
-                            onChange={(e) => setLifestyleHabits(prev => ({ ...prev, macos_ano: e.target.value }))}
-                          />
-                        )}
-                      </div>
-                      <div>
-                        <Label className="text-xs normal-case">Etilismo</Label>
-                        <Select
-                          value={lifestyleHabits.etilismo}
-                          onValueChange={(v: any) => setLifestyleHabits(prev => ({ ...prev, etilismo: v }))}
-                        >
-                          <SelectTrigger className="bg-white"><SelectValue placeholder="Selecione" /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="nunca">Nunca</SelectItem>
-                            <SelectItem value="social">Social</SelectItem>
-                            <SelectItem value="abuso">Abuso</SelectItem>
-                            <SelectItem value="dependencia">Dependência</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label className="text-xs normal-case">Drogas ilícitas</Label>
-                        <Select
-                          value={lifestyleHabits.drogas}
-                          onValueChange={(v: any) => setLifestyleHabits(prev => ({ ...prev, drogas: v }))}
-                        >
-                          <SelectTrigger className="bg-white"><SelectValue placeholder="Selecione" /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="nunca">Nunca</SelectItem>
-                            <SelectItem value="ex">Ex-usuário</SelectItem>
-                            <SelectItem value="atual">Usuário atual</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        {(lifestyleHabits.drogas === "ex" || lifestyleHabits.drogas === "atual") && (
-                          <Input
-                            className="mt-1 bg-white"
-                            placeholder="Detalhe (ex.: maconha, cocaína...)"
-                            value={lifestyleHabits.drogas_detalhe || ""}
-                            onChange={(e) => setLifestyleHabits(prev => ({ ...prev, drogas_detalhe: e.target.value }))}
-                          />
-                        )}
-                      </div>
-                    </div>
-                  </div>
                 </CardContent>
               </CollapsibleContent>
             </Card>
@@ -1748,10 +1496,6 @@ export default function Saps3Page() {
                           <SelectItem value="other">Outra</SelectItem>
                         </SelectContent>
                       </Select>
-                    </div>
-                    <div>
-                      <Label>Detalhamento</Label>
-                      <Input value={admissionReasonDetail} onChange={e => setAdmissionReasonDetail(e.target.value)} placeholder="Especifique" />
                     </div>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1799,93 +1543,6 @@ export default function Saps3Page() {
             </Card>
           </Collapsible>
 
-          {/* ─── Suporte hemodinâmico (NÃO pontua SAPS — perfil hemodinâmico) ─── */}
-          <Card className="border-warning-border">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center justify-between text-base flex-wrap gap-2">
-                <span className="flex items-center gap-2">
-                  <Heart className="h-5 w-5 text-critical" />
-                  Suporte hemodinâmico na admissão
-                </span>
-                <Badge variant="outline" className="border-warning bg-warning-soft text-warning-on-soft text-xs">
-                  Opcional · Não pontua SAPS
-                </Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 pt-0">
-              <div className="rounded-md bg-warning-soft/60 border border-warning-border p-2 flex items-start gap-2">
-                <AlertTriangle className="h-4 w-4 text-warning-on-soft mt-1 shrink-0" />
-                <p className="text-xs text-warning-on-soft normal-case">
-                  Não obrigatório · Não entra no escore SAPS 3. Registre para qualificar o perfil hemodinâmico do paciente que está entrando na UTI.
-                </p>
-              </div>
-              <div className="flex items-center gap-3">
-                <Switch
-                  checked={vasoactiveOnAdmission}
-                  onCheckedChange={(v) => {
-                    setVasoactiveOnAdmission(v);
-                    if (!v) setVasoactiveDrugs([]);
-                  }}
-                />
-                <Label className="normal-case">Em uso de drogas vasoativas na admissão?</Label>
-              </div>
-              {vasoactiveOnAdmission && (
-                <div className="space-y-2">
-                  <div className="flex flex-wrap gap-2">
-                    {VASOACTIVE_OPTIONS.map(opt => {
-                      const checked = vasoactiveDrugs.some(d => d.id === opt.id);
-                      return (
-                        <button
-                          type="button"
-                          key={opt.id}
-                          onClick={() => {
-                            setVasoactiveDrugs(prev =>
-                              checked
-                                ? prev.filter(d => d.id !== opt.id)
-                                : [...prev, { id: opt.id, dose: "", hours: "" }],
-                            );
-                          }}
-                          className={cn(
-                            "px-3 py-1 rounded-full text-xs font-medium border transition-colors normal-case",
-                            checked
-                              ? "bg-critical-soft border-critical text-critical-on-soft"
-                              : "bg-white border-border text-foreground hover:bg-muted",
-                          )}
-                        >
-                          {opt.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {vasoactiveDrugs.length > 0 && (
-                    <div className="space-y-2">
-                      {vasoactiveDrugs.map((d, idx) => {
-                        const meta = VASOACTIVE_OPTIONS.find(o => o.id === d.id);
-                        return (
-                          <div key={d.id} className="grid grid-cols-1 sm:grid-cols-[1fr_140px_140px] gap-2 items-center bg-critical-soft/40 border border-critical-border rounded-md p-2">
-                            <span className="text-sm font-medium normal-case">{meta?.label || d.id}</span>
-                            <Input
-                              placeholder="Dose (mcg/kg/min)"
-                              value={d.dose || ""}
-                              onChange={(e) => setVasoactiveDrugs(prev => prev.map((x, i) => i === idx ? { ...x, dose: e.target.value } : x))}
-                              className="bg-white"
-                            />
-                            <Input
-                              placeholder="Horas em uso"
-                              value={d.hours || ""}
-                              onChange={(e) => setVasoactiveDrugs(prev => prev.map((x, i) => i === idx ? { ...x, hours: e.target.value } : x))}
-                              className="bg-white"
-                            />
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
           {/* Box III */}
           <Collapsible open={box3Open} onOpenChange={setBox3Open}>
             <Card>
@@ -1903,7 +1560,7 @@ export default function Saps3Page() {
               </CollapsibleTrigger>
               <CollapsibleContent>
                 <CardContent className="space-y-4 pt-0">
-                  {/* ── Avaliação de consciência guiada (GCS / GCS-T / RASS) ── */}
+                  {/* ── Avaliação de consciência guiada (GCS / GCS-T / GCS pré-sedação) ── */}
                   <div data-saps-anchor="saps-conscious" className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-4">
                     <div className="flex items-start gap-2">
                       <Brain className="h-4 w-4 text-primary mt-1" />
@@ -1917,7 +1574,7 @@ export default function Saps3Page() {
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                       {([
                         { v: "no", label: "Não", hint: "Aplicar GCS completo" },
-                        { v: "sedated", label: "Sim — sedoanalgesia ± VM", hint: "Aplicar RASS" },
+                        { v: "sedated", label: "Sim — sedoanalgesia ± VM", hint: "Informe o GCS pré-sedação" },
                         { v: "intubated_no_sedation", label: "Intubado sem sedação", hint: "GCS com V = 1T" },
                       ] as const).map(opt => (
                         <button
@@ -1960,29 +1617,12 @@ export default function Saps3Page() {
                       </div>
                     )}
 
-                    {/* Caminho 2: Sedoanalgesia → RASS */}
+                    {/* Caminho 2: Sedoanalgesia → GCS pré-sedação */}
                     {sedationStatus === "sedated" && (
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-primary/20">
                         <div>
-                          <Label className="text-xs">RASS (-5 a +4)</Label>
-                          <Select value={rassScore} onValueChange={setRassScore}>
-                            <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                            <SelectContent>
-                              {[-5,-4,-3,-2,-1,0,1,2,3,4].map(n => (
-                                <SelectItem key={n} value={String(n)}>
-                                  {n >= 0 ? `+${n}` : n} — {RASS_LABELS[n]}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div>
                           <Label className="text-xs">GCS pré-sedação (opcional)</Label>
                           <Input type="number" value={gcsPreSedation} onChange={e => setGcsPreSedation(e.target.value)} min={3} max={15} placeholder="3-15" />
-                        </div>
-                        <div className="sm:col-span-1">
-                          <Label className="text-xs">Motivo</Label>
-                          <Input value={consciousnessReason} onChange={e => setConsciousnessReason(e.target.value)} placeholder="Não aplicável – Sedoanalgesia contínua" />
                         </div>
                         <p className="sm:col-span-3 text-xs text-muted-foreground">
                           GCS não será aplicado. Pontuação SAPS usa o GCS pré-sedação se informado; caso contrário assume 15.
@@ -2042,16 +1682,16 @@ export default function Saps3Page() {
                       <Input type="number" step="0.1" value={creatinineHighest} onChange={e => setCreatinineHighest(e.target.value)} placeholder="Ex: 1.5" />
                     </div>
                     <div>
-                      <Label>Leucócitos (x10³/mm³)</Label>
-                      <Input type="number" step="0.1" value={leukocytes} onChange={e => setLeukocytes(e.target.value)} placeholder="Ex: 12.5" />
+                      <Label>Leucócitos (/mm³)</Label>
+                      <Input inputMode="numeric" value={formatarContagem(leukocytes)} onChange={e => setLeukocytes(somenteDigitos(e.target.value))} placeholder="Ex: 12.500" />
                     </div>
                     <div>
                       <Label>pH mais baixo</Label>
                       <Input type="number" step="0.01" value={phLowest} onChange={e => setPhLowest(e.target.value)} placeholder="Ex: 7.35" />
                     </div>
                     <div>
-                      <Label>Plaquetas (x10³)</Label>
-                      <Input type="number" value={plateletsLowest} onChange={e => setPlateletsLowest(e.target.value)} placeholder="Ex: 150" />
+                      <Label>Plaquetas (/mm³)</Label>
+                      <Input inputMode="numeric" value={formatarContagem(plateletsLowest)} onChange={e => setPlateletsLowest(somenteDigitos(e.target.value))} placeholder="Ex: 150.000" />
                     </div>
                     <div>
                       <Label>PaO₂/FiO₂</Label>
