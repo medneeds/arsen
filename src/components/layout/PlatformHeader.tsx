@@ -66,18 +66,10 @@ export function PlatformHeader({
       className={cn(
         "sticky top-0 z-30 w-full border-b shadow-sm",
         isInstitutional
-          ? "border-primary/30 text-primary-foreground"
+          ? "border-primary/30 text-white bg-[linear-gradient(110deg,hsl(210_65%_28%)_0%,hsl(210_70%_22%)_55%,hsl(210_75%_18%)_100%)] dark:bg-[linear-gradient(110deg,hsl(210_50%_22%)_0%,hsl(210_55%_17%)_55%,hsl(210_60%_13%)_100%)]"
           : "border-border/60 bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70 text-foreground",
         className,
       )}
-      style={
-        isInstitutional
-          ? {
-              backgroundImage:
-                "linear-gradient(110deg, hsl(var(--primary)) 0%, hsl(210 70% 22%) 55%, hsl(210 75% 18%) 100%)",
-            }
-          : undefined
-      }
     >
       {/* subtle radial highlight for institutional variant */}
       {isInstitutional && (
@@ -106,7 +98,7 @@ export function PlatformHeader({
           <Icon
             className={cn(
               "h-5 w-5",
-              isInstitutional ? "text-primary-foreground" : "text-primary",
+              isInstitutional ? "text-white" : "text-primary",
             )}
           />
         </div>
@@ -117,7 +109,7 @@ export function PlatformHeader({
               className={cn(
                 "text-xs font-medium uppercase tracking-[0.2em] truncate",
                 isInstitutional
-                  ? "text-primary-foreground/70"
+                  ? "text-white/70"
                   : "text-muted-foreground",
               )}
             >
@@ -127,7 +119,7 @@ export function PlatformHeader({
           <h1
             className={cn(
               "text-base md:text-lg font-semibold leading-tight truncate",
-              isInstitutional ? "text-primary-foreground" : "text-foreground",
+              isInstitutional ? "text-white" : "text-foreground",
             )}
           >
             {title}
@@ -137,7 +129,7 @@ export function PlatformHeader({
               className={cn(
                 "text-xs flex items-center gap-2 flex-wrap mt-1",
                 isInstitutional
-                  ? "text-primary-foreground/80"
+                  ? "text-white/80"
                   : "text-muted-foreground",
               )}
             >

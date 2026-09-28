@@ -92,19 +92,19 @@ export function InhalationFields({ item, onUpdate, previousInhalationItemId, pre
 
   return (
     <div className={
-      "relative rounded-md p-2 border space-y-2 [&_input.bg-white]:border-[hsl(217,55%,82%)]/70 [&_input.bg-white]:focus-visible:ring-[hsl(217,60%,60%)]/60 [&_button.bg-white]:border-[hsl(217,55%,82%)]/70 [&_button.bg-white]:focus-visible:ring-[hsl(217,60%,60%)]/60 " +
+      "relative rounded-md p-2 border space-y-2 [&_input.bg-card]:border-primary/30 [&_input.bg-card]:focus-visible:ring-primary/50 [&_button.bg-card]:border-primary/30 [&_button.bg-card]:focus-visible:ring-primary/50 " +
       (isConjugated
-        ? "ml-4 bg-[hsl(217,55%,96%)]/30 border-[hsl(217,55%,72%)]/70 border-l-[3px] border-l-[hsl(217,70%,40%)]/80"
-        : "bg-[hsl(217,55%,96%)]/50 border-[hsl(217,55%,82%)]/60 border-l-[3px] border-l-[hsl(217,65%,45%)]/70")
+        ? "ml-4 bg-primary/5 border-primary/25 border-l-[3px] border-l-primary/70"
+        : "bg-primary/5 border-primary/20 border-l-[3px] border-l-primary/70")
     }>
       {/* Conjugação com nebulização anterior */}
       {(canConjugate || isConjugated) && (
         <div className={
           "flex items-center justify-between gap-2 px-2 py-1 rounded-md text-xs " +
-          (isConjugated ? "bg-[hsl(217,55%,90%)]/70 border border-[hsl(217,55%,72%)]/60" : "")
+          (isConjugated ? "bg-primary/10 border border-primary/25" : "")
         }>
           {isConjugated ? (
-            <span className="flex items-center gap-1 text-[hsl(217,70%,28%)] font-medium min-w-0">
+            <span className="flex items-center gap-1 text-primary font-medium min-w-0">
               <Link2 className="h-3 w-3 shrink-0" />
               <span className="truncate">↳ Mesma nebulização de <b>{previousInhalationItemName ?? 'item anterior'}</b></span>
             </span>
@@ -119,8 +119,8 @@ export function InhalationFields({ item, onUpdate, previousInhalationItemId, pre
             className={
               "h-5 px-2 text-xs gap-1 shrink-0 " +
               (isConjugated
-                ? "text-[hsl(217,72%,36%)] hover:text-[hsl(217,70%,28%)] hover:bg-[hsl(217,55%,82%)]/40"
-                : "text-muted-foreground hover:text-[hsl(217,72%,36%)] hover:bg-[hsl(217,55%,90%)]/40")
+                ? "text-primary hover:text-primary hover:bg-primary/15"
+                : "text-muted-foreground hover:text-primary hover:bg-primary/10")
             }
           >
             {isConjugated ? <><Link2Off className="h-3 w-3" /> Desconjugar</> : <><Link2 className="h-3 w-3" /> Conjugar com a anterior</>}

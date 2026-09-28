@@ -326,7 +326,7 @@ function HypoglycemiaProtocolField({ plan, onChange }: { plan: InsulinPlan; onCh
         value={plan.hypoglycemiaProtocol ?? DEFAULT_HYPO_PROTOCOL}
         onChange={e => onChange({ hypoglycemiaProtocol: e.target.value })}
         placeholder={DEFAULT_HYPO_PROTOCOL}
-        className="text-xs min-h-[44px] bg-white border-critical-border focus-visible:ring-critical/50"
+        className="text-xs min-h-[44px] bg-card border-critical-border focus-visible:ring-critical/50"
       />
     </div>
   );

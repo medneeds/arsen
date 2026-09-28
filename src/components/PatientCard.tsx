@@ -1487,7 +1487,9 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                     <div 
                       className={cn(
                         "inline-flex items-center gap-1 px-2 py-0 rounded-full text-xs font-medium border print:hidden",
-                        stayTimer.level !== "normal" && stayTimer.colorClasses
+                        stayTimer.level === "normal"
+                          ? "dark:!text-foreground dark:!border-border/60"
+                          : stayTimer.colorClasses
                       )}
                       style={stayTimer.level === "normal" ? {
                         color: sectorColorMap[patient.sector],

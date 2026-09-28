@@ -866,7 +866,7 @@ const TAB_ORDER: PrescriptionCategory[] = [
 export function getCategoryContainerClass(category?: string): string {
   const base = "relative rounded-md p-2 border";
   // Azul institucional unificado (mesmo tom da plataforma — slate-50 + border-l blue-700)
-  const blue = `${base} bg-muted/70 border-border/70 border-l-[3px] border-l-[hsl(217,60%,38%)]`;
+  const blue = `${base} bg-muted/70 border-border/70 border-l-[3px] border-l-primary/70`;
   switch (category) {
     case 'high_alert':
       // CONVENÇÃO ISMP — mantém vermelho para sinal cromático de segurança no container
@@ -889,12 +889,12 @@ export function getCategoryContainerClass(category?: string): string {
 // `high_alert` mantém o vermelho coerente com o container.
 export function getCategoryFieldAccent(category?: string): { border: string; ring: string; descendantOverrides: string } {
   if (category === 'high_alert') {
-    return { border: 'border-critical-border/70 focus-visible:border-critical', ring: 'focus-visible:ring-critical/60', descendantOverrides: '[&_input.bg-white]:border-critical-border/70 [&_input.bg-white]:focus-visible:ring-critical/60 [&_button.bg-white]:border-critical-border/70 [&_button.bg-white]:focus-visible:ring-critical/60' };
+    return { border: 'border-critical-border/70 focus-visible:border-critical', ring: 'focus-visible:ring-critical/60', descendantOverrides: '[&_input.bg-card]:border-critical-border/70 [&_input.bg-card]:focus-visible:ring-critical/60 [&_button.bg-card]:border-critical-border/70 [&_button.bg-card]:focus-visible:ring-critical/60' };
   }
   return {
-    border: 'border-[hsl(217,40%,80%)] focus-visible:border-[hsl(217,60%,50%)]',
-    ring: 'focus-visible:ring-[hsl(217,60%,50%)]/40',
-    descendantOverrides: '[&_input.bg-white]:border-[hsl(217,30%,86%)] [&_input.bg-white]:focus-visible:ring-[hsl(217,60%,50%)]/40 [&_button.bg-white]:border-[hsl(217,30%,86%)] [&_button.bg-white]:focus-visible:ring-[hsl(217,60%,50%)]/40',
+    border: 'border-primary/30 focus-visible:border-primary',
+    ring: 'focus-visible:ring-primary/40',
+    descendantOverrides: '[&_input.bg-card]:border-primary/20 [&_input.bg-card]:focus-visible:ring-primary/40 [&_button.bg-card]:border-primary/20 [&_button.bg-card]:focus-visible:ring-primary/40',
   };
 }
 
@@ -1210,7 +1210,7 @@ const NutFieldLabel = ({ children }: { children: React.ReactNode }) => (
   <span className="text-xs text-muted-foreground font-medium whitespace-nowrap">{children}</span>
 );
 const NutTinyInput = (props: React.InputHTMLAttributes<HTMLInputElement>) => (
-  <Input {...props} className={cn("h-6 text-xs bg-white border-border", props.className)} />
+  <Input {...props} className={cn("h-6 text-xs bg-card border-border", props.className)} />
 );
 // Input com sufixo de unidade fixo à direita (ex.: "1500 mL")
 const NutSuffixInput = ({
@@ -1231,7 +1231,7 @@ const NutSuffixInput = ({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className="h-7 text-xs font-medium pr-8 bg-white border-released-border focus-visible:ring-released/60"
+      className="h-7 text-xs font-medium pr-8 bg-card border-released-border focus-visible:ring-released/60"
     />
     <span className="absolute right-2 text-xs font-medium text-released-on-soft pointer-events-none select-none">
       {suffix}
@@ -1304,7 +1304,7 @@ function NutritionFields({
     <div className="flex items-center gap-1">
       <NutFieldLabel>{label}:</NutFieldLabel>
       <Select value={value || ''} onValueChange={onChange}>
-        <SelectTrigger className={cn("h-7 text-xs font-medium bg-white border-released-border focus-visible:ring-released/60", width)}>
+        <SelectTrigger className={cn("h-7 text-xs font-medium bg-card border-released-border focus-visible:ring-released/60", width)}>
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent>
@@ -1340,7 +1340,7 @@ function NutritionFields({
           <PopoverTrigger asChild>
             <Button
               variant="outline"
-              className={cn("h-7 justify-between px-2 text-xs font-medium bg-white border-released-border", width)}
+              className={cn("h-7 justify-between px-2 text-xs font-medium bg-card border-released-border", width)}
             >
               {/* Ate tres perfis aparecem por extenso; so a partir do quarto
                   vira contagem. Resumir em "2 perfis" logo no segundo escondia
@@ -1393,7 +1393,7 @@ function NutritionFields({
 
   // Mini-toggle (2 opções) reutilizável
   const MiniToggle = ({ value, options, onChange }: { value: string; options: { v: string; label: string }[]; onChange: (v: string) => void }) => (
-    <div className="inline-flex rounded-md border border-released-border overflow-hidden h-7 bg-white">
+    <div className="inline-flex rounded-md border border-released-border overflow-hidden h-7 bg-card">
       {options.map(o => (
         <button
           key={o.v}
@@ -1423,7 +1423,7 @@ function NutritionFields({
       />
       {scheduleMode === 'interval' ? (
         <Select value={item.dietInterval || ''} onValueChange={(v) => onUpdate(item.id, 'dietInterval', v)}>
-          <SelectTrigger className="h-7 text-xs font-medium bg-white border-released-border w-28">
+          <SelectTrigger className="h-7 text-xs font-medium bg-card border-released-border w-28">
             <SelectValue placeholder="—" />
           </SelectTrigger>
           <SelectContent>
@@ -1432,7 +1432,7 @@ function NutritionFields({
         </Select>
       ) : (
         <Select value={item.nutSteps || ''} onValueChange={(v) => onUpdate(item.id, 'nutSteps', v)}>
-          <SelectTrigger className="h-7 text-xs font-medium bg-white border-released-border w-28">
+          <SelectTrigger className="h-7 text-xs font-medium bg-card border-released-border w-28">
             <SelectValue placeholder="—" />
           </SelectTrigger>
           <SelectContent>
@@ -1549,7 +1549,7 @@ function NutritionFields({
             const label = MODALITY_LABELS[v] || v;
             onUpdate(item.id, 'name', label);
           }}>
-            <SelectTrigger className="h-6 text-xs bg-white border-released-border w-44">
+            <SelectTrigger className="h-6 text-xs bg-card border-released-border w-44">
               <SelectValue>{MODALITY_LABELS[subtype] || subtype}</SelectValue>
             </SelectTrigger>
             <SelectContent>
@@ -1576,7 +1576,7 @@ function NutritionFields({
       <div className="flex items-center gap-2 flex-wrap">
         <NutFieldLabel>Modalidade:</NutFieldLabel>
         <Select value={subtype} onValueChange={setSubtype}>
-          <SelectTrigger className="h-6 text-xs bg-white border-border w-44">
+          <SelectTrigger className="h-6 text-xs bg-card border-border w-44">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -1679,7 +1679,7 @@ function NutritionFields({
               value={item.nutZeroReason || ''}
               onChange={(e) => onUpdate(item.id, 'nutZeroReason', e.target.value)}
               placeholder="pré-operatório, broncoaspiração, íleo, avaliação..."
-              className="h-7 text-xs font-medium bg-white border-warning-border"
+              className="h-7 text-xs font-medium bg-card border-warning-border"
             />
           </div>
           {RecommendationsField}
@@ -1716,7 +1716,7 @@ function NutritionFields({
             <NutFieldLabel>Vol/adm:</NutFieldLabel>
             <NutSuffixInput value={item.nutWaterVolPerAdmin || ''} onChange={(v) => onUpdate(item.id, 'nutWaterVolPerAdmin', v)} suffix="mL" placeholder="50" />
             <NutFieldLabel>Frequência:</NutFieldLabel>
-            <Input value={item.nutWaterFreq || ''} onChange={(e) => onUpdate(item.id, 'nutWaterFreq', e.target.value)} placeholder="antes/após dieta e meds" className="h-7 text-xs bg-white border-released-border w-48" />
+            <Input value={item.nutWaterFreq || ''} onChange={(e) => onUpdate(item.id, 'nutWaterFreq', e.target.value)} placeholder="antes/após dieta e meds" className="h-7 text-xs bg-card border-released-border w-48" />
             <NutFieldLabel>Meta/24h:</NutFieldLabel>
             <NutSuffixInput value={item.nutVolDay || ''} onChange={(v) => onUpdate(item.id, 'nutVolDay', v)} suffix="mL" placeholder="800" />
           </div>
@@ -1847,14 +1847,14 @@ function HydrationFields({
           type="number"
           value={item.volumeTotal || ''}
           onChange={(e) => onUpdate(item.id, 'volumeTotal', e.target.value)}
-          className="h-6 text-xs bg-white border-border w-16 text-center font-medium focus-visible:ring-1 focus-visible:ring-ring"
+          className="h-6 text-xs bg-card border-border w-16 text-center font-medium focus-visible:ring-1 focus-visible:ring-ring"
           placeholder="mL"
         />
         <span className="text-xs text-muted-foreground">mL</span>
 
         <NutFieldLabel>Fases / intervalo:</NutFieldLabel>
         <Select value={interval} onValueChange={handlePhasesChange}>
-          <SelectTrigger className="h-6 text-xs bg-white border-border w-36 focus:ring-1 focus:ring-ring"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="h-6 text-xs bg-card border-border w-36 focus:ring-1 focus:ring-ring"><SelectValue /></SelectTrigger>
           <SelectContent>
             {HYDRATION_PHASE_OPTIONS.map(o => (
               <SelectItem key={o.interval} value={o.interval} className="text-xs">
@@ -1871,11 +1871,11 @@ function HydrationFields({
               type="number"
               value={item.infusionTime || ''}
               onChange={(e) => onUpdate(item.id, 'infusionTime', e.target.value)}
-              className="h-6 text-xs bg-white border-border w-14 text-center focus-visible:ring-1 focus-visible:ring-ring"
+              className="h-6 text-xs bg-card border-border w-14 text-center focus-visible:ring-1 focus-visible:ring-ring"
               placeholder="—"
             />
             <Select value={tUnit} onValueChange={(v) => onUpdate(item.id, 'infusionTimeUnit', v)}>
-              <SelectTrigger className="h-6 text-xs bg-white border-border w-16 focus:ring-1 focus:ring-ring"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-6 text-xs bg-card border-border w-16 focus:ring-1 focus:ring-ring"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="h" className="text-xs">h</SelectItem>
                 <SelectItem value="min" className="text-xs">min</SelectItem>
@@ -1883,11 +1883,11 @@ function HydrationFields({
             </Select>
 
             <NutFieldLabel>Gotejamento:</NutFieldLabel>
-            <div className="h-6 px-2 flex items-center rounded-md border border-border bg-white text-xs font-medium w-16 justify-center">
+            <div className="h-6 px-2 flex items-center rounded-md border border-border bg-card text-xs font-medium w-16 justify-center">
               {isFinite(dripVal) && dripVal > 0 ? dripVal.toFixed(0) : '—'}
             </div>
             <Select value={dripMode} onValueChange={(v) => onUpdate(item.id, 'infusionMode', v)}>
-              <SelectTrigger className="h-6 text-xs bg-white border-border w-20 focus:ring-1 focus:ring-ring"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-6 text-xs bg-card border-border w-20 focus:ring-1 focus:ring-ring"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="BIC" className="text-xs">mL/h</SelectItem>
                 <SelectItem value="gts" className="text-xs">gts/min</SelectItem>
@@ -1898,7 +1898,7 @@ function HydrationFields({
 
         <NutFieldLabel>Via:</NutFieldLabel>
         <Select value={item.route || 'EV'} onValueChange={(v) => onUpdate(item.id, 'route', v)}>
-          <SelectTrigger className="h-6 text-xs bg-white border-border w-20 font-medium focus:ring-1 focus:ring-ring">
+          <SelectTrigger className="h-6 text-xs bg-card border-border w-20 font-medium focus:ring-1 focus:ring-ring">
             <SelectValue>{routeShort(item.route || 'EV')}</SelectValue>
           </SelectTrigger>
           <SelectContent className="max-h-72">
@@ -1921,7 +1921,7 @@ function HydrationFields({
         <Textarea
           value={item.instructions || ''}
           onChange={(e) => onUpdate(item.id, 'instructions', e.target.value)}
-          className="min-h-[56px] text-xs bg-white border-border mt-1 focus-visible:ring-1 focus-visible:ring-ring"
+          className="min-h-[56px] text-xs bg-card border-border mt-1 focus-visible:ring-1 focus-visible:ring-ring"
           placeholder="Ex.: manter acesso pérvio; observar sinais de sobrecarga; reavaliar em 24h; trocar equipo a cada 72h..."
         />
       </div>
@@ -2501,7 +2501,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                   );
                   onUpdate(item.id, 'instructions', serializeSlidingInstructions(updated));
                 }}
-                className="h-6 text-xs flex-1 min-w-0 bg-white border-released-border focus-visible:ring-released"
+                className="h-6 text-xs flex-1 min-w-0 bg-card border-released-border focus-visible:ring-released"
                 placeholder="Ex: 2 UI SC"
               />
             </div>
@@ -2597,7 +2597,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
               ))}
             </div>
             {showInline && (
-              <div className="mt-2 rounded-lg border border-critical-border bg-white/70 p-2">
+              <div className="mt-2 rounded-lg border border-critical-border bg-card/70 p-2">
                 <SlidingEditor
                   plan={plan}
                   onChange={(patch) => {
@@ -2982,46 +2982,46 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
               {item.category === 'antimicrobial' && (() => {
                 const dayLine = buildAtbDayLine(item);
                 return (
-                  <div className="flex items-center gap-2 flex-wrap pb-2 mb-2 px-2 py-2 rounded-md bg-gradient-to-r from-[hsl(217,55%,94%)]/80 via-[hsl(217,55%,97%)]/60 to-transparent(217,55%,18%)]/30(217,55%,16%)]/15 border border-[hsl(217,55%,82%)]/60 border-l-[3px] border-l-[hsl(217,70%,40%)]/80">
-                    <div className="flex items-center gap-2 text-[hsl(217,72%,28%)] shrink-0">
-                      <div className="flex items-center justify-center h-5 w-5 rounded-md bg-[hsl(217,70%,40%)] text-white shadow-sm shadow-[hsl(217,70%,40%)]/30">
+                  <div className="flex items-center gap-2 flex-wrap pb-2 mb-2 px-2 py-2 rounded-md bg-primary/5 border border-primary/20 border-l-[3px] border-l-primary/70">
+                    <div className="flex items-center gap-2 text-primary shrink-0">
+                      <div className="flex items-center justify-center h-5 w-5 rounded-md bg-primary text-primary-foreground shadow-sm shadow-primary/30">
                         <Pill className="h-3 w-3" />
                       </div>
                       <span className="text-xs font-semibold uppercase tracking-[0.08em]">Antibiótico</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <span className="text-xs text-[hsl(217,72%,36%)]/80 font-medium">Início:</span>
+                      <span className="text-xs text-primary/80 font-medium">Início:</span>
                       <Input
                         type="date"
                         value={item.atbStartDate || ''}
                         onChange={(e) => onUpdate(item.id, 'atbStartDate' as any, e.target.value)}
-                        className="h-6 text-xs bg-white border-[hsl(217,55%,82%)]/70 w-[124px] px-2"
+                        className="h-6 text-xs bg-card border-primary/30 w-[124px] px-2"
                       />
                     </div>
                     <div className="flex items-center gap-1">
-                      <span className="text-xs text-[hsl(217,72%,36%)]/80 font-medium">Duração:</span>
+                      <span className="text-xs text-primary/80 font-medium">Duração:</span>
                       <Input
                         type="number"
                         min="1"
                         value={item.atbPlannedDays || ''}
                         onChange={(e) => onUpdate(item.id, 'atbPlannedDays' as any, e.target.value)}
-                        className="h-6 text-xs bg-white border-[hsl(217,55%,82%)]/70 w-12 text-center px-1"
+                        className="h-6 text-xs bg-card border-primary/30 w-12 text-center px-1"
                         placeholder="—"
                       />
-                      <span className="text-xs text-[hsl(217,72%,36%)]/70">dias</span>
+                      <span className="text-xs text-primary/70">dias</span>
                     </div>
                     <div className="flex items-center gap-1 flex-1 min-w-[160px]">
-                      <span className="text-xs text-[hsl(217,72%,36%)]/80 font-medium shrink-0">Sítio:</span>
+                      <span className="text-xs text-primary/80 font-medium shrink-0">Sítio:</span>
                       <Input
                         value={item.atbInfectionSite || ''}
                         onChange={(e) => onUpdate(item.id, 'atbInfectionSite' as any, e.target.value)}
-                        className="h-6 text-xs bg-white border-[hsl(217,55%,82%)]/70 flex-1 px-2"
+                        className="h-6 text-xs bg-card border-primary/30 flex-1 px-2"
                         placeholder="ex.: pneumonia comunitária"
                       />
                     </div>
                     <div className="ml-auto flex items-center gap-2 shrink-0">
                       {dayLine && (
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-[hsl(217,70%,40%)] text-white border border-[hsl(217,72%,36%)]/40 shadow-sm shadow-[hsl(217,70%,40%)]/20">
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-primary text-primary-foreground border border-primary/40 shadow-sm shadow-primary/20">
                           {dayLine.split(' — ')[0]} · {dayLine.match(/— (\d{2}\/\d{2})/)?.[1] || ''}
                         </span>
                       )}
@@ -3029,7 +3029,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                         <button
                           type="button"
                           onClick={onOpenAntimicrobialGuide}
-                          className="inline-flex items-center gap-1 h-6 px-2 rounded-md text-xs font-medium bg-[hsl(217,70%,40%)] hover:bg-[hsl(217,72%,36%)] text-white border border-[hsl(217,72%,36%)]/50 transition-colors"
+                          className="inline-flex items-center gap-1 h-6 px-2 rounded-md text-xs font-medium bg-primary hover:bg-primary/90 text-primary-foreground border border-primary/50 transition-colors"
                           title="Abrir Guia ATM (CCIH / Norma Zero)"
                         >
                           <Shield className="h-3 w-3" />
@@ -3054,14 +3054,14 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                       value={item.reconstitutionVolume ?? recon.volumeMl ?? ''}
                       onChange={(e) => onUpdate(item.id, "reconstitutionVolume", e.target.value)}
                       placeholder="mL"
-                      className="h-6 text-xs bg-white border-border w-14 text-center"
+                      className="h-6 text-xs bg-card border-border w-14 text-center"
                     />
                     <span className="text-xs text-muted-foreground">mL de</span>
                     <Select
                       value={item.reconstitutionSolvent ?? recon.solvent ?? ''}
                       onValueChange={(v) => onUpdate(item.id, "reconstitutionSolvent", v)}
                     >
-                      <SelectTrigger className="h-6 text-xs bg-white border-border w-36"><SelectValue placeholder="solvente" /></SelectTrigger>
+                      <SelectTrigger className="h-6 text-xs bg-card border-border w-36"><SelectValue placeholder="solvente" /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="AD" className="text-xs">AD</SelectItem>
                         <SelectItem value="SF 0,9%" className="text-xs">SF 0,9%</SelectItem>
@@ -3106,14 +3106,14 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                         }
                       }
                     }}
-                    className="h-6 text-xs bg-white border-border px-2 text-center focus-visible:ring-1 focus-visible:ring-primary"
+                    className="h-6 text-xs bg-card border-border px-2 text-center focus-visible:ring-1 focus-visible:ring-primary"
                     style={{ width: `${Math.max(2.75, (String(item.quantity || '').length || 1) * 0.7 + 1.5)}ch`, minWidth: '3rem' }}
                     placeholder="1"
                     title={item.quantityUnit ? `Quantidade em ${item.quantityUnit}` : 'Quantidade'}
                   />
                   <span className="text-xs text-foreground font-medium shrink-0 ml-1">Forma:</span>
                   <Select value={item.quantityUnit || ''} onValueChange={(v) => onUpdate(item.id, "quantityUnit", v)}>
-                    <SelectTrigger className="h-6 text-xs bg-white border-border w-[78px] font-medium focus:ring-1 focus:ring-primary" title={item.quantityUnit || 'Forma/unidade'}>
+                    <SelectTrigger className="h-6 text-xs bg-card border-border w-[78px] font-medium focus:ring-1 focus:ring-primary" title={item.quantityUnit || 'Forma/unidade'}>
                       <SelectValue placeholder="—">{quantityUnitShort(item.quantityUnit)}</SelectValue>
                     </SelectTrigger>
                     <SelectContent className="max-h-72">
@@ -3184,11 +3184,11 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                         onChange={(e) => { const v = e.target.value; onUpdate(item.id, "doseValue", v); aplicarCalc({ ...item, doseValue: v }); }}
                         placeholder="opc."
                         title="Dose total prescrita (ex.: 1 g). O sistema calcula a Qtd de ampolas/frascos pela apresentação. Opcional — nunca bloqueia."
-                        className="h-6 text-xs bg-white border-border px-2 text-center focus-visible:ring-1 focus-visible:ring-primary"
+                        className="h-6 text-xs bg-card border-border px-2 text-center focus-visible:ring-1 focus-visible:ring-primary"
                         style={{ width: `${Math.max(3, (String(item.doseValue || '').length || 2) * 0.7 + 1.5)}ch`, minWidth: '3.25rem' }}
                       />
                       <Select value={item.doseUnit || ''} onValueChange={(v) => { onUpdate(item.id, "doseUnit", v); aplicarCalc({ ...item, doseUnit: v }); }}>
-                        <SelectTrigger className="h-6 text-xs bg-white border-border w-[70px] focus:ring-1 focus:ring-primary"><SelectValue placeholder="grand." /></SelectTrigger>
+                        <SelectTrigger className="h-6 text-xs bg-card border-border w-[70px] focus:ring-1 focus:ring-primary"><SelectValue placeholder="grand." /></SelectTrigger>
                         <SelectContent>
                           {DOSE_UNITS.map(u => <SelectItem key={u} value={u} className="text-xs">{u}</SelectItem>)}
                         </SelectContent>
@@ -3232,7 +3232,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                       onUpdate(item.id, "diluentVolume", '');
                     }
                   }}>
-                    <SelectTrigger className="h-6 text-xs bg-white border-border w-28 focus:ring-1 focus:ring-primary"><SelectValue placeholder="—" /></SelectTrigger>
+                    <SelectTrigger className="h-6 text-xs bg-card border-border w-28 focus:ring-1 focus:ring-primary"><SelectValue placeholder="—" /></SelectTrigger>
                     <SelectContent className="max-h-72">
                       <SelectItem value="sem_diluente" className="text-xs font-medium">Sem diluente</SelectItem>
                       <SelectItem value="diluente_proprio" className="text-xs font-medium">Diluente próprio</SelectItem>
@@ -3257,7 +3257,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                     const tempItem2 = { ...tempItem, volumeTotal: autoVol || item.volumeTotal || '' };
                     const autoConc = calcConcentration(tempItem2);
                     if (autoConc) onUpdate(item.id, "concentration", autoConc);
-                  }} className="h-6 text-xs bg-white border-border w-16 text-center focus-visible:ring-1 focus-visible:ring-primary" placeholder="mL" />
+                  }} className="h-6 text-xs bg-card border-border w-16 text-center focus-visible:ring-1 focus-visible:ring-primary" placeholder="mL" />
                 </div>
                 )}
                 </>}
@@ -3269,7 +3269,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                       onUpdate(item.id, "infusionMode", 'BIC');
                     }
                   }}>
-                    <SelectTrigger className="h-6 text-xs bg-white border-border w-20 font-medium focus:ring-1 focus:ring-primary">
+                    <SelectTrigger className="h-6 text-xs bg-card border-border w-20 font-medium focus:ring-1 focus:ring-primary">
                       <SelectValue>{routeShort(item.route)}</SelectValue>
                     </SelectTrigger>
                     <SelectContent className="max-h-72">
@@ -3285,7 +3285,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-foreground font-medium">Int.:</span>
                   <Select value={item.posology} onValueChange={(v) => onUpdate(item.id, "posology", v)}>
-                    <SelectTrigger className="h-6 text-xs bg-white border-border font-medium w-28 focus:ring-1 focus:ring-primary"><SelectValue placeholder="—" /></SelectTrigger>
+                    <SelectTrigger className="h-6 text-xs bg-card border-border font-medium w-28 focus:ring-1 focus:ring-primary"><SelectValue placeholder="—" /></SelectTrigger>
                     <SelectContent className="max-h-72">{POSOLOGIES.map((p) => (<SelectItem key={p} value={p} className="text-xs">{p}</SelectItem>))}</SelectContent>
                   </Select>
                 </div>
@@ -3303,7 +3303,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                       value={item.enteralDilutionVolume ?? ''}
                       onChange={(e) => onUpdate(item.id, 'enteralDilutionVolume', e.target.value)}
                       placeholder={ENTERAL_DILUTION_DEFAULT_ML}
-                      className="h-6 w-14 text-xs bg-white border-border font-medium text-center focus:ring-1 focus:ring-primary"
+                      className="h-6 w-14 text-xs bg-card border-border font-medium text-center focus:ring-1 focus:ring-primary"
                     />
                     <span className="text-xs text-muted-foreground">mL de água</span>
                   </div>
@@ -3362,7 +3362,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                           const autoConc = calcConcentration(tempItem);
                           if (autoConc) onUpdate(item.id, "concentration", autoConc);
                         }}
-                        className="h-6 text-xs bg-white border-border w-16 text-center font-medium"
+                        className="h-6 text-xs bg-card border-border w-16 text-center font-medium"
                         placeholder="opcional"
                       />
                       <span className="text-xs text-muted-foreground">mL</span>
@@ -3388,7 +3388,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                         if (autoRate) onUpdate(item.id, "infusionRate", autoRate);
                       }
                     }}
-                    className="h-6 text-xs bg-white border-border w-16 text-center font-medium"
+                    className="h-6 text-xs bg-card border-border w-16 text-center font-medium"
                     placeholder="opcional"
                     title="Volume final da solução (medicamento + diluente). Auto-calculado quando possível."
                   />
@@ -3408,7 +3408,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                         if (autoRate) onUpdate(item.id, "infusionRate", autoRate);
                       }
                     }}
-                    className="h-6 text-xs bg-white border-border w-14 text-center"
+                    className="h-6 text-xs bg-card border-border w-14 text-center"
                     placeholder="—"
                   />
                   <Select value={item.infusionTimeUnit || 'min'} onValueChange={(v) => {
@@ -3418,7 +3418,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                       if (autoRate) onUpdate(item.id, "infusionRate", autoRate);
                     }
                   }}>
-                    <SelectTrigger className="h-6 text-xs bg-white border-border w-16">
+                    <SelectTrigger className="h-6 text-xs bg-card border-border w-16">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -3441,7 +3441,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                         if (autoTime) onUpdate(item.id, "infusionTime", autoTime);
                       }
                     }}
-                    className="h-6 text-xs bg-white border-border w-16 text-center font-medium"
+                    className="h-6 text-xs bg-card border-border w-16 text-center font-medium"
                     placeholder="—"
                   />
                   <Select value={item.infusionMode || 'BIC'} onValueChange={(v) => {
@@ -3452,7 +3452,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                       if (autoRate) onUpdate(item.id, "infusionRate", autoRate);
                     }
                   }}>
-                    <SelectTrigger className="h-6 text-xs bg-white border-border w-24">
+                    <SelectTrigger className="h-6 text-xs bg-card border-border w-24">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -3467,7 +3467,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                   <Input
                     value={item.concentration || ''}
                     onChange={(e) => onUpdate(item.id, "concentration", e.target.value)}
-                    className="h-6 text-xs bg-white border-border w-24 text-center"
+                    className="h-6 text-xs bg-card border-border w-24 text-center"
                     placeholder="auto"
                   />
                 </div>
@@ -4586,7 +4586,7 @@ function DrugInteractionDialog({
       <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Zap className="h-5 w-5 text-[hsl(217,70%,40%)]" />
+            <Zap className="h-5 w-5 text-primary" />
             Verificação de Interações Medicamentosas
           </DialogTitle>
           <DialogDescription>
@@ -8850,7 +8850,7 @@ const PrescricaoPage = () => {
         </div>
 
         {/* Row 2 — Prescription actions (Nova, Extra, Interações, ATM, TEV, Validar | Compacto | Imprimir) */}
-        <div className="flex items-center gap-1 flex-wrap px-3 py-2 border-t border-[hsl(217,30%,88%)]/70 bg-gradient-to-r from-[hsl(217,45%,97%)] via-[hsl(217,40%,98.5%)] to-[hsl(217,45%,97%)] rounded-b-lg [&_button.h-7]:hover:bg-[hsl(217,55%,40%)]/8 [&_button.h-7]:hover:text-[hsl(217,60%,32%)]&_button.h-7]:hover:text-[hsl(217,55%,75%)] [&_button.h-7]:transition-colors">
+        <div className="flex items-center gap-1 flex-wrap px-3 py-2 border-t border-border bg-muted/40 rounded-b-lg [&_button.h-7]:hover:bg-primary/10 [&_button.h-7]:hover:text-primary [&_button.h-7]:transition-colors">
 
           <Tooltip>
             <TooltipTrigger asChild>
@@ -8973,7 +8973,7 @@ const PrescricaoPage = () => {
                     }
                     handlePrint();
                   }}
-                  className="gap-2 text-xs h-7 px-3 text-white font-medium border-0 bg-muted hover:from-muted hover:via-muted hover:to-muted shadow-[0_2px_8px_-2px_hsl(217_90%_55%/0.55)] hover:shadow-[0_4px_14px_-2px_hsl(217_90%_55%/0.7)] transition-all ring-1 ring-inset ring-white/20"
+                  className="gap-2 text-xs h-7 px-3 text-primary-foreground font-medium border-0 bg-primary hover:bg-primary/90 shadow-[0_2px_8px_-2px_hsl(217_90%_55%/0.55)] hover:shadow-[0_4px_14px_-2px_hsl(217_90%_55%/0.7)] transition-all ring-1 ring-inset ring-white/20"
                 >
                   <Printer className="h-3.5 w-3.5" /> Imprimir
                 </Button>
@@ -9611,7 +9611,7 @@ const PrescricaoPage = () => {
                 setNutritionManualText("");
                 setNutritionManualOpen(true);
               }}
-              className="group text-left rounded-lg border border-released-border bg-white hover:border-released hover:bg-released-soft/50 transition p-3 flex flex-col gap-2"
+              className="group text-left rounded-lg border border-released-border bg-card hover:border-released hover:bg-released-soft/50 transition p-3 flex flex-col gap-2"
             >
               <div className="flex items-center gap-2">
                 <div className="h-8 w-8 rounded-md bg-released-soft flex items-center justify-center">
@@ -9632,7 +9632,7 @@ const PrescricaoPage = () => {
                 setNutritionGuidedOpen(true);
               }}
 
-              className="group text-left rounded-lg border border-released-border bg-white hover:border-released hover:bg-released-soft/50 transition p-3 flex flex-col gap-2"
+              className="group text-left rounded-lg border border-released-border bg-card hover:border-released hover:bg-released-soft/50 transition p-3 flex flex-col gap-2"
             >
               <div className="flex items-center gap-2">
                 <div className="h-8 w-8 rounded-md bg-released-soft flex items-center justify-center">
@@ -9704,7 +9704,7 @@ const PrescricaoPage = () => {
                       "h-8 px-3 rounded-md border text-xs font-medium transition",
                       nutritionManualType === opt.v
                         ? "bg-released text-white border-released shadow-sm"
-                        : "bg-white text-released-on-soft border-released-border hover:bg-released-soft"
+                        : "bg-card text-released-on-soft border-released-border hover:bg-released-soft"
                     )}
                   >
                     {opt.label}
@@ -9817,7 +9817,7 @@ const PrescricaoPage = () => {
                   // Abre só o item novo e direciona até ele. (22/07/2026.)
                   focusNewItem(it.id);
                 }}
-                className="text-left rounded-lg border border-released-border bg-white hover:border-released hover:bg-released-soft/50 transition p-3 flex flex-col gap-1"
+                className="text-left rounded-lg border border-released-border bg-card hover:border-released hover:bg-released-soft/50 transition p-3 flex flex-col gap-1"
               >
                 <div className="flex items-center gap-2">
                   <div className="h-7 w-7 rounded-md bg-released-soft flex items-center justify-center">
@@ -10116,7 +10116,7 @@ const PrescricaoPage = () => {
       })()}
 
       {/* ===== FOOTER SUMMARY ===== */}
-      <div className="rounded-lg border border-[hsl(217,30%,84%)]/70 bg-gradient-to-b from-[hsl(217,45%,98%)] to-[hsl(217,40%,96%)] p-4 flex items-center justify-between print:hidden shadow-[0_4px_16px_-6px_hsl(217,50%,30%,0.18)] ring-1 ring-[hsl(217,55%,90%)]/40">
+      <div className="rounded-lg border border-border bg-muted/40 p-4 flex items-center justify-between print:hidden shadow-[0_4px_16px_-6px_hsl(var(--primary)/0.18)] ring-1 ring-border/40">
         <div className="flex items-center gap-4 flex-wrap">
           <Badge variant="outline" className="gap-1 text-xs">
             <Pill className="h-3 w-3" /> {totalItems} itens
@@ -10178,7 +10178,7 @@ const PrescricaoPage = () => {
               }
               handlePrint();
             }}
-            className="gap-2 text-xs text-white font-medium border-0 bg-muted hover:from-muted hover:via-muted hover:to-muted shadow-[0_2px_8px_-2px_hsl(217_90%_55%/0.55)] hover:shadow-[0_4px_14px_-2px_hsl(217_90%_55%/0.7)] transition-all ring-1 ring-inset ring-white/20"
+            className="gap-2 text-xs text-primary-foreground font-medium border-0 bg-primary hover:bg-primary/90 shadow-[0_2px_8px_-2px_hsl(217_90%_55%/0.55)] hover:shadow-[0_4px_14px_-2px_hsl(217_90%_55%/0.7)] transition-all ring-1 ring-inset ring-white/20"
             title="Imprimir a prescrição validada e, quando aplicável, as guias regulatórias"
           >
             <Printer className="h-3.5 w-3.5" /> Imprimir
@@ -10694,7 +10694,7 @@ const PrescricaoPage = () => {
                   className={cn(
                     "flex items-start gap-3 p-3 rounded-md border cursor-pointer",
                     regulatoria
-                      ? "border-[hsl(217,55%,82%)]/40 bg-[hsl(217,55%,96%)]/60 hover:bg-[hsl(217,55%,94%)]/80"
+                      ? "border-primary/30 bg-primary/5 hover:bg-primary/10"
                       : "border-border hover:bg-muted/30",
                   )}
                 >
@@ -10702,7 +10702,7 @@ const PrescricaoPage = () => {
                   <div className="text-xs">
                     <div className={cn(
                       "font-medium",
-                      regulatoria && "text-[hsl(217,72%,32%)]",
+                      regulatoria && "text-primary",
                     )}>
                       {opt.label}
                     </div>
