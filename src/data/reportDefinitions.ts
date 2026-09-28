@@ -116,6 +116,7 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
 
   // Gestão Executiva (Sprint 5)
   { id: 'gestao_aderencia_saps3', name: 'Aderência ao SAPS 3', description: 'Pacientes UTI com SAPS 3 preenchido em até 24h da admissão', category: 'gestao', queryType: 'gestao_saps3_adherence', available: true },
+  { id: 'gestao_recalculo_saps3', name: 'Recálculo SAPS 3 (tabela atual)', description: 'Só leitura: recalcula as fichas SAPS 3 gravadas com a tabela atual e mostra o escore antigo, o recalculado e a diferença', category: 'gestao', queryType: 'gestao_saps3_recalc', available: true },
 ];
 
 // Macrorregiões do Maranhão

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useHospital } from "@/contexts/HospitalContext";
 import { MARANHAO_MACRO_REGIONS } from "@/data/reportDefinitions";
+import { calcularSaps3, respostasDoBanco, ressalvasDaLinha, type LinhaSaps3Banco } from "@/lib/saps3";
 
 export interface ReportResult {
   columns: string[];
@@ -886,6 +887,51 @@ async function executeQuery(
           'Fora 24h': fora,
           'Sem SAPS 3': sem,
           Aderência: ((dentro / total) * 100).toFixed(1) + '%',
+        },
+      };
+    }
+
+    case 'gestao_saps3_recalc': {
+      // Recalculo SOMENTE-LEITURA: as fichas antigas foram pontuadas com uma
+      // tabela de itens incorreta. Relemos os PARAMETROS gravados (que estao
+      // corretos) e recalculamos o escore com a tabela atual (src/lib/saps3.ts),
+      // mostrando o delta. Nada e gravado. Dois campos nao sao reconstruiveis
+      // (vasoativo nunca teve coluna; PaO2 sem VM nao e gravada) -> coluna Obs.
+      const { data } = await supabase.from('avaliacoes_saps3')
+        .select('idade, dias_hospital_antes_uti, origem_admissao, comorbidades, admissao_planejada, motivo_admissao, motivo_admissao_detalhe, status_cirurgico, tipo_cirurgia, infeccao_na_admissao, escore_glasgow, fc_mais_alta, pas_mais_baixa, temperatura_mais_baixa, bilirrubina_mais_alta, creatinina_mais_alta, leucocitos, plaquetas_mais_baixas, ph_mais_baixo, relacao_pao2_fio2, ventilacao_mecanica, escore_total, mortalidade_prevista, criado_em, internacao:internacoes(paciente:pacientes(nome_completo, nome_social))')
+        .gte('criado_em', startFull).lte('criado_em', endFull)
+        .order('criado_em', { ascending: false });
+      type RecalcRow = LinhaSaps3Banco & {
+        criado_em: string;
+        escore_total: number | null;
+        mortalidade_prevista: number | null;
+        internacao: { paciente?: { nome_completo?: string; nome_social?: string } } | null;
+      };
+      const rows = (data ?? []) as unknown as RecalcRow[];
+      let mudaram = 0;
+      const outRows = rows.map(r => {
+        const novo = calcularSaps3(respostasDoBanco(r));
+        const antigo: number | null = r.escore_total ?? null;
+        const delta = antigo == null ? null : novo.total - antigo;
+        if (delta != null && delta !== 0) mudaram++;
+        return {
+          'Paciente': pacNome(r?.internacao),
+          'Data': formatDate(r.criado_em),
+          'Escore antigo': antigo ?? '-',
+          'Escore recalculado': novo.total,
+          'Δ': delta == null ? '-' : (delta > 0 ? `+${delta}` : String(delta)),
+          'Mortalidade antiga': r.mortalidade_prevista != null ? `${r.mortalidade_prevista}%` : '-',
+          'Mortalidade recalculada': `${novo.mortality}%`,
+          'Obs': ressalvasDaLinha(r).join(' · '),
+        };
+      });
+      return {
+        columns: ['Paciente', 'Data', 'Escore antigo', 'Escore recalculado', 'Δ', 'Mortalidade antiga', 'Mortalidade recalculada', 'Obs'],
+        rows: outRows,
+        summary: {
+          'Fichas': rows.length,
+          'Com escore diferente': mudaram,
+          'Ressalva': 'Recalculo usa os parametros gravados; vasoativo e O2 sem VM nao sao reconstruiveis.',
         },
       };
     }

@@ -430,6 +430,85 @@ export function faixaEfetiva(item: ItemFaixas, valorDigitado: number | null, fai
   return faixaEscolhida || null;
 }
 
+// ─────────────────── Releitura de ficha do banco ───────────────────
+
+/**
+ * Colunas de avaliacoes_saps3 usadas para reconstruir as respostas. Espelha o
+ * que Saps3Page.buildSapsPayload grava. Leucocitos e plaquetas ja vem em
+ * MILHARES, como gravado (ver secao de unidades abaixo).
+ */
+export interface LinhaSaps3Banco {
+  idade?: number | null;
+  dias_hospital_antes_uti?: number | null;
+  origem_admissao?: string | null;
+  comorbidades?: string[] | null;
+  admissao_planejada?: boolean | null;
+  motivo_admissao?: string | null;
+  motivo_admissao_detalhe?: string | null;
+  status_cirurgico?: string | null;
+  tipo_cirurgia?: string | null;
+  infeccao_na_admissao?: string | null;
+  escore_glasgow?: number | null;
+  fc_mais_alta?: number | null;
+  pas_mais_baixa?: number | null;
+  temperatura_mais_baixa?: number | null;
+  bilirrubina_mais_alta?: number | null;
+  creatinina_mais_alta?: number | null;
+  leucocitos?: number | null;
+  plaquetas_mais_baixas?: number | null;
+  ph_mais_baixo?: number | null;
+  relacao_pao2_fio2?: number | null;
+  ventilacao_mecanica?: boolean | null;
+}
+
+const faixaDe = (item: ItemFaixas, v: number | null | undefined): string | null =>
+  v == null || !item.faixaDoValor ? null : item.faixaDoValor(v);
+
+const comVentilacao = (row: LinhaSaps3Banco): boolean =>
+  row.ventilacao_mecanica === true && row.relacao_pao2_fio2 != null;
+
+/**
+ * Reconstroi as respostas do SAPS 3 a partir de uma linha gravada, para
+ * recalcular o escore com a tabela atual. Fonte unica do mapeamento
+ * banco -> respostas.
+ *
+ * Dois campos NAO sao reconstruiveis porque nunca foram gravados:
+ *  - vasoativo antes da UTI (sem coluna) -> volta null (0 pts);
+ *  - oxigenacao SEM ventilacao mecanica (a PaO2 sem VM nao e gravada) -> null.
+ * Use ressalvasDaLinha para sinalizar isso na saida.
+ */
+export function respostasDoBanco(row: LinhaSaps3Banco): RespostasSaps3 {
+  return {
+    idade: faixaDe(IDADE, row.idade),
+    dias: faixaDe(DIAS_ANTES_UTI, row.dias_hospital_antes_uti),
+    local: row.origem_admissao || null,
+    comorbidades: normalizarComorbidades(Array.isArray(row.comorbidades) ? row.comorbidades : []),
+    vasoativo: null, // sem coluna no banco
+    planejada: row.admissao_planejada == null ? null : row.admissao_planejada ? "sim" : "nao",
+    motivo: motivoDoBanco(row.motivo_admissao, row.motivo_admissao_detalhe) || null,
+    statusCirurgico: row.status_cirurgico || null,
+    sitioCirurgico: row.tipo_cirurgia || null,
+    infeccao: row.infeccao_na_admissao || null,
+    glasgow: faixaDe(GLASGOW, row.escore_glasgow),
+    fc: faixaDe(FC, row.fc_mais_alta),
+    pas: faixaDe(PAS, row.pas_mais_baixa),
+    temperatura: faixaDe(TEMPERATURA, row.temperatura_mais_baixa),
+    bilirrubina: faixaDe(BILIRRUBINA, row.bilirrubina_mais_alta),
+    creatinina: faixaDe(CREATININA, row.creatinina_mais_alta),
+    leucocitos: faixaDe(LEUCOCITOS, row.leucocitos),
+    plaquetas: faixaDe(PLAQUETAS, row.plaquetas_mais_baixas),
+    ph: faixaDe(PH, row.ph_mais_baixo),
+    oxigenacao: comVentilacao(row) ? faixaDe(OXIGENACAO, row.relacao_pao2_fio2) : null,
+  };
+}
+
+/** Campos que o recalculo nao consegue reconstruir para esta linha. */
+export function ressalvasDaLinha(row: LinhaSaps3Banco): string[] {
+  const r = ["vasoativo nao gravado"];
+  if (!comVentilacao(row)) r.push("O2 sem VM nao reconstruida");
+  return r;
+}
+
 // ─────────────────── Leucocitos e plaquetas: unidades ───────────────────
 
 /**

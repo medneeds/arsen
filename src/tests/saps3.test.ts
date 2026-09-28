@@ -41,8 +41,11 @@ import {
   normalizarComorbidades,
   plaquetasParaBanco,
   predictMortality,
+  respostasDoBanco,
+  ressalvasDaLinha,
   somenteDigitos,
   type ItemFaixas,
+  type LinhaSaps3Banco,
   type RespostasSaps3,
 } from "../lib/saps3.ts";
 
@@ -191,6 +194,53 @@ console.log("\n=== Leucócitos e plaquetas: unidades ===");
   check("banco 12.5 -> 12500", milParaContagem(12.5) === "12500");
   check("banco null -> vazio", milParaContagem(null) === "");
   check("exibe 150.000", formatarContagem("150000") === "150.000");
+}
+
+console.log("\n=== Releitura do banco e recálculo (relatório #4) ===");
+{
+  // Mesma foto clínica do "caso A" (total 111 com vasoativo +3 e P/F 150 com VM).
+  // O banco NAO grava vasoativo -> o recálculo cai para 108 (111 - 3). Prova o
+  // mapeamento banco->respostas e a limitação declarada do vasoativo.
+  const linhaA: LinhaSaps3Banco = {
+    idade: 72, dias_hospital_antes_uti: 3, origem_admissao: "same_hospital_floor",
+    comorbidades: ["cirrhosis"], admissao_planejada: false,
+    motivo_admissao: "cardiovascular", motivo_admissao_detalhe: "Choque séptico",
+    status_cirurgico: "no_surgery", tipo_cirurgia: null, infeccao_na_admissao: "nosocomial",
+    escore_glasgow: 10, fc_mais_alta: 130, pas_mais_baixa: 65, temperatura_mais_baixa: 36,
+    bilirrubina_mais_alta: 3, creatinina_mais_alta: 2.4, leucocitos: 18, plaquetas_mais_baixas: 45,
+    ph_mais_baixo: 7.2, relacao_pao2_fio2: 150, ventilacao_mecanica: true,
+  };
+  const rA = respostasDoBanco(linhaA);
+  check("banco A: idade -> faixa 70_74", rA.idade === "70_74", `obtido ${rA.idade}`);
+  check("banco A: local mantém código", rA.local === "same_hospital_floor");
+  check("banco A: motivo pelo rótulo -> choque_septico", rA.motivo === "choque_septico", `obtido ${rA.motivo}`);
+  check("banco A: PAS 65 -> faixa 40_69", rA.pas === "40_69", `obtido ${rA.pas}`);
+  check("banco A: plaquetas 45 mil -> faixa 20_49", rA.plaquetas === "20_49", `obtido ${rA.plaquetas}`);
+  check("banco A: VM com P/F 150 -> vm_ge100", rA.oxigenacao === "vm_ge100", `obtido ${rA.oxigenacao}`);
+  check("banco A: vasoativo não reconstruído -> null", rA.vasoativo === null);
+  const recalcA = calcularSaps3(rA);
+  check("banco A: recálculo = 108 (111 sem os 3 do vasoativo)", recalcA.total === 108, `obtido ${recalcA.total}`);
+  check("banco A: ressalva só de vasoativo (há VM)",
+    ressalvasDaLinha(linhaA).join("|") === "vasoativo nao gravado", `obtido ${ressalvasDaLinha(linhaA).join("|")}`);
+
+  // Sem VM: oxigenação não é reconstruída e entra a segunda ressalva.
+  const linhaSemVm: LinhaSaps3Banco = { ...linhaA, ventilacao_mecanica: false, relacao_pao2_fio2: null };
+  check("banco sem VM: oxigenação volta null", respostasDoBanco(linhaSemVm).oxigenacao === null);
+  check("banco sem VM: duas ressalvas",
+    ressalvasDaLinha(linhaSemVm).length === 2, `obtido ${ressalvasDaLinha(linhaSemVm).join("|")}`);
+
+  // Casos degradados: planejada nula, motivo legado, comorbidade legada.
+  const rDeg = respostasDoBanco({
+    admissao_planejada: null, motivo_admissao: "respiratory", motivo_admissao_detalhe: null,
+    comorbidades: ["immunosuppression", "chronic_renal"],
+  });
+  check("banco: planejada nula -> null", rDeg.planejada === null);
+  check("banco: motivo legado respiratório -> outro", rDeg.motivo === "outro", `obtido ${rDeg.motivo}`);
+  check("banco: imunossupressão normalizada, DRC descartada",
+    rDeg.comorbidades.length === 1 && rDeg.comorbidades[0] === "chemotherapy", `obtido ${rDeg.comorbidades.join(",")}`);
+
+  // Linha vazia: escore mínimo do SAPS 3 é 16, sem lançar exceção.
+  check("banco vazio -> escore base 16", calcularSaps3(respostasDoBanco({})).total === 16);
 }
 
 console.log(`\n───────────────────────────────────────────`);
