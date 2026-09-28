@@ -45,7 +45,7 @@ export function SectorSelector({ variant = "light", navigateOnSelect = true, onS
   const [open, setOpen] = useState(false);
 
   // Alas/setores reais do banco; cai no estático só se ainda não há cadastro.
-  const { groups: dbGroups, isEmpty: dbEmpty } = useSectorNavigation();
+  const { groups: dbGroups, sectors: dbSectors, isEmpty: dbEmpty } = useSectorNavigation();
   const SECTOR_HIERARCHY: SectorGroup[] = dbEmpty || dbGroups.length === 0 ? SECTOR_NAVIGATION : dbGroups;
 
   // Perfil Gestor enxerga visão consolidada — opção "Todos os setores" disponível
@@ -78,7 +78,9 @@ export function SectorSelector({ variant = "light", navigateOnSelect = true, onS
         safeSetItem("gestor_sector_filter", department);
       }
     }
-    setCurrentDepartment(department);
+    // setores.tipo é o código que o painel clínico casa; sem ele, vale o nome.
+    const tipo = dbSectors.find((s) => s.nome === department)?.tipo ?? null;
+    setCurrentDepartment(department, tipo);
     onSelect?.(department);
     if (navigateOnSelect) {
       // Todos os perfis (inclusive Gestor) vão ao mapa de leitos do setor selecionado.

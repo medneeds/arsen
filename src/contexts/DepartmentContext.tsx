@@ -126,7 +126,11 @@ export const SECTOR_DISPLAY: Record<string, string> = {
 
 interface DepartmentContextType {
   currentDepartment: Department;
-  setCurrentDepartment: (department: Department) => void;
+  /**
+   * `sectorCode`: código do setor (setores.tipo) quando o chamador conhece —
+   * setores vindos do banco não estão no mapa DEPARTMENT_TO_SECTOR.
+   */
+  setCurrentDepartment: (department: Department, sectorCode?: string | null) => void;
   /** Current sector code (e.g. "red", "ucc") derived from department */
   currentSectorCode: string;
   /** Display label for the current sector */
@@ -163,13 +167,16 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
   const currentSectorLabel =
     SECTOR_DISPLAY[DEPARTMENT_TO_SECTOR[currentDepartment]] || currentDepartment;
 
-  const setCurrentDepartment = useCallback((department: Department) => {
+  const setCurrentDepartment = useCallback((department: Department, sectorCode?: string | null) => {
     setCurrentDepartmentState(department);
     safeSetItem(STORAGE_KEY, department);
-    // Sync sector code for legacy consumers
-    const sectorCode = DEPARTMENT_TO_SECTOR[department];
-    if (sectorCode) {
-      safeSetItem("selected_sector", sectorCode);
+    // Sync sector code for legacy consumers (painel clínico lê selected_sector).
+    // Antes só gravava quando o nome estava no mapa antigo: ao escolher um setor
+    // do banco, selected_sector ficava com o setor ANTERIOR e o painel mostrava
+    // a ocupação de outro lugar. Agora: código do banco > mapa antigo > nome.
+    const code = sectorCode || DEPARTMENT_TO_SECTOR[department] || department;
+    if (code) {
+      safeSetItem("selected_sector", code);
     }
   }, []);
 
