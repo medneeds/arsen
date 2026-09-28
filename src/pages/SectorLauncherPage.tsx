@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Building2, Check, LogOut } from "lucide-react";
+import { Bed, Building2, Check, LogOut } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,16 +15,14 @@ import { useHospital } from "@/contexts/HospitalContext";
 import {
   useDepartment,
   DEPARTMENT_TO_SECTOR,
-  SECTOR_DISPLAY,
   type Department,
 } from "@/contexts/DepartmentContext";
 import { isDepartmentLocked, LOCKED_TOOLTIP } from "@/config/lockedSectors";
 import {
-  SECTOR_GROUPS,
-  SECTOR_GROUP_ICONS,
   SECTOR_ICONS,
   SECTOR_ROUTES,
 } from "@/config/clinicalSectors";
+import { useSectorNavigation } from "@/hooks/useSectorNavigation";
 import { whitelabel } from "@/config/whitelabel";
 import { safeGetItem } from "@/lib/safeStorage";
 import { cn } from "@/lib/utils";
@@ -46,6 +44,9 @@ export default function SectorLauncherPage() {
   const { currentHospital } = useHospital();
   const { setCurrentDepartment } = useDepartment();
   const [escolhido, setEscolhido] = useState<Department | null>(null);
+  // Setores DIRETO DO BANCO NOVO (alas → setores), agrupados por ala — mesma
+  // fonte do seletor do topo. Substitui a lista estática SECTOR_GROUPS.
+  const nav = useSectorNavigation();
 
   /** Setor do ultimo plantao — unico elemento em destaque na grade. */
   const ultimoSetor = useMemo(() => {
@@ -154,21 +155,26 @@ export default function SectorLauncherPage() {
           onIrParaPaciente={irParaPaciente}
         />
 
-        {SECTOR_GROUPS.map((grupo) => {
-          const IconeGrupo = SECTOR_GROUP_ICONS[grupo.macro];
-          return (
+        {nav.loading ? (
+          <div className="py-10 text-center text-sm text-muted-foreground">
+            Carregando setores…
+          </div>
+        ) : nav.isEmpty ? (
+          <div className="py-10 text-center text-sm text-muted-foreground">
+            Nenhum setor cadastrado para este hospital.
+          </div>
+        ) : (
+          nav.groups.map((grupo) => (
             <Card
-              key={grupo.macro}
+              key={grupo.group}
               className="border-border/60 bg-card/80 backdrop-blur-sm"
             >
               <CardHeader className="pb-2 pt-3 px-4">
                 <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  {IconeGrupo && (
-                    <span className="h-8 w-8 rounded-lg flex items-center justify-center bg-primary/10 flex-shrink-0">
-                      <IconeGrupo className="h-4 w-4 text-primary" aria-hidden />
-                    </span>
-                  )}
-                  <span className="preserve-case">{grupo.label}</span>
+                  <span className="h-8 w-8 rounded-lg flex items-center justify-center bg-primary/10 flex-shrink-0">
+                    <Building2 className="h-4 w-4 text-primary" aria-hidden />
+                  </span>
+                  <span className="preserve-case">{grupo.group}</span>
                   <span className="ml-auto text-xs font-medium text-muted-foreground tracking-wider">
                     {grupo.sectors.length} setores
                   </span>
@@ -177,16 +183,16 @@ export default function SectorLauncherPage() {
 
               <CardContent className="px-4 pb-4">
                 <ul className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                  {grupo.sectors.map((setor) => {
-                    const Icone = SECTOR_ICONS[setor];
+                  {grupo.sectors.map((item) => {
+                    const setor = item.name as Department;
+                    const Icone = SECTOR_ICONS[setor] ?? Bed;
                     const bloqueado = isDepartmentLocked(setor);
                     const ultimo = setor === ultimoSetor && !bloqueado;
                     const selecionado = setor === escolhido;
-                    const rotulo =
-                      SECTOR_DISPLAY[DEPARTMENT_TO_SECTOR[setor]] ?? setor;
+                    const rotulo = item.name;
 
                     return (
-                      <li key={setor}>
+                      <li key={item.name}>
                         <button
                           type="button"
                           disabled={bloqueado}
@@ -242,8 +248,8 @@ export default function SectorLauncherPage() {
                 </ul>
               </CardContent>
             </Card>
-          );
-        })}
+          ))
+        )}
 
         <p className="px-1 pb-2 text-xs text-muted-foreground">
           Você pode trocar de setor a qualquer momento pelo seletor no topo das
