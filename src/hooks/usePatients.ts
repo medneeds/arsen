@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { isExtraBed } from "@/utils/bedNaming";
 import { formatAge } from "@/lib/patientAge";
 import { normalizePatientName } from "@/utils/normalizePatientName";
+import { resolveSectorCode } from "@/config/sectorCoverage";
 
 export const GHOST_PREFIXES = ['ARQ-', 'ARCHIVED-', '_GHOST_'];
 
@@ -55,12 +56,14 @@ export function usePatients(department?: Department, sector?: string) {
     const active = internacoes.find((i) => i && i.data_alta == null) ?? null;
     const pac = active?.paciente ?? null;
 
-    // MIGRAÇÃO: Patient.sector é SectorType (código). setores.tipo carrega o
-    // código do tipo de setor; setores.nome é rótulo de exibição. Usamos `tipo`
-    // (cai para nome só se por acaso já for um SectorType válido).
-    const sectorCode = (isSectorType(setor?.tipo)
-      ? setor.tipo
-      : (isSectorType(setor?.nome) ? setor.nome : setor?.tipo)) as SectorType;
+    // MIGRAÇÃO: Patient.sector é SectorType (código, ex.: "blue"). O nome real do
+    // setor ("UCI 1") vive em setores.nome; resolvemos o código canônico a partir
+    // dele (resolveSectorCode). Caímos para tipo/nome só quando já forem um
+    // SectorType válido. (setores.tipo aqui é clinico/cirurgico, não o código.)
+    const sectorCode = (resolveSectorCode(setor?.nome)
+      ?? (isSectorType(setor?.tipo)
+        ? setor.tipo
+        : (isSectorType(setor?.nome) ? setor.nome : setor?.tipo))) as SectorType;
 
     return {
       id: active ? active.id : leito.id, // ocupado → internacoes.id; vago → leitos.id
@@ -146,9 +149,19 @@ export function usePatients(department?: Department, sector?: string) {
       // SectorType) ou `nome`. Quando só há `department`, tentamos casar por
       // setores.nome (best-effort — não há coluna department no schema novo).
       if (sector) {
-        rows = rows.filter(
-          (r) => r.setor?.tipo === sector || r.setor?.nome === sector,
-        );
+        // `sector` pode chegar como código ("blue") OU como nome do banco
+        // ("UCI 1"). Casamos por tipo, por nome, ou pelo código canônico
+        // resolvido a partir do nome do setor — assim o filtro funciona nos dois
+        // formatos (antes só casava tipo/nome literais e esvaziava os setores).
+        const wantedCode = resolveSectorCode(sector) ?? sector;
+        rows = rows.filter((r) => {
+          const rowCode = resolveSectorCode(r.setor?.nome) ?? r.setor?.tipo;
+          return (
+            r.setor?.tipo === sector ||
+            r.setor?.nome === sector ||
+            rowCode === wantedCode
+          );
+        });
       } else if (department) {
         rows = rows.filter((r) => r.setor?.nome === department);
       }

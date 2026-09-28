@@ -29,6 +29,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDepartment } from "@/contexts/DepartmentContext";
+import { sectorLabelFromCode } from "@/lib/hospitalSectors";
 import { usePrivacy } from "@/contexts/PrivacyContext";
 import { getNextBedNumber } from "@/utils/bedNaming";
 import { useSidebar } from "@/components/ui/sidebar";
@@ -1197,7 +1198,7 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
                   onTransfer={handleTransferPatient}
                   onPrintPatient={handlePrintPatient}
                   onRefetch={refetch}
-                  customTitle={SECTOR_VISUAL[activeSector]?.title || "Setor"}
+                  customTitle={SECTOR_VISUAL[activeSector]?.title || sectorLabelFromCode(activeSector) || activeSector || "Setor"}
                   customIcon={<span className={`w-3 h-3 rounded-full ${SECTOR_VISUAL[activeSector]?.dotClass} border`} />}
                   colorVariant={SECTOR_VISUAL[activeSector]?.colorVariant as any || "blue"}
                   allPatients={patients}
