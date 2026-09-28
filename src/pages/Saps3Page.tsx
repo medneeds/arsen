@@ -198,6 +198,30 @@ async function resolveProfissionalId(userId: string | null | undefined): Promise
   } catch { return null; }
 }
 
+// Escala de coma de Glasgow — opcoes clicaveis com o tipo de resposta por ponto.
+// So mudam a forma de escolher o numero; o estado gcsO/gcsV/gcsM segue string.
+const GCS_OCULAR = [
+  { v: "4", label: "Espontânea" },
+  { v: "3", label: "Ao estímulo verbal" },
+  { v: "2", label: "À dor" },
+  { v: "1", label: "Nenhuma" },
+];
+const GCS_VERBAL = [
+  { v: "5", label: "Orientada" },
+  { v: "4", label: "Confusa" },
+  { v: "3", label: "Palavras inapropriadas" },
+  { v: "2", label: "Sons incompreensíveis" },
+  { v: "1", label: "Nenhuma" },
+];
+const GCS_MOTOR = [
+  { v: "6", label: "Obedece a comandos" },
+  { v: "5", label: "Localiza a dor" },
+  { v: "4", label: "Retirada/flexão à dor" },
+  { v: "3", label: "Flexão anormal (decorticação)" },
+  { v: "2", label: "Extensão anormal (descerebração)" },
+  { v: "1", label: "Nenhuma" },
+];
+
 export default function Saps3Page() {
   const { user } = useAuth();
   const { currentHospital, currentState } = useHospital();
@@ -406,6 +430,37 @@ export default function Saps3Page() {
     escolherFaixa(k, id, atual, limparValor);
     avancar(k, { [k]: id });
   };
+
+  /** Componente do Glasgow por botões: cada opção mostra o tipo de resposta. */
+  const grupoGcs = (
+    titulo: string,
+    escala: { v: string; label: string }[],
+    valor: string,
+    onEscolher: (v: string) => void,
+  ) => (
+    <div>
+      <Label className="text-xs">{titulo}</Label>
+      <div className="mt-1 grid grid-cols-1 gap-1">
+        {escala.map((o) => (
+          <button
+            key={o.v}
+            type="button"
+            onClick={() => onEscolher(o.v)}
+            className={`flex items-center gap-2 text-left px-2 py-1.5 rounded-md border text-sm transition-all ${
+              valor === o.v
+                ? "border-primary bg-primary/10 ring-2 ring-primary/30"
+                : "border-border bg-card hover:bg-muted/50"
+            }`}
+          >
+            <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold">
+              {o.v}
+            </span>
+            <span>{o.label}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
 
   // ─── Available beds for selected sector ───
   const availableBeds = useMemo(() => {
@@ -1604,22 +1659,15 @@ export default function Saps3Page() {
 
                     {/* Caminho 1: GCS completo */}
                     {sedationStatus === "no" && (
-                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 pt-2 border-t border-primary/20">
-                        <div>
-                          <Label className="text-xs">Ocular (1-4)</Label>
-                          <Input type="number" value={gcsO} onChange={e => setGcsO(e.target.value)} min={1} max={4} placeholder="O" />
+                      <div className="pt-2 border-t border-primary/20 space-y-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          {grupoGcs("Abertura ocular", GCS_OCULAR, gcsO, setGcsO)}
+                          {grupoGcs("Resposta verbal", GCS_VERBAL, gcsV, setGcsV)}
+                          {grupoGcs("Resposta motora", GCS_MOTOR, gcsM, setGcsM)}
                         </div>
-                        <div>
-                          <Label className="text-xs">Verbal (1-5)</Label>
-                          <Input type="number" value={gcsV} onChange={e => setGcsV(e.target.value)} min={1} max={5} placeholder="V" />
-                        </div>
-                        <div>
-                          <Label className="text-xs">Motor (1-6)</Label>
-                          <Input type="number" value={gcsM} onChange={e => setGcsM(e.target.value)} min={1} max={6} placeholder="M" />
-                        </div>
-                        <div>
+                        <div className="flex items-center justify-end gap-2">
                           <Label className="text-xs">GCS total</Label>
-                          <div className="h-10 px-3 rounded-md border bg-background flex items-center justify-center text-lg font-semibold text-primary">
+                          <div className="h-10 min-w-[3rem] px-3 rounded-md border bg-background flex items-center justify-center text-lg font-semibold text-primary">
                             {gcsTotal || "—"}
                           </div>
                         </div>
@@ -1641,28 +1689,24 @@ export default function Saps3Page() {
 
                     {/* Caminho 3: Intubado sem sedação → GCS-T */}
                     {sedationStatus === "intubated_no_sedation" && (
-                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 pt-2 border-t border-primary/20">
-                        <div>
-                          <Label className="text-xs">Ocular (1-4)</Label>
-                          <Input type="number" value={gcsO} onChange={e => setGcsO(e.target.value)} min={1} max={4} placeholder="O" />
-                        </div>
-                        <div>
-                          <Label className="text-xs">Verbal</Label>
-                          <div className="h-10 px-3 rounded-md border border-dashed border-warning bg-warning-soft flex items-center justify-center text-sm font-semibold text-warning-on-soft">
-                            1T
+                      <div className="pt-2 border-t border-primary/20 space-y-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          {grupoGcs("Abertura ocular", GCS_OCULAR, gcsO, setGcsO)}
+                          <div>
+                            <Label className="text-xs">Resposta verbal</Label>
+                            <div className="mt-1 h-10 px-3 rounded-md border border-dashed border-warning bg-warning-soft flex items-center justify-center text-sm font-semibold text-warning-on-soft">
+                              1T — via aérea artificial
+                            </div>
                           </div>
+                          {grupoGcs("Resposta motora", GCS_MOTOR, gcsM, setGcsM)}
                         </div>
-                        <div>
-                          <Label className="text-xs">Motor (1-6)</Label>
-                          <Input type="number" value={gcsM} onChange={e => setGcsM(e.target.value)} min={1} max={6} placeholder="M" />
-                        </div>
-                        <div>
+                        <div className="flex items-center justify-end gap-2">
                           <Label className="text-xs">GCS total</Label>
-                          <div className="h-10 px-3 rounded-md border bg-background flex items-center justify-center text-lg font-semibold text-primary">
+                          <div className="h-10 min-w-[3rem] px-3 rounded-md border bg-background flex items-center justify-center text-lg font-semibold text-primary">
                             {gcsTotal || "—"}
                           </div>
                         </div>
-                        <p className="col-span-3 sm:col-span-4 text-xs text-muted-foreground">
+                        <p className="text-xs text-muted-foreground">
                           Verbal travado em 1T (via aérea artificial). Score exibido com sufixo T.
                         </p>
                       </div>
