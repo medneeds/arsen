@@ -924,11 +924,16 @@ export default function Saps3Page() {
           );
           return;
         }
+        // Data/hora da internação escolhida no diálogo de alocação — só vale para
+        // a MESMA pré-admissão do endereço, e nunca no futuro.
+        const dataParam = searchParams.get("preAdmissionId") === preId ? searchParams.get("admissionDate") : null;
+        const dataMs = dataParam ? Date.parse(dataParam) : NaN;
+        const dataEntrada = Number.isFinite(dataMs) && dataMs <= Date.now() ? new Date(dataMs) : new Date();
         const alocacao = await alocarPreAdmissaoNoLeito({
           preAdmissao,
           sectorCode: selectedSector,
           bed: selectedBed,
-          dataEntrada: new Date(),
+          dataEntrada,
           pendencias: null,
           registradoPor: criadoPor,
         });

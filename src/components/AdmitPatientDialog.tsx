@@ -281,6 +281,9 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
           selectedSector,
         });
         if (extraBedRequested || selectedBed === "EXTRA") params.set("extraBed", "true");
+        // A data/hora escolhida aqui é a da internação: o SAPS 3 a usa ao alocar.
+        // Sem isso a internação na UTI nascia com a hora em que o SAPS foi salvo.
+        if (admissionDate) params.set("admissionDate", admissionDate.toISOString());
 
         toast({
           title: "Encaminhado para admissão UTI",
