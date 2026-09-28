@@ -384,8 +384,8 @@ export default function AuditLogsPage() {
                                         <p className="text-xs text-muted-foreground font-medium">Data/Hora</p>
                                         <p className="text-sm font-medium">{formatDate(selectedLog.created_at)}</p>
                                       </div>
-                                      <div className="bg-gray-50 rounded-lg p-3">
-                                        <p className="text-[10px] text-gray-500 font-medium">Ação</p>
+                                      <div className="bg-muted rounded-lg p-3">
+                                        <p className="text-[10px] text-muted-foreground font-medium">Ação</p>
                                         <Badge className={`${ACTION_LABELS[selectedLog.action ?? "SELECT"]?.color} mt-1`}>
                                           {ACTION_LABELS[selectedLog.action ?? "SELECT"]?.label}
                                         </Badge>

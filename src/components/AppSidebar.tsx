@@ -75,6 +75,7 @@ import { useIsDev } from "@/hooks/useIsDev";
 import type { AccessProfile } from "@/config/userProfiles";
 import { useIsCoordenador } from "@/hooks/useIsCoordenador";
 import { SidebarPatientSearch } from "@/components/SidebarPatientSearch";
+import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { safeSetItem } from "@/lib/safeStorage";
 
 function DevConsoleLink({ isCollapsed, onNavigate }: { isCollapsed: boolean; onNavigate: () => void }) {
@@ -875,7 +876,10 @@ export function AppSidebar() {
           )}
         </button>
 
-        {/* Tema */}
+        {/* Tema — alternador claro/escuro. Cobre todas as telas internas
+            (a sidebar aparece em toda pagina sob MainLayout), inclusive as que
+            nao usam o PlatformHeader. Usa tokens (nao onDark): a sidebar tem
+            fundo claro/tokens nos dois temas. */}
         <div className={cn(
           "flex items-center rounded-lg transition-all duration-200",
           isCollapsed ? "justify-center py-1" : "justify-between px-3 py-2 bg-card/30"
@@ -883,6 +887,7 @@ export function AppSidebar() {
           {!isCollapsed && (
             <span className="text-xs text-muted-foreground font-medium">Tema</span>
           )}
+          <ThemeToggle />
         </div>
 
         {/* Perfil + Sair */}

@@ -68,7 +68,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
     return (
       <div className="flex min-h-screen items-center justify-center bg-muted p-6">
-        <div className="w-full max-w-lg rounded-lg border border-border bg-white p-6 shadow-sm">
+        <div className="w-full max-w-lg rounded-lg border border-border bg-card p-6 shadow-sm">
           <h1 className="text-lg font-medium text-foreground">
             Esta tela encontrou um erro
           </h1>

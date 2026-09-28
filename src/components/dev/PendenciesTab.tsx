@@ -178,7 +178,7 @@ export function PendenciesTab() {
               {filtered.map(p => (
                 <div
                   key={p.id}
-                  className="group relative border border-border rounded-lg p-4 bg-white hover:shadow-md hover:border-border transition-all"
+                  className="group relative border border-border rounded-lg p-4 bg-card hover:shadow-md hover:border-border transition-all"
                 >
                   <div className={`absolute left-0 top-3 bottom-3 w-1 rounded-r-md ${
                     p.priority === "critica" ? "bg-critical" :
