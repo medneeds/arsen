@@ -27,13 +27,25 @@ const LEGACY_GENERIC_USERS = [
   "classificacao@sistema.local",
 ];
 
+// Aceite de termos ja confirmado pelo banco nesta aba, por usuario e versao.
+//
+// Cada rota do App tem o proprio <ProtectedRoute>: ao trocar de tela ele e
+// desmontado e montado de novo, e a checagem de termos rodava outra vez —
+// uma consulta a consentimentos_usuario com a tela cheia de carregamento a
+// cada navegacao (ex.: /setores -> painel do setor). Guardamos apenas o "sim"
+// que o banco ja devolveu; a primeira entrada da aba continua consultando, e
+// um reload refaz a checagem. Falha de leitura NAO entra aqui.
+const termosAceitosNaAba = new Set<string>();
+const chaveTermos = (userId: string) => `${userId}:${CURRENT_TERMS_VERSION}`;
+
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading, status, role } = useAuth();
   const navigate = useNavigate();
+  const termosJaAceitos = !!user && termosAceitosNaAba.has(chaveTermos(user.id));
   const [hasShownLoading, setHasShownLoading] = useState(false);
   const [showTermsDialog, setShowTermsDialog] = useState(false);
-  const [checkingTerms, setCheckingTerms] = useState(true);
-  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [checkingTerms, setCheckingTerms] = useState(!termosJaAceitos);
+  const [termsAccepted, setTermsAccepted] = useState(termosJaAceitos);
   // Persistir no sessionStorage para sobreviver a F5/reload da página.
   // Sem isso, cada reload reseta o estado e força a re-seleção do setor.
 
@@ -45,6 +57,12 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     const checkTermsAcceptance = async () => {
       // super_admin não passa pelo fluxo de termos (tabela profiles não existe mais no schema novo).
       if (!user || isLegacyGenericUser || role === "super_admin") {
+        setCheckingTerms(false);
+        setTermsAccepted(true);
+        return;
+      }
+
+      if (termosAceitosNaAba.has(chaveTermos(user.id))) {
         setCheckingTerms(false);
         setTermsAccepted(true);
         return;
@@ -74,6 +92,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
         const tipos = new Set((consents ?? []).map((c) => c.tipo_consentimento));
         const aceitouTudo = ["terms_of_use", "privacy_policy", "data_processing"].every((t) => tipos.has(t));
         if (aceitouTudo) {
+          termosAceitosNaAba.add(chaveTermos(user.id));
           setTermsAccepted(true);
         } else {
           setShowTermsDialog(true);
@@ -166,6 +185,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
         open={true}
         userId={user.id}
         onAccept={() => {
+          termosAceitosNaAba.add(chaveTermos(user.id));
           setTermsAccepted(true);
           setShowTermsDialog(false);
         }}
