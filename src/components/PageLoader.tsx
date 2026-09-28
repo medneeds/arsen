@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-const socorraoIcon = "/arsen-mark.svg";
+import socorraoIcon from "@/assets/hmdm-mark.png";
 
 interface PageLoaderProps {
   /** Mensagem contextual (ex: "Preparando UTI 2…"). Opcional — quando ausente, splash fica ainda mais limpo. */
