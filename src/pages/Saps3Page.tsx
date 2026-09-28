@@ -12,6 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { cn, asUuidOrNull } from "@/lib/utils";
+import { alocarPreAdmissaoNoLeito, carregarPreAdmissao } from "@/lib/alocarPreAdmissao";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { useDepartment } from "@/contexts/DepartmentContext";
@@ -1091,25 +1092,67 @@ export default function Saps3Page() {
 
     setSaving(true);
     let createdSapsId: string | null = null;
+    let alocadoAgora = false;
+    let internacaoCriada: string | null = null;
     try {
       // MIGRAÇÃO: avaliacoes_saps3 exige internacao_id (uuid real). No schema novo
       // a ficha SAPS pendura na internação — não há mais a criação da "linha de
       // paciente no leito" (patients é tabela morta; leitos/internacoes/setores
       // formam outro fluxo). Resolve a internação a partir do contexto.
-      const internacaoId =
+      let internacaoId =
         asUuidOrNull(selectedRequest?.patient_id) ||
         asUuidOrNull(searchParams.get("patientId"));
+      const criadoPor = await resolveProfissionalId(user?.id);
+
+      // Pré-admissão vinda do AdmitPatientDialog (UTI 1, UTI 2, UCI 2) ou da
+      // lista de solicitações desta tela: ainda não há internação. Antes
+      // (28/09/2026) esta tela abortava aqui com "Sem internação vinculada" e
+      // nenhum paciente entrava nesses setores. Agora aloca pela MESMA função
+      // do diálogo, e só então a ficha pendura na internação criada.
       if (!internacaoId) {
-        // Fluxo de pré-admissão SEM internação criada ainda não tem onde ancorar
-        // a ficha (a alocação física em leito foi degradada). Aborta com aviso.
-        toast.error(
-          "Sem internação vinculada — a criação de leito/admissão pelo SAPS foi degradada nesta migração. Admita o paciente no leito e complete o SAPS pela internação.",
-          { duration: 8000 },
+        const preId = !selectedRequest?.allocation_request_id ? asUuidOrNull(selectedRequest?.id) : null;
+        const preAdmissao = preId ? await carregarPreAdmissao(preId) : null;
+        if (!preAdmissao) {
+          toast.error(
+            "Sem internação nem pré-admissão vinculada. Abra a admissão pela lista de pré-admissões.",
+            { duration: 8000 },
+          );
+          return;
+        }
+        const alocacao = await alocarPreAdmissaoNoLeito({
+          preAdmissao,
+          sectorCode: selectedSector,
+          bed: selectedBed,
+          dataEntrada: new Date(),
+          pendencias: null,
+          registradoPor: criadoPor,
+        });
+        internacaoId = alocacao.internacaoId;
+        internacaoCriada = alocacao.internacaoId;
+        alocadoAgora = true;
+      }
+
+      // SAPS pendente: só aloca. avaliacoes_saps3 não tem coluna de status, então
+      // gravar a ficha incompleta a deixaria indistinguível de uma validada
+      // (decisão da Direção Clínica, 28/09/2026). A ficha é gravada quando for
+      // preenchida de fato, pela internação.
+      if (asPending) {
+        const sectorLabelPend = UTI_SECTORS.find(s => s.value === selectedSector)?.label || selectedSector;
+        toast.success(
+          alocadoAgora
+            ? `${patientName} alocado no ${selectedBed} (${sectorLabelPend}). SAPS 3 pendente — preencha pela internação.`
+            : "SAPS 3 segue pendente. Nenhuma ficha foi gravada.",
+          { duration: 7000 },
         );
+        clearDraftAfterSave();
+        setSelectedRequest(null);
+        loadPendingRequests();
+        loadRecords();
+        loadOccupiedBeds();
+        navigate(`/paciente?patientId=${internacaoId}`);
         return;
       }
 
-      const criadoPor = await resolveProfissionalId(user?.id);
       const sapsPayload = buildSapsPayload(internacaoId, criadoPor);
       const { data: sapsRecord, error: sapsError } = await supabase
         .from("avaliacoes_saps3")
@@ -1127,7 +1170,8 @@ export default function Saps3Page() {
       // Origem: pré-admissão → marca como admitida (pre_admissions → pre_admissoes).
       // MIGRAÇÃO: destination_bed/destination_sector não existem em pre_admissoes;
       // apenas o status é atualizado.
-      if (selectedRequest?.id && !selectedRequest.allocation_request_id) {
+      // Quando a alocação acabou de ser feita acima, a pré-admissão já foi marcada.
+      if (!alocadoAgora && selectedRequest?.id && !selectedRequest.allocation_request_id) {
         const preId = asUuidOrNull(selectedRequest.id);
         if (preId) {
           const { error: updatePreAdmissionError } = await supabase
@@ -1138,17 +1182,13 @@ export default function Saps3Page() {
         }
       }
 
-      if (asPending) {
-        toast.success(`SAPS 3 registrado. A conclusão pode ser feita depois pela internação.`);
-      }
-
       const sectorLabel = UTI_SECTORS.find(s => s.value === selectedSector)?.label || selectedSector;
       setConfirmationData({
         patientName,
         bedNumber: selectedBed,
         sectorLabel,
-        totalScore: asPending ? 0 : scores.total,
-        predictedMortality: asPending ? 0 : scores.mortality,
+        totalScore: scores.total,
+        predictedMortality: scores.mortality,
         patientId: internacaoId,
         sectorCode: selectedSector,
         age: age ? `${age} anos` : null,
@@ -1167,6 +1207,20 @@ export default function Saps3Page() {
         if (erroRollback) {
           console.error("[Saps3Page] ROLLBACK FALHOU — avaliacao SAPS orfa:", createdSapsId, erroRollback);
         }
+      }
+      if (alocadoAgora) {
+        // A internação JÁ foi criada e o leito ocupado; só a ficha falhou. Não
+        // desfazemos a alocação automaticamente — desalocar paciente sozinho é
+        // mais perigoso que um SAPS pendente. O aviso diz exatamente o estado.
+        toast.error(
+          `${patientName} FOI alocado no ${selectedBed}, mas a ficha SAPS 3 não foi gravada: ${humanizeSaveError(err)}. Preencha o SAPS pela internação.`,
+          { duration: 12000 },
+        );
+        // Nova tentativa grava a ficha nesta internação, sem tentar alocar de novo.
+        setSelectedRequest((prev) => (prev ? { ...prev, patient_id: internacaoCriada } : prev));
+        loadPendingRequests();
+        loadOccupiedBeds();
+        return;
       }
       toast.error(humanizeSaveError(err), { duration: 7000 });
     } finally {
