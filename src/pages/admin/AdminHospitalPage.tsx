@@ -23,7 +23,39 @@ import { toast } from "@/hooks/use-toast";
 import {
   Building2, LogOut, Plus, Trash2, Loader2, Layers, DoorOpen, Bed, Palette, Save,
   Users, UserPlus, Copy, Power, KeyRound, Pencil, ClipboardCheck, UserCheck, XCircle,
+  Upload,
 } from "lucide-react";
+
+/**
+ * Lê um arquivo de imagem e devolve um data URL redimensionado (máx. 256px no
+ * maior lado, PNG). Pequeno o suficiente para guardar direto na coluna
+ * `identidade_visual_hospital.logo_url` — sem precisar de bucket de storage.
+ */
+const LOGO_MAX_DIM = 256;
+async function fileToLogoDataUrl(file: File): Promise<string> {
+  const original = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(new Error("Falha ao ler o arquivo"));
+    reader.readAsDataURL(file);
+  });
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const el = new Image();
+    el.onload = () => resolve(el);
+    el.onerror = () => reject(new Error("Arquivo de imagem inválido"));
+    el.src = original;
+  });
+  const scale = Math.min(1, LOGO_MAX_DIM / Math.max(img.width, img.height));
+  const w = Math.max(1, Math.round(img.width * scale));
+  const h = Math.max(1, Math.round(img.height * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return original;
+  ctx.drawImage(img, 0, 0, w, h);
+  return canvas.toDataURL("image/png");
+}
 
 const PAPEIS = [
   { value: "medico", label: "Médico" },
@@ -372,6 +404,30 @@ function BrandingForm({ hospitalId }: { hospitalId: string }) {
   useEffect(() => { if (data) setForm({ ...data, slogan: data.slogan ?? "", logo_url: data.logo_url ?? "", cor_primaria: data.cor_primaria ?? "", cor_secundaria: data.cor_secundaria ?? "", cor_destaque: data.cor_destaque ?? "" }); }, [data]);
   const set = (k: keyof Branding) => (e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
+  const [logoBusy, setLogoBusy] = useState(false);
+  const handleLogoFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // permite reenviar o mesmo arquivo
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Selecione um arquivo de imagem", variant: "destructive" });
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "Imagem muito grande", description: "Envie um arquivo de até 5 MB.", variant: "destructive" });
+      return;
+    }
+    try {
+      setLogoBusy(true);
+      const dataUrl = await fileToLogoDataUrl(file);
+      setForm((f) => ({ ...f, logo_url: dataUrl }));
+    } catch (err) {
+      toast({ title: "Não foi possível processar a imagem", description: (err as Error)?.message, variant: "destructive" });
+    } finally {
+      setLogoBusy(false);
+    }
+  };
+
   const salvar = useMutation({
     mutationFn: async () => {
       const payload = {
@@ -397,13 +453,32 @@ function BrandingForm({ hospitalId }: { hospitalId: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="text-base">Identidade visual</CardTitle>
-        <CardDescription>Upload de arquivo de logo ainda não disponível (sem bucket de storage) — informe a URL da logo por enquanto.</CardDescription>
+        <CardDescription>Envie a imagem da logo (PNG ou JPG). Sem imagem enviada, o sistema usa a logo padrão.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4 max-w-md">
         <div className="space-y-2"><Label>Sigla *</Label><Input value={form.sigla} onChange={set("sigla")} placeholder="ex.: HMDM" /></div>
         <div className="space-y-2"><Label>Slogan</Label><Input value={form.slogan ?? ""} onChange={set("slogan")} /></div>
-        <div className="space-y-2"><Label>URL da logo</Label><Input value={form.logo_url ?? ""} onChange={set("logo_url")} placeholder="https://..." /></div>
-        {form.logo_url ? <img src={form.logo_url} alt="logo" className="h-16 rounded border object-contain bg-white p-1" /> : null}
+        <div className="space-y-2">
+          <Label>Logo</Label>
+          <div className="flex flex-wrap items-center gap-3">
+            <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground">
+              <Upload className="h-4 w-4" />
+              {form.logo_url ? "Trocar imagem" : "Enviar imagem"}
+              <input type="file" accept="image/*" className="hidden" onChange={handleLogoFile} disabled={logoBusy} />
+            </label>
+            {logoBusy ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /> : null}
+            {form.logo_url ? (
+              <Button type="button" variant="ghost" size="sm" onClick={() => setForm((f) => ({ ...f, logo_url: "" }))}>
+                Remover
+              </Button>
+            ) : null}
+          </div>
+          {form.logo_url ? (
+            <img src={form.logo_url} alt="logo" className="h-16 rounded border object-contain bg-white p-1" />
+          ) : (
+            <p className="text-xs text-muted-foreground">Nenhuma imagem enviada — usando a logo padrão do sistema.</p>
+          )}
+        </div>
         <div className="grid grid-cols-3 gap-3">
           <div className="space-y-2"><Label>Cor primária</Label><Input type="color" value={form.cor_primaria || "#000000"} onChange={set("cor_primaria")} className="h-10 p-1" /></div>
           <div className="space-y-2"><Label>Secundária</Label><Input type="color" value={form.cor_secundaria || "#000000"} onChange={set("cor_secundaria")} className="h-10 p-1" /></div>

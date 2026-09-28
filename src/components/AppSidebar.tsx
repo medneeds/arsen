@@ -26,6 +26,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Home as HomeIcon } from "lucide-react";
 import { whitelabel } from "@/config/whitelabel";
 import socorraoCrossLogo from "@/assets/hmdm-mark.png";
+import { useHospitalBranding } from "@/hooks/useHospitalBranding";
 import { useEffect, useState, lazy, Suspense } from "react";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
@@ -117,6 +118,9 @@ export function AppSidebar() {
   };
   const { signOut, user, role } = useAuth();
   const { currentDepartment, setCurrentDepartment, currentSectorLabel } = useDepartment();
+  // Logo enviada pelo admin (data URL em identidade_visual_hospital.logo_url);
+  // cai na logo padrão enquanto carrega ou quando não houver imagem cadastrada.
+  const { logoUrl } = useHospitalBranding();
   const location = useLocation();
   const isMobile = useIsMobile();
   const isCollapsed = state === "collapsed";
@@ -531,10 +535,16 @@ export function AppSidebar() {
               isCollapsed ? "h-9 w-9 p-1" : "h-10 w-10 p-1"
             )}>
               <img
-                src={socorraoCrossLogo}
+                src={logoUrl || socorraoCrossLogo}
                 alt={whitelabel.institution.hospitalLogoAlt}
                 className="h-full w-full object-contain"
                 draggable={false}
+                onError={(e) => {
+                  // logo cadastrada inválida → volta para a padrão
+                  if (e.currentTarget.src !== socorraoCrossLogo) {
+                    e.currentTarget.src = socorraoCrossLogo;
+                  }
+                }}
               />
             </div>
             {!isCollapsed && (
