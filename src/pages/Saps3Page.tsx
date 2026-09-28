@@ -47,7 +47,7 @@ import {
   type ItemFaixas,
   type RespostasSaps3,
 } from "@/lib/saps3";
-import { FaixaSelector } from "@/components/saps3/FaixaSelector";
+import { FaixaSelector, ItemCompacto } from "@/components/saps3/FaixaSelector";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { useDepartment } from "@/contexts/DepartmentContext";
@@ -293,6 +293,10 @@ export default function Saps3Page() {
   // Faixa escolhida por toque nos itens numéricos, quando o valor não foi digitado.
   const [faixas, setFaixas] = useState<Record<string, string>>({});
   const [mostrarPendentes, setMostrarPendentes] = useState(false);
+  // Um item aberto por vez; ao responder, abre o próximo sem resposta.
+  const [itemAberto, setItemAberto] = useState<string | null>("idade");
+  // Comorbidades não são obrigatórias: "revisada" só marca que o médico passou por ela.
+  const [comorbRevisada, setComorbRevisada] = useState(false);
 
   const [box1Open, setBox1Open] = useState(true);
   const [box2Open, setBox2Open] = useState(true);
@@ -359,6 +363,49 @@ export default function Saps3Page() {
       respostas.creatinina, respostas.leucocitos, respostas.plaquetas, respostas.ph, respostas.oxigenacao],
   };
   const contagem = (itens: (string | null)[]) => `${itens.filter(Boolean).length}/${itens.length} itens`;
+
+  // Ordem de preenchimento da ficha (a mesma do formulário em papel).
+  const ORDEM_ITENS = [
+    "idade", "dias", "local", "comorbidades", "vasoativo",
+    "planejada", "motivo", "statusCirurgico", "sitioCirurgico", "infeccao",
+    "glasgow", "fc", "pas", "temperatura", "bilirrubina", "creatinina", "leucocitos", "plaquetas", "ph", "oxigenacao",
+  ] as const;
+  const BOX_DO_ITEM = (k: string) =>
+    ["idade", "dias", "local", "comorbidades", "vasoativo"].includes(k) ? 1
+      : ["planejada", "motivo", "statusCirurgico", "sitioCirurgico", "infeccao"].includes(k) ? 2 : 3;
+  const abrirItem = (k: string | null) => {
+    setItemAberto(k);
+    if (!k) return;
+    const box = BOX_DO_ITEM(k);
+    if (box === 1) setBox1Open(true);
+    else if (box === 2) setBox2Open(true);
+    else setBox3Open(true);
+  };
+  const alternar = (k: string) => abrirItem(itemAberto === k ? null : k);
+  /**
+   * Fecha o item respondido e abre o próximo SEM resposta. `agora` traz a
+   * resposta recém-dada (o estado do React ainda não atualizou neste ciclo).
+   */
+  const avancar = (atual: string, agora: Record<string, string | null> = {}) => {
+    const r: Record<string, unknown> = { ...respostas, comorbidades: comorbRevisada ? "ok" : null, ...agora };
+    const comCirurgia = teveCirurgia((r.statusCirurgico as string | null) ?? null);
+    const visivel = (k: string) => k !== "sitioCirurgico" || comCirurgia;
+    const semResposta = (k: string) => visivel(k) && k !== atual && !r[k];
+    const i = ORDEM_ITENS.indexOf(atual as (typeof ORDEM_ITENS)[number]);
+    const depois = ORDEM_ITENS.slice(i + 1).find(semResposta);
+    const antes = ORDEM_ITENS.slice(0, Math.max(i, 0)).find(semResposta);
+    abrirItem(depois ?? antes ?? null);
+  };
+  /** onSelecionar que responde e avança. */
+  const responder = (k: string, set: (id: string) => void) => (id: string) => {
+    set(id);
+    avancar(k, { [k]: id });
+  };
+  /** Faixa tocada num item numérico: descarta o valor digitado e avança. */
+  const responderFaixa = (k: string, atual: string | null, limparValor: () => void) => (id: string) => {
+    escolherFaixa(k, id, atual, limparValor);
+    avancar(k, { [k]: id });
+  };
 
   // ─── Available beds for selected sector ───
   const availableBeds = useMemo(() => {
@@ -584,7 +631,7 @@ export default function Saps3Page() {
     const bedFromUrl = state?.selectedBed || searchParams.get("selectedBed");
     setSelectedSector(sectorFromUrl || resolveSectorFromContext(destinationSectorFromContext || patientSectorParam, currentSectorCode || currentDepartment));
     setSelectedBed(bedFromUrl || patientBedParam || "");
-    setComorbidities([]); setLosBeforeIcu(""); setAdmissionSource(""); setPlanejada(""); setVasoativo(""); setFaixas({}); setMostrarPendentes(false);
+    setComorbidities([]); setLosBeforeIcu(""); setAdmissionSource(""); setPlanejada(""); setVasoativo(""); setFaixas({}); setMostrarPendentes(false); setItemAberto("idade"); setComorbRevisada(false);
     setAdmissionReason(""); setSurgicalStatus(""); setSurgeryType("");
     setInfectionAtAdmission(""); setSedationStatus(""); setGcsO(""); setGcsV(""); setGcsM(""); setGcsPreSedation(""); setHrHighest(""); setSbpLowest(""); setBilirubinHighest("");
     setTempLowest(""); setCreatinineHighest(""); setLeukocytes(""); setPhLowest(""); setPlateletsLowest("");
@@ -714,7 +761,7 @@ export default function Saps3Page() {
     setSelectedSector(resolveSectorFromContext(req.destination_sector, currentSectorCode || currentDepartment));
     // Reset rest
     setSelectedBed("");
-    setComorbidities([]); setLosBeforeIcu(""); setAdmissionSource(""); setPlanejada(""); setVasoativo(""); setFaixas({}); setMostrarPendentes(false);
+    setComorbidities([]); setLosBeforeIcu(""); setAdmissionSource(""); setPlanejada(""); setVasoativo(""); setFaixas({}); setMostrarPendentes(false); setItemAberto("idade"); setComorbRevisada(false);
     setInfectionAtAdmission(""); setSedationStatus(""); setGcsO(""); setGcsV(""); setGcsM(""); setGcsPreSedation(""); setHrHighest(""); setSbpLowest(""); setBilirubinHighest("");
     setTempLowest(""); setCreatinineHighest(""); setLeukocytes(""); setPhLowest(""); setPlateletsLowest("");
     setPao2Fio2(""); setOxigenacao("");
@@ -764,7 +811,7 @@ export default function Saps3Page() {
   });
 
   // ─── Checklist de validação (tempo real) ───
-  type MissingItem = { id: string; label: string; anchor: string; hint?: string };
+  type MissingItem = { id: string; label: string; anchor: string; hint?: string; chave?: string };
   const missingFields = useMemo<MissingItem[]>(() => {
     const out: MissingItem[] = [];
     if (!patientName.trim()) out.push({ id: "name", label: "Nome do paciente", anchor: "saps-banner" });
@@ -774,34 +821,34 @@ export default function Saps3Page() {
       if (!selectedBed) out.push({ id: "bed", label: "Leito de destino", anchor: "saps-bed" });
     }
     if (!sedationStatus) {
-      out.push({ id: "sed", label: "Avaliação de consciência (sedoanalgesia/VM)", anchor: "saps-conscious", hint: "Escolha Não / Sedoanalgesia / Intubado sem sedação" });
+      out.push({ chave: "glasgow", id: "sed", label: "Avaliação de consciência (sedoanalgesia/VM)", anchor: "saps-conscious", hint: "Escolha Não / Sedoanalgesia / Intubado sem sedação" });
     } else if (sedationStatus === "no" && (!gcsO || !gcsV || !gcsM)) {
-      out.push({ id: "gcs", label: "Glasgow completo (O, V, M)", anchor: "saps-conscious", hint: "Preencha as 3 componentes (faixas: O 1-4, V 1-5, M 1-6)" });
+      out.push({ chave: "glasgow", id: "gcs", label: "Glasgow completo (O, V, M)", anchor: "saps-conscious", hint: "Preencha as 3 componentes (faixas: O 1-4, V 1-5, M 1-6)" });
     } else if (sedationStatus === "intubated_no_sedation" && (!gcsO || !gcsM)) {
-      out.push({ id: "gcst", label: "Glasgow-T (Ocular e Motor)", anchor: "saps-conscious", hint: "V é fixo em 1T quando intubado sem sedação" });
+      out.push({ chave: "glasgow", id: "gcst", label: "Glasgow-T (Ocular e Motor)", anchor: "saps-conscious", hint: "V é fixo em 1T quando intubado sem sedação" });
     }
     // Item sem resposta somaria 0 em silêncio e subestimaria a mortalidade.
-    const exigir = (resposta: string | null, id: string, label: string, anchor: string) => {
-      if (!resposta) out.push({ id, label, anchor });
+    const exigir = (resposta: string | null, id: string, label: string, anchor: string, chave?: string) => {
+      if (!resposta) out.push({ id, label, anchor, chave });
     };
-    exigir(respostas.idade, "idade", "Idade", "saps-box1");
-    exigir(respostas.dias, "dias", "Dias no hospital antes da UTI", "saps-box1");
-    exigir(respostas.local, "local", "Local antes da UTI", "saps-box1");
-    exigir(respostas.vasoativo, "vaso", "Vasoativo antes da UTI", "saps-box1");
-    exigir(respostas.planejada, "plan", "Admissão planejada ou não", "saps-box2");
-    exigir(respostas.motivo, "motivo", "Motivo da admissão", "saps-box2");
-    exigir(respostas.statusCirurgico, "cir", "Status cirúrgico", "saps-box2");
-    if (teveCirurgia(respostas.statusCirurgico)) exigir(respostas.sitioCirurgico, "sitio", "Sítio cirúrgico", "saps-box2");
-    exigir(respostas.infeccao, "inf", "Infecção na admissão", "saps-box2");
-    exigir(respostas.fc, "fc", "Frequência cardíaca", "saps-box3");
-    exigir(respostas.pas, "pas", "Pressão sistólica", "saps-box3");
-    exigir(respostas.temperatura, "temp", "Temperatura", "saps-box3");
-    exigir(respostas.bilirrubina, "bili", "Bilirrubina", "saps-box3");
-    exigir(respostas.creatinina, "cr", "Creatinina", "saps-box3");
-    exigir(respostas.leucocitos, "leuco", "Leucócitos", "saps-box3");
-    exigir(respostas.plaquetas, "plaq", "Plaquetas", "saps-box3");
-    exigir(respostas.ph, "ph", "pH", "saps-box3");
-    exigir(respostas.oxigenacao, "oxi", "Oxigenação / ventilação", "saps-box3");
+    exigir(respostas.idade, "idade", "Idade", "saps-box1", "idade");
+    exigir(respostas.dias, "dias", "Dias no hospital antes da UTI", "saps-box1", "dias");
+    exigir(respostas.local, "local", "Local antes da UTI", "saps-box1", "local");
+    exigir(respostas.vasoativo, "vaso", "Vasoativo antes da UTI", "saps-box1", "vasoativo");
+    exigir(respostas.planejada, "plan", "Admissão planejada ou não", "saps-box2", "planejada");
+    exigir(respostas.motivo, "motivo", "Motivo da admissão", "saps-box2", "motivo");
+    exigir(respostas.statusCirurgico, "cir", "Status cirúrgico", "saps-box2", "statusCirurgico");
+    if (teveCirurgia(respostas.statusCirurgico)) exigir(respostas.sitioCirurgico, "sitio", "Sítio cirúrgico", "saps-box2", "sitioCirurgico");
+    exigir(respostas.infeccao, "inf", "Infecção na admissão", "saps-box2", "infeccao");
+    exigir(respostas.fc, "fc", "Frequência cardíaca", "saps-box3", "fc");
+    exigir(respostas.pas, "pas", "Pressão sistólica", "saps-box3", "pas");
+    exigir(respostas.temperatura, "temp", "Temperatura", "saps-box3", "temperatura");
+    exigir(respostas.bilirrubina, "bili", "Bilirrubina", "saps-box3", "bilirrubina");
+    exigir(respostas.creatinina, "cr", "Creatinina", "saps-box3", "creatinina");
+    exigir(respostas.leucocitos, "leuco", "Leucócitos", "saps-box3", "leucocitos");
+    exigir(respostas.plaquetas, "plaq", "Plaquetas", "saps-box3", "plaquetas");
+    exigir(respostas.ph, "ph", "pH", "saps-box3", "ph");
+    exigir(respostas.oxigenacao, "oxi", "Oxigenação / ventilação", "saps-box3", "oxigenacao");
     return out;
   }, [patientName, hospitalId, stateId, completingSapsId, selectedSector, selectedBed, sedationStatus, gcsO, gcsV, gcsM, respostas]);
 
@@ -1200,87 +1247,42 @@ export default function Saps3Page() {
           </Collapsible>
 
           {/* Patient info banner */}
+          {/* Paciente + alocação de leito num só cartão (antes eram dois cartões,
+              com setor, leito e confirmação repetindo a mesma informação). */}
           <Card data-saps-anchor="saps-banner" className={completingSapsId ? "border-released-border bg-released-soft/60" : "border-primary/30 bg-primary/5"}>
-            <CardContent className="pt-4 pb-4">
-              <div className="flex items-center justify-between">
-                <div>
+            <CardContent className="py-3 px-4 space-y-2">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                <div className="min-w-0 flex-1">
                   <p className="text-xs text-muted-foreground uppercase tracking-wider">
                     {completingSapsId ? "Validando ficha SAPS — paciente já alocado" : "Admitindo paciente"}
                   </p>
-                  <p className="patient-id text-lg font-semibold text-foreground">{patientName}</p>
-                  {completingSapsId ? (
-                    <p className="text-xs text-muted-foreground">
-                      Leito {selectedBed || "—"} · {currentSectorLabel || "Setor —"} · aguardando validação dos exames
-                    </p>
-                  ) : (
-                    selectedRequest?.destination_sector && (
-                      <p className="text-xs text-muted-foreground">
-                        Pedido: {selectedRequest.destination_sector}
-                      </p>
-                    )
+                  <p className="patient-id text-lg font-semibold text-foreground truncate">{patientName}</p>
+                  {!completingSapsId && selectedRequest?.destination_sector && (
+                    <p className="text-xs text-muted-foreground">Pedido: {selectedRequest.destination_sector}</p>
                   )}
                 </div>
-                <Button variant="outline" size="sm" onClick={() => setSelectedRequest(null)}>
-                  Cancelar
-                </Button>
-              </div>
-              <div className="mt-3 min-h-[40px]">
-                {draftSavedAt && (
-                  <div className="flex items-center justify-between gap-2 rounded-md border border-warning-border/60 bg-warning-soft px-3 py-2">
-                    <span className="text-xs text-warning-on-soft">
-                      Rascunho salvo às {format(draftSavedAt, "HH:mm", { locale: ptBR })} — será restaurado automaticamente
-                    </span>
-                    <button
-                      type="button"
-                      onClick={discardDraft}
-                      className="text-xs font-medium text-warning-on-soft underline underline-offset-2 hover:text-warning-on-soft"
-                    >
-                      Descartar
-                    </button>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
 
-          {/* Bed Selection / Allocation Confirmation */}
-          <Card data-saps-anchor="saps-bed">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Bed className="h-5 w-5 text-primary" />
-                {completingSapsId ? "Leito já alocado" : "Alocação de Leito"}
-              </CardTitle>
-              <p className="text-xs text-muted-foreground">
-                {completingSapsId
-                  ? "Paciente já está no leito. Esta seção é apenas informativa — a validação atualizará a ficha SAPS sem mover o paciente."
-                  : "Setor pré-configurado pela origem do pedido. Selecione apenas o leito de destino."}
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Setor (auto)</Label>
-                  <div className="mt-2 flex items-center justify-between gap-2 h-10 px-3 rounded-md border border-dashed border-primary/40 bg-primary/5">
-                    <span className="text-sm font-medium text-foreground">
-                      {currentSectorLabel || "—"}
-                    </span>
-                    <Badge variant="outline" className="text-xs uppercase tracking-wider">
-                      {completingSapsId ? "Atual" : "Sincronizado"}
-                    </Badge>
-                  </div>
-                </div>
-                <div>
-                  <Label>{completingSapsId ? "Leito atual" : "Leito de destino"}</Label>
+                <div data-saps-anchor="saps-bed" className="flex flex-wrap items-center gap-2">
+                  <span
+                    className="inline-flex h-9 items-center gap-1.5 rounded-md border border-dashed border-primary/40 bg-background px-3 text-sm font-medium"
+                    title={completingSapsId ? "Setor atual do paciente" : "Setor definido pela origem do pedido"}
+                  >
+                    <Bed className="h-4 w-4 text-primary" />
+                    {currentSectorLabel || "Setor —"}
+                  </span>
                   {completingSapsId ? (
-                    <div className="mt-2 flex items-center justify-between gap-2 h-10 px-3 rounded-md border border-dashed border-released/60 bg-released-soft">
-                      <span className="text-sm font-medium text-released-on-soft">
-                        {selectedBed || "—"}
-                      </span>
-                      <Badge variant="outline" className="text-xs uppercase tracking-wider border-released-border text-released-on-soft">Ocupado</Badge>
-                    </div>
+                    <span className="inline-flex h-9 items-center gap-2 rounded-md border border-released-border bg-released-soft px-3 text-sm font-medium text-released-on-soft">
+                      Leito {selectedBed || "—"}
+                      <span className="text-xs uppercase tracking-wider">ocupado</span>
+                    </span>
                   ) : (
                     <Select value={selectedBed} onValueChange={setSelectedBed} disabled={!selectedSector}>
-                      <SelectTrigger><SelectValue placeholder={selectedSector ? "Selecione o leito" : "Setor não definido"} /></SelectTrigger>
+                      <SelectTrigger
+                        className={cn("h-9 w-40", !selectedBed && "border-warning-border")}
+                        aria-label="Leito de destino"
+                      >
+                        <SelectValue placeholder={selectedSector ? "Escolha o leito" : "Setor não definido"} />
+                      </SelectTrigger>
                       <SelectContent>
                         {availableBeds.map(b => (
                           <SelectItem key={b.value} value={b.value} disabled={b.occupied}>
@@ -1290,14 +1292,23 @@ export default function Saps3Page() {
                       </SelectContent>
                     </Select>
                   )}
+                  <Button variant="outline" size="sm" className="h-9" onClick={() => setSelectedRequest(null)}>
+                    Cancelar
+                  </Button>
                 </div>
               </div>
-              {selectedBed && !completingSapsId && (
-                <div className="flex items-center gap-2 p-2 rounded-md bg-released-soft border border-released-border">
-                  <Bed className="h-4 w-4 text-released-on-soft" />
-                  <span className="text-sm font-medium text-released-on-soft">
-                    Leito selecionado: {selectedBed} — {currentSectorLabel}
+              {draftSavedAt && (
+                <div className="flex items-center justify-between gap-2 rounded-md border border-warning-border/60 bg-warning-soft px-3 py-1.5">
+                  <span className="text-xs text-warning-on-soft">
+                    Rascunho salvo às {format(draftSavedAt, "HH:mm", { locale: ptBR })} — será restaurado automaticamente
                   </span>
+                  <button
+                    type="button"
+                    onClick={discardDraft}
+                    className="text-xs font-medium text-warning-on-soft underline underline-offset-2 hover:text-warning-on-soft"
+                  >
+                    Descartar
+                  </button>
                 </div>
               )}
             </CardContent>
@@ -1342,7 +1353,7 @@ export default function Saps3Page() {
           <Collapsible open={box1Open} onOpenChange={setBox1Open}>
             <Card data-saps-anchor="saps-box1">
               <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors py-3">
                   <CardTitle className="flex items-center justify-between text-base">
                     <span className="flex items-center gap-2 flex-wrap">
                       <ClipboardList className="h-5 w-5 text-muted-foreground" />
@@ -1355,16 +1366,19 @@ export default function Saps3Page() {
                 </CardHeader>
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <CardContent className="space-y-3 pt-0">
-                  <p className="text-xs text-muted-foreground normal-case">
-                    Toque na faixa. Se preferir, digite o valor exato — a faixa é marcada sozinha. Box I inclui 16 pontos de base.
+                <CardContent className="grid grid-cols-1 lg:grid-cols-2 gap-2 pt-0 items-start">
+                  <p className="text-xs text-muted-foreground normal-case lg:col-span-2">
+                    Toque no item para ver as faixas; ao escolher, o próximo abre sozinho. Box I inclui 16 pontos de base.
                   </p>
                   <FaixaSelector
                     titulo="Idade"
                     faixas={IDADE.faixas}
                     selecionada={respostas.idade}
                     pendente={pend(respostas.idade)}
-                    onSelecionar={(id) => escolherFaixa("idade", id, respostas.idade, () => setAge(""))}
+                    aberto={itemAberto === "idade"}
+                    onAlternar={() => alternar("idade")}
+                    onSelecionar={responderFaixa("idade", respostas.idade, () => setAge(""))}
+                    onConcluir={() => avancar("idade")}
                     valor={{ texto: age, onChange: (t) => setAge(somenteDigitos(t)), unidade: "anos", inputMode: "numeric", placeholder: "Ex: 65", foraDaFaixa: fora(IDADE, lerNumero(age)) }}
                   />
                   <FaixaSelector
@@ -1372,23 +1386,35 @@ export default function Saps3Page() {
                     faixas={DIAS_ANTES_UTI.faixas}
                     selecionada={respostas.dias}
                     pendente={pend(respostas.dias)}
-                    onSelecionar={(id) => escolherFaixa("dias", id, respostas.dias, () => setLosBeforeIcu(""))}
-                    valor={{ texto: losBeforeIcu, onChange: (t) => setLosBeforeIcu(somenteDigitos(t)), unidade: "dias", inputMode: "numeric", placeholder: "Ex: 3" }}
+                    aberto={itemAberto === "dias"}
+                    onAlternar={() => alternar("dias")}
+                    onSelecionar={responderFaixa("dias", respostas.dias, () => setLosBeforeIcu(""))}
+                    onConcluir={() => avancar("dias")}
+                    valor={{ texto: losBeforeIcu, onChange: (t) => setLosBeforeIcu(somenteDigitos(t)), unidade: "dias", inputMode: "numeric", placeholder: "Ex: 3", foraDaFaixa: false }}
                   />
                   <FaixaSelector
                     titulo="Local antes da UTI"
                     faixas={LOCAL_ANTES_UTI.faixas}
                     selecionada={respostas.local}
                     pendente={pend(respostas.local)}
-                    onSelecionar={setAdmissionSource}
+                    aberto={itemAberto === "local"}
+                    onAlternar={() => alternar("local")}
+                    onSelecionar={responder("local", setAdmissionSource)}
                     vertical
                   />
-                  <div className="rounded-lg border border-border/60 p-3 space-y-2">
-                    <div>
-                      <p className="text-sm font-medium text-foreground normal-case">Comorbidades</p>
-                      <p className="text-xs text-muted-foreground normal-case">Marque todas que se aplicam. Nenhuma marcada = sem comorbidade do SAPS 3.</p>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <ItemCompacto
+                    titulo="Comorbidades"
+                    dica="Marque todas que se aplicam. Nenhuma marcada = sem comorbidade do SAPS 3."
+                    resumo={comorbidities.length
+                      ? COMORBIDADES.filter((c) => comorbidities.includes(c.id)).map((c) => c.rotulo).join(", ")
+                      : comorbRevisada ? "Nenhuma" : null}
+                    pontos={comorbidities.length || comorbRevisada
+                      ? COMORBIDADES.filter((c) => comorbidities.includes(c.id)).reduce((t, c) => t + c.pontos, 0)
+                      : null}
+                    aberto={itemAberto === "comorbidades"}
+                    onAlternar={() => alternar("comorbidades")}
+                  >
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                       {COMORBIDADES.map((c) => {
                         const ativa = comorbidities.includes(c.id);
                         return (
@@ -1396,9 +1422,12 @@ export default function Saps3Page() {
                             key={c.id}
                             type="button"
                             aria-pressed={ativa}
-                            onClick={() => setComorbidities((prev) => (ativa ? prev.filter((x) => x !== c.id) : [...prev, c.id]))}
+                            onClick={() => {
+                              setComorbRevisada(true);
+                              setComorbidities((prev) => (ativa ? prev.filter((x) => x !== c.id) : [...prev, c.id]));
+                            }}
                             className={cn(
-                              "flex items-center justify-between gap-2 rounded-md border px-3 py-2 text-left text-sm transition-colors",
+                              "flex items-center justify-between gap-2 rounded-md border px-2.5 py-1.5 text-left text-sm transition-colors",
                               ativa ? "border-primary bg-primary/10 ring-1 ring-primary/40" : "border-border bg-card hover:bg-muted/50",
                             )}
                           >
@@ -1411,13 +1440,27 @@ export default function Saps3Page() {
                         );
                       })}
                     </div>
-                  </div>
+                    <div className="flex justify-end gap-2">
+                      {comorbidities.length === 0 && (
+                        <Button type="button" size="sm" variant="outline" onClick={() => { setComorbRevisada(true); avancar("comorbidades", { comorbidades: "ok" }); }}>
+                          Nenhuma
+                        </Button>
+                      )}
+                      {comorbidities.length > 0 && (
+                        <Button type="button" size="sm" onClick={() => { setComorbRevisada(true); avancar("comorbidades", { comorbidades: "ok" }); }}>
+                          Concluir
+                        </Button>
+                      )}
+                    </div>
+                  </ItemCompacto>
                   <FaixaSelector
-                    titulo="Drogas vasoativas antes da admissão na UTI"
+                    titulo="Vasoativo antes da UTI"
                     faixas={VASOATIVO.faixas}
                     selecionada={respostas.vasoativo}
                     pendente={pend(respostas.vasoativo)}
-                    onSelecionar={setVasoativo}
+                    aberto={itemAberto === "vasoativo"}
+                    onAlternar={() => alternar("vasoativo")}
+                    onSelecionar={responder("vasoativo", setVasoativo)}
                   />
                 </CardContent>
               </CollapsibleContent>
@@ -1428,7 +1471,7 @@ export default function Saps3Page() {
           <Collapsible open={box2Open} onOpenChange={setBox2Open}>
             <Card data-saps-anchor="saps-box2">
               <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors py-3">
                   <CardTitle className="flex items-center justify-between text-base">
                     <span className="flex items-center gap-2 flex-wrap">
                       <Activity className="h-5 w-5 text-warning" />
@@ -1441,21 +1484,25 @@ export default function Saps3Page() {
                 </CardHeader>
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <CardContent className="space-y-3 pt-0">
+                <CardContent className="grid grid-cols-1 lg:grid-cols-2 gap-2 pt-0 items-start">
                   <FaixaSelector
                     titulo="Admissão na UTI"
                     faixas={PLANEJADA.faixas}
                     selecionada={respostas.planejada}
                     pendente={pend(respostas.planejada)}
-                    onSelecionar={setPlanejada}
+                    aberto={itemAberto === "planejada"}
+                    onAlternar={() => alternar("planejada")}
+                    onSelecionar={responder("planejada", setPlanejada)}
                   />
                   <FaixaSelector
                     titulo="Motivo da admissão"
-                    dica="Escolha o motivo principal."
                     faixas={MOTIVOS_ADMISSAO}
                     selecionada={respostas.motivo}
                     pendente={pend(respostas.motivo)}
-                    onSelecionar={setAdmissionReason}
+                    aberto={itemAberto === "motivo"}
+                    onAlternar={() => alternar("motivo")}
+                    onSelecionar={responder("motivo", setAdmissionReason)}
+                    dica="Escolha o motivo principal."
                     vertical
                   />
                   <FaixaSelector
@@ -1463,24 +1510,30 @@ export default function Saps3Page() {
                     faixas={STATUS_CIRURGICO.faixas}
                     selecionada={respostas.statusCirurgico}
                     pendente={pend(respostas.statusCirurgico)}
-                    onSelecionar={(id) => { setSurgicalStatus(id); if (!teveCirurgia(id)) setSurgeryType(""); }}
+                    aberto={itemAberto === "statusCirurgico"}
+                    onAlternar={() => alternar("statusCirurgico")}
+                    onSelecionar={(id) => { setSurgicalStatus(id); if (!teveCirurgia(id)) setSurgeryType(""); avancar("statusCirurgico", { statusCirurgico: id }); }}
                   />
                   {teveCirurgia(surgicalStatus) && (
-                    <FaixaSelector
-                      titulo="Sítio cirúrgico"
-                      faixas={SITIO_CIRURGICO.faixas}
-                      selecionada={respostas.sitioCirurgico}
-                      pendente={pend(respostas.sitioCirurgico)}
-                      onSelecionar={setSurgeryType}
-                      vertical
-                    />
+                  <FaixaSelector
+                    titulo="Sítio cirúrgico"
+                    faixas={SITIO_CIRURGICO.faixas}
+                    selecionada={respostas.sitioCirurgico}
+                    pendente={pend(respostas.sitioCirurgico)}
+                    aberto={itemAberto === "sitioCirurgico"}
+                    onAlternar={() => alternar("sitioCirurgico")}
+                    onSelecionar={responder("sitioCirurgico", setSurgeryType)}
+                    vertical
+                  />
                   )}
                   <FaixaSelector
                     titulo="Infecção aguda na admissão"
                     faixas={INFECCAO.faixas}
                     selecionada={respostas.infeccao}
                     pendente={pend(respostas.infeccao)}
-                    onSelecionar={setInfectionAtAdmission}
+                    aberto={itemAberto === "infeccao"}
+                    onAlternar={() => alternar("infeccao")}
+                    onSelecionar={responder("infeccao", setInfectionAtAdmission)}
                   />
                 </CardContent>
               </CollapsibleContent>
@@ -1491,7 +1544,7 @@ export default function Saps3Page() {
           <Collapsible open={box3Open} onOpenChange={setBox3Open}>
             <Card data-saps-anchor="saps-box3">
               <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors py-3">
                   <CardTitle className="flex items-center justify-between text-base">
                     <span className="flex items-center gap-2 flex-wrap">
                       <Heart className="h-5 w-5 text-critical" />
@@ -1504,9 +1557,20 @@ export default function Saps3Page() {
                 </CardHeader>
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <CardContent className="space-y-3 pt-0">
+                <CardContent className="grid grid-cols-1 lg:grid-cols-2 gap-2 pt-0 items-start">
+                  <ItemCompacto
+                    titulo="Glasgow (consciência)"
+                    ancora="saps-conscious"
+                    resumo={respostas.glasgow
+                      ? `${gcsTotal || (sedationStatus === "sedated" ? `pré-sedação ${gcsPreSedation || "15 (assumido)"}` : "")} · ${GLASGOW.faixas.find((f) => f.id === respostas.glasgow)?.rotulo}`
+                      : null}
+                    pontos={respostas.glasgow ? (GLASGOW.faixas.find((f) => f.id === respostas.glasgow)?.pontos ?? null) : null}
+                    aberto={itemAberto === "glasgow"}
+                    onAlternar={() => alternar("glasgow")}
+                    pendente={mostrarPendentes && !respostas.glasgow}
+                  >
                   {/* ── Avaliação de consciência guiada (GCS / GCS-T / GCS pré-sedação) ── */}
-                  <div data-saps-anchor="saps-conscious" className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-4">
+                  <div className="space-y-4">
                     <div className="flex items-start gap-2">
                       <Brain className="h-4 w-4 text-primary mt-1" />
                       <div className="flex-1">
@@ -1605,27 +1669,32 @@ export default function Saps3Page() {
                     )}
                   </div>
 
-                  {respostas.glasgow && (
-                    <p className="text-xs text-muted-foreground normal-case">
-                      Glasgow considerado no SAPS: faixa{" "}
-                      <b>{GLASGOW.faixas.find((f) => f.id === respostas.glasgow)?.rotulo}</b>{" "}
-                      (+{GLASGOW.faixas.find((f) => f.id === respostas.glasgow)?.pontos} pts)
-                    </p>
-                  )}
+                    <div className="flex justify-end">
+                      <Button type="button" size="sm" onClick={() => avancar("glasgow")} disabled={!respostas.glasgow}>
+                        Concluir
+                      </Button>
+                    </div>
+                  </ItemCompacto>
                   <FaixaSelector
                     titulo="Frequência cardíaca — mais alta"
                     faixas={FC.faixas}
                     selecionada={respostas.fc}
                     pendente={pend(respostas.fc)}
-                    onSelecionar={(id) => escolherFaixa("fc", id, respostas.fc, () => setHrHighest(""))}
+                    aberto={itemAberto === "fc"}
+                    onAlternar={() => alternar("fc")}
+                    onSelecionar={responderFaixa("fc", respostas.fc, () => setHrHighest(""))}
+                    onConcluir={() => avancar("fc")}
                     valor={{ texto: hrHighest, onChange: (t) => setHrHighest(somenteDigitos(t)), unidade: "bpm", inputMode: "numeric", placeholder: "Ex: 110", foraDaFaixa: fora(FC, lerNumero(hrHighest)) }}
                   />
                   <FaixaSelector
-                    titulo="Pressão sistólica — pior valor (mais baixa)"
+                    titulo="Pressão sistólica"
                     faixas={PAS.faixas}
                     selecionada={respostas.pas}
                     pendente={pend(respostas.pas)}
-                    onSelecionar={(id) => escolherFaixa("pas", id, respostas.pas, () => setSbpLowest(""))}
+                    aberto={itemAberto === "pas"}
+                    onAlternar={() => alternar("pas")}
+                    onSelecionar={responderFaixa("pas", respostas.pas, () => setSbpLowest(""))}
+                    onConcluir={() => avancar("pas")}
                     valor={{ texto: sbpLowest, onChange: (t) => setSbpLowest(somenteDigitos(t)), unidade: "mmHg", inputMode: "numeric", placeholder: "Ex: 90", foraDaFaixa: fora(PAS, lerNumero(sbpLowest)) }}
                   />
                   <FaixaSelector
@@ -1633,31 +1702,43 @@ export default function Saps3Page() {
                     faixas={TEMPERATURA.faixas}
                     selecionada={respostas.temperatura}
                     pendente={pend(respostas.temperatura)}
-                    onSelecionar={(id) => escolherFaixa("temperatura", id, respostas.temperatura, () => setTempLowest(""))}
-                    valor={{ texto: tempLowest, onChange: setTempLowest, unidade: "°C", placeholder: "Ex: 36,5", foraDaFaixa: fora(TEMPERATURA, lerNumero(tempLowest)) }}
+                    aberto={itemAberto === "temperatura"}
+                    onAlternar={() => alternar("temperatura")}
+                    onSelecionar={responderFaixa("temperatura", respostas.temperatura, () => setTempLowest(""))}
+                    onConcluir={() => avancar("temperatura")}
+                    valor={{ texto: tempLowest, onChange: setTempLowest, unidade: "°C", inputMode: "decimal", placeholder: "Ex: 36,5", foraDaFaixa: fora(TEMPERATURA, lerNumero(tempLowest)) }}
                   />
                   <FaixaSelector
                     titulo="Bilirrubina total — mais alta"
                     faixas={BILIRRUBINA.faixas}
                     selecionada={respostas.bilirrubina}
                     pendente={pend(respostas.bilirrubina)}
-                    onSelecionar={(id) => escolherFaixa("bilirrubina", id, respostas.bilirrubina, () => setBilirubinHighest(""))}
-                    valor={{ texto: bilirubinHighest, onChange: setBilirubinHighest, unidade: "mg/dL", placeholder: "Ex: 1,2", foraDaFaixa: fora(BILIRRUBINA, lerNumero(bilirubinHighest)) }}
+                    aberto={itemAberto === "bilirrubina"}
+                    onAlternar={() => alternar("bilirrubina")}
+                    onSelecionar={responderFaixa("bilirrubina", respostas.bilirrubina, () => setBilirubinHighest(""))}
+                    onConcluir={() => avancar("bilirrubina")}
+                    valor={{ texto: bilirubinHighest, onChange: setBilirubinHighest, unidade: "mg/dL", inputMode: "decimal", placeholder: "Ex: 1,2", foraDaFaixa: fora(BILIRRUBINA, lerNumero(bilirubinHighest)) }}
                   />
                   <FaixaSelector
                     titulo="Creatinina — mais alta"
                     faixas={CREATININA.faixas}
                     selecionada={respostas.creatinina}
                     pendente={pend(respostas.creatinina)}
-                    onSelecionar={(id) => escolherFaixa("creatinina", id, respostas.creatinina, () => setCreatinineHighest(""))}
-                    valor={{ texto: creatinineHighest, onChange: setCreatinineHighest, unidade: "mg/dL", placeholder: "Ex: 1,5", foraDaFaixa: fora(CREATININA, lerNumero(creatinineHighest)) }}
+                    aberto={itemAberto === "creatinina"}
+                    onAlternar={() => alternar("creatinina")}
+                    onSelecionar={responderFaixa("creatinina", respostas.creatinina, () => setCreatinineHighest(""))}
+                    onConcluir={() => avancar("creatinina")}
+                    valor={{ texto: creatinineHighest, onChange: setCreatinineHighest, unidade: "mg/dL", inputMode: "decimal", placeholder: "Ex: 1,5", foraDaFaixa: fora(CREATININA, lerNumero(creatinineHighest)) }}
                   />
                   <FaixaSelector
                     titulo="Leucócitos — mais alto"
                     faixas={LEUCOCITOS.faixas}
                     selecionada={respostas.leucocitos}
                     pendente={pend(respostas.leucocitos)}
-                    onSelecionar={(id) => escolherFaixa("leucocitos", id, respostas.leucocitos, () => setLeukocytes(""))}
+                    aberto={itemAberto === "leucocitos"}
+                    onAlternar={() => alternar("leucocitos")}
+                    onSelecionar={responderFaixa("leucocitos", respostas.leucocitos, () => setLeukocytes(""))}
+                    onConcluir={() => avancar("leucocitos")}
                     valor={{ texto: formatarContagem(leukocytes), onChange: (t) => setLeukocytes(somenteDigitos(t)), unidade: "/mm³", inputMode: "numeric", placeholder: "Ex: 12.500", foraDaFaixa: fora(LEUCOCITOS, contagemParaMil(leukocytes)) }}
                   />
                   <FaixaSelector
@@ -1665,7 +1746,10 @@ export default function Saps3Page() {
                     faixas={PLAQUETAS.faixas}
                     selecionada={respostas.plaquetas}
                     pendente={pend(respostas.plaquetas)}
-                    onSelecionar={(id) => escolherFaixa("plaquetas", id, respostas.plaquetas, () => setPlateletsLowest(""))}
+                    aberto={itemAberto === "plaquetas"}
+                    onAlternar={() => alternar("plaquetas")}
+                    onSelecionar={responderFaixa("plaquetas", respostas.plaquetas, () => setPlateletsLowest(""))}
+                    onConcluir={() => avancar("plaquetas")}
                     valor={{ texto: formatarContagem(plateletsLowest), onChange: (t) => setPlateletsLowest(somenteDigitos(t)), unidade: "/mm³", inputMode: "numeric", placeholder: "Ex: 150.000", foraDaFaixa: fora(PLAQUETAS, contagemParaMil(plateletsLowest)) }}
                   />
                   <FaixaSelector
@@ -1673,8 +1757,11 @@ export default function Saps3Page() {
                     faixas={PH.faixas}
                     selecionada={respostas.ph}
                     pendente={pend(respostas.ph)}
-                    onSelecionar={(id) => escolherFaixa("ph", id, respostas.ph, () => setPhLowest(""))}
-                    valor={{ texto: phLowest, onChange: setPhLowest, placeholder: "Ex: 7,32", foraDaFaixa: fora(PH, lerNumero(phLowest)) }}
+                    aberto={itemAberto === "ph"}
+                    onAlternar={() => alternar("ph")}
+                    onSelecionar={responderFaixa("ph", respostas.ph, () => setPhLowest(""))}
+                    onConcluir={() => avancar("ph")}
+                    valor={{ texto: phLowest, onChange: setPhLowest, inputMode: "decimal", placeholder: "Ex: 7,32", foraDaFaixa: fora(PH, lerNumero(phLowest)) }}
                   />
                   <FaixaSelector
                     titulo="Oxigenação e ventilação"
@@ -1682,10 +1769,15 @@ export default function Saps3Page() {
                     faixas={OXIGENACAO.faixas}
                     selecionada={respostas.oxigenacao}
                     pendente={pend(respostas.oxigenacao)}
+                    aberto={itemAberto === "oxigenacao"}
+                    onAlternar={() => alternar("oxigenacao")}
+                    onConcluir={() => avancar("oxigenacao")}
                     onSelecionar={(id) => {
                       if (id === respostas.oxigenacao) return;
                       setPao2Fio2("");
                       setOxigenacao(id);
+                      // Com VM o médico pode querer digitar a P/F: mantém aberto.
+                      if (!emVentilacao(id)) avancar("oxigenacao", { oxigenacao: id });
                     }}
                     valor={emVentilacao(oxigenacao)
                       ? { texto: pao2Fio2, onChange: (t) => setPao2Fio2(somenteDigitos(t)), unidade: "P/F", inputMode: "numeric", placeholder: "Ex: 180", foraDaFaixa: fora(OXIGENACAO, lerNumero(pao2Fio2)) }
@@ -1718,7 +1810,7 @@ export default function Saps3Page() {
                     <li key={f.id}>
                       <button
                         type="button"
-                        onClick={() => focusAnchor(f.anchor)}
+                        onClick={() => { if (f.chave) abrirItem(f.chave); window.setTimeout(() => focusAnchor(f.anchor), 60); }}
                         className="w-full text-left flex items-start gap-2 rounded-md border border-warning-border bg-white/70 px-3 py-2 hover:bg-warning-soft transition-colors"
                       >
                         <XCircle className="h-3.5 w-3.5 text-warning-on-soft mt-1 shrink-0" />
