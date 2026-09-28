@@ -74,5 +74,9 @@ export function useSectorNavigation() {
     g.sectors.push({ name: s.nome, department: s.nome as Department });
   }
 
+  // Ordena os blocos por nome da ala (Bloco I, II, III, IV). Sem isto, a
+  // ordem seguia o primeiro setor alfabético de cada ala (dava IV, II, III, I).
+  groups.sort((a, b) => a.group.localeCompare(b.group, "pt-BR", { numeric: true }));
+
   return { groups, sectors, loading: query.isLoading, isEmpty: !query.isLoading && groups.length === 0 };
 }
