@@ -530,7 +530,7 @@ export function AppSidebar() {
           )}>
             <div className={cn(
               "relative flex items-center justify-center rounded-lg overflow-hidden flex-shrink-0",
-              "bg-white",
+              "bg-white dark:bg-transparent",
               "shadow-sm(var(--primary)/0.4)]",
               isCollapsed ? "h-9 w-9 p-1" : "h-10 w-10 p-1"
             )}>
