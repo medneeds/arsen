@@ -200,6 +200,8 @@ interface PrescriptionItem {
   // Detailed prescription fields
   quantity?: string;          // Quantidade
   quantityUnit?: string;      // Unidade da quantidade (mL, ampola, frasco-ampola, comp, gota, mg, etc.)
+  doseValue?: string;         // Dose TOTAL prescrita: valor numerico (separado da grandeza)
+  doseUnit?: string;          // Dose TOTAL prescrita: grandeza (mg, g, mcg, mL, UI, mEq, gota)
   action?: string;            // Fazer/Retirar
   diluent?: string;           // Diluente (SF0,9%, SG5%, AD, etc.)
   diluentVolume?: string;     // Volume do diluente (mL)
@@ -319,9 +321,13 @@ const QUANTITY_UNITS = [
   'supositório', 'óvulo', 'bisnaga', 'frasco',
 ];
 
+// Grandezas do campo de dose TOTAL (valor separado da grandeza).
+const DOSE_UNITS = ['mg', 'g', 'mcg', 'mL', 'UI', 'mEq', 'gota'];
+
 import {
   isNoDiluent,
   ENTERAL_DILUTION_DEFAULT_ML, quantityUnitShort, buildSolutoTokenLabeled, buildPrepSegments, isContinuousInfusionShared, DRIP_FACTOR_MACRO, roundGtsToHospital, parseDecimalBR, isIVRoute, isOralLikeRoute } from "@/lib/solutoToken";
+import { computeUnitsFromDose, splitDose } from "@/lib/doseToUnits";
 import { buildNutritionParts, buildHydrationLine } from "@/lib/nutritionHydration";
 import { buildAtbDayLine, buildAtbLineParts } from "@/lib/atbLine";
 import { NUTRITION_STRUCTURED_KEYS } from "@/components/NutritionWizard";
@@ -421,6 +427,27 @@ function detectQuantityUnit(presentation: string, dose: string): string {
   if (d.includes('ml') || p.includes('ml')) return 'mL';
   if (d.includes('ui') || p.includes('ui')) return 'UI';
   return '';
+}
+
+// Deriva campos de dose/Qtd ao ADICIONAR um item do catalogo (dose como total).
+// - Pre-preenche doseValue/doseUnit a partir do defaultDose ("1g" -> 1 + g).
+// - So AUTO-CORRIGE a Qtd quando o calculo da mais de 1 unidade E o catalogo nao
+//   trouxe defaultQuantity curada (nao briga com curadoria). Nesse caso grava a
+//   forca por-unidade em `dose`, para o impresso multiplicar pela Qtd e mostrar o
+//   total (ex.: Vancomicina 500mg-FA + dose 1g -> Qtd 2 FA, dose "500mg").
+function deriveNewItemDoseFields(med: MedicationEntry): Partial<PrescriptionItem> {
+  const out: Partial<PrescriptionItem> = {};
+  const split = splitDose(med.defaultDose || '');
+  if (split) { out.doseValue = split.value; out.doseUnit = split.unit; }
+  if (!med.defaultQuantity) {
+    const calc = computeUnitsFromDose({ presentation: med.presentation, dose: med.defaultDose });
+    if (calc && calc.ok && calc.quantity !== '1') {
+      out.quantity = calc.quantity;
+      out.quantityUnit = calc.unit;
+      out.dose = calc.perUnitDose;
+    }
+  }
+  return out;
 }
 
 // Auto-detect default diluent and volume from instructions
@@ -3113,17 +3140,72 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                   // reposição/hemoterapia/não-padrão (care/nutrition/inhalation
                   // têm layout próprio). Só condicionamos por massa/volume.
                   if (prescritoEmMassaOuVolume) return null;
+
+                  // Dose TOTAL prescrita = valor + grandeza (opcional). A partir dela
+                  // e da apresentação, calcula a Qtd de ampolas/frascos. Fallback de
+                  // texto livre para dose não numérica (faixa, ACM). Fonte para o
+                  // cálculo: estruturado se houver; senão o texto livre.
+                  const usaEstruturado = !!(item.doseValue && item.doseUnit);
+                  const doseCalc = computeUnitsFromDose({
+                    presentation: item.presentation,
+                    doseValue: item.doseValue,
+                    doseUnit: item.doseUnit,
+                    dose: usaEstruturado ? undefined : item.dose,
+                  });
+                  let doseWarn: string | null = null;
+                  if (doseCalc && doseCalc.ok === false) doseWarn = doseCalc.reason;
+                  // Preenche a Qtd sem sobrescrever ajuste manual: só quando a Qtd
+                  // atual está vazia ou igual ao valor auto anterior.
+                  const aplicarCalc = (next: PrescriptionItem) => {
+                    const prev = computeUnitsFromDose({
+                      presentation: item.presentation, doseValue: item.doseValue, doseUnit: item.doseUnit,
+                      dose: (item.doseValue && item.doseUnit) ? undefined : item.dose,
+                    });
+                    const r = computeUnitsFromDose({
+                      presentation: next.presentation, doseValue: next.doseValue, doseUnit: next.doseUnit,
+                      dose: (next.doseValue && next.doseUnit) ? undefined : next.dose,
+                    });
+                    if (r && r.ok) {
+                      const prevQty = prev && prev.ok ? prev.quantity : '';
+                      const curQty = (item.quantity || '').trim();
+                      if (!curQty || curQty === prevQty) {
+                        onUpdate(item.id, "quantity", r.quantity);
+                        onUpdate(item.id, "quantityUnit", r.unit);
+                        onUpdate(item.id, "dose", r.perUnitDose);
+                      }
+                    }
+                  };
                   return (
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="text-xs text-muted-foreground font-normal shrink-0">Dose:</span>
+                    <div className="flex items-center gap-2 min-w-0 flex-wrap">
+                      <span className="text-xs text-muted-foreground font-normal shrink-0">Dose total:</span>
                       <Input
-                        value={item.dose || ''}
-                        onChange={(e) => onUpdate(item.id, "dose", e.target.value)}
-                        placeholder="opcional — ex: 500mg"
-                        title="Opcional. Detalhe a dose por unidade (ex.: '500mg' para '1 AMP') se quiser que apareça no impresso. Não é obrigatório — a Qtd já libera a validação."
-                        className="h-6 text-xs bg-muted/60 border-border/70 px-2 text-muted-foreground placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-primary focus-visible:text-foreground"
-                        style={{ width: `${Math.max(5, (String(item.dose || '').length || 12) * 0.6 + 1.5)}ch`, minWidth: '6.5rem', maxWidth: '14rem' }}
+                        type="number" inputMode="decimal" min="0" step="any"
+                        value={item.doseValue || ''}
+                        onChange={(e) => { const v = e.target.value; onUpdate(item.id, "doseValue", v); aplicarCalc({ ...item, doseValue: v }); }}
+                        placeholder="opc."
+                        title="Dose total prescrita (ex.: 1 g). O sistema calcula a Qtd de ampolas/frascos pela apresentação. Opcional — nunca bloqueia."
+                        className="h-6 text-xs bg-white border-border px-2 text-center focus-visible:ring-1 focus-visible:ring-primary"
+                        style={{ width: `${Math.max(3, (String(item.doseValue || '').length || 2) * 0.7 + 1.5)}ch`, minWidth: '3.25rem' }}
                       />
+                      <Select value={item.doseUnit || ''} onValueChange={(v) => { onUpdate(item.id, "doseUnit", v); aplicarCalc({ ...item, doseUnit: v }); }}>
+                        <SelectTrigger className="h-6 text-xs bg-white border-border w-[70px] focus:ring-1 focus:ring-primary"><SelectValue placeholder="grand." /></SelectTrigger>
+                        <SelectContent>
+                          {DOSE_UNITS.map(u => <SelectItem key={u} value={u} className="text-xs">{u}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                      <Input
+                        value={usaEstruturado ? '' : (item.dose || '')}
+                        onChange={(e) => { const v = e.target.value; onUpdate(item.id, "dose", v); onUpdate(item.id, "doseValue", ""); onUpdate(item.id, "doseUnit", ""); aplicarCalc({ ...item, dose: v, doseValue: "", doseUnit: "" }); }}
+                        placeholder="ou texto (faixa/ACM)"
+                        title="Para dose que não é um número único (faixa, ACM, conforme HGT). Substitui valor+grandeza."
+                        className="h-6 text-xs bg-muted/50 border-border/70 px-2 text-muted-foreground placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-primary focus-visible:text-foreground"
+                        style={{ width: `${Math.max(6, (String(usaEstruturado ? '' : (item.dose || '')).length || 10) * 0.55 + 1.5)}ch`, minWidth: '7rem', maxWidth: '12rem' }}
+                      />
+                      {doseWarn && (
+                        <span className="text-[11px] text-warning-on-soft bg-warning-soft border border-warning-border rounded px-1.5 py-0.5 shrink-0" title={doseWarn}>
+                          ⚠ {doseWarn}
+                        </span>
+                      )}
                     </div>
                   );
                 })()}
@@ -3684,6 +3766,7 @@ function ExtraPrescriptionDialog({
       accessType: '',
       concentration: '',
     };
+    Object.assign(item, deriveNewItemDoseFields(med));
     // Sprint B — perfil de infusão (apenas para EV, preenche campos vazios)
     const finalItem = isIV
       ? applyInfusionProfileDefaults(item, getInfusionProfile(med.name))
@@ -3981,6 +4064,7 @@ function ExtraPrescriptionDialog({
                 // JSONB da prescricao. A marcacao que vale e o `highAlert`
                 // acima, herdado do guia e de fato consumido pela interface.
               };
+              Object.assign(item, deriveNewItemDoseFields(e));
               setExtraItems(prev => [...prev, item]);
             });
             toast.success(`${entries.length} ${entries.length === 1 ? 'item adicionado' : 'itens adicionados'} à prescrição extra`);
@@ -6261,6 +6345,7 @@ const PrescricaoPage = () => {
       accessType: '',
       concentration: '',
     };
+    Object.assign(baseItem, deriveNewItemDoseFields(med));
     // ── Sincronização wizard → item (16/07/2026) ─────────────────────────────
     // O Assistente de Terapia Nutricional emite campos estruturados junto com
     // a entry (NutritionStructured). Sem esta cópia, o item nascia só com o
