@@ -132,7 +132,11 @@ export interface AlocarPreAdmissaoParams {
   registradoPor: string | null;
 }
 
-/** Aloca a pre-admissao no leito e devolve o id da internacao criada. */
+/**
+ * Aloca a pre-admissao no leito e devolve o id da internacao criada.
+ * `avisoLeito` vem preenchido quando a internacao foi criada mas o status do
+ * leito nao virou "ocupado" — o chamador DEVE mostrar o aviso.
+ */
 export async function alocarPreAdmissaoNoLeito({
   preAdmissao: fullData,
   sectorCode,
@@ -140,7 +144,7 @@ export async function alocarPreAdmissaoNoLeito({
   dataEntrada,
   pendencias,
   registradoPor,
-}: AlocarPreAdmissaoParams): Promise<{ internacaoId: string; setorId: string }> {
+}: AlocarPreAdmissaoParams): Promise<{ internacaoId: string; setorId: string; avisoLeito: string | null }> {
   // MIGRAÇÃO: a mega-tabela `patients` (leito+paciente) foi substituída por
   // leitos + pacientes + internacoes. Admitir = garantir leito → garantir paciente →
   // criar internação apontando para ambos → marcar leito ocupado.
@@ -255,8 +259,16 @@ export async function alocarPreAdmissaoNoLeito({
     .single();
   if (interErr) throw interErr;
 
-  // 4) Ocupa o leito.
-  await supabase.from("leitos").update({ status: "ocupado" }).eq("id", leitoId);
+  // 4) Ocupa o leito. O resultado era descartado: se a escrita falhasse (RLS,
+  //    rede), a internacao existia e o leito seguia "livre" em silencio,
+  //    oferecido de novo na alocacao. Nao lancamos aqui — a internacao ja
+  //    existe e abortar deixaria a pre-admissao pendurada —, mas o aviso sobe.
+  let avisoLeito: string | null = null;
+  const { error: ocupaErr } = await supabase.from("leitos").update({ status: "ocupado" }).eq("id", leitoId);
+  if (ocupaErr) {
+    console.error("[alocarPreAdmissao] leito nao marcado como ocupado:", leitoId, ocupaErr);
+    avisoLeito = `O paciente foi internado, mas o leito ${finalBed} não foi marcado como ocupado (${ocupaErr.message}). Avise a gestão de leitos para não haver dupla alocação.`;
+  }
 
   // MIGRAÇÃO: vínculo de medical_records ao paciente REMOVIDO (medical_records morto;
   // prontuário vive em pacientes.prontuario).
@@ -272,5 +284,5 @@ export async function alocarPreAdmissaoNoLeito({
     .eq("id", fullData.id);
   if (updateError) throw updateError;
 
-  return { internacaoId: novaInternacao.id, setorId };
+  return { internacaoId: novaInternacao.id, setorId, avisoLeito };
 }

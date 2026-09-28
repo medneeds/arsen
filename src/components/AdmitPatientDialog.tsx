@@ -309,7 +309,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
       // Alocação (leito → paciente → internação → leito ocupado → pré-admissão
       // admitida) vive em src/lib/alocarPreAdmissao.ts, compartilhada com o SAPS 3.
       const registradoPor = await resolveProfissionalId(user?.id);
-      await alocarPreAdmissaoNoLeito({
+      const { avisoLeito } = await alocarPreAdmissaoNoLeito({
         preAdmissao: fullData,
         sectorCode: selectedSector,
         bed: finalBed,
@@ -319,6 +319,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
       });
 
       toast({ title: "Paciente PRÉ-ADMITIDO", description: `${fullData.patient_name} → Leito ${finalBed}. Conclua a admissão hospitalar pelo Painel Clínico.` });
+      if (avisoLeito) toast({ title: "Atenção: leito não marcado", description: avisoLeito, variant: "destructive" });
       onOpenChange(false);
       onSuccess();
       setSelectedSector("");

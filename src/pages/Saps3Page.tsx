@@ -933,6 +933,7 @@ export default function Saps3Page() {
           registradoPor: criadoPor,
         });
         internacaoId = alocacao.internacaoId;
+        if (alocacao.avisoLeito) toast.warning(alocacao.avisoLeito, { duration: 12000 });
         internacaoCriada = alocacao.internacaoId;
         alocadoAgora = true;
       }
