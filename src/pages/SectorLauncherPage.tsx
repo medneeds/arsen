@@ -4,6 +4,7 @@ import { Bed, Building2, Check, LogOut } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { PageLoader } from "@/components/PageLoader";
 import {
   PatientQuickSearch,
@@ -138,15 +139,18 @@ export default function SectorLauncherPage() {
               </span>
             </div>
 
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => signOut()}
-              className="h-9 bg-white/10 text-primary-foreground border border-white/20 backdrop-blur hover:bg-white/20 hover:text-primary-foreground"
-            >
-              <LogOut className="h-4 w-4 mr-2" aria-hidden />
-              Sair
-            </Button>
+            <div className="flex items-center gap-2 shrink-0">
+              <ThemeToggle onDark />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => signOut()}
+                className="h-9 bg-white/10 text-primary-foreground border border-white/20 backdrop-blur hover:bg-white/20 hover:text-primary-foreground"
+              >
+                <LogOut className="h-4 w-4 mr-2" aria-hidden />
+                Sair
+              </Button>
+            </div>
           </div>
         </header>
 

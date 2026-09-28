@@ -17,6 +17,7 @@ import {
   type TimelineEvent,
 } from "@/hooks/usePatientTimeline";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -505,6 +506,7 @@ export default function HistoricoPacientePage() {
               <span className="ml-2">{events.length} eventos registrados</span>
             </p>
           </div>
+          <ThemeToggle />
           <Button variant="outline" size="sm" onClick={handlePrint}>
             <Printer className="h-4 w-4 mr-1" /> Imprimir
           </Button>
