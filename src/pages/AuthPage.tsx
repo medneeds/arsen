@@ -19,6 +19,7 @@ import { FirstAccessSetup } from "@/components/auth/FirstAccessSetup";
 import type { AccessProfile } from "@/config/userProfiles";
 import { safeSetItem } from "@/lib/safeStorage";
 import { ArsenMark } from "@/components/brand/ArsenMark";
+import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { whitelabel } from "@/config/whitelabel";
 import { comTempoLimite, mensagemDeFalhaDeRede } from "@/lib/tempoLimite";
 
@@ -277,6 +278,11 @@ export default function AuthPage() {
           showLoadingScreen && "opacity-0",
         )}
       >
+        {/* Alternador de tema: canto fixo sobre o painel navy (fundo escuro → onDark). */}
+        <div className="fixed top-4 right-4 z-50">
+          <ThemeToggle onDark />
+        </div>
+
         <section className="order-1 flex flex-col px-6 py-8 sm:px-8 lg:order-2 lg:w-[54%] lg:px-8 lg:py-8 relative overflow-hidden">
           {/* Campo navy em tres camadas de profundidade: o gradiente do fundo,
               a marca recortada em escala gigante e um feixe que nasce na fenda

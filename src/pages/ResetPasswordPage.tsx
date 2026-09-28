@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { KeyRound, Lock, Eye, EyeOff, ShieldCheck, Loader2, CheckCircle2 } from "lucide-react";
 import { motion } from "framer-motion";
+import { ThemeToggle } from "@/components/layout/ThemeToggle";
 
 /**
  * /reset-password
@@ -95,6 +96,9 @@ export default function ResetPasswordPage() {
 
   return (
     <div className="min-h-screen flex items-start sm:items-center justify-center bg-background px-4 pt-6 pb-8 sm:py-8">
+      <div className="fixed top-4 right-4 z-50">
+        <ThemeToggle />
+      </div>
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}

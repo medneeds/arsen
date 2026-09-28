@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { ACCESS_PROFILES } from "@/config/userProfiles";
 import { whitelabel, getInstitutionalHeaderLines } from "@/config/whitelabel";
+import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import socorraoCross from "@/assets/socorrao-cross-logo.png";
 
 const INSTITUTIONAL_LINES = getInstitutionalHeaderLines();
@@ -231,6 +232,9 @@ export default function PreCadastroPage() {
   if (submitted) {
     return (
       <div className="relative min-h-screen bg-muted flex items-center justify-center p-6">
+        <div className="fixed top-4 right-4 z-50">
+          <ThemeToggle />
+        </div>
         <Backdrop />
         <div className="relative w-full max-w-lg space-y-4 animate-in fade-in zoom-in-95 duration-500">
           <NormaZeroHeader />
@@ -258,6 +262,9 @@ export default function PreCadastroPage() {
 
   return (
     <div className="relative min-h-screen bg-muted py-8 px-4">
+      <div className="fixed top-4 right-4 z-50">
+        <ThemeToggle />
+      </div>
       <Backdrop />
       <div className="relative max-w-2xl mx-auto space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
         <NormaZeroHeader />

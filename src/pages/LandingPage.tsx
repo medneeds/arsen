@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { whitelabel } from "@/config/whitelabel";
 import { ArsenMark } from "@/components/brand/ArsenMark";
+import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import {
   Activity,
   Brain,
@@ -88,13 +89,16 @@ export default function LandingPage() {
           </nav>
 
           {/* CTA */}
-          <button
-            onClick={() => navigate("/auth")}
-            className="preserve-case inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary hover:bg-primary text-white text-xs font-medium transition-colors"
-          >
-            Acessar
-            <ArrowRight className="h-3.5 w-3.5" />
-          </button>
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <button
+              onClick={() => navigate("/auth")}
+              className="preserve-case inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary hover:bg-primary text-white text-xs font-medium transition-colors"
+            >
+              Acessar
+              <ArrowRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
         </div>
       </header>
 
