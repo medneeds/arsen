@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { printAdmissionNormaZero } from "@/lib/printAdmission";
 import { resolveCurrentBedSector } from "@/lib/resolvePatientHeader";
 import { useHospital } from "@/contexts/HospitalContext";
+import { fromEvolucaoStatusDb } from "@/lib/evolucaoStatus";
 import { usePatientIdentifiers } from "@/hooks/usePatientIdentifiers";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCockpitPatient } from "@/hooks/useCockpitPatient";
@@ -27,6 +28,16 @@ import type { AdmissionStatus as CanonicalAdmissionStatus } from "@/lib/admissio
 type AdmissionStatus = CanonicalAdmissionStatus | "suspenso" | null;
 
 const SAPS_DEADLINE_MS = 24 * 60 * 60 * 1000;
+
+// Visual do status por modulo — leve e informativo, mesma linguagem do card de
+// Sinalizacao: acento no topo + caixa do icone + rotulo com bolinha. Cores amarradas
+// ao significado: ambar=rascunho, verde=validada (fechado pelo medico), azul=feito/ativo.
+const MODULE_STATE_VISUAL: Record<string, { accent: string; box: string; icon: string; dot: string; text: string; label: string }> = {
+  rascunho:   { accent: "bg-warning",  box: "bg-warning-soft",  icon: "text-warning-on-soft",  dot: "bg-warning",  text: "text-warning-on-soft",  label: "Rascunho" },
+  validada:   { accent: "bg-released", box: "bg-released-soft", icon: "text-released-on-soft", dot: "bg-released", text: "text-released-on-soft", label: "Validada" },
+  enviada:    { accent: "bg-primary",  box: "bg-primary/10",    icon: "text-primary",          dot: "bg-primary",  text: "text-primary",          label: "Enviada" },
+  registrado: { accent: "bg-primary",  box: "bg-primary/10",    icon: "text-primary",          dot: "bg-primary",  text: "text-primary",          label: "Registrado" },
+};
 
 const CLINICAL_ACTIONS = [
   { key: "prescricao", label: "Prescrição", icon: Pill, path: "/prescricao" },
@@ -103,6 +114,15 @@ export default function PacienteHubPage() {
    */
   const [evolvedToday, setEvolvedToday] = useState<boolean | null>(null);
   const [prescribedToday, setPrescribedToday] = useState<boolean | null>(null);
+  // Estado por modulo (rascunho/validada/enviada/registrado), leve e informativo,
+  // sincronizado com a acao. Semantica aprovada: Prescricao/Evolucao rascunho->validada;
+  // Requisicoes enviada; Monitoramento registrado. (Sinalizacao usa signalState.)
+  const [moduleStatus, setModuleStatus] = useState<{
+    prescricao: "rascunho" | "validada" | null;
+    evolucao: "rascunho" | "validada" | null;
+    requisicoes: "enviada" | null;
+    monitoramento: "registrado" | null;
+  }>({ prescricao: null, evolucao: null, requisicoes: null, monitoramento: null });
   /**
    * Contador que forca a releitura dos estados derivados. Incrementado por
    * refreshHubState() apos uma acao e ao voltar o foco para a aba.
@@ -116,41 +136,56 @@ export default function PacienteHubPage() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      if (!ctx.patientId) { setEvolvedToday(null); setPrescribedToday(null); return; }
+      const id = ctx.patientId;
+      if (!id) {
+        setEvolvedToday(null); setPrescribedToday(null);
+        setModuleStatus({ prescricao: null, evolucao: null, requisicoes: null, monitoramento: null });
+        return;
+      }
       const inicioDoDia = new Date();
       inicioDoDia.setHours(0, 0, 0, 0);
-      // MIGRAÇÃO: clinical_evolutions → evolucoes (ancora por internacao_id;
-      // ctx.patientId = internacoes.id). created_at → data_hora. registry morto.
-      const { data, error } = await supabase
-        .from("evolucoes")
-        .select("id")
-        .eq("internacao_id", ctx.patientId)
-        .gte("data_hora", inicioDoDia.toISOString())
-        .limit(1);
-      if (cancelled) return;
-      // Erro nao vira "nao evoluiu": ficaria afirmando algo falso sobre o
-      // prontuario. Sem resposta confiavel, o card fica neutro.
-      setEvolvedToday(error ? null : (data?.length ?? 0) > 0);
+      const iso = inicioDoDia.toISOString();
 
-      // MIGRAÇÃO: prescriptions → prescricoes (por internacao_id); items→itens;
-      // created_at→criado_em. `validated`/`validatedAt` vivem DENTRO do JSON itens.
-      const { data: presc, error: errPresc } = await supabase
-        .from("prescricoes")
-        .select("itens, criado_em")
-        .eq("internacao_id", ctx.patientId)
-        .order("criado_em", { ascending: false })
-        .limit(1);
+      // Uma leitura leve por modulo, em paralelo (o hub e de UM paciente).
+      // MIGRAÇÃO: tudo ancora em internacao_id (ctx.patientId = internacoes.id).
+      const [evoRes, prescRes, draftRes, reqRes, monRes] = await Promise.all([
+        supabase.from("evolucoes").select("status, data_hora").eq("internacao_id", id).order("data_hora", { ascending: false }).limit(1),
+        supabase.from("prescricoes").select("itens, criado_em").eq("internacao_id", id).order("criado_em", { ascending: false }).limit(1),
+        supabase.from("prescricoes").select("id").eq("internacao_id", id).eq("status", "draft").gte("criado_em", iso).limit(1),
+        supabase.from("solicitacoes_exame").select("id").eq("internacao_id", id).limit(1),
+        supabase.from("sinais_vitais").select("id").eq("internacao_id", id).gte("data_hora", iso).limit(1),
+      ]);
       if (cancelled) return;
-      if (errPresc || !presc?.length) { setPrescribedToday(errPresc ? null : false); return; }
-      const itens = Array.isArray((presc[0] as any).itens) ? (presc[0] as any).itens : [];
-      setPrescribedToday(
-        itens.some((raw: any) => {
+
+      // Evolucao: status da mais recente SE for do dia (rascunho/validada; suspensa → neutro).
+      const evoRow = (!evoRes.error ? evoRes.data?.[0] : null) as { status?: string | null; data_hora?: string | null } | null | undefined;
+      const evoToday = !!(evoRow?.data_hora && new Date(evoRow.data_hora) >= inicioDoDia);
+      let evoState: "rascunho" | "validada" | null = null;
+      if (evoToday) {
+        const vm = fromEvolucaoStatusDb(evoRow?.status);
+        evoState = vm === "validated" ? "validada" : vm === "draft" ? "rascunho" : null;
+      }
+      setEvolvedToday(evoRes.error ? null : evoToday);
+
+      // Prescricao: item validado hoje → validada; senao, rascunho do dia (status='draft').
+      let prescValidated = false;
+      if (!prescRes.error && prescRes.data?.length) {
+        const itens = Array.isArray((prescRes.data[0] as any).itens) ? (prescRes.data[0] as any).itens : [];
+        prescValidated = itens.some((raw: any) => {
           const it = raw as { validated?: unknown; validatedAt?: unknown };
           if (it?.validated !== true || typeof it?.validatedAt !== "string") return false;
           const d = new Date(it.validatedAt);
           return !Number.isNaN(d.getTime()) && d >= inicioDoDia;
-        }),
-      );
+        });
+      }
+      const hasDraft = !draftRes.error && (draftRes.data?.length ?? 0) > 0;
+      const prescState: "rascunho" | "validada" | null = prescValidated ? "validada" : hasDraft ? "rascunho" : null;
+      setPrescribedToday(prescRes.error ? null : prescValidated);
+
+      const reqState: "enviada" | null = !reqRes.error && (reqRes.data?.length ?? 0) > 0 ? "enviada" : null;
+      const monState: "registrado" | null = !monRes.error && (monRes.data?.length ?? 0) > 0 ? "registrado" : null;
+
+      setModuleStatus({ prescricao: prescState, evolucao: evoState, requisicoes: reqState, monitoramento: monState });
     })();
     return () => { cancelled = true; };
   }, [ctx.patientId, refreshTick]);
@@ -646,7 +681,9 @@ export default function PacienteHubPage() {
             </div>
 
             {/* Demais ações */}
-            {CLINICAL_ACTIONS.map(({ key, label, icon: Icon, path }) => (
+            {CLINICAL_ACTIONS.map(({ key, label, icon: Icon, path }) => {
+              const st = !locked ? MODULE_STATE_VISUAL[(moduleStatus[key as keyof typeof moduleStatus] ?? "")] : undefined;
+              return (
               <button
                 key={key}
                 onClick={() => locked ? handleLockedClick(lockReason!) : goTo(path)}
@@ -662,7 +699,7 @@ export default function PacienteHubPage() {
                 )}>
                   <span className={cn(
                     "absolute top-0 left-0 right-0 h-1",
-                    locked ? "bg-muted-foreground/30" : "bg-primary/70",
+                    locked ? "bg-muted-foreground/30" : st ? st.accent : "bg-primary/70",
                   )} />
                   {locked && (
                     <span className="absolute top-2 right-2">
@@ -670,13 +707,13 @@ export default function PacienteHubPage() {
                     </span>
                   )}
                   <div className={cn(
-                    "p-3 rounded-lg mb-3",
-                    locked ? "bg-transparent" : "bg-muted group-hover:bg-primary/10 transition-colors",
+                    "p-3 rounded-lg mb-3 transition-colors",
+                    locked ? "bg-transparent" : st ? st.box : "bg-muted group-hover:bg-primary/10",
                   )}>
                     <Icon
                       className={cn(
-                        "w-7 h-7",
-                        locked ? "text-muted-foreground/40" : "text-muted-foreground group-hover:text-primary transition-colors",
+                        "w-7 h-7 transition-colors",
+                        locked ? "text-muted-foreground/40" : st ? st.icon : "text-muted-foreground group-hover:text-primary",
                       )}
                       strokeWidth={1.5}
                     />
@@ -695,24 +732,16 @@ export default function PacienteHubPage() {
                     inteiro as 8h da manha, e alerta que acende sempre vira
                     ruido, o oposto do que uma passagem de plantao precisa.
                   */}
-                  {!locked && key === "prescricao" && prescribedToday === true && (
-                    <span className="text-xs font-medium text-released-on-soft tracking-widest uppercase mt-1">
-                      Validada hoje
-                    </span>
-                  )}
-                  {!locked && key === "evolucao" && evolvedToday === true && (
-                    <span className="text-xs font-medium text-released-on-soft tracking-widest uppercase mt-1">
-                      Evoluída hoje
-                    </span>
-                  )}
-                  {!locked && key === "requisicoes" && pendingRequests > 0 && (
-                    <span className="text-xs font-medium text-warning-on-soft tracking-widest uppercase mt-1">
-                      {pendingRequests} pendente{pendingRequests > 1 ? "s" : ""}
+                  {st && (
+                    <span className={cn("mt-1 inline-flex items-center gap-1 text-xs font-medium tracking-widest uppercase", st.text)}>
+                      <span className={cn("h-1.5 w-1.5 rounded-full", st.dot)} />
+                      {st.label}
                     </span>
                   )}
                 </div>
               </button>
-            ))}
+              );
+            })}
 
             {/*
               Sinalizacao — 7o card. Fecha o arco cronologico da estadia:
