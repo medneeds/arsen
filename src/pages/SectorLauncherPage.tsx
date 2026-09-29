@@ -6,10 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { PageLoader } from "@/components/PageLoader";
-import {
-  PatientQuickSearch,
-  type PacienteEncontrado,
-} from "@/components/PatientQuickSearch";
+import { PatientQuickSearch } from "@/components/PatientQuickSearch";
+import { usePatientSearchNavigation } from "@/hooks/usePatientSearchNavigation";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
@@ -83,28 +81,9 @@ export default function SectorLauncherPage() {
     window.setTimeout(() => navigate(SECTOR_ROUTES[setor] ?? "/"), 120);
   };
 
-  const irParaSetorDoPaciente = (p: PacienteEncontrado) => {
-    if (!p.department) return;
-    entrar(p.department);
-  };
-
-  /**
-   * Painel clinico do paciente. O setor e ajustado ANTES de navegar: sem isso o
-   * painel abriria com o contexto do setor anterior e as telas em volta
-   * mostrariam a lista de outro lugar.
-   */
-  const irParaPaciente = (p: PacienteEncontrado) => {
-    if (p.department) setCurrentDepartment(p.department);
-    const params = new URLSearchParams({
-      patientId: p.id,
-      patientName: p.name,
-      patientBed: p.bedNumber,
-      patientSector: p.sectorCode,
-    });
-    if (p.age) params.set("patientAge", p.age);
-    if (p.medicalRecord) params.set("patientRecord", p.medicalRecord);
-    window.setTimeout(() => navigate(`/paciente?${params.toString()}`), 120);
-  };
+  const { irParaSetorDoPaciente, irParaPaciente } = usePatientSearchNavigation({
+    onEntrarSetor: setEscolhido,
+  });
 
   if (authLoading) {
     return <PageLoader message="Carregando seu acesso" />;
