@@ -26,7 +26,8 @@
       "Bash(npm install *)",
       "Bash(node leitos_chk.mjs)",
       "Bash(echo \"exit: $?\")",
-      "Bash(npm --prefix /d/Arsen/arsen run build)"
+      "Bash(npm --prefix /d/Arsen/arsen run build)",
+      "mcp__Claude_Code_Remote__read_documentation"
     ]
   }
 }
