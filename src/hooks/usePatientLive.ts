@@ -2,6 +2,34 @@ import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Patient } from "@/types/patient";
 import { formatAge } from "@/lib/patientAge";
+import { ADMISSION_STATUS } from "@/lib/admissionStatus";
+import { fetchPendingInternalTransferInternacaoIds } from "@/lib/internalTransfer";
+
+/**
+ * Deriva a tarja de sinalizacao (admissionStatus) a partir da MESMA fonte que o
+ * usePatients — para o cockpit nao ficar cego a transferencia ativa no
+ * deep-link/F5 (uma tela sabia algo que a outra nao sabia). Regras identicas:
+ *  - Transferencia INTERNA: vem de logs_auditoria (nao tem status proprio; o
+ *    CHECK colapsa em "ativa") — tem prioridade sobre o status.
+ *  - SAIDAS (alta/obito/transf. externa): a internacao fica ABERTA ate a
+ *    liberacao fisica (Opcao A), com o desfecho em internacoes.status.
+ */
+function deriveAdmissionStatus(
+  internmentStatus: string | null | undefined,
+  isPendingInternalTransfer: boolean,
+): Patient["admissionStatus"] {
+  if (isPendingInternalTransfer) return ADMISSION_STATUS.INTERNAL_TRANSFER_PENDING;
+  switch (internmentStatus) {
+    case "alta":
+      return ADMISSION_STATUS.DISCHARGE_GIVEN;
+    case "obito":
+      return ADMISSION_STATUS.DEATH;
+    case "transferida":
+      return ADMISSION_STATUS.EXTERNAL_TRANSFER_PENDING;
+    default:
+      return undefined; // "ativa"/"cancelada" → sem tarja
+  }
+}
 
 /**
  * Subscribes to a single internação (paciente internado) in real time.
@@ -70,13 +98,20 @@ export function usePatientLive(patientId: string | null) {
   const fetchOnce = useCallback(async () => {
     if (!patientId) { setPatient(null); return; }
     setLoading(true);
-    const { data, error } = await supabase
-      .from("internacoes")
-      .select(INTERNACAO_SELECT)
-      .eq("id", patientId)
-      .maybeSingle();
+    // Em paralelo: a internacao (dados do paciente) e a fila de transferencia
+    // interna pendente (MESMA fonte do usePatients) — para derivar a tarja.
+    const [{ data, error }, pendingIds] = await Promise.all([
+      supabase.from("internacoes").select(INTERNACAO_SELECT).eq("id", patientId).maybeSingle(),
+      fetchPendingInternalTransferInternacaoIds().catch(() => new Set<string>()),
+    ]);
     if (!error && data) {
-      setPatient(rowToPatient(data));
+      const p = rowToPatient(data);
+      p.admissionStatus = deriveAdmissionStatus(
+        // internmentStatus carrega, em runtime, o internacoes.status cru.
+        p.internmentStatus as unknown as string | null,
+        pendingIds.has(patientId),
+      );
+      setPatient(p);
     }
     setLoading(false);
   }, [patientId]);
@@ -103,6 +138,12 @@ export function usePatientLive(patientId: string | null) {
           if (payload.eventType === "DELETE") { setPatient(null); return; }
           fetchOnce();
         })
+      // Tarja de transferencia interna vem de logs_auditoria (nao mexe em
+      // internacoes.status), entao a sinalizacao/cancelamento so viraria ao vivo
+      // com este listener — mesma fonte do usePatients. Refaz o fetch completo.
+      .on("postgres_changes",
+        { event: "*", schema: "public", table: "logs_auditoria", filter: `internacao_id=eq.${patientId}` },
+        () => { fetchOnce(); })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [patientId, fetchOnce]);
