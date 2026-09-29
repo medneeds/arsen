@@ -42,6 +42,11 @@ import { toast } from "sonner";
 import { cn, asUuidOrNull } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { fromSolicitacaoStatusDb } from "@/lib/solicitacaoStatus";
+import {
+  exigeJustificativaPrincipal,
+  itensForaDaRotina,
+  justificativaForaDaRotinaValida,
+} from "@/lib/labJustification";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCurrentDoctor } from "@/hooks/useCurrentDoctor";
 import { PrintableRequisitionGuide, printRequisitionGuide, buildRequisitionGuideHtml } from "@/components/PrintableRequisitionGuide";
@@ -685,7 +690,8 @@ const RequisicaoUnificadaPage = () => {
   };
 
   // Conjunto de exames laboratoriais cobertos pelos combos rápidos (Rotina UTI / Enfermaria).
-  // Itens fora deste set, quando solicitados na categoria laboratório, exigem justificativa extra.
+  // Itens fora deste set, quando solicitados na categoria laboratório, exigem justificativa
+  // específica (liberação condicionada).
   const QUICK_LAB_SET = useMemo(() => {
     const s = new Set<string>();
     UTI_COMBOS.forEach(c => (c.categories.laboratorio || []).forEach(i => s.add(i)));
@@ -698,17 +704,16 @@ const RequisicaoUnificadaPage = () => {
     return UTI_COMBOS.filter(c => c.scope === "all" || (sectorIsUti ? c.scope === "uti" : c.scope === "enfermaria"));
   }, [formPatientSector]);
 
-  const offQuickLabItems = useMemo(() => {
-    if (activeCategory !== "laboratorio") return [] as string[];
-    return formSelectedItems.filter(i => !QUICK_LAB_SET.has(i));
-  }, [formSelectedItems, activeCategory, QUICK_LAB_SET]);
+  const offQuickLabItems = useMemo(
+    () => itensForaDaRotina(activeCategory, formSelectedItems, QUICK_LAB_SET),
+    [formSelectedItems, activeCategory, QUICK_LAB_SET],
+  );
 
   const requiresExtraJustification = offQuickLabItems.length > 0;
 
-  // Justificativa principal: sempre exigida exceto quando é laboratório
-  // com apenas exames dos pacotes de rotina (nesse caso só o bloco extra aparece se necessário)
-  const requiresMainJustification =
-    activeCategory !== "laboratorio" || requiresExtraJustification || formSelectedItems.length === 0;
+  // Justificativa clínica geral: exigida em toda categoria EXCETO laboratório. No laboratório
+  // a única justificativa é a da liberação condicionada (exame fora da rotina).
+  const requiresMainJustification = exigeJustificativaPrincipal(activeCategory);
 
   // Limpa SOMENTE os campos da requisição — preserva paciente selecionado para encadear
   // múltiplas solicitações sem perder identificação. (Bug: após submit a identificação sumia.)
@@ -737,7 +742,7 @@ const RequisicaoUnificadaPage = () => {
     if (!formPatientName.trim()) { toast.error("Informe o nome do paciente"); return; }
     if (formSelectedItems.length === 0) { toast.error("Selecione ao menos um item"); return; }
     if (requiresMainJustification && !richHtmlToPlainText(formIndication).trim()) { toast.error("Informe a justificativa clínica"); return; }
-    if (requiresExtraJustification && formExtraJustification.trim().length < 10) {
+    if (requiresExtraJustification && !justificativaForaDaRotinaValida(formExtraJustification)) {
       toast.error("Itens fora dos pacotes de rotina exigem justificativa específica (mín. 10 caracteres) para liberação da guia");
       return;
     }
@@ -1618,42 +1623,25 @@ const RequisicaoUnificadaPage = () => {
             </CardContent>
           </Card>
 
-          {/* Justificativa extra para exames laboratoriais fora dos pacotes rápidos */}
+          {/* Liberação condicionada: exame de laboratório fora dos pacotes de rotina */}
           {requiresExtraJustification && (
-            <Card className="border-warning-border bg-warning-soft/60">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium flex items-center gap-2 text-warning-on-soft">
-                  <AlertTriangle className="h-4 w-4" />
-                  Liberação condicionada — exame fora da rotina
-                </CardTitle>
-                <p className="text-xs text-warning-on-soft/90 mt-1">
-                  Os itens abaixo não fazem parte dos pacotes rápidos (Rotina UTI / Enfermaria) e exigem
-                  justificativa clínica específica para liberação da guia pelo laboratório.
-                </p>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="flex flex-wrap gap-2">
-                  {offQuickLabItems.map(it => (
-                    <Badge key={it} variant="outline" className="text-xs border-warning text-warning-on-soft bg-warning-soft/60">
-                      {it}
-                    </Badge>
-                  ))}
-                </div>
-                <Label className="text-xs font-medium text-warning-on-soft">
-                  Justificativa específica <span className="text-critical-on-soft">*</span>
-                </Label>
-                <Textarea
-                  placeholder="Ex.: suspeita de hipotireoidismo subclínico — solicito TSH e T4 livre..."
-                  value={formExtraJustification}
-                  onChange={e => setFormExtraJustification(e.target.value)}
-                  rows={3}
-                  className="resize-none text-sm bg-background"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Mínimo 10 caracteres. Esta justificativa fica registrada na guia para auditoria.
-                </p>
-              </CardContent>
-            </Card>
+            <div className="rounded-md border border-warning-border bg-warning-soft/60 px-3 py-2 space-y-1.5">
+              <p className="flex items-start gap-1.5 text-xs text-warning-on-soft">
+                <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                <span>
+                  <strong>Fora da rotina:</strong> {offQuickLabItems.join(", ")} — justifique para liberar a guia{" "}
+                  <span className="text-critical-on-soft">*</span>
+                </span>
+              </p>
+              <Textarea
+                aria-label="Justificativa dos exames fora da rotina"
+                placeholder="Motivo clínico (mín. 10 caracteres) — registrado para auditoria"
+                value={formExtraJustification}
+                onChange={e => setFormExtraJustification(e.target.value)}
+                rows={2}
+                className="resize-none text-sm bg-background"
+              />
+            </div>
           )}
 
           {/* Campo "Observações" removido — a Justificativa Clínica acima já cobre.
@@ -1666,7 +1654,7 @@ const RequisicaoUnificadaPage = () => {
             if (!formPatientName.trim()) missing.push("identificar o paciente");
             if (formSelectedItems.length === 0) missing.push(`selecionar pelo menos 1 ${activeCategory === "parecer" ? "especialidade" : "exame"}`);
             if (requiresMainJustification && !richHtmlToPlainText(formIndication).trim()) missing.push("preencher a justificativa clínica");
-            if (requiresExtraJustification && formExtraJustification.trim().length < 10) missing.push("justificar exames fora da rotina (mín. 10 caracteres)");
+            if (requiresExtraJustification && !justificativaForaDaRotinaValida(formExtraJustification)) missing.push("justificar exames fora da rotina (mín. 10 caracteres)");
             const blocked = missing.length > 0;
             return (
               <div className="flex flex-col items-end gap-2 pt-2">
