@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Search, Eye, ClipboardList, Clock, AlertTriangle, Pencil, Check, X, Plus, Printer} from "lucide-react";
 import { RoundSectorPrintDialog } from "@/components/RoundSectorPrintDialog";
+import { DischargeStatusRibbon } from "@/components/DischargeStatusRibbon";
 import { toast } from "@/hooks/use-toast";
 import { BreadcrumbBar } from "@/components/BreadcrumbBar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -358,6 +359,11 @@ export default function PainelClinicoPage() {
                           <span className="text-xs text-muted-foreground">{prescStatus.label}</span>
                         </div>
                         <p className="font-medium text-sm text-foreground mt-2 leading-tight line-clamp-2">{patient.name}</p>
+                        {patient.admissionStatus && (
+                          <div className="mt-1.5">
+                            <DischargeStatusRibbon status={patient.admissionStatus} />
+                          </div>
+                        )}
                         <p className="text-xs text-muted-foreground mt-1">
                           {patient.age ? `${patient.age} anos` : "—"}
                           {days !== null && <span className={cn("ml-2", days > 7 && "text-destructive font-medium")}>{days}d int.</span>}
@@ -424,6 +430,11 @@ export default function PainelClinicoPage() {
                       <TableCell>
                         <div>
                           <p className="font-medium text-foreground leading-tight hover:text-primary transition-colors">{patient.name}</p>
+                          {patient.admissionStatus && (
+                            <div className="mt-1">
+                              <DischargeStatusRibbon status={patient.admissionStatus} />
+                            </div>
+                          )}
                           <p className="text-xs text-muted-foreground mt-1">
                             {patient.age ? `${patient.age} anos` : "—"}
                           </p>

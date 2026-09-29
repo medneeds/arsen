@@ -49,7 +49,6 @@ import {
   toAltaTipoDb,
 } from "@/lib/dischargeDocuments";
 import { sectorLabelFromCode } from "@/lib/hospitalSectors";
-import { closeActiveEncounter } from "@/lib/resolveActiveEncounter";
 
 // MIGRAÇÃO: profissional_id (profissionais.id) ≠ auth.uid — resolvido via profissionais.user_id.
 async function resolveProfissionalId(userId: string | null | undefined): Promise<string | null> {
@@ -384,29 +383,22 @@ export function MovimentacaoForm({
         });
         if (docErr) throw docErr;
 
-        // Marca a internação como alta/óbito (mantém no leito até liberação física)
+        // Marca a internação como alta/óbito, MANTENDO-A ABERTA (data_alta nulo) ate
+        // a liberacao fisica do leito. Assim o paciente permanece no mapa e no Painel
+        // com a tarja de sinalizacao (DischargeStatusRibbon deriva de admissionStatus,
+        // e usePatients deriva admissionStatus deste status). O fechamento do
+        // atendimento (data_alta) acontece na desalocacao (releaseBedPreAdmission) —
+        // ciclo do leito desacoplado do desfecho clinico. O horario do desfecho fica
+        // preservado em `altas.data_hora`.
         const newAdmissionStatus = requiredDocType === "obito" ? ADMISSION_STATUS.DEATH : ADMISSION_STATUS.DISCHARGE_GIVEN;
         if ((patient as any).id) {
-          // MIGRAÇÃO: patients.admission_status → internacoes.status. Desfecho final grava
-          // também data_alta (substitui o fechamento do patient_encounter). Sem updated_at.
+          // MIGRAÇÃO: patients.admission_status → internacoes.status (CHECK colapsa
+          // 'obito'/'alta_dada' em obito/alta). NAO grava data_alta aqui.
           const { error: statusErr } = await supabase
             .from("internacoes")
-            .update({ status: toInternacaoStatusDb(newAdmissionStatus), data_alta: new Date().toISOString() })
+            .update({ status: toInternacaoStatusDb(newAdmissionStatus) })
             .eq("id", (patient as any).id);
           if (statusErr) throw statusErr;
-
-          // Encerra o encounter — alta médica e óbito são desfechos finais da
-          // internação. Regra de negócio: 1 internação = 1 atendimento até o
-          // desfecho. Fecha pelo encounter ATIVO resolvido via registry (não
-          // por patient_id/leito) — se o paciente foi transferido internamente
-          // antes da alta, o vínculo patient_id do encounter pode ter mudado e
-          // o fechamento por leito deixaria um encounter zumbi ABERTO, que a
-          // próxima readmissão misturaria. (Auditoria 22/07/2026.)
-          const closeRes = await closeActiveEncounter((patient as any).id);
-          if (!closeRes.ok) {
-            // Não bloqueia — documento e status já foram registrados.
-            console.error("[MovimentacaoForm] falha ao encerrar encounter (alta/óbito):", closeRes.error);
-          }
         }
 
         // Auto preview the printable Norma Zero document
@@ -426,26 +418,17 @@ export function MovimentacaoForm({
           subtypeDef.id === "TRANSFERENCIA_INTERNA"
             ? ADMISSION_STATUS.INTERNAL_TRANSFER_PENDING
             : ADMISSION_STATUS.EXTERNAL_TRANSFER_PENDING;
-        // MIGRAÇÃO: patients.admission_status → internacoes.status. Transferência EXTERNA é
-        // desfecho final da internação → grava também data_alta (substitui o fechamento do
-        // patient_encounter). Interna mantém a internação aberta. Sem updated_at.
-        const trUpdate: Record<string, unknown> =
-          subtypeDef.id === "TRANSFERENCIA_EXTERNA"
-            ? { status: toInternacaoStatusDb(newAdmissionStatus), data_alta: new Date().toISOString() }
-            : { status: toInternacaoStatusDb(newAdmissionStatus) };
+        // MIGRAÇÃO + Opcao A: patients.admission_status → internacoes.status. Tanto a
+        // transferencia externa quanto a interna mantem a internacao ABERTA (data_alta
+        // nulo) ate a liberacao fisica do leito, para o paciente seguir no mapa/Painel
+        // com a tarja. O fechamento (data_alta) da externa passa a ocorrer na
+        // desalocacao (releaseBedPreAdmission). Sem updated_at.
+        const trUpdate: Record<string, unknown> = { status: toInternacaoStatusDb(newAdmissionStatus) };
         const { error: trErr } = await supabase
           .from("internacoes")
           .update(trUpdate as any)
           .eq("id", (patient as any).id);
         if (trErr) throw trErr;
-
-        // MIGRAÇÃO: closeActiveEncounter (lib já migrada) mantido para a transferência EXTERNA.
-        if (subtypeDef.id === "TRANSFERENCIA_EXTERNA") {
-          const closeExtRes = await closeActiveEncounter((patient as any).id);
-          if (!closeExtRes.ok) {
-            console.error("[MovimentacaoForm] falha ao encerrar encounter (transf. externa):", closeExtRes.error);
-          }
-        }
 
         // MIGRAÇÃO: a fila virtual de transferência interna vivia em internal_transfer_requests
         // (tabela morta). A nova `transferencias` modela apenas leito→leito (leito_destino_id
@@ -501,10 +484,12 @@ export function MovimentacaoForm({
         (subtypeDef.id === "EVASAO" || subtypeDef.id === "ALTA_PEDIDO")
         && (patient as any).id
       ) {
-        // MIGRAÇÃO: patients.admission_status → internacoes.status (+ data_alta: desfecho de saída).
+        // MIGRAÇÃO + Opcao A: patients.admission_status → internacoes.status. Mantem a
+        // internacao ABERTA (data_alta nulo) ate a liberacao fisica — a tarja segue no
+        // mapa/Painel. O data_alta e gravado na desalocacao (releaseBedPreAdmission).
         const { error: evErr } = await supabase
           .from("internacoes")
-          .update({ status: toInternacaoStatusDb(ADMISSION_STATUS.DISCHARGE_GIVEN), data_alta: new Date().toISOString() })
+          .update({ status: toInternacaoStatusDb(ADMISSION_STATUS.DISCHARGE_GIVEN) })
           .eq("id", (patient as any).id);
         if (evErr) throw evErr;
       }

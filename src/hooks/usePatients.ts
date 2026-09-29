@@ -10,6 +10,8 @@ import { isExtraBed } from "@/utils/bedNaming";
 import { formatAge } from "@/lib/patientAge";
 import { normalizePatientName } from "@/utils/normalizePatientName";
 import { resolveSectorCode } from "@/config/sectorCoverage";
+import { ADMISSION_STATUS } from "@/lib/admissionStatus";
+import { fetchPendingInternalTransferInternacaoIds } from "@/lib/internalTransfer";
 
 export const GHOST_PREFIXES = ['ARQ-', 'ARCHIVED-', '_GHOST_'];
 
@@ -120,6 +122,13 @@ export function usePatients(department?: Department, sector?: string) {
         return;
       }
 
+      // Tarja de transferencia interna sinalizada: internacoes.status NAO guarda
+      // "pendente" (CHECK colapsa em "ativa"), entao o estado vive so em
+      // logs_auditoria. Disparamos a leitura em PARALELO com a query de leitos
+      // (mesma fonte da fila) para nao somar latencia na troca de setor.
+      const pendingTransferPromise = fetchPendingInternalTransferInternacaoIds()
+        .catch(() => new Set<string>());
+
       // Bed map = leitos do hospital (via setores → alas → hospitais), cada um
       // com sua internação ativa (data_alta IS NULL), se houver.
       // (cast por causa do filtro em caminho aninhado — padrão do projeto.)
@@ -186,6 +195,37 @@ export function usePatients(department?: Department, sector?: string) {
       const sortedPatients = mappedPatients.sort(
         (a, b) => extractNumber(a.bedNumber) - extractNumber(b.bedNumber),
       );
+
+      // Tarja de sinalizacao (fonte unica): deriva admissionStatus para os leitos
+      // ocupados sinalizados (patient.id === internacoes.id quando ocupado).
+      //  - Transferencia INTERNA: nao tem status proprio (CHECK colapsa em "ativa"),
+      //    entao vem de logs_auditoria (mesma fonte da fila).
+      //  - SAIDAS (alta/obito/transf. externa): a internacao fica ABERTA ate a
+      //    liberacao fisica (Opcao A), com o status de saida em internacoes.status
+      //    (internmentStatus) — dai derivamos a tarja.
+      const pendingTransferIds = await pendingTransferPromise;
+      for (const p of sortedPatients) {
+        if (p.isVacant) continue;
+        if (pendingTransferIds.has(p.id)) {
+          p.admissionStatus = ADMISSION_STATUS.INTERNAL_TRANSFER_PENDING;
+          continue;
+        }
+        // internmentStatus carrega, em runtime, o internacoes.status real (o TIPO do
+        // campo no view-model e outro dominio — cast para string p/ ler o valor cru).
+        switch (p.internmentStatus as unknown as string | null) {
+          case "alta":
+            p.admissionStatus = ADMISSION_STATUS.DISCHARGE_GIVEN;
+            break;
+          case "obito":
+            p.admissionStatus = ADMISSION_STATUS.DEATH;
+            break;
+          case "transferida":
+            p.admissionStatus = ADMISSION_STATUS.EXTERNAL_TRANSFER_PENDING;
+            break;
+          default:
+            break; // "ativa"/"cancelada" → sem tarja
+        }
+      }
 
       setPatients(sortedPatients);
     } catch (error) {
@@ -474,10 +514,19 @@ export function usePatients(department?: Department, sector?: string) {
       let pacienteId: string | null = null;
 
       if (target && !target.isVacant) {
-        // Ocupado → patientId = internacoes.id. Encerra a internação.
+        // Ocupado → patientId = internacoes.id. Encerra a internação AGORA (data_alta):
+        // este e o unico ponto que fecha o atendimento no ciclo Opcao A (a sinalizacao
+        // deixa a internacao aberta com o status de saida). Preserva o TIPO de desfecho
+        // ja sinalizado — obito nao pode virar alta na liberacao.
+        const closingStatus =
+          target.admissionStatus === ADMISSION_STATUS.DEATH
+            ? 'obito'
+            : target.admissionStatus === ADMISSION_STATUS.EXTERNAL_TRANSFER_PENDING
+              ? 'transferida'
+              : 'alta';
         const { data: closed, error } = await supabase
           .from('internacoes')
-          .update({ data_alta: new Date().toISOString(), status: 'alta' })
+          .update({ data_alta: new Date().toISOString(), status: closingStatus })
           .eq('id', patientId)
           .select('leito_id, paciente_id')
           .maybeSingle();

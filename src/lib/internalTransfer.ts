@@ -352,3 +352,39 @@ export async function cancelInternalTransferRequest(
     return { ok: false, error: err?.message ?? "Erro" };
   }
 }
+
+/**
+ * Ids de internacao com transferencia interna SINALIZADA e ainda nao concluida
+ * nem cancelada. Fonte da TARJA no mapa de leitos — a MESMA fonte da fila.
+ *
+ * MIGRAÇÃO: `internacoes.status` tem CHECK (ativa|alta|obito|transferida|cancelada)
+ * e nao guarda "transferencia_interna_pendente" (toInternacaoStatusDb colapsa em
+ * "ativa"). Logo o estado sinalizado NAO existe em coluna — vive so em
+ * logs_auditoria. Aplica "evento mais recente por internacao vence": se o ultimo
+ * evento da internacao for a sinalizacao, ela esta pendente; se for conclusao ou
+ * cancelamento, saiu do estado pendente.
+ */
+export async function fetchPendingInternalTransferInternacaoIds(): Promise<Set<string>> {
+  const pending = new Set<string>();
+  const { data, error } = await supabase
+    .from("logs_auditoria")
+    .select("internacao_id, tipo_evento, criado_em")
+    .in("tipo_evento", [
+      "sinalizacao_transferencia_interna",
+      "conclusao_transferencia_interna",
+      "cancelamento_transferencia_interna",
+    ])
+    .order("criado_em", { ascending: false })
+    .limit(1000);
+  if (error || !data) return pending;
+
+  const rows = data as { internacao_id: string | null; tipo_evento: string }[];
+  const seen = new Set<string>();
+  for (const log of rows) {
+    const key = log.internacao_id;
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    if (log.tipo_evento === "sinalizacao_transferencia_interna") pending.add(key);
+  }
+  return pending;
+}
