@@ -3,7 +3,6 @@ import { DischargeStatusRibbon } from "./DischargeStatusRibbon";
 import { calcDIH, getEffectiveAdmissionDate } from "@/lib/dihCalc";
 import { isExtraBed } from "@/utils/bedNaming";
 import { formatDateBR } from "@/utils/dateUtils";
-import { isWithin24h } from "@/hooks/useDischargeAlert";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,7 +16,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useState, useRef, useEffect, useMemo, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
-import { Edit, ChevronDown, ChevronRight, Check, X, Plus, GripVertical, Trash2, AlertTriangle, Stethoscope, ClipboardList, FileText, FolderOpen, Pill, Activity, Star, ArrowLeftRight, DoorOpen, Shuffle, UserMinus } from "lucide-react";
+import { Edit, ChevronDown, ChevronRight, Check, X, Plus, GripVertical, Trash2, Stethoscope, ClipboardList, FileText, Activity, Star, ArrowLeftRight, DoorOpen, Shuffle, UserMinus } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { BedReleasePreAdmissionDialog } from "./BedReleasePreAdmissionDialog";
 
@@ -42,7 +41,6 @@ import { SignalInternalTransferDialog } from "./SignalInternalTransferDialog";
 import { BedReallocationDialog } from "./BedReallocationDialog";
 import { PatientRegistrationDialog } from "./PatientRegistrationDialog";
 import { PatientRoundPrintDialog } from "./PatientRoundPrintDialog";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
@@ -612,98 +610,6 @@ function InlineEditableArray({
   );
 }
 
-function ReadOnlyArray({
-  items,
-  label,
-  placeholder = "—",
-  colorClass,
-  icon,
-}: {
-  items: string[];
-  label: string;
-  placeholder?: string;
-  colorClass?: string;
-  icon?: ReactNode;
-}) {
-  return (
-    <div className={cn("rounded-md p-2 cursor-default", colorClass)}>
-      <div className="flex items-center justify-between mb-1">
-        <div className="flex items-center gap-2">
-          {icon}
-          <span className="text-xs font-medium text-muted-foreground tracking-wide">{label}</span>
-          {items.length > 0 && (
-            <Badge variant="secondary" className="h-3.5 px-1 text-xs font-medium">{items.length}</Badge>
-          )}
-        </div>
-      </div>
-      {items.length > 0 ? (
-        <ol className="space-y-1">
-          {items.map((item, index) => (
-            <li key={`${label}-${index}`} className="flex items-start gap-1 text-xs leading-snug text-foreground">
-              <span className="mt-px text-xs font-medium text-muted-foreground">{index + 1}.</span>
-              <span className="break-words">{item}</span>
-            </li>
-          ))}
-        </ol>
-      ) : (
-        <span className="text-xs text-muted-foreground/60 italic pl-1">{placeholder}</span>
-      )}
-    </div>
-  );
-}
-
-function ReadOnlyTextarea({ value, placeholder = "—" }: { value: string; placeholder?: string }) {
-  const [isTextExpanded, setIsTextExpanded] = useState(false);
-  const contentRef = useRef<HTMLDivElement>(null);
-  const [hasOverflow, setHasOverflow] = useState(false);
-
-  useEffect(() => {
-    if (contentRef.current) {
-      setHasOverflow(contentRef.current.scrollHeight > 48);
-    }
-  }, [value]);
-
-  return (
-    <div className="relative cursor-default" title="Importada automaticamente da admissão validada.">
-      <div
-        ref={contentRef}
-        className={cn(
-          "text-xs whitespace-pre-wrap overflow-hidden text-foreground",
-          !isTextExpanded && hasOverflow ? "max-h-[48px]" : "max-h-none"
-        )}
-      >
-        {value || <span className="text-muted-foreground/60 italic text-xs">{placeholder}</span>}
-      </div>
-      {hasOverflow && !isTextExpanded && (
-        <div className="absolute bottom-5 left-0 right-0 h-4 bg-muted/30 pointer-events-none" />
-      )}
-      {hasOverflow && (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-5 px-2 text-xs font-medium text-muted-foreground hover:text-primary mt-1"
-          onClick={(e) => {
-            e.stopPropagation();
-            setIsTextExpanded(!isTextExpanded);
-          }}
-        >
-          {isTextExpanded ? (
-            <>
-              <ChevronDown className="h-3 w-3 mr-1 rotate-180" />
-              Retrair
-            </>
-          ) : (
-            <>
-              <ChevronDown className="h-3 w-3 mr-1" />
-              Expandir
-            </>
-          )}
-        </Button>
-      )}
-    </div>
-  );
-}
-
 export function UtiPatientCard({ 
   patient, 
   onUpdate, 
@@ -717,7 +623,6 @@ export function UtiPatientCard({
   currentUtiUnit
 }: UtiPatientCardProps) {
   const { role } = useAuth();
-  const [isExpanded, setIsExpanded] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   
@@ -893,17 +798,8 @@ export function UtiPatientCard({
   // Rótulo de admissão dinâmico por setor (ex.: "Admissão UCC", "Admissão UTI 1")
   const admissionLabel = `Admissão ${derivedUtiUnit}`;
   const condutasDia = getFieldArray("utiDailyConducts");
-  const dispositivos = getFieldArray("utiDevices");
-  const culturasAtb = getFieldArray("utiCulturesAntibiotics");
   const alergias = getFieldArray("utiAllergies");
   const diagnosticos = getFieldArray("diagnoses");
-  const especialidades = getFieldArray("utiSpecialties");
-  const exames = getFieldArray("relevantExams");
-  const setorOrigem = getFieldArray("utiOriginSector");
-  const motivoAdmissao = getFieldArray("utiAdmissionReason");
-
-  // Count critical items for badge
-  const criticalCount = dispositivos.length + culturasAtb.length + alergias.length;
 
   return (
     <>
@@ -948,7 +844,7 @@ export function UtiPatientCard({
           </div>
         ) : (
           /* OCCUPIED BED VIEW - Normal card */
-          <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
+          <div>
           {/* Header - Collapsed View - FULLY EDITABLE */}
           <div className="flex items-stretch">
             {/* Main Content - Collapsed View */}
@@ -1297,133 +1193,9 @@ export function UtiPatientCard({
                 </DropdownMenuContent>
 
               </DropdownMenu>
-
-              <CollapsibleTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  className="h-6 w-6 text-muted-foreground hover:text-foreground"
-                >
-                  <ChevronDown className={cn("h-4 w-4 transition-transform", isExpanded && "rotate-180")} />
-                </Button>
-              </CollapsibleTrigger>
             </div>
           </div>
-
-          {/* Expanded Content - Complete UTI fields */}
-          <CollapsibleContent>
-            <div className="border-t border-border/30 p-3 space-y-3 bg-muted/5">
-              
-              {/* CRÍTICO - Patient safety items */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <AlertTriangle className="h-3.5 w-3.5 text-critical" />
-                  <span className="text-xs font-semibold text-critical-on-soft tracking-wider">Crítico</span>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                  <InlineEditableArray
-                    items={dispositivos}
-                    onUpdate={(items) => handleUpdateField("utiDevices", items)}
-                    label="Dispositivos"
-                    colorClass="bg-critical-soft/50 border border-critical-border/30"
-                    alwaysShowAll
-                  />
-                  <ReadOnlyArray
-                    items={alergias}
-                    label="Alergias"
-                    placeholder="Sincronizadas com a prescrição"
-                    colorClass="bg-critical-soft/50 border border-critical-border/30"
-                  />
-                  <InlineEditableArray
-                    items={culturasAtb}
-                    onUpdate={(items) => handleUpdateField("utiCulturesAntibiotics", items)}
-                    label="Culturas / ATB"
-                    icon={<Pill className="h-3 w-3 text-critical" />}
-                    colorClass="bg-critical-soft/50 border border-critical-border/30"
-                    alwaysShowAll
-                  />
-                </div>
-              </div>
-
-              {/* CLÍNICO - Clinical evolution */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Stethoscope className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="text-xs font-semibold text-foreground tracking-wider">Clínico</span>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                  <InlineEditableArray
-                    items={especialidades}
-                    onUpdate={(items) => handleUpdateField("utiSpecialties", items)}
-                    label="Especialidades"
-                    colorClass="bg-muted/50 border border-border/50"
-                    alwaysShowAll
-                  />
-                  <InlineEditableArray
-                    items={exames}
-                    onUpdate={(items) => handleUpdateField("relevantExams", items)}
-                    label="Exames"
-                    colorClass="bg-muted/50 border border-border/50"
-                    alwaysShowAll
-                  />
-                </div>
-              </div>
-
-              {/* HISTÓRIA - Admission history */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <FileText className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="text-xs font-semibold text-muted-foreground tracking-wider">História admissional</span>
-                </div>
-                <div className="bg-muted/30 border border-border/30 rounded-md p-2">
-                  <ReadOnlyTextarea
-                    value={patient.admissionHistory || ""}
-                    placeholder="Importada da admissão validada"
-                  />
-                </div>
-              </div>
-
-              {/* ADMINISTRATIVO */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <FolderOpen className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="text-xs font-semibold text-muted-foreground tracking-wider">Administrativo</span>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
-                  <ReadOnlyArray
-                    items={setorOrigem}
-                    label="Setor de origem"
-                    placeholder="Importado da admissão"
-                    colorClass="bg-muted/30 border border-border/30"
-                  />
-                  <ReadOnlyArray
-                    items={motivoAdmissao}
-                    label="Motivo da admissão"
-                    placeholder="Importado da admissão"
-                    colorClass="bg-muted/30 border border-border/30"
-                  />
-                  <div className="bg-muted/30 border border-border/30 rounded-md p-2 cursor-not-allowed" title="Edite em Edição Avançada">
-                    <span className="text-xs font-medium text-muted-foreground tracking-wide block mb-1">{admissionLabel}</span>
-                    <span className="text-sm font-medium block min-h-[20px]">
-                      {getFieldArray("utiAdmissionDate")[0] || "—"}
-                    </span>
-                  </div>
-                  <div className="bg-muted/30 border border-border/30 rounded-md p-2 cursor-not-allowed" title="Edite em Edição Avançada ou via Evolução Médica">
-                    <span className="text-xs font-medium text-muted-foreground tracking-wide block mb-1">Previsão de alta</span>
-                    <span className="text-sm font-medium block min-h-[20px]">
-                      {previsaoAltaDate || "—"}
-                    {isWithin24h(previsaoAlta[0]) && (
-                      <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-warning/15 border border-warning/40 px-2 py-1 text-xs font-medium text-warning-on-soft">
-                        Alta amanhã
-                      </span>
-                    )}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </CollapsibleContent>
-        </Collapsible>
+        </div>
         )}
       </div>
 
