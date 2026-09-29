@@ -392,31 +392,28 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
           className
         )}
       >
-        {/* ══ Barra colapsada — centralizada, 90% da altura, elegante ══ */}
+        {/* ══ Barra colapsada — rail alto, conteudo em tamanho natural, sem corte ══ */}
         {variant === "fixed" && !isExpanded && (
-          <div className="flex items-center justify-center h-full w-full">
           <button
             type="button"
             title="Expandir painel do paciente"
             onClick={() => setPinned(true)}
             onMouseEnter={() => setHovering(true)}
             className={cn(
-              "group flex flex-col items-center w-full",
-              // Ocupa toda a altura do container flutuante
-              "h-full",
-              // Radius herdado do aside com overflow-hidden — não sobrepor
-              "rounded-none",
-              // Fundo: degradê sutil cabeçalho institucional
+              "group relative flex flex-col items-center justify-center w-full",
+              // Altura generosa limitada ao viewport: o rail cresce o suficiente para
+              // caber leito/setor/nome verticais sem o corte que o flex-1 + h-full
+              // causavam. Conteudo centralizado; nada estourando a diagramacao.
+              "h-[min(34rem,calc(100vh-6rem))]",
+              "gap-4 py-6",
+              // Fundo: degrade sutil do cabecalho institucional
               "bg-gradient-to-b from-[#0a1628]/5 via-[#0f2847]/8 to-[#1a3a5c]/5",
-              // Borda sutil em todos os lados
-              "border border-primary/15",
-              // Hover: ligeiramente mais opaco
+              "border border-primary/15 overflow-hidden",
               "hover:bg-gradient-to-b hover:from-[#0a1628]/10 hover:via-[#0f2847]/15 hover:to-[#1a3a5c]/10",
-              "relative overflow-hidden",
               "transition-all duration-300 ease-out cursor-pointer"
             )}
           >
-            {/* Borda esquerda com degradê — replica cabeçalho institucional */}
+            {/* Borda esquerda com degrade — replica cabecalho institucional */}
             <span
               aria-hidden
               className="absolute left-0 top-0 bottom-0 w-[3px] pointer-events-none"
@@ -425,57 +422,52 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
               }}
             />
 
-            {/* Conteúdo totalmente centralizado na barra */}
-            <div className="flex flex-col items-center justify-center h-full w-full gap-3 py-6">
+            {/* Chevron */}
+            <ChevronLeft className="h-4 w-4 text-primary/70 group-hover:text-primary transition-colors shrink-0" />
 
-              {/* Chevron */}
-              <ChevronLeft className="h-4 w-4 text-primary/70 group-hover:text-primary transition-colors shrink-0" />
+            {/* Status dot */}
+            <div className={cn("h-2.5 w-2.5 rounded-full shrink-0", status.dot)} title={status.label} />
 
-              {/* Status dot */}
-              <div className={cn("h-2.5 w-2.5 rounded-full shrink-0", status.dot)} title={status.label} />
-
-              {/* Conteúdo vertical — leito · setor · nome */}
-              <div
-                className="flex-1 flex items-center justify-center"
-                style={{ writingMode: "vertical-rl" as any, transform: "rotate(180deg)" }}
-              >
-                <div className="flex flex-col items-center gap-3">
-                  {patient.bedNumber && (
-                    <span className="text-xs font-semibold tracking-[0.18em] text-primary group-hover:text-primary">
-                      {patient.bedNumber}
-                    </span>
-                  )}
-                  <span className="text-xs font-semibold tracking-[0.25em] uppercase text-foreground/50 group-hover:text-foreground/80">
-                    {sector}
+            {/* Conteudo vertical — leito · setor · nome (tamanho natural, sem flex-1) */}
+            <div
+              className="flex items-center justify-center min-h-0"
+              style={{ writingMode: "vertical-rl" as any, transform: "rotate(180deg)" }}
+            >
+              <div className="flex flex-col items-center gap-3">
+                {patient.bedNumber && (
+                  <span className="text-xs font-semibold tracking-[0.18em] text-primary group-hover:text-primary">
+                    {patient.bedNumber}
                   </span>
-                  {patient.name && patient.name.trim() !== '' && (
-                    <>
-                      <span className="w-3 h-px bg-border" />
-                      <span className="text-xs font-medium tracking-wide text-foreground/70 group-hover:text-foreground">
-                        {patient.name.split(' ').slice(0, 3).join(' ')}
-                      </span>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {/* Alergia */}
-              {allergies.length > 0 && (
-                <span title={`Alergia: ${allergies.join(", ")}`} className="inline-flex shrink-0">
-                  <ShieldAlert className="h-3.5 w-3.5 text-destructive" />
+                )}
+                <span className="text-xs font-semibold tracking-[0.25em] uppercase text-foreground/50 group-hover:text-foreground/80">
+                  {sector}
                 </span>
-              )}
-
-              {/* Label VER */}
-              <span
-                className="text-xs font-semibold tracking-[0.2em] uppercase text-primary/50 group-hover:text-primary transition-colors shrink-0"
-                style={{ writingMode: "vertical-rl" as any, transform: "rotate(180deg)" }}
-              >
-                ver
-              </span>
+                {patient.name && patient.name.trim() !== '' && (
+                  <>
+                    <span className="w-3 h-px bg-border" />
+                    <span className="text-xs font-medium tracking-wide text-foreground/70 group-hover:text-foreground">
+                      {patient.name.split(' ').slice(0, 3).join(' ')}
+                    </span>
+                  </>
+                )}
+              </div>
             </div>
+
+            {/* Alergia */}
+            {allergies.length > 0 && (
+              <span title={`Alergia: ${allergies.join(", ")}`} className="inline-flex shrink-0">
+                <ShieldAlert className="h-3.5 w-3.5 text-destructive" />
+              </span>
+            )}
+
+            {/* Label VER */}
+            <span
+              className="text-xs font-semibold tracking-[0.2em] uppercase text-primary/50 group-hover:text-primary transition-colors shrink-0"
+              style={{ writingMode: "vertical-rl" as any, transform: "rotate(180deg)" }}
+            >
+              ver
+            </span>
           </button>
-          </div>
         )}
         {/* Expanded content — scrollável para ver todas as informações */}
         <div className={cn(
