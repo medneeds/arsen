@@ -11,6 +11,7 @@ import { CultureNotifications } from "@/components/CultureNotifications";
 import { useIsGestor } from "@/hooks/useIsGestor";
 import { MobileMenuFab } from "@/components/MobileMenuFab";
 import { cn } from "@/lib/utils";
+import { HeaderHelpProvider } from "@/contexts/HeaderHelpContext";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -40,6 +41,7 @@ export function MainLayout({ children }: MainLayoutProps) {
   }, [isGestor]);
 
   return (
+    <HeaderHelpProvider>
     <SidebarProvider defaultOpen={false}>
       <div className={cn("min-h-screen flex w-full bg-background relative", isGestor && "gestor-readonly-root")}>
         <AppSidebar />
@@ -65,6 +67,7 @@ export function MainLayout({ children }: MainLayoutProps) {
       <KeyboardShortcutsDialog open={showShortcuts} onOpenChange={setShowShortcuts} />
       <CultureNotifications />
     </SidebarProvider>
+    </HeaderHelpProvider>
   );
 }
 

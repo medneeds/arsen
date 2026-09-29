@@ -64,6 +64,7 @@ const ProfileSwitcherDialog = lazy(() =>
   import("@/components/auth/ProfileSwitcherDialog").then(m => ({ default: m.ProfileSwitcherDialog })));
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
+import { useHeaderHelp } from "@/contexts/HeaderHelpContext";
 import { SECTOR_NAVIGATION } from "@/config/sectorNavigation";
 import { PAPEL_TO_PROFILE } from "@/config/profileDefaults";
 import { useDepartment, type Department } from "@/contexts/DepartmentContext";
@@ -102,6 +103,7 @@ function DevConsoleLink({ isCollapsed, onNavigate }: { isCollapsed: boolean; onN
 
 export function AppSidebar() {
   const { open, setOpen, openMobile, setOpenMobile, state } = useSidebar();
+  const { headerHasHelp } = useHeaderHelp();
   const navigate = useNavigate();
   const { isDirty, onSaveDraft, dirtyLabel } = useUnsavedPrescription();
   const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -853,28 +855,30 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="border-t border-border/50 p-2 bg-muted/30">
-        {/* Dúvidas Frequentes */}
-        <button
-          type="button"
-          onClick={() => navigate("/ajuda")}
-          title="Dúvidas Frequentes"
-          className={cn(
-            "group w-full flex items-center rounded-lg transition-all duration-200",
-            "hover:bg-primary/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
-            location.pathname === "/ajuda" && "bg-primary/10",
-            isCollapsed ? "justify-center p-2" : "gap-3 px-3 py-2"
-          )}
-        >
-          <HelpCircle className={cn(
-            "h-4 w-4 flex-shrink-0 transition-colors",
-            location.pathname === "/ajuda" ? "text-primary" : "text-muted-foreground group-hover:text-primary"
-          )} />
-          {!isCollapsed && (
-            <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">
-              Dúvidas Frequentes
-            </span>
-          )}
-        </button>
+        {/* Dúvidas Frequentes — só aqui nas telas cujo cabeçalho não exibe o botão */}
+        {!headerHasHelp && (
+          <button
+            type="button"
+            onClick={() => navigate("/ajuda")}
+            title="Dúvidas Frequentes"
+            className={cn(
+              "group w-full flex items-center rounded-lg transition-all duration-200",
+              "hover:bg-primary/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+              location.pathname === "/ajuda" && "bg-primary/10",
+              isCollapsed ? "justify-center p-2" : "gap-3 px-3 py-2"
+            )}
+          >
+            <HelpCircle className={cn(
+              "h-4 w-4 flex-shrink-0 transition-colors",
+              location.pathname === "/ajuda" ? "text-primary" : "text-muted-foreground group-hover:text-primary"
+            )} />
+            {!isCollapsed && (
+              <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">
+                Dúvidas Frequentes
+              </span>
+            )}
+          </button>
+        )}
 
         {/* Tema — alternador claro/escuro. Cobre todas as telas internas
             (a sidebar aparece em toda pagina sob MainLayout), inclusive as que
