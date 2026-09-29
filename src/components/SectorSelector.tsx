@@ -15,6 +15,7 @@ import { useState, useMemo } from "react";
 import { SECTOR_NAVIGATION, type NavSectorGroup } from "@/config/sectorNavigation";
 import { useSectorNavigation } from "@/hooks/useSectorNavigation";
 import { safeSetItem } from "@/lib/safeStorage";
+import { resolveSectorCode } from "@/config/sectorCoverage";
 
 // Hierarquia vem DIRETO DO BANCO (alas → setores) via useSectorNavigation.
 // A lista estática de sectorNavigation.ts é só fallback enquanto carrega / se
@@ -78,9 +79,12 @@ export function SectorSelector({ variant = "light", navigateOnSelect = true, onS
         safeSetItem("gestor_sector_filter", department);
       }
     }
-    // setores.tipo é o código que o painel clínico casa; sem ele, vale o nome.
-    const tipo = dbSectors.find((s) => s.nome === department)?.tipo ?? null;
-    setCurrentDepartment(department, tipo);
+    // Codigo canonico do setor resolvido pelo NOME. NUNCA usar setores.tipo aqui:
+    // tipo e uma CLASSIFICACAO (clinico/cirurgico), nao o codigo do setor — persistir
+    // isso em selected_sector envenenava o estado e o mapa reabria no setor errado,
+    // listando os leitos de TODOS os setores clinicos (L01 repetido N vezes).
+    const code = resolveSectorCode(department) ?? null;
+    setCurrentDepartment(department, code);
     onSelect?.(department);
     if (navigateOnSelect) {
       // Todos os perfis (inclusive Gestor) vão ao mapa de leitos do setor selecionado.

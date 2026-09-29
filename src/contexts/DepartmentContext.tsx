@@ -1,5 +1,23 @@
 import { createContext, useContext, useState, ReactNode, useEffect, useCallback, useMemo } from "react";
 import { safeSetItem } from "@/lib/safeStorage";
+import { isSectorType } from "@/types/patient";
+import { resolveSectorCode } from "@/config/sectorCoverage";
+
+// Limpeza unica no LOAD (antes de qualquer inicializador de estado ler o storage):
+// navegadores que dispararam o bug de selecao de setor tem `selected_sector` gravado
+// com uma CLASSIFICACAO (setores.tipo: 'clinico'/'cirurgico') no lugar do codigo do
+// setor. Isso reabria o mapa no setor errado, listando os leitos de TODOS os setores
+// clinicos (L01 repetido). So removemos os valores de `tipo` conhecidos — nunca um
+// nome de setor legitimo.
+const SECTOR_TIPO_POISON = new Set(["clinico", "cirurgico", "clínico", "cirúrgico"]);
+if (typeof window !== "undefined") {
+  try {
+    const poisoned = localStorage.getItem("selected_sector");
+    if (poisoned && SECTOR_TIPO_POISON.has(poisoned.trim().toLowerCase())) {
+      localStorage.removeItem("selected_sector");
+    }
+  } catch { /* storage indisponivel — ignora */ }
+}
 
 export type Department = 
   | "URGÊNCIA E EMERGÊNCIA ADULTO"
@@ -174,7 +192,13 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
     // Antes só gravava quando o nome estava no mapa antigo: ao escolher um setor
     // do banco, selected_sector ficava com o setor ANTERIOR e o painel mostrava
     // a ocupação de outro lugar. Agora: código do banco > mapa antigo > nome.
-    const code = sectorCode || DEPARTMENT_TO_SECTOR[department] || department;
+    const raw = sectorCode || DEPARTMENT_TO_SECTOR[department] || department;
+    // Blindagem: nunca persistir uma classificacao (setores.tipo) como codigo de
+    // setor. So aceita codigo valido (SectorType) ou nome de setor resolvivel; caso
+    // contrario, cai no nome do department (que o mapa ja casa por p.sectorName).
+    const code = raw && (isSectorType(raw) || !!resolveSectorCode(raw))
+      ? raw
+      : (DEPARTMENT_TO_SECTOR[department] || department);
     if (code) {
       safeSetItem("selected_sector", code);
     }
