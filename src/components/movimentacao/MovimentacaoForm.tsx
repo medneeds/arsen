@@ -23,12 +23,13 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useHospital } from "@/contexts/HospitalContext";
+import { useSectorNavigation } from "@/hooks/useSectorNavigation";
+import { resolveSectorCode, isWithinInpatientScope } from "@/config/sectorCoverage";
 import { ArrowLeft, ArrowRight, FileText, Loader2, AlertTriangle, User, Bed, Stethoscope, MapPin, Info, ArrowRightLeft, Building2, ClipboardList, Eye, History, CheckCircle2, RefreshCw, Unlock, Undo2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   MOVEMENT_CATEGORIES,
   MOVEMENT_SUBTYPES,
-  INTERNAL_TRANSFER_DESTINATIONS,
   EXTERNAL_TRANSFER_DESTINATIONS,
   INTERNMENT_DESTINATIONS,
   adaptLegacyType,
@@ -65,25 +66,8 @@ async function resolveProfissionalId(userId: string | null | undefined): Promise
   }
 }
 
-// Mapeamento: texto do destino de transferência interna → código de setor do banco
-const DESTINATION_TO_SECTOR_CODE: Record<string, string> = {
-  "UTI 01": "red",
-  "UTI 02": "yellow",
-  "UCI 01": "blue",
-  "UCI 02": "outside",
-  "ENFERMARIA NEURO 01": "neuro_01",
-  "ENFERMARIA NEURO 02": "neuro_02",
-  "ENFERMARIA CLÍNICA CIRÚRGICA": "clinica_cirurgica",
-  "ENFERMARIA DE TRANSIÇÃO": "enfermaria_transicao",
-  "UCC (UNIDADE DE CUIDADOS CLÍNICOS)": "ucc",
-  "ENFERMARIA VASCULAR (ANEXO)": "enfermaria_vascular",
-  "CENTRO CIRÚRGICO": "cc_bloco",
-  "RIV (REFERÊNCIA DE INTERNAÇÃO VASCULAR)": "riv",
-  "SALA VERMELHA": "sala_vermelha",
-  "SALA LARANJA": "sala_laranja",
-  "OBSERVAÇÃO CLÍNICA": "observacao_clinica",
-  "INTERNAÇÃO UE": "internacao_ue",
-};
+// (DESTINATION_TO_SECTOR_CODE removido: o destino de transferencia interna agora vem
+//  de setores reais do banco e o codigo e resolvido por resolveSectorCode.)
 
 interface MovimentacaoFormProps {
   patient: Patient | null;
@@ -212,13 +196,28 @@ export function MovimentacaoForm({
     [subtype],
   );
 
+  // Destinos de TRANSFERENCIA INTERNA: apenas SETORES REAIS do banco (sincronizados
+  // por useSectorNavigation), dentro do escopo de internacao, excluindo o setor de
+  // origem. Fim dos destinos hardcoded (HEMODINAMICA/OUTRO) que nao geravam a marcacao
+  // — agora todo destino resolve um codigo canonico valido, entao o log/tarja sempre e
+  // criado.
+  const { sectors: dbSectors } = useSectorNavigation();
+  const internalTransferDestinations = useMemo(() => {
+    const originCode = resolveSectorCode(patient?.sector) ?? null;
+    return dbSectors
+      .map((s: { nome: string }) => ({ nome: s.nome, code: resolveSectorCode(s.nome) }))
+      .filter((s) => !!s.code && isWithinInpatientScope(s.code) && s.code !== originCode)
+      .map((s) => s.nome)
+      .sort((a, b) => a.localeCompare(b, "pt-BR"));
+  }, [dbSectors, patient?.sector]);
+
   const destinationOptions = useMemo(() => {
     if (!subtypeDef?.needsDestination) return [];
-    if (subtypeDef.id === "TRANSFERENCIA_INTERNA") return INTERNAL_TRANSFER_DESTINATIONS;
+    if (subtypeDef.id === "TRANSFERENCIA_INTERNA") return internalTransferDestinations;
     if (subtypeDef.id === "TRANSFERENCIA_EXTERNA") return EXTERNAL_TRANSFER_DESTINATIONS;
     if (subtypeDef.id === "INTERNACAO") return INTERNMENT_DESTINATIONS;
     return [];
-  }, [subtypeDef]);
+  }, [subtypeDef, internalTransferDestinations]);
 
   const requiredDocType: DischargeDocType | null = useMemo(() => {
     if (!subtypeDef) return null;
@@ -437,7 +436,9 @@ export function MovimentacaoForm({
         // logs_auditoria; a alocação física no setor destino é feita depois pelo Mapa de Leitos.
         if (subtypeDef.id === "TRANSFERENCIA_INTERNA") {
           const finalDest = destination === "OUTRO" ? customDestination : destination;
-          const sectorCode = finalDest ? DESTINATION_TO_SECTOR_CODE[finalDest.trim().toUpperCase()] ?? null : null;
+          // Destino ja e um setor real do banco → resolveSectorCode devolve o codigo
+          // canonico (nao ha mais destino sem mapeamento). Fim do DESTINATION_TO_SECTOR_CODE.
+          const sectorCode = finalDest ? resolveSectorCode(finalDest) ?? null : null;
           if (sectorCode) {
             // Classifica a transferência (lógica pura — mantida) para registrar no log.
             let classification: string | null = null;
@@ -763,10 +764,12 @@ export function MovimentacaoForm({
                     {dest}
                   </SelectItem>
                 ))}
-                <SelectItem value="OUTRO">OUTRO (especificar)</SelectItem>
+                {subtypeDef?.id !== "TRANSFERENCIA_INTERNA" && (
+                  <SelectItem value="OUTRO">OUTRO (especificar)</SelectItem>
+                )}
               </SelectContent>
             </Select>
-            {destination === "OUTRO" && (
+            {destination === "OUTRO" && subtypeDef?.id !== "TRANSFERENCIA_INTERNA" && (
               <Input
                 placeholder="Especifique o destino"
                 value={customDestination}
