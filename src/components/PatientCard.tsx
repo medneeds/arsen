@@ -9,7 +9,6 @@ import { ChevronDown, ChevronUp, Clock, Calendar, Edit, Trash2, Copy, ArrowLeftR
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { EditPatientDialog } from "./EditPatientDialog";
-import { PatientMovementDialog } from "./PatientMovementDialog";
 import { MedicalResponsibilityDialog } from "./MedicalResponsibilityDialog";
 import { MedicalResponsibilityIndicator } from "./MedicalResponsibilityIndicator";
 import { InternmentStatusDialog } from "./InternmentStatusDialog";
@@ -642,8 +641,6 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isReleasePreAdmissionOpen, setIsReleasePreAdmissionOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [movementDialogOpen, setMovementDialogOpen] = useState(false);
-  const [movementType, setMovementType] = useState<"ALTA" | "ÓBITO" | "TRANSFERÊNCIA" | null>(null);
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [editingArrayIndex, setEditingArrayIndex] = useState<number>(-1);
@@ -2434,19 +2431,6 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
         open={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}
         onSave={onUpdate}
-      />
-
-      <PatientMovementDialog
-        patient={patient}
-        movementType={movementType}
-        isOpen={movementDialogOpen}
-        onClose={() => {
-          setMovementDialogOpen(false);
-          setMovementType(null);
-        }}
-        onSuccess={() => {
-          onRefetch?.();
-        }}
       />
 
       <SignalInternalTransferDialog

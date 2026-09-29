@@ -49,7 +49,6 @@ import { MedicalDocumentDialog } from "./MedicalDocumentDialog";
 import { CVCChecklistDialog } from "./CVCChecklistDialog";
 import { PatientRoundPrintDialog } from "./PatientRoundPrintDialog";
 import { MedicalRecordEditDialog } from "./MedicalRecordEditDialog";
-import { PatientMovementDialog } from "./PatientMovementDialog";
 import { Printer } from "lucide-react";
 import { PatientIdentityHeader } from "./PatientIdentityHeader";
 import { SuspendDischargeDialog } from "./SuspendDischargeDialog";
@@ -134,7 +133,6 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
   const [hovering, setHovering] = useState(false);
   const [docDialogOpen, setDocDialogOpen] = useState(false);
   const [roundPrintOpen, setRoundPrintOpen] = useState(false);
-  const [movementDialogOpen, setMovementDialogOpen] = useState(false);
   const [receituarioOpen, setReceituarioOpen] = useState(false);
   const [cvcChecklistOpen, setCvcChecklistOpen] = useState(false);
   const isExpanded = variant === "inline" || pinned || hovering;
@@ -267,6 +265,25 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
     } else {
       navigate(target);
     }
+  };
+
+  // Sinalizacao de movimentacao/desfecho: antes abria o PatientMovementDialog
+  // (pop-up); agora navega para a pagina /movimentar (aba "Movimentacao"),
+  // levando o MESMO objeto `patient` que o dialog recebia como snapshot da
+  // escrita (via location.state) + os search params (para abas/cockpit/key).
+  // returnTo = tela atual, para voltar aqui ao fechar.
+  const goMovimentar = () => {
+    const params = new URLSearchParams({
+      patientId: patient.id,
+      patientName: patient.name,
+      patientBed: patient.bedNumber,
+      patientSector: patient.sector,
+    });
+    const liveAge = registry?.age || patient.age;
+    if (liveAge) params.set("patientAge", liveAge.toString());
+    navigate(`/movimentar?${params.toString()}`, {
+      state: { patient, returnTo: location.pathname + location.search },
+    });
   };
 
   // ── Vertical/reduzido (<lg): trilho lateral fino + Sheet ──────────
@@ -545,7 +562,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
             patientId={patient.id}
             patientName={patient.name}
             admissionStatus={patient.admissionStatus}
-            fallback={() => setMovementDialogOpen(true)}
+            fallback={goMovimentar}
           />
 
           {(() => {
@@ -1212,7 +1229,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
                 )}
               </CockpitSection>
 
-              <DischargeQuickActions patientId={patient.id} patientName={patient.name} admissionStatus={patient.admissionStatus} fallback={() => setMovementDialogOpen(true)} />
+              <DischargeQuickActions patientId={patient.id} patientName={patient.name} admissionStatus={patient.admissionStatus} fallback={goMovimentar} />
             </TabsContent>
           </div>
         </Tabs>
@@ -1311,22 +1328,6 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
         patientName={patient.name}
         patientBed={patient.bedNumber}
         patientSector={patient.sector}
-      />
-
-      <PatientMovementDialog
-        patient={patient}
-        movementType={null}
-        isOpen={movementDialogOpen}
-        onClose={() => setMovementDialogOpen(false)}
-        onSuccess={() => {
-          // Bug reportado 16/07/2026: a cockpit não atualizava sozinha após
-          // finalizar uma sinalização (óbito, alta, transferência) — o
-          // dialog já tinha esse callback pronto, mas nada aqui o chamava.
-          queryClient.invalidateQueries({ queryKey: ["discharge-docs"] });
-          queryClient.invalidateQueries({ queryKey: ["patients"] });
-          queryClient.invalidateQueries({ queryKey: ["patient-movements"] });
-          queryClient.invalidateQueries({ queryKey: ["internal-transfer-requests"] });
-        }}
       />
     </TooltipProvider>
   );

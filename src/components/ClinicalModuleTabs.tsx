@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { Pill, NotebookPen, FileText, FolderOpen, Clock, Activity, AlertTriangle, Stethoscope } from "lucide-react";
+import { Pill, NotebookPen, FileText, FolderOpen, Clock, Activity, AlertTriangle, Stethoscope, ArrowLeftRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUnsavedPrescription } from "@/contexts/UnsavedPrescriptionContext";
 import {
@@ -18,6 +18,7 @@ const MODULE_TABS = [
   { label: "Monitoramento", path: "/monitoramento", icon: Activity },
   { label: "Docs", path: "/documentos", icon: FolderOpen },
   { label: "Histórico", path: "/historico-paciente", icon: Clock },
+  { label: "Movimentação", path: "/movimentar", icon: ArrowLeftRight },
 ];
 
 interface ClinicalModuleTabsProps {
