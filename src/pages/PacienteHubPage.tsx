@@ -15,7 +15,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useCockpitPatient } from "@/hooks/useCockpitPatient";
 import { usePatientPendingItems } from "@/hooks/usePatientPendingItems";
 import { PatientCockpit } from "@/components/PatientCockpit";
-import { PatientMovementDialog } from "@/components/PatientMovementDialog";
 import { getSectorLabel } from "@/lib/sectorUtils";
 import type { AdmissionStatus as CanonicalAdmissionStatus } from "@/lib/admissionStatus";
 
@@ -65,7 +64,6 @@ export default function PacienteHubPage() {
   // precisava abrir um modulo clinico qualquer so para alcancar o cockpit que
   // mora la.
   const cockpitPatient = useCockpitPatient();
-  const [movementOpen, setMovementOpen] = useState(false);
 
 
 
@@ -300,6 +298,23 @@ export default function PacienteHubPage() {
     const qs = new URLSearchParams();
     Object.entries(ctx).forEach(([k, v]) => v && qs.set(k, v));
     navigate(`${path}?${qs.toString()}`);
+  };
+
+  // Sinalizacao: antes abria o PatientMovementDialog (pop-up); agora navega
+  // para /movimentar (aba "Movimentacao"), levando o MESMO objeto que o dialog
+  // recebia (cockpitPatient) como snapshot da escrita via location.state, mais
+  // os search params (abas/cockpit/key). returnTo volta para este Hub.
+  const goMovimentar = () => {
+    const qs = new URLSearchParams();
+    if (ctx.patientId) qs.set("patientId", ctx.patientId);
+    if (ctx.patientName) qs.set("patientName", ctx.patientName);
+    if (ctx.patientBed) qs.set("patientBed", ctx.patientBed);
+    if (ctx.patientSector) qs.set("patientSector", ctx.patientSector);
+    if (ctx.patientAge) qs.set("patientAge", ctx.patientAge);
+    const s = qs.toString();
+    navigate(`/movimentar${s ? `?${s}` : ""}`, {
+      state: { patient: cockpitPatient, returnTo: `/paciente${s ? `?${s}` : ""}` },
+    });
   };
 
   const handleLockedClick = (reason: "preadmission" | "saps_expired") => {
@@ -715,7 +730,7 @@ export default function PacienteHubPage() {
               saltar aos olhos antes de qualquer clique.
             */}
             <button
-              onClick={() => locked ? handleLockedClick(lockReason!) : setMovementOpen(true)}
+              onClick={() => locked ? handleLockedClick(lockReason!) : goMovimentar()}
               aria-disabled={locked}
               title="Sinalizar movimentação interna, transferência, alta ou óbito"
               className="relative group text-left"
@@ -802,31 +817,11 @@ export default function PacienteHubPage() {
       {cockpitPatient && <PatientCockpit patient={cockpitPatient} />}
       </div>
 
-      {/* Fluxo de movimentacoes e desfechos, aberto pelo card de Sinalizacao.
-          Mesmo dialogo que o cockpit usa — um caminho de codigo so. */}
-      <PatientMovementDialog
-        patient={cockpitPatient}
-        movementType={null}
-        isOpen={movementOpen}
-        onClose={() => setMovementOpen(false)}
-        onSuccess={() => {
-          setMovementOpen(false);
-          // BUG (relatado 09/08/2026): o card de Sinalizacao continuava com o
-          // status antigo apos confirmar. Este onSuccess so fechava o dialogo.
-          //
-          // Duas fontes precisam ser refrescadas, e uma nao cobre a outra:
-          //  - refreshHubState(): o admissionStatus do Hub vem de fetchStatus(),
-          //    useState proprio, que NAO passa pelo react-query;
-          //  - invalidateQueries(): o cockpit ao lado le pelo react-query, e sem
-          //    isso ele ficaria dessincronizado do card na mesma tela.
-          // O cockpit ja fazia a segunda parte desde 16/07; faltava a primeira.
-          refreshHubState();
-          queryClient.invalidateQueries({ queryKey: ["discharge-docs"] });
-          queryClient.invalidateQueries({ queryKey: ["patients"] });
-          queryClient.invalidateQueries({ queryKey: ["patient-movements"] });
-          queryClient.invalidateQueries({ queryKey: ["internal-transfer-requests"] });
-        }}
-      />
+      {/* A sinalizacao de movimentacoes/desfechos deixou de ser um pop-up: o card
+          de Sinalizacao agora navega para a pagina /movimentar (goMovimentar).
+          O refresh do status do Hub acontece ao voltar (remontagem por key +
+          refreshHubState em focus/visibilitychange); o cockpit ao lado
+          reidrata via realtime/invalidacao disparada na propria pagina. */}
 
       {ctx.patientId && (
         <AdmissionConsultDialog

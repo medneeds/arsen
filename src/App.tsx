@@ -72,6 +72,7 @@ const RequisicaoUnificadaPage = lazy(() => import("./pages/RequisicaoUnificadaPa
 const PrescricaoPage = lazy(() => import("./pages/PrescricaoPage"));
 const EvolucaoPage = lazy(() => import("./pages/EvolucaoPage"));
 const AdmissaoPage = lazy(() => import("./pages/AdmissaoPage"));
+const MovimentacaoPage = lazy(() => import("./pages/MovimentacaoPage"));
 const MovimentacoesPage = lazy(() => import("./pages/MovimentacoesPage"));
 const MedicationCatalogPage = lazy(() => import("./pages/MedicationCatalogPage"));
 const GestorPanelPage = lazy(() => import("./pages/GestorPanelPage"));
@@ -215,6 +216,11 @@ function AdmissaoPageWrapper() {
   return <AdmissaoPage key={key} />;
 }
 
+function MovimentacaoPageWrapper() {
+  const key = usePatientKey();
+  return <MovimentacaoPage key={key} />;
+}
+
 // O Hub e a tela inicial do paciente e agora tem o PatientSwitcher. Sem esta
 // key ele nao remontaria ao trocar de paciente: os estados derivados (status de
 // admissao, evolucao do dia, prescricao validada, requisicoes pendentes) so se
@@ -330,6 +336,7 @@ const App = () => {
               <Route path="/prescricao" element={<ProtectedRoute><MainLayout><PrescricaoPageWrapper /></MainLayout></ProtectedRoute>} />
               <Route path="/evolucao" element={<ProtectedRoute><MainLayout><EvolucaoPageWrapper /></MainLayout></ProtectedRoute>} />
               <Route path="/admissao" element={<ProtectedRoute><MainLayout><AdmissaoPageWrapper /></MainLayout></ProtectedRoute>} />
+              <Route path="/movimentar" element={<ProtectedRoute><MainLayout><MovimentacaoPageWrapper /></MainLayout></ProtectedRoute>} />
               <Route path="/movimentacoes" element={<ProtectedRoute><MainLayout><MovimentacoesPage /></MainLayout></ProtectedRoute>} />
               <Route path="/catalogo-medicamentos" element={<ProtectedRoute><MainLayout><MedicationCatalogPage /></MainLayout></ProtectedRoute>} />
               <Route path="/painel-gestor" element={<ProtectedRoute><IpRestricted moduleKey="gestor" moduleLabel="Painel Gestor"><GestorPanelPage /></IpRestricted></ProtectedRoute>} />

@@ -36,7 +36,6 @@ const CLINICAL_STATUS_OPTIONS = [
 // Text inputs no longer forced to uppercase
 import { cn } from "@/lib/utils";
 import { EditPatientDialog } from "./EditPatientDialog";
-import { PatientMovementDialog } from "./PatientMovementDialog";
 import { SignalInternalTransferDialog } from "./SignalInternalTransferDialog";
 import { BedReallocationDialog } from "./BedReallocationDialog";
 import { PatientRegistrationDialog } from "./PatientRegistrationDialog";
@@ -626,9 +625,6 @@ export function UtiPatientCard({
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   
-  // Movement dialog states
-  const [movementType, setMovementType] = useState<"ALTA" | "ÓBITO" | "TRANSFERÊNCIA" | null>(null);
-  const [isMovementDialogOpen, setIsMovementDialogOpen] = useState(false);
   const navigate = useNavigate();
   const [isReallocationDialogOpen, setIsReallocationDialogOpen] = useState(false);
   const [isSignalTransferOpen, setIsSignalTransferOpen] = useState(false);
@@ -656,20 +652,6 @@ export function UtiPatientCard({
     }
   }, [forceCollapsed]);
   const [activeColumn, setActiveColumn] = useState<'diagnoses' | 'antecedentes' | 'condutas' | 'pendencias' | null>(null);
-
-  // Movement handlers
-  const handleMovement = (type: "ALTA" | "ÓBITO" | "TRANSFERÊNCIA") => {
-    setMovementType(type);
-    setIsMovementDialogOpen(true);
-  };
-
-  const handleMovementSuccess = async () => {
-    // Alta/óbito/transferência externa só sinalizam o desfecho.
-    // O leito permanece ocupado até a liberação física pelo fluxo pós-alta/óbito.
-    setIsMovementDialogOpen(false);
-    setMovementType(null);
-    onRefetch?.();
-  };
 
   const handleReallocationSuccess = () => {
     setIsReallocationDialogOpen(false);
@@ -1207,18 +1189,6 @@ export function UtiPatientCard({
           onUpdate(updatedPatient);
           setIsEditDialogOpen(false);
         }}
-      />
-
-      {/* Movement Dialog */}
-      <PatientMovementDialog
-        patient={patient}
-        movementType={movementType}
-        isOpen={isMovementDialogOpen}
-        onClose={() => {
-          setIsMovementDialogOpen(false);
-          setMovementType(null);
-        }}
-        onSuccess={handleMovementSuccess}
       />
 
       {/* Reallocation Dialog — abas Realocar (leito vago) e Permutar (paciente) */}

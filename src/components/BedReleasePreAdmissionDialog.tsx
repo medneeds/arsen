@@ -276,14 +276,22 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
                             size="sm"
                             className="mt-3 w-full gap-2"
                             onClick={() => {
-                              const id = patient.id;
-                              const url = id ? `/painel-clinico?patientId=${id}` : "/painel-clinico";
                               onOpenChange(false);
-                              navigate(url);
+                              // Antes levava ao Painel Clinico (onde o usuario achava
+                              // o botao de sinalizar); agora vai direto para a pagina
+                              // /movimentar, levando o snapshot completo do paciente
+                              // (a escrita da movimentacao consome o objeto inteiro).
+                              const params = new URLSearchParams();
+                              if (patient.id) params.set("patientId", patient.id);
+                              if (patient.name) params.set("patientName", patient.name);
+                              if (patient.bedNumber) params.set("patientBed", patient.bedNumber);
+                              if (patient.sector) params.set("patientSector", patient.sector);
+                              const qs = params.toString();
+                              navigate(`/movimentar${qs ? `?${qs}` : ""}`, { state: { patient, returnTo: "/mapa" } });
                             }}
                           >
                             <Stethoscope className="h-4 w-4" />
-                            Ir para o Painel Clínico agora
+                            Ir para a Movimentação agora
                             <ArrowRight className="h-4 w-4" />
                           </Button>
                         </div>
@@ -318,14 +326,22 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
                             size="sm"
                             className="mt-3 w-full gap-2"
                             onClick={() => {
-                              const id = patient.id;
-                              const url = id ? `/painel-clinico?patientId=${id}` : "/painel-clinico";
                               onOpenChange(false);
-                              navigate(url);
+                              // Antes levava ao Painel Clinico (onde o usuario achava
+                              // o botao de sinalizar); agora vai direto para a pagina
+                              // /movimentar, levando o snapshot completo do paciente
+                              // (a escrita da movimentacao consome o objeto inteiro).
+                              const params = new URLSearchParams();
+                              if (patient.id) params.set("patientId", patient.id);
+                              if (patient.name) params.set("patientName", patient.name);
+                              if (patient.bedNumber) params.set("patientBed", patient.bedNumber);
+                              if (patient.sector) params.set("patientSector", patient.sector);
+                              const qs = params.toString();
+                              navigate(`/movimentar${qs ? `?${qs}` : ""}`, { state: { patient, returnTo: "/mapa" } });
                             }}
                           >
                             <Stethoscope className="h-4 w-4" />
-                            Ir para o Painel Clínico agora
+                            Ir para a Movimentação agora
                             <ArrowRight className="h-4 w-4" />
                           </Button>
                           <Button

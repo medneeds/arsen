@@ -1,0 +1,1092 @@
+import { useState, useEffect, useMemo } from "react";
+import { ADMISSION_STATUS, toInternacaoStatusDb } from "@/lib/admissionStatus";
+import { useSignalingStatus, SignalingStatusPanel } from "@/components/SignalingStatusPanel";
+import type { TransferClassification } from "@/lib/sectorComplexity";
+import { useNavigate } from "react-router-dom";
+import { Patient } from "@/types/patient";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { useHospital } from "@/contexts/HospitalContext";
+import { ArrowLeft, ArrowRight, FileText, Loader2, AlertTriangle, User, Bed, Stethoscope, MapPin, Info, ArrowRightLeft, Building2, ClipboardList, Eye, History, CheckCircle2, RefreshCw, Unlock, Undo2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import {
+  MOVEMENT_CATEGORIES,
+  MOVEMENT_SUBTYPES,
+  INTERNAL_TRANSFER_DESTINATIONS,
+  EXTERNAL_TRANSFER_DESTINATIONS,
+  INTERNMENT_DESTINATIONS,
+  adaptLegacyType,
+  getSubtypesByCategory,
+  type AnyMovementType,
+  type MovementCategory,
+  type MovementSubtype,
+  type SubtypeDef,
+} from "@/data/movementFlow";
+import { DischargeDocumentForm } from "@/components/DischargeDocumentForm";
+import { useDepartment } from "@/contexts/DepartmentContext";
+import { DischargeConfirmDialog } from "@/components/DischargeConfirmDialog";
+import { MovementConfirmDialog, type MovementConsequence, type MovementSummaryItem } from "@/components/MovementConfirmDialog";
+import {
+  type DischargeDocType,
+  type DischargeDocPayload,
+  printDischargeDocument,
+  toAltaTipoDb,
+} from "@/lib/dischargeDocuments";
+import { sectorLabelFromCode } from "@/lib/hospitalSectors";
+import { closeActiveEncounter } from "@/lib/resolveActiveEncounter";
+
+// MIGRAÇÃO: profissional_id (profissionais.id) ≠ auth.uid — resolvido via profissionais.user_id.
+async function resolveProfissionalId(userId: string | null | undefined): Promise<string | null> {
+  if (!userId) return null;
+  try {
+    const { data } = await supabase
+      .from("profissionais")
+      .select("id")
+      .eq("user_id", userId)
+      .maybeSingle();
+    return (data as any)?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
+// Mapeamento: texto do destino de transferência interna → código de setor do banco
+const DESTINATION_TO_SECTOR_CODE: Record<string, string> = {
+  "UTI 01": "red",
+  "UTI 02": "yellow",
+  "UCI 01": "blue",
+  "UCI 02": "outside",
+  "ENFERMARIA NEURO 01": "neuro_01",
+  "ENFERMARIA NEURO 02": "neuro_02",
+  "ENFERMARIA CLÍNICA CIRÚRGICA": "clinica_cirurgica",
+  "ENFERMARIA DE TRANSIÇÃO": "enfermaria_transicao",
+  "UCC (UNIDADE DE CUIDADOS CLÍNICOS)": "ucc",
+  "ENFERMARIA VASCULAR (ANEXO)": "enfermaria_vascular",
+  "CENTRO CIRÚRGICO": "cc_bloco",
+  "RIV (REFERÊNCIA DE INTERNAÇÃO VASCULAR)": "riv",
+  "SALA VERMELHA": "sala_vermelha",
+  "SALA LARANJA": "sala_laranja",
+  "OBSERVAÇÃO CLÍNICA": "observacao_clinica",
+  "INTERNAÇÃO UE": "internacao_ue",
+};
+
+interface MovimentacaoFormProps {
+  patient: Patient | null;
+  /** Accepts new subtype ids OR legacy values ("ALTA" | "ÓBITO" | "TRANSFERÊNCIA") for back-compat. */
+  movementType?: AnyMovementType | null;
+  onClose: () => void;
+  onSuccess?: () => void;
+}
+
+const TONE_CLASSES = {
+  primary: {
+    icon: "text-primary",
+    bg: "bg-primary/10",
+    border: "border-primary/30",
+    hoverBorder: "hover:border-primary/60",
+    ring: "ring-primary/40",
+  },
+  accent: {
+    icon: "text-accent",
+    bg: "bg-accent/10",
+    border: "border-accent/30",
+    hoverBorder: "hover:border-accent/60",
+    ring: "ring-accent/40",
+  },
+  destructive: {
+    icon: "text-destructive",
+    bg: "bg-destructive/10",
+    border: "border-destructive/30",
+    hoverBorder: "hover:border-destructive/60",
+    ring: "ring-destructive/40",
+  },
+} as const;
+
+export function MovimentacaoForm({
+  patient,
+  movementType = null,
+  onClose,
+  onSuccess,
+}: MovimentacaoFormProps) {
+  const [step, setStep] = useState<"category" | "subtype" | "form">("category");
+  const [category, setCategory] = useState<MovementCategory | null>(null);
+  const [subtype, setSubtype] = useState<MovementSubtype | null>(null);
+
+  const [destination, setDestination] = useState("");
+  const [customDestination, setCustomDestination] = useState("");
+  const [notes, setNotes] = useState("");
+  const [responsibleDoctor, setResponsibleDoctor] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [docPayload, setDocPayload] = useState<DischargeDocPayload | null>(null);
+  const [docComplete, setDocComplete] = useState(false);
+  const [signerProfile, setSignerProfile] = useState<{ name: string; crm: string }>({ name: "", crm: "" });
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  // Pop-up didático pós-confirmação — pedido do gestor 16/07/2026: depois de
+  // sinalizar, o usuário precisa saber (de forma resumida e visual) que
+  // existe o fluxo de suspensão, que o Mapa de Leitos já mostra a marcação,
+  // que a cockpit já atualizou sozinha, e quando o leito fica liberado para
+  // desalocação. Persiste independente do reset do wizard (resetWizard).
+  const [signaledInfo, setSignaledInfo] = useState<{
+    subtypeDef: SubtypeDef;
+    destinationLabel: string | null;
+  } | null>(null);
+
+  /**
+   * Estado de sinalizacao ATUAL do paciente.
+   *
+   * O dialogo abria sempre no seletor "Transferencias / Saidas", mesmo para
+   * paciente que ja tinha obito ou transferencia sinalizados — nao dizia em que
+   * estado o paciente estava, nem oferecia suspender. Quem precisava suspender
+   * tinha que sair, achar o cockpit e usar o botao de la.
+   */
+  const signaling = useSignalingStatus(
+    patient?.id || "",
+    patient?.name || "",
+    patient?.admissionStatus,
+  );
+  // Sinalizacao ativa + intencao explicita de sinalizar OUTRA coisa por cima.
+  const [overrideSignaled, setOverrideSignaled] = useState(false);
+
+  const { toast } = useToast();
+  const { currentState, currentHospital } = useHospital();
+  const { currentDepartment } = useDepartment();
+  const navigate = useNavigate();
+
+  // Pre-fill when opened with a specific type (aba/pagina montada = "aberta")
+  useEffect(() => {
+    const adapted = adaptLegacyType(movementType);
+    if (adapted) {
+      const def = MOVEMENT_SUBTYPES.find((s) => s.id === adapted);
+      if (def) {
+        setCategory(def.category);
+        setSubtype(adapted);
+        setStep("form");
+        return;
+      }
+    }
+    setStep("category");
+    setCategory(null);
+    setSubtype(null);
+    setOverrideSignaled(false);
+  }, [movementType]);
+
+  // Sincroniza médico responsável com o usuário logado (para sumário de alta / óbito)
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      // MIGRAÇÃO: profiles → profissionais. full_name → nome, crm → numero_conselho.
+      // Filtro por user_id (profissionais.id ≠ auth.uid).
+      const { data } = await supabase
+        .from("profissionais")
+        .select("nome, numero_conselho")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (cancelled) return;
+      const name = (data?.nome || "").toUpperCase();
+      const crm = data?.numero_conselho || "";
+      setSignerProfile({ name, crm });
+      setResponsibleDoctor((prev) => prev || name);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const subtypeDef: SubtypeDef | null = useMemo(
+    () => MOVEMENT_SUBTYPES.find((s) => s.id === subtype) ?? null,
+    [subtype],
+  );
+
+  const destinationOptions = useMemo(() => {
+    if (!subtypeDef?.needsDestination) return [];
+    if (subtypeDef.id === "TRANSFERENCIA_INTERNA") return INTERNAL_TRANSFER_DESTINATIONS;
+    if (subtypeDef.id === "TRANSFERENCIA_EXTERNA") return EXTERNAL_TRANSFER_DESTINATIONS;
+    if (subtypeDef.id === "INTERNACAO") return INTERNMENT_DESTINATIONS;
+    return [];
+  }, [subtypeDef]);
+
+  const requiredDocType: DischargeDocType | null = useMemo(() => {
+    if (!subtypeDef) return null;
+    if (subtypeDef.id === "ALTA_HOSPITALAR") return "alta_hospitalar";
+    if (subtypeDef.id === "ALTA_PEDIDO") return "alta_pedido";
+    if (subtypeDef.id === "OBITO") return "obito";
+    return null;
+  }, [subtypeDef]);
+
+  // Reset dos campos do wizard SEM navegar de volta (usado no sucesso, antes do
+  // pop-up didatico). handleClose acrescenta o onClose() para o botao Cancelar.
+  const resetWizard = () => {
+    setStep("category");
+    setCategory(null);
+    setSubtype(null);
+    setDestination("");
+    setCustomDestination("");
+    setNotes("");
+    setResponsibleDoctor("");
+    setDocPayload(null);
+    setDocComplete(false);
+    setConfirmOpen(false);
+  };
+
+  const handleClose = () => {
+    resetWizard();
+    onClose();
+  };
+
+  // Calcula pendências para o popup de confirmação (apenas docs de alta/óbito)
+  const dischargeChecklist = useMemo(() => {
+    if (!requiredDocType) return { blocking: [], soft: [] };
+    const blocking: { label: string; reason: string }[] = [];
+    const soft: { label: string }[] = [];
+    const p = docPayload || ({} as Partial<DischargeDocPayload>);
+    const empty = (v: any) => !String(v ?? "").trim();
+
+    if (!responsibleDoctor.trim()) {
+      blocking.push({ label: "Médico responsável", reason: "precisa estar sincronizado com o usuário logado." });
+    }
+    if (requiredDocType === "obito") {
+      if (empty(p.death_date_time)) blocking.push({ label: "Data/hora do óbito", reason: "campo obrigatório." });
+      if (empty(p.death_summary)) blocking.push({ label: "Resumo do óbito", reason: "relatório clínico obrigatório." });
+    } else {
+      if (empty(p.final_diagnoses)) blocking.push({ label: "Diagnósticos finais (CID)", reason: "obrigatórios para a alta." });
+      if (empty(p.evolution_summary)) blocking.push({ label: "Resumo da evolução", reason: "obrigatório." });
+      if (empty(p.discharge_summary)) blocking.push({ label: "Sumário de alta", reason: "síntese clínica obrigatória." });
+      if (requiredDocType === "alta_hospitalar" && empty(p.orientations)) {
+        blocking.push({ label: "Orientações ao paciente", reason: "obrigatórias na alta hospitalar." });
+      }
+    }
+    if (empty(p.signed_by_name)) blocking.push({ label: "Médico assinante", reason: "nome do responsável obrigatório." });
+    if (empty(p.signed_by_crm)) blocking.push({ label: "CRM", reason: "registro profissional obrigatório." });
+
+    // Soft (opcionais — comunicação à família)
+    if (empty(p.family_contact_name)) soft.push({ label: "Familiar comunicado" });
+    if (empty(p.family_contact_relation)) soft.push({ label: "Grau de parentesco" });
+    if (empty(p.family_contact_phone)) soft.push({ label: "Telefone do familiar" });
+    if (empty(p.family_communication_mode)) soft.push({ label: "Modo de comunicação" });
+    if (empty(p.family_satisfaction)) soft.push({ label: "Grau de satisfação na comunicação" });
+    if (empty(p.family_communication_notes)) soft.push({ label: "Observações da comunicação" });
+
+    return { blocking, soft };
+  }, [requiredDocType, docPayload, responsibleDoctor]);
+
+  const handleOpenConfirm = () => {
+    if (!patient || !subtypeDef) return;
+    if (subtypeDef.needsDestination && !destination && !customDestination) {
+      toast({
+        title: "Campo obrigatório",
+        description: "Por favor, selecione ou especifique o destino.",
+        variant: "destructive",
+      });
+      return;
+    }
+    // Sempre abrir o popup — a validação visual e o bloqueio acontecem dentro dele
+    setConfirmOpen(true);
+  };
+
+  const handleSubmit = async () => {
+    if (!patient || !subtypeDef) return;
+    // Revalida no submit (defesa em profundidade)
+    if (requiredDocType && dischargeChecklist.blocking.length > 0) {
+      toast({
+        title: "Pendências obrigatórias",
+        description: dischargeChecklist.blocking[0].label + " — " + dischargeChecklist.blocking[0].reason,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      if (!currentHospital || !currentState) {
+        throw new Error("Hospital unit and state must be selected");
+      }
+      const { data: { user } } = await supabase.auth.getUser();
+      const finalDestination = destination === "OUTRO" ? customDestination : destination;
+      const patientDepartment = (patient as any).department || "URGÊNCIA E EMERGÊNCIA ADULTO";
+      const actorProfId = await resolveProfissionalId(user?.id);
+
+      // MIGRAÇÃO: patient_movements (morta) → logs_auditoria. A nova `transferencias`
+      // modela apenas transferência leito→leito (exige leito_destino_id NOT NULL) e não
+      // cabe em alta/óbito/evasão nem em sinalização sem leito destino. Os campos ricos
+      // (bed/sector/destination/snapshot/department) são preservados em dados_novos.
+      const { error } = await supabase.from("logs_auditoria").insert({
+        tipo_evento: `movimentacao_${subtypeDef.id.toLowerCase()}`,
+        acao: "UPDATE",
+        nome_tabela: "internacoes",
+        internacao_id: (patient as any).id || null,
+        registro_id: (patient as any).id || null,
+        ator_user_id: user?.id ?? null,
+        profissional_id: actorProfId,
+        motivo: notes || null,
+        dados_novos: {
+          movement_type: subtypeDef.id,
+          patient_name: patient.name,
+          patient_bed: patient.bedNumber,
+          patient_sector: patient.sector,
+          destination: finalDestination || null,
+          notes: notes || null,
+          responsible_doctor: responsibleDoctor || null,
+          department: patientDepartment,
+          patient_snapshot: patient,
+        } as any,
+      });
+      if (error) throw error;
+
+      // Persist discharge/death document linked to movement
+      if (requiredDocType) {
+        if (!docPayload) {
+          throw new Error("Documento de alta/óbito não foi preenchido. Recarregue a página e tente novamente.");
+        }
+
+        // MIGRAÇÃO: patient_encounters não existe — o "encounter ativo" passou a ser a
+        // própria internação (patient.id === internacoes.id). O vínculo do documento ao
+        // encounter (antes discharge_documents.encounter_id) é implícito via altas.internacao_id.
+
+        const finalDoc: DischargeDocPayload = {
+          ...docPayload,
+          patient_name: patient.name,
+          patient_bed: patient.bedNumber,
+          patient_sector: patient.sector,
+          signed_by_name: docPayload.signed_by_name || responsibleDoctor || signerProfile.name || null,
+          signed_by_crm: docPayload.signed_by_crm || signerProfile.crm || null,
+          signed_at: new Date().toISOString(),
+        };
+        // MIGRAÇÃO: discharge_documents → altas. altas só tem: internacao_id, tipo,
+        // conteudo(Json), numero_documento, assinado_por(profissional_id), crm_assinatura,
+        // data_hora. Colunas ricas (patient_name/bed/sector, movement_id, encounter_id,
+        // signed_by/signed_by_name, hospital_unit_id, state_id, department, created_by)
+        // NÃO existem → preservadas dentro de `conteudo` (finalDoc já carrega patient/assinatura).
+        const assinadoPorProfId = await resolveProfissionalId(user?.id);
+        const { error: docErr } = await supabase.from("altas").insert({
+          internacao_id: (patient as any).id,
+          tipo: toAltaTipoDb(requiredDocType),
+          conteudo: finalDoc as any,
+          numero_documento: null,
+          assinado_por: assinadoPorProfId,
+          crm_assinatura: finalDoc.signed_by_crm || null,
+          data_hora: finalDoc.signed_at,
+        });
+        if (docErr) throw docErr;
+
+        // Marca a internação como alta/óbito (mantém no leito até liberação física)
+        const newAdmissionStatus = requiredDocType === "obito" ? ADMISSION_STATUS.DEATH : ADMISSION_STATUS.DISCHARGE_GIVEN;
+        if ((patient as any).id) {
+          // MIGRAÇÃO: patients.admission_status → internacoes.status. Desfecho final grava
+          // também data_alta (substitui o fechamento do patient_encounter). Sem updated_at.
+          const { error: statusErr } = await supabase
+            .from("internacoes")
+            .update({ status: toInternacaoStatusDb(newAdmissionStatus), data_alta: new Date().toISOString() })
+            .eq("id", (patient as any).id);
+          if (statusErr) throw statusErr;
+
+          // Encerra o encounter — alta médica e óbito são desfechos finais da
+          // internação. Regra de negócio: 1 internação = 1 atendimento até o
+          // desfecho. Fecha pelo encounter ATIVO resolvido via registry (não
+          // por patient_id/leito) — se o paciente foi transferido internamente
+          // antes da alta, o vínculo patient_id do encounter pode ter mudado e
+          // o fechamento por leito deixaria um encounter zumbi ABERTO, que a
+          // próxima readmissão misturaria. (Auditoria 22/07/2026.)
+          const closeRes = await closeActiveEncounter((patient as any).id);
+          if (!closeRes.ok) {
+            // Não bloqueia — documento e status já foram registrados.
+            console.error("[MovimentacaoForm] falha ao encerrar encounter (alta/óbito):", closeRes.error);
+          }
+        }
+
+        // Auto preview the printable Norma Zero document
+        printDischargeDocument(requiredDocType, finalDoc);
+      }
+
+
+      // Sinalização de transferência (interna/externa): marca o paciente ANTES
+      // de qualquer desalocação para que a tarja apareça no mapa de leitos.
+      // - Interna: trigger zera o status quando o leito/setor muda (relocação efetivada).
+      // - Externa: status persiste até o setor administrativo liberar fisicamente o leito.
+      if (
+        (subtypeDef.id === "TRANSFERENCIA_INTERNA" || subtypeDef.id === "TRANSFERENCIA_EXTERNA")
+        && (patient as any).id
+      ) {
+        const newAdmissionStatus =
+          subtypeDef.id === "TRANSFERENCIA_INTERNA"
+            ? ADMISSION_STATUS.INTERNAL_TRANSFER_PENDING
+            : ADMISSION_STATUS.EXTERNAL_TRANSFER_PENDING;
+        // MIGRAÇÃO: patients.admission_status → internacoes.status. Transferência EXTERNA é
+        // desfecho final da internação → grava também data_alta (substitui o fechamento do
+        // patient_encounter). Interna mantém a internação aberta. Sem updated_at.
+        const trUpdate: Record<string, unknown> =
+          subtypeDef.id === "TRANSFERENCIA_EXTERNA"
+            ? { status: toInternacaoStatusDb(newAdmissionStatus), data_alta: new Date().toISOString() }
+            : { status: toInternacaoStatusDb(newAdmissionStatus) };
+        const { error: trErr } = await supabase
+          .from("internacoes")
+          .update(trUpdate as any)
+          .eq("id", (patient as any).id);
+        if (trErr) throw trErr;
+
+        // MIGRAÇÃO: closeActiveEncounter (lib já migrada) mantido para a transferência EXTERNA.
+        if (subtypeDef.id === "TRANSFERENCIA_EXTERNA") {
+          const closeExtRes = await closeActiveEncounter((patient as any).id);
+          if (!closeExtRes.ok) {
+            console.error("[MovimentacaoForm] falha ao encerrar encounter (transf. externa):", closeExtRes.error);
+          }
+        }
+
+        // MIGRAÇÃO: a fila virtual de transferência interna vivia em internal_transfer_requests
+        // (tabela morta). A nova `transferencias` modela apenas leito→leito (leito_destino_id
+        // NOT NULL) e não comporta uma sinalização SEM leito destino definido (mesma degradação
+        // registrada em src/lib/internalTransfer.ts). Aqui a sinalização é apenas registrada em
+        // logs_auditoria; a alocação física no setor destino é feita depois pelo Mapa de Leitos.
+        if (subtypeDef.id === "TRANSFERENCIA_INTERNA") {
+          const finalDest = destination === "OUTRO" ? customDestination : destination;
+          const sectorCode = finalDest ? DESTINATION_TO_SECTOR_CODE[finalDest.trim().toUpperCase()] ?? null : null;
+          if (sectorCode) {
+            // Classifica a transferência (lógica pura — mantida) para registrar no log.
+            let classification: string | null = null;
+            let needsSaps: boolean | null = null;
+            try {
+              const { classifyTransfer, requiresSaps } = await import("@/lib/sectorComplexity");
+              classification = classifyTransfer((patient as any).sector, sectorCode);
+              needsSaps = requiresSaps(classification as TransferClassification);
+            } catch (importErr) {
+              console.error("[MovimentacaoForm] falha ao importar sectorComplexity:", importErr);
+            }
+            const { error: logErr } = await supabase.from("logs_auditoria").insert({
+              tipo_evento: "sinalizacao_transferencia_interna",
+              acao: "UPDATE",
+              nome_tabela: "internacoes",
+              internacao_id: (patient as any).id,
+              registro_id: (patient as any).id,
+              ator_user_id: user?.id ?? null,
+              profissional_id: actorProfId,
+              motivo: notes?.trim() || finalDest || null,
+              dados_novos: {
+                target_sector_code: sectorCode,
+                target_sector_label: sectorLabelFromCode(sectorCode) || finalDest || null,
+                source_bed: patient?.bedNumber || null,
+                source_sector: patient?.sector || null,
+                classification,
+                requires_saps: needsSaps,
+                patient_snapshot: patient,
+              } as any,
+            });
+            if (logErr) {
+              console.error("[MovimentacaoForm] falha ao registrar sinalização de transferência interna:", logErr);
+            }
+          }
+        }
+      }
+
+      // Sinalização de saída sem documento clínico (EVASÃO / ALTA A PEDIDO):
+      // marca o paciente como 'alta_dada' para que (1) a tarja apareça no mapa,
+      // (2) o BedReleasePreAdmissionDialog reconheça como pós-alta e libere o
+      // fluxo normal de desalocação, em vez de cair no caminho "excepcional"
+      // que bloqueia o usuário. Mantém o leito ocupado até a desalocação física.
+      if (
+        (subtypeDef.id === "EVASAO" || subtypeDef.id === "ALTA_PEDIDO")
+        && (patient as any).id
+      ) {
+        // MIGRAÇÃO: patients.admission_status → internacoes.status (+ data_alta: desfecho de saída).
+        const { error: evErr } = await supabase
+          .from("internacoes")
+          .update({ status: toInternacaoStatusDb(ADMISSION_STATUS.DISCHARGE_GIVEN), data_alta: new Date().toISOString() })
+          .eq("id", (patient as any).id);
+        if (evErr) throw evErr;
+      }
+
+      toast({
+        title: `${subtypeDef.label} registrado(a)`,
+        description: requiredDocType
+          ? "Documento salvo no histórico do paciente."
+          : "Movimentação registrada no histórico.",
+      });
+
+      setConfirmOpen(false);
+      onSuccess?.();
+      // Captura ANTES do reset (que reseta subtype/destination) — o pop-up
+      // didático usa esses dados depois que o wizard já foi resetado. Aqui a
+      // navegacao de volta e adiada ate o usuario fechar o pop-up didatico
+      // (no dialogo, o onClose fechava o modal e o pop-up seguia por cima;
+      // na pagina, navegar agora tiraria o pop-up da tela).
+      setSignaledInfo({
+        subtypeDef,
+        destinationLabel: subtypeDef.needsDestination
+          ? (destination === "OUTRO" ? customDestination : sectorLabelFromCode(destination) || destination) || null
+          : null,
+      });
+      resetWizard();
+    } catch (error: any) {
+      console.error("Error creating movement:", error);
+      const msg = error?.message || error?.details || error?.hint || "Não foi possível registrar a movimentação. Tente novamente.";
+      toast({
+        title: "Erro ao registrar movimentação",
+        description: String(msg).slice(0, 300),
+        variant: "destructive",
+      });
+
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (!patient) return null;
+
+  /* ───────── Step 1: Category ───────── */
+  const renderCategoryStep = () => (
+    <div className="space-y-3">
+      {/*
+        Estado atual PRIMEIRO. Quem reabre esta tela com sinalizacao ativa quase
+        sempre vem para entender o que esta valendo ou para suspender — nao para
+        sinalizar de novo. Mostrar o seletor antes disso obrigava a sair e achar
+        o cockpit.
+      */}
+      {signaling.kind && (
+        <SignalingStatusPanel
+          status={signaling}
+          patientId={patient?.id || ""}
+          patientName={patient?.name || ""}
+          density="full"
+          onChangeDestination={() => setOverrideSignaled(true)}
+        />
+      )}
+
+      {/*
+        Com sinalizacao ativa, o seletor fica atras de um passo consciente.
+        Nao e trava — e freio: sinalizar alta por cima de um obito, ou uma
+        segunda transferencia por cima da primeira, produz estados
+        contraditorios que alguem vai ter que desfazer depois.
+      */}
+      {signaling.kind && !overrideSignaled ? (
+        <div className="rounded-lg border border-dashed border-border p-3 space-y-2">
+          <p className="text-xs text-muted-foreground leading-snug">
+            {signaling.kind === "transfer"
+              ? "Para trocar o destino desta transferência, use “Alterar destino” acima. Sinalizar outro tipo de movimentação por cima cria estados contraditórios."
+              : "Este paciente já tem um desfecho sinalizado. Para registrar outra movimentação, suspenda o desfecho atual acima — assim o histórico fica coerente."}
+          </p>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-xs text-muted-foreground hover:text-foreground"
+            onClick={() => setOverrideSignaled(true)}
+          >
+            Ainda assim, sinalizar outra movimentação
+          </Button>
+        </div>
+      ) : (
+      <>
+      <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground font-medium">
+        Selecione o tipo de movimentação
+      </p>
+      <div className="grid grid-cols-1 gap-3">
+        {MOVEMENT_CATEGORIES.map((cat) => {
+          const t = TONE_CLASSES[cat.tone];
+          const Icon = cat.icon;
+          const count = getSubtypesByCategory(cat.id).length;
+          return (
+            <button
+              key={cat.id}
+              type="button"
+              onClick={() => {
+                setCategory(cat.id);
+                setStep("subtype");
+              }}
+              className={cn(
+                "group flex items-center gap-4 p-4 rounded-lg border bg-card text-left transition-all",
+                t.border,
+                t.hoverBorder,
+                "hover:shadow-md hover:-translate-y-0.5",
+              )}
+            >
+              <div className={cn("h-11 w-11 rounded-lg flex items-center justify-center", t.bg)}>
+                <Icon className={cn("h-5 w-5", t.icon)} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-sm uppercase tracking-wide">{cat.label}</p>
+                <p className="text-xs text-muted-foreground mt-1">{cat.description}</p>
+              </div>
+              <div className="flex items-center gap-2 text-muted-foreground/70">
+                <span className="text-xs uppercase tracking-wider">{count} opções</span>
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+              </div>
+            </button>
+          );
+        })}
+      </div>
+      </>
+      )}
+    </div>
+  );
+
+  /* ───────── Step 2: Subtype ───────── */
+  const renderSubtypeStep = () => {
+    if (!category) return null;
+    const cat = MOVEMENT_CATEGORIES.find((c) => c.id === category)!;
+    const t = TONE_CLASSES[cat.tone];
+    const items = getSubtypesByCategory(category);
+    return (
+      <div className="space-y-3">
+        <button
+          type="button"
+          onClick={() => setStep("category")}
+          className="inline-flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ArrowLeft className="h-3 w-3" /> Voltar
+        </button>
+        <div className="grid grid-cols-1 gap-2">
+          {items.map((s) => {
+            const Icon = s.icon;
+            return (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => {
+                  setSubtype(s.id);
+                  setStep("form");
+                }}
+                className={cn(
+                  "group flex items-center gap-3 p-3 rounded-lg border bg-card text-left transition-all",
+                  t.border,
+                  t.hoverBorder,
+                  "hover:shadow-sm",
+                )}
+              >
+                <div className={cn("h-9 w-9 rounded-md flex items-center justify-center", t.bg)}>
+                  <Icon className={cn("h-4 w-4", t.icon)} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm">{s.label}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{s.description}</p>
+                </div>
+                {s.linksToDischargeSummary && (
+                  <span className="text-xs uppercase tracking-wider px-2 py-1 rounded-full bg-muted text-muted-foreground">
+                    + Sumário
+                  </span>
+                )}
+                <ArrowRight className="h-4 w-4 text-muted-foreground/70 transition-transform group-hover:translate-x-0.5" />
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  /* ───────── Step 3: Form ───────── */
+  const renderFormStep = () => {
+    if (!subtypeDef) return null;
+    const cat = MOVEMENT_CATEGORIES.find((c) => c.id === subtypeDef.category)!;
+    const t = TONE_CLASSES[cat.tone];
+    const Icon = subtypeDef.icon;
+    return (
+      <div className="space-y-4">
+        {/* Selection summary */}
+        <div className={cn("flex items-center gap-3 p-3 rounded-lg border", t.bg, t.border)}>
+          <Icon className={cn("h-5 w-5", t.icon)} />
+          <div className="flex-1 min-w-0">
+            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+              {cat.label}
+            </p>
+            <p className="font-medium text-sm">{subtypeDef.label}</p>
+          </div>
+          {/* Only allow changing if not pre-set from card */}
+          {!movementType && (
+            <button
+              type="button"
+              onClick={() => setStep("subtype")}
+              className="text-xs uppercase tracking-wider text-muted-foreground hover:text-foreground"
+            >
+              Alterar
+            </button>
+          )}
+        </div>
+
+        {subtypeDef.id === "TRANSFERENCIA_INTERNA" && (
+          <div className="flex items-start gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
+            <ArrowRightLeft className="h-4 w-4 text-primary mt-1 shrink-0" />
+            <div className="text-xs leading-relaxed text-foreground">
+              <p className="font-medium mb-1">Esta ação <strong>sinaliza</strong> a transferência interna.</p>
+              <ul className="list-disc list-inside space-y-1 text-foreground/90">
+                <li>O card no Mapa de Leitos ganha a tarja <strong>"TRANSF. INT"</strong> indicando ao setor administrativo/enfermagem que o paciente está autorizado a sair.</li>
+                <li>O setor destino fica registrado como <strong>pré-sinalização</strong> para o receptor.</li>
+                <li>A <strong>movimentação física</strong> (escolher leito destino + repoint do histórico) continua sendo feita no Mapa de Leitos via menu do card.</li>
+              </ul>
+            </div>
+          </div>
+        )}
+
+        <>
+
+        {/* Patient */}
+        <div className="space-y-2">
+          <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+            Paciente
+          </Label>
+          <div className="p-3 bg-muted/60 rounded-lg">
+            <p className="font-medium text-sm">{patient.name}</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Leito: {patient.bedNumber} • Setor: {sectorLabelFromCode(patient.sector) || patient.sector}
+            </p>
+          </div>
+        </div>
+
+        {/* Destination */}
+        {subtypeDef.needsDestination && (
+          <div className="space-y-2">
+            <Label htmlFor="destination" className="text-xs uppercase tracking-wider">
+              Destino *
+            </Label>
+            <Select value={destination} onValueChange={setDestination}>
+              <SelectTrigger id="destination">
+                <SelectValue placeholder="Selecione o destino" />
+              </SelectTrigger>
+              <SelectContent>
+                {destinationOptions.map((dest) => (
+                  <SelectItem key={dest} value={dest}>
+                    {dest}
+                  </SelectItem>
+                ))}
+                <SelectItem value="OUTRO">OUTRO (especificar)</SelectItem>
+              </SelectContent>
+            </Select>
+            {destination === "OUTRO" && (
+              <Input
+                placeholder="Especifique o destino"
+                value={customDestination}
+                onChange={(e) => setCustomDestination(e.target.value.toUpperCase())}
+                className="mt-2 uppercase tracking-wider"
+              />
+            )}
+          </div>
+        )}
+
+        {/* Doctor — pré-preenchido com o usuário logado */}
+        <div className="space-y-2">
+          <Label htmlFor="responsibleDoctor" className="text-xs uppercase tracking-wider flex items-center gap-2">
+            Médico Responsável
+            {signerProfile.name && (
+              <span className="text-xs normal-case text-muted-foreground">
+                (sincronizado com o login{signerProfile.crm ? ` • CRM ${signerProfile.crm}` : ""})
+              </span>
+            )}
+          </Label>
+          <Input
+            id="responsibleDoctor"
+            placeholder="Nome do médico"
+            value={responsibleDoctor}
+            onChange={(e) => setResponsibleDoctor(e.target.value.toUpperCase())}
+            className="uppercase tracking-wider"
+          />
+        </div>
+
+        {/* Notes */}
+        <div className="space-y-2">
+          <Label htmlFor="notes" className="text-xs uppercase tracking-wider">
+            Observações
+          </Label>
+          <Textarea
+            id="notes"
+            placeholder="Adicione observações sobre esta movimentação (opcional)"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value.toUpperCase())}
+            rows={3}
+            className="resize-none"
+          />
+        </div>
+          </>
+
+
+        {/* Required document for Alta / Óbito */}
+        {requiredDocType && (
+          <div className="space-y-2">
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-warning/10 border border-warning/30">
+              <AlertTriangle className="h-4 w-4 text-warning mt-1 shrink-0" />
+              <p className="text-xs text-foreground leading-relaxed">
+                {requiredDocType === "obito"
+                  ? "É obrigatório preencher o Relatório de Óbito antes de confirmar."
+                  : "É obrigatório preencher o Sumário de Alta antes de confirmar."}{" "}
+                O documento será arquivado no histórico do paciente e impresso em padrão Norma Zero.
+              </p>
+            </div>
+            <DischargeDocumentForm
+              key={`${requiredDocType}-${signerProfile.name}-${signerProfile.crm}`}
+              type={requiredDocType}
+              patientId={patient.id}
+              initial={{
+                patient_name: patient.name,
+                patient_bed: patient.bedNumber,
+                patient_sector: patient.sector,
+                hospital_name: currentHospital?.name,
+                signed_by_name: responsibleDoctor || signerProfile.name || undefined,
+                signed_by_crm: signerProfile.crm || undefined,
+                // Data de admissão — vem de admitted_at (prioridade) ou created_at do paciente
+                admission_date: (patient as any).admitted_at
+                  ? ((patient as any).admitted_at as string).slice(0, 10)
+                  : (patient as any).created_at
+                    ? ((patient as any).created_at as string).slice(0, 10)
+                    : undefined,
+              }}
+              onChange={(payload, complete) => { setDocPayload(payload); setDocComplete(complete); }}
+            />
+          </div>
+        )}
+
+        {/* Legacy hint (other linked subtypes) */}
+        {!requiredDocType && subtypeDef.linksToDischargeSummary && (
+          <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/50 border border-border/60">
+            <FileText className="h-4 w-4 text-primary mt-1 shrink-0" />
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Documento complementar disponível em <span className="font-medium text-foreground">/alta-desfecho</span>.
+            </p>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const headerCat = category ? MOVEMENT_CATEGORIES.find((c) => c.id === category) : null;
+  const headerTone = headerCat ? TONE_CLASSES[headerCat.tone] : null;
+  const HeaderIcon = subtypeDef?.icon ?? headerCat?.icon;
+
+  return (
+    <>
+      <div className="px-4 sm:px-6 py-4">
+        <div className="flex items-center gap-3 mb-1">
+          {HeaderIcon && headerTone && (
+            <div className={cn("h-9 w-9 rounded-lg flex items-center justify-center", headerTone.bg)}>
+              <HeaderIcon className={cn("h-5 w-5", headerTone.icon)} />
+            </div>
+          )}
+          <div className="flex-1 min-w-0">
+            <h2 className="text-lg font-semibold">
+              {step === "form" && subtypeDef
+                ? (subtypeDef.id === "TRANSFERENCIA_INTERNA" ? "Sinalizar transferência interna"
+                  : subtypeDef.id === "TRANSFERENCIA_EXTERNA" ? "Sinalizar transferência externa"
+                  : subtypeDef.id === "OBITO" ? "Sinalizar óbito"
+                  : subtypeDef.id?.startsWith?.("ALTA") ? `Sinalizar ${subtypeDef.label.toLowerCase()}`
+                  : subtypeDef.label)
+                : step === "subtype" && headerCat
+                ? headerCat.label
+                : "Sinalizar Movimentação (Painel Clínico)"}
+            </h2>
+            <p className="text-xs mt-1 text-muted-foreground">
+              {step === "form" && subtypeDef
+                ? `${subtypeDef.description} — Esta ação SINALIZA o desfecho no prontuário. A desalocação física do leito é feita no Mapa de Leitos.`
+                : step === "subtype" && headerCat
+                ? `Escolha o subtipo de ${headerCat.label.toLowerCase()}`
+                : "Painel Clínico sinaliza. Mapa de Leitos desaloca."}
+            </p>
+          </div>
+        </div>
+
+        <div className="py-2">
+          {step === "category" && renderCategoryStep()}
+          {step === "subtype" && renderSubtypeStep()}
+          {step === "form" && renderFormStep()}
+        </div>
+
+        {step === "form" && (
+          <div className="flex flex-col gap-2 pt-2">
+            {requiredDocType && dischargeChecklist.blocking.length > 0 && (
+              <div className="flex items-start gap-2 p-2 rounded-md bg-warning/10 border border-warning/30 text-xs text-warning-foreground">
+                <AlertTriangle className="h-3.5 w-3.5 text-warning mt-1 shrink-0" />
+                <span>
+                  Há {dischargeChecklist.blocking.length} pendência(s) obrigatória(s). Você poderá ver o detalhe ao clicar em <strong>Revisar e confirmar</strong>.
+                </span>
+              </div>
+            )}
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={handleClose} disabled={isSubmitting}>
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleOpenConfirm}
+                disabled={isSubmitting}
+                className="gap-2"
+              >
+                {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
+                {isSubmitting
+                  ? "Sinalizando..."
+                  : requiredDocType ? "Revisar e confirmar sinalização" : (
+                      subtypeDef?.id === "TRANSFERENCIA_INTERNA" || subtypeDef?.id === "TRANSFERENCIA_EXTERNA"
+                        ? "Confirmar sinalização de transferência"
+                        : subtypeDef?.id === "OBITO" ? "Confirmar sinalização de óbito"
+                        : subtypeDef?.id?.startsWith?.("ALTA") ? "Confirmar sinalização de alta"
+                        : "Confirmar sinalização"
+                    )}
+              </Button>
+
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Popup didático para alta/óbito (com checklist clínico do documento) */}
+      {requiredDocType && (
+        <DischargeConfirmDialog
+          open={confirmOpen}
+          onOpenChange={(o) => !isSubmitting && setConfirmOpen(o)}
+          onConfirm={handleSubmit}
+          isSubmitting={isSubmitting}
+          docType={requiredDocType}
+          payload={docPayload}
+          patient={patient ? { name: patient.name, bedNumber: patient.bedNumber, sector: patient.sector } : null}
+          responsibleDoctor={responsibleDoctor}
+          movementLabel={subtypeDef?.label || "Movimentação"}
+          destination={destination === "OUTRO" ? customDestination : destination}
+          notes={notes}
+          blockingMissing={dischargeChecklist.blocking}
+          softMissing={dischargeChecklist.soft}
+        />
+      )}
+
+      {/* Popup didático genérico para transferências e demais movimentações */}
+      {!requiredDocType && subtypeDef && (
+        <MovementConfirmDialog
+          open={confirmOpen}
+          onOpenChange={(o) => !isSubmitting && setConfirmOpen(o)}
+          onConfirm={handleSubmit}
+          isSubmitting={isSubmitting}
+          tone={subtypeDef.id === "EVASAO" ? "destructive" : "primary"}
+          title={
+            subtypeDef.id === "TRANSFERENCIA_INTERNA" ? "Confirmar sinalização de transferência interna"
+            : subtypeDef.id === "TRANSFERENCIA_EXTERNA" ? "Confirmar sinalização de transferência externa"
+            : `Confirmar sinalização — ${subtypeDef.label}`
+          }
+          confirmLabel={
+            subtypeDef.id === "TRANSFERENCIA_INTERNA" || subtypeDef.id === "TRANSFERENCIA_EXTERNA"
+              ? "Confirmar sinalização de transferência"
+              : `Confirmar sinalização`
+          }
+          summary={[
+            { icon: User, label: "Paciente", value: patient.name },
+            { icon: Bed, label: "Leito atual / Setor", value: `${patient.bedNumber} • ${sectorLabelFromCode(patient.sector) || patient.sector}` },
+            ...(subtypeDef.needsDestination
+              ? [{ icon: MapPin, label: "Destino", value: (destination === "OUTRO" ? customDestination : destination) || "—" } as MovementSummaryItem]
+              : []),
+            { icon: Stethoscope, label: "Médico responsável", value: responsibleDoctor || "—" },
+            ...(notes ? [{ icon: Info, label: "Observações", value: notes, fullWidth: true } as MovementSummaryItem] : []),
+          ]}
+          consequences={(() => {
+            const base: MovementConsequence[] = [
+              { icon: ClipboardList, text: <>A movimentação <strong>"{subtypeDef.label}"</strong> será gravada na <strong>linha do tempo do paciente</strong> e na auditoria do hospital, com seu usuário como responsável.</> },
+            ];
+            if (subtypeDef.id === "TRANSFERENCIA_INTERNA") {
+              base.push(
+                { icon: ArrowRightLeft, text: <>O paciente será marcado como em <strong>trânsito interno</strong> para o setor destino. O leito atual <strong>permanece reservado</strong> até a liberação no Mapa.</> },
+                { icon: Bed, text: <>A <strong>liberação física do leito</strong> é feita no <strong>Mapa de Leitos</strong> pela recepção, enfermagem ou pelo próprio médico — não há mais dependência do NIR.</> },
+              );
+            } else if (subtypeDef.id === "TRANSFERENCIA_EXTERNA") {
+              base.push(
+                { icon: Building2, text: <>O paciente será marcado como <strong>transferido para outra instituição</strong>. O censo do hospital reflete a saída assistencial, mas o registro permanece consultável.</> },
+                { icon: Bed, text: <>A <strong>liberação do leito</strong> é feita no <strong>Mapa de Leitos</strong> após a saída efetiva do paciente — recepção, enfermagem ou médico podem executar.</> },
+              );
+            } else if (subtypeDef.id === "EVASAO") {
+              base.push(
+                { icon: AlertTriangle, text: <>Esta é uma <strong>saída sem alta médica</strong>. Recomenda-se descrever nas observações o contexto (local, horário, ciência da equipe e família, se houver).</> },
+                { icon: Bed, text: <>A <strong>liberação do leito</strong> é feita no Mapa após a saída — preserva o prontuário e marca o evento na auditoria.</> },
+              );
+            }
+            base.push(
+              { icon: Eye, text: <><strong>O paciente continua visível no sistema</strong> — esta ação não remove nem apaga o registro. Ele permanece em buscas, relatórios e no histórico longitudinal.</> },
+              { icon: History, text: <>Você pode consultar todas as movimentações deste paciente em <strong>Histórico do Paciente</strong>.</> },
+            );
+            return base;
+          })()}
+          warnings={
+            subtypeDef.needsDestination && !(destination === "OUTRO" ? customDestination : destination)
+              ? []
+              : !notes
+              ? [{ label: "Observações em branco", detail: "recomendamos descrever o motivo da movimentação para auditoria." }]
+              : []
+          }
+          blockers={[
+            ...(subtypeDef.needsDestination && !(destination === "OUTRO" ? customDestination : destination)
+              ? [{ label: "Destino", reason: "selecione o destino antes de confirmar." }]
+              : []),
+            ...(!responsibleDoctor.trim()
+              ? [{ label: "Médico responsável", reason: "informe o profissional responsável pela movimentação." }]
+              : []),
+          ]}
+          finalNote={<>Se sinalizar por engano, dá pra <strong className="text-foreground">suspender essa sinalização</strong> depois, direto no Cockpit do paciente (com senha e motivo) — confira os dados antes de confirmar mesmo assim.</>}
+        />
+      )}
+
+    {/* Pop-up didático pós-confirmação — resume o que foi sinalizado e
+        explica os 4 pontos que o usuário precisa saber: existe fluxo de
+        suspensão, o Mapa de Leitos já mostra a marcação, a cockpit já
+        atualizou sozinha, e quando o leito libera para desalocação.
+        Ao fechar, volta para a tela de origem (onClose). */}
+    <Dialog open={!!signaledInfo} onOpenChange={(o) => { if (!o) { setSignaledInfo(null); onClose(); } }}>
+      <DialogContent className="sm:max-w-md">
+        <div className="flex flex-col items-center text-center gap-2 pt-2 pb-1">
+          <div className="h-12 w-12 rounded-full bg-released-soft flex items-center justify-center">
+            <CheckCircle2 className="h-7 w-7 text-released-on-soft" />
+          </div>
+          <div>
+            <p className="font-medium text-base">
+              {signaledInfo?.subtypeDef.label} sinalizada
+            </p>
+            <p className="text-sm text-muted-foreground mt-1">
+              {patient?.name}
+              {signaledInfo?.destinationLabel ? <> → <strong className="text-foreground">{signaledInfo.destinationLabel}</strong></> : null}
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-2 py-2">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-1">
+            O que já aconteceu / o que fazer a partir daqui
+          </p>
+          <div className="rounded-md border bg-muted/30 divide-y">
+            <div className="flex items-start gap-3 p-3">
+              <MapPin className="h-4 w-4 text-primary mt-1 shrink-0" />
+              <p className="text-xs leading-snug">
+                O <strong>Mapa de Leitos</strong> já mostra a marcação desta sinalização no leito de {patient?.name?.split(" ")[0] || "paciente"}.
+              </p>
+            </div>
+            <div className="flex items-start gap-3 p-3">
+              <RefreshCw className="h-4 w-4 text-primary mt-1 shrink-0" />
+              <p className="text-xs leading-snug">
+                O <strong>Cockpit do paciente</strong> já atualizou sozinho com o novo status — não precisa recarregar a página.
+              </p>
+            </div>
+            <div className="flex items-start gap-3 p-3">
+              <Unlock className="h-4 w-4 text-primary mt-1 shrink-0" />
+              <p className="text-xs leading-snug">
+                O leito já pode ser <strong>desalocado no Mapa de Leitos</strong> (botão "Desalocar leito") assim que a saída física acontecer — a sinalização libera essa permissão.
+              </p>
+            </div>
+            <div className="flex items-start gap-3 p-3">
+              <Undo2 className="h-4 w-4 text-warning-on-soft mt-1 shrink-0" />
+              <p className="text-xs leading-snug">
+                Sinalizou por engano? Dá pra <strong>suspender</strong> essa sinalização a qualquer momento, direto no Cockpit do paciente (pede senha + motivo).
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button className="w-full" onClick={() => { setSignaledInfo(null); onClose(); }}>
+            Entendi, fechar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
+  );
+}
