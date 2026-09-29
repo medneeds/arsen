@@ -190,6 +190,27 @@ export default function PacienteHubPage() {
     return () => { cancelled = true; };
   }, [ctx.patientId, refreshTick]);
 
+  // Realtime: o status dos cards atualiza AO VIVO quando uma acao muda a fonte
+  // (evolucoes / prescricoes / solicitacoes_exame / sinais_vitais) DESTA internacao —
+  // sincronizado com cada acao, nao so ao voltar pelo breadcrumb. Escopado por
+  // internacao_id (custo baixo) e com debounce para coalescer rajadas. So bumpa o
+  // refreshTick, que reexecuta a leitura acima (fonte unica de derivacao).
+  useEffect(() => {
+    const id = ctx.patientId;
+    if (!id) return;
+    let debounce: ReturnType<typeof setTimeout> | null = null;
+    const bump = () => {
+      if (debounce) clearTimeout(debounce);
+      debounce = setTimeout(() => setRefreshTick((t) => t + 1), 400);
+    };
+    const ch = supabase.channel(`hub-status-${id}`);
+    for (const table of ["evolucoes", "prescricoes", "solicitacoes_exame", "sinais_vitais"] as const) {
+      ch.on("postgres_changes", { event: "*", schema: "public", table, filter: `internacao_id=eq.${id}` }, bump);
+    }
+    ch.subscribe();
+    return () => { if (debounce) clearTimeout(debounce); supabase.removeChannel(ch); };
+  }, [ctx.patientId]);
+
 
   // Usar status passado pela URL como valor inicial — evita flash de bloqueio
   const [admissionStatus, setAdmissionStatus] = useState<AdmissionStatus>(
