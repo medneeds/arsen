@@ -8352,12 +8352,67 @@ const PrescricaoPage = () => {
     return () => clearTimeout(handle);
   }, [patient.allergies, allergiesPatientId]);
 
-  // ===== PESO (kg) — DEGRADADO =====
-  // MIGRAÇÃO: patients.uti_weight_kg não tem coluna equivalente no schema novo
-  // (pacientes não guarda peso; sinais_vitais é por evento, não "peso atual").
-  // A sincronização bidirecional com a Cockpit foi removida — o peso permanece
-  // apenas em estado local (editável na UI, usado por canPrescribe e cálculos),
-  // sem persistência no banco. Ver supabase/MIGRACAO_DEGRADACOES.md.
+  // ===== PESO (kg) — persiste em internacoes.peso_kg =====
+  // MIGRAÇÃO: patients.uti_weight_kg morreu no schema novo. O peso do paciente passa
+  // a viver em internacoes.peso_kg (peso desta internacao; patient.id == internacoes.id).
+  // Se a coluna ainda NAO existir no banco (ALTER TABLE pendente), o hidrate detecta o
+  // erro e a persistencia fica DESLIGADA em silencio — o peso degrada para estado local
+  // (comportamento anterior), sem spam de erro. Assim que a coluna e aplicada, persiste.
+  const weightHydratedRef = useRef(false);
+  const weightPersistRef = useRef(false); // true so quando internacoes.peso_kg existe
+  const lastSyncedWeightRef = useRef<string>('');
+  // UX "salvo e fechado apos o primeiro preenchimento": com peso preenchido e fora de
+  // edicao, mostra um display read-only ("72 kg") com lapis; sem valor ou editando,
+  // mostra o input.
+  const [editingWeight, setEditingWeight] = useState(false);
+
+  // 1) Hidrata o peso da internacao (e habilita a persistencia se a coluna existir).
+  useEffect(() => {
+    weightHydratedRef.current = false;
+    weightPersistRef.current = false;
+    lastSyncedWeightRef.current = '';
+    if (!internacaoId) { weightHydratedRef.current = true; return; }
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from('internacoes')
+        .select('peso_kg')
+        .eq('id', internacaoId)
+        .maybeSingle();
+      if (cancelled) return;
+      if (!error) {
+        weightPersistRef.current = true; // coluna existe → pode gravar
+        const pesoDb = data?.peso_kg;
+        if (pesoDb != null) {
+          lastSyncedWeightRef.current = String(pesoDb);
+          const label = String(pesoDb).replace('.', ',');
+          setPatient(prev => (prev.weight?.trim() ? prev : { ...prev, weight: label }));
+        }
+      }
+      // error → coluna ausente (ALTER pendente): persistencia desligada, degrada local.
+      weightHydratedRef.current = true;
+    })();
+    return () => { cancelled = true; };
+  }, [internacaoId]);
+
+  // 2) Persiste o peso (debounced 500ms). So grava numero valido; so quando a coluna
+  //    existe (weightPersistRef). Silencioso em erro para nao poluir a tela.
+  useEffect(() => {
+    if (!internacaoId || !weightHydratedRef.current || !weightPersistRef.current) return;
+    const raw = (patient.weight ?? '').trim().replace(',', '.');
+    if (raw !== '' && !Number.isFinite(Number(raw))) return; // valor invalido: nao grava
+    const canonical = raw === '' ? '' : String(Number(raw));
+    if (canonical === lastSyncedWeightRef.current) return;
+    const handle = setTimeout(async () => {
+      const { error } = await supabase
+        .from('internacoes')
+        .update({ peso_kg: canonical === '' ? null : Number(canonical) })
+        .eq('id', internacaoId);
+      if (!error) lastSyncedWeightRef.current = canonical;
+      else console.error('Peso nao sincronizado (internacoes.peso_kg):', error.message);
+    }, 500);
+    return () => clearTimeout(handle);
+  }, [patient.weight, internacaoId]);
 
 
   const isSimpleCategory = (cat: PrescriptionCategory) => ['care'].includes(cat);
@@ -8654,15 +8709,31 @@ const PrescricaoPage = () => {
         <div className="flex items-center gap-2 flex-wrap px-2 sm:px-3 py-2 sm:border-t sm:border-border/40">
           <div className="flex items-center gap-2">
             <Label className="text-xs text-muted-foreground font-medium whitespace-nowrap">Peso (kg)</Label>
-            <Input
-              value={patient.weight}
-              onChange={(e) => updatePatient("weight", e.target.value)}
-              placeholder="72"
-              className={cn(
-                "h-7 w-14 text-xs font-medium",
-                !patient.weight.trim() && "border-warning/60 bg-warning-soft/30"
-              )}
-            />
+            {patient.weight.trim() && !editingWeight ? (
+              // Salvo e fechado: display read-only com lapis para reeditar.
+              <button
+                type="button"
+                onClick={() => setEditingWeight(true)}
+                title="Peso salvo. Clique para editar."
+                className="inline-flex items-center gap-1 h-7 px-2 rounded-md border border-border bg-muted/40 text-xs font-medium text-foreground hover:bg-muted"
+              >
+                {patient.weight} kg
+                <Pencil className="h-3 w-3 text-muted-foreground" />
+              </button>
+            ) : (
+              <Input
+                value={patient.weight}
+                onChange={(e) => updatePatient("weight", e.target.value)}
+                onBlur={() => { if (patient.weight.trim()) setEditingWeight(false); }}
+                onKeyDown={(e) => { if (e.key === "Enter" && patient.weight.trim()) { e.preventDefault(); (e.target as HTMLInputElement).blur(); setEditingWeight(false); } }}
+                autoFocus={editingWeight}
+                placeholder="72"
+                className={cn(
+                  "h-7 w-14 text-xs font-medium",
+                  !patient.weight.trim() && "border-warning/60 bg-warning-soft/30"
+                )}
+              />
+            )}
           </div>
           {(() => {
             const isNDAM = patient.allergies.trim().toUpperCase() === "NDAM";

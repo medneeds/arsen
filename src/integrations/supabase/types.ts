@@ -905,6 +905,7 @@ export type Database = {
           leito_id: string
           paciente_id: string
           pendencias: string | null
+          peso_kg: number | null
           queixa_principal: string | null
           registrado_por: string | null
           setor_classificacao_id: string | null
@@ -924,6 +925,7 @@ export type Database = {
           leito_id: string
           paciente_id: string
           pendencias?: string | null
+          peso_kg?: number | null
           queixa_principal?: string | null
           registrado_por?: string | null
           setor_classificacao_id?: string | null
@@ -943,6 +945,7 @@ export type Database = {
           leito_id?: string
           paciente_id?: string
           pendencias?: string | null
+          peso_kg?: number | null
           queixa_principal?: string | null
           registrado_por?: string | null
           setor_classificacao_id?: string | null
