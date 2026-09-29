@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { MovimentacaoForm } from "@/components/movimentacao/MovimentacaoForm";
+import { SignalingFlowRecord } from "@/components/movimentacao/SignalingFlowRecord";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
 import { PatientCockpit } from "@/components/PatientCockpit";
 import { useCockpitPatient } from "@/hooks/useCockpitPatient";
@@ -107,6 +108,10 @@ export default function MovimentacaoPage() {
           }}
             />
           </div>
+
+          {/* Registro do fluxo — timeline consultavel + documentos de desfecho,
+              persistidos logo abaixo do wizard (so leitura). */}
+          <SignalingFlowRecord patient={patient} />
         </div>
 
         {/* Cockpit no trilho direito — igual aos demais modulos */}
