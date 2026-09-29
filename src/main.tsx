@@ -6,6 +6,16 @@ import { DepartmentProvider } from "./contexts/DepartmentContext";
 import { HospitalProvider } from "./contexts/HospitalContext";
 import App from "./App.tsx";
 import "./index.css";
+import { recoverFromStaleChunk } from "./lib/staleChunkRecovery";
+
+// Auto-recuperacao de deploy: quando um chunk hasheado some apos um deploy novo,
+// o import dinamico falha e o Vite emite `vite:preloadError`. Recarregamos uma vez
+// (com guarda anti-loop) para buscar o index.html atual, em vez de deixar a tela
+// cair no ErrorBoundary. Paliativo — ver src/lib/staleChunkRecovery.ts.
+window.addEventListener("vite:preloadError", (event) => {
+  event.preventDefault(); // impede que a rejeicao derrube a tela antes do reload
+  recoverFromStaleChunk();
+});
 
 // Carimbo de build: mostra no console qual commit esta efetivamente no ar e
 // deixa o dado em window.__ARSEN_BUILD__ para conferencia rapida.

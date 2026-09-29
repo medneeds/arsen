@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
+import { isStaleChunkError, recoverFromStaleChunk } from "@/lib/staleChunkRecovery";
 
 /**
  * Captura erros de renderizacao e de efeitos, evitando a TELA BRANCA.
@@ -27,16 +28,28 @@ interface Props {
 interface State {
   error: Error | null;
   detalhesAbertos: boolean;
+  recarregando: boolean;
 }
 
 export class ErrorBoundary extends Component<Props, State> {
-  state: State = { error: null, detalhesAbertos: false };
+  state: State = { error: null, detalhesAbertos: false, recarregando: false };
 
   static getDerivedStateFromError(error: Error): Partial<State> {
+    // Falha de carregamento de chunk (deploy trocou os hashes): tenta auto-reload
+    // em vez de mostrar a tela de erro. Marca `recarregando` para nao piscar o card.
+    if (isStaleChunkError(error?.message)) return { error, recarregando: true };
     return { error };
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
+    if (isStaleChunkError(error?.message)) {
+      // Import dinamico que nao passou pelo evento vite:preloadError (ex.: disparado
+      // dentro de um efeito). Recarrega uma vez; se a guarda bloquear, cai na tela
+      // de erro normal para a saida manual.
+      if (recoverFromStaleChunk()) return;
+      this.setState({ recarregando: false });
+      return;
+    }
     // Mantem o rastro no console para quem for investigar.
     console.error("[ErrorBoundary] erro nao tratado:", error, info.componentStack);
   }
@@ -63,8 +76,18 @@ export class ErrorBoundary extends Component<Props, State> {
   };
 
   render() {
-    const { error, detalhesAbertos } = this.state;
+    const { error, detalhesAbertos, recarregando } = this.state;
     if (!error) return this.props.children;
+
+    // Falha de chunk sendo auto-recuperada: loader minimo em vez do card de erro
+    // (o reload ja foi disparado; isto so evita o flash da tela de erro).
+    if (recarregando) {
+      return (
+        <div className="flex min-h-screen items-center justify-center bg-muted p-6">
+          <p className="text-sm text-muted-foreground">Atualizando para a versao mais recente…</p>
+        </div>
+      );
+    }
 
     return (
       <div className="flex min-h-screen items-center justify-center bg-muted p-6">
