@@ -233,7 +233,8 @@ function buildLine2(it: ExtraPrintItem): string {
   if (reconSeg) parts.push(escape(reconSeg));
 
   // Dose — combina quantity+quantityUnit+dose (buildSolutoTokenLabeled).
-  const soluto = buildSolutoTokenLabeled({ quantity: it.quantity, quantityUnit: it.quantityUnit, dose: it.dose });
+  // presentation e OBRIGATORIA: o total por etapa deriva da apresentacao x qtd.
+  const soluto = buildSolutoTokenLabeled({ quantity: it.quantity, quantityUnit: it.quantityUnit, dose: it.dose, presentation: it.presentation });
   if (soluto) parts.push(escape(soluto));
 
   // Diluente + Volume (restante do head, após a dose)

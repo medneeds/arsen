@@ -8,11 +8,57 @@
 // preenchia só a Qtd (ex: Midazolam 20 mL), o volume desaparecia do papel.
 // Tela e impresso agora consomem a MESMA função.
 
+import { parsePresentationStrength } from "./doseToUnits";
+
 export interface SolutoFields {
   quantity?: string;
   quantityUnit?: string;
   dose?: string;
   presentation?: string;
+}
+
+// ════════════════════════════════════════════════════════════════════════
+// DOSE TOTAL POR ETAPA = forca da APRESENTACAO (por forma) x QUANTIDADE.
+// ════════════════════════════════════════════════════════════════════════
+// Regra cristalina: a dose depende diretamente da apresentacao, da forma e da
+// quantidade. A apresentacao ("500mg - Frasco-ampola") diz a forca de UMA unidade
+// da forma; a Qtd diz quantas unidades por etapa; o total e o produto. NAO usamos
+// o campo `dose` para escalar — ele e ambiguo (ora forca por-unidade, ora a dose
+// total em itens curados do catalogo), e por isso o total dobrava
+// (ex.: 2 FA de 500mg saiam como "total 2g" em vez de "total 1g").
+
+/** Formata a dose total a partir do valor na unidade-base da dimensao. */
+function fmtDoseFromBase(base: number, dim: string): string | null {
+  const n = (x: number) => {
+    const r = Math.round(x * 1000) / 1000;
+    return Number.isInteger(r) ? String(r) : String(r).replace('.', ',');
+  };
+  switch (dim) {
+    case 'massa': return base >= 1000 ? `${n(base / 1000)}g` : `${n(base)}mg`;
+    case 'volume': return `${n(base)} mL`;
+    case 'ui': return `${n(base)}UI`;
+    case 'meq': return `${n(base)}mEq`;
+    default: return null;
+  }
+}
+
+/**
+ * Dose total por etapa derivada da apresentacao x quantidade. Retorna null quando
+ * a apresentacao nao fornece forca contavel na dimensao esperada (concentracao
+ * mg/mL, ausente, ou dimensao diferente da esperada) — o chamador entao usa o
+ * fallback (comportamento anterior, baseado no campo dose).
+ */
+function totalDoseFromPresentation(
+  presentation: string | undefined,
+  qtyNum: number,
+  allowedDims: string[],
+): string | null {
+  if (!(qtyNum > 1)) return null; // qty <= 1: total == forca unitaria; sem escalar
+  const pres = parsePresentationStrength(presentation);
+  if (pres.isConcentration || pres.base == null || pres.dim == null) return null;
+  if (!allowedDims.includes(pres.dim)) return null;
+  if (!(pres.base > 0)) return null;
+  return fmtDoseFromBase(pres.base * qtyNum, pres.dim);
 }
 
 // Siglas hospitalares para forma/unidade (display-only; valor preservado)
@@ -156,22 +202,31 @@ export function buildSolutoToken(item: SolutoFields): string {
       // na leitura da enfermagem. Agora soma quando dá para calcular.
       const qtyNum = parseFloat((item.quantity || '').replace(',', '.'));
       if (qtyNum > 1 && doseAmountMatch) {
+        // Volume embutido na dose (ex.: "1g (2mL)") também escala, se houver — lido
+        // do doseRaw (a apresentação normalmente não traz o mL por unidade).
+        const mlMatch = doseRaw.match(/(\d[\d.,]*)\s*m[lL]\b/i);
+        let totalVolPart = '';
+        if (mlMatch) {
+          const perUnitVol = parseFloat(mlMatch[1].replace(',', '.'));
+          if (!isNaN(perUnitVol) && perUnitVol > 0) {
+            const totalVol = perUnitVol * qtyNum;
+            const totalVolStr = Number.isInteger(totalVol) ? String(totalVol) : String(totalVol).replace('.', ',');
+            totalVolPart = ` / ${totalVolStr}mL`;
+          }
+        }
+        // FONTE DA VERDADE: massa total por etapa = força da APRESENTAÇÃO (por forma)
+        // x quantidade. Independente do campo dose (ambíguo: ora por-unidade, ora
+        // total no guia ATB, que dobrava). Guarda de dimensão: só quando a
+        // apresentação dá massa/UI/mEq — apresentação volumétrica com dose em massa
+        // (Glicose 50% "20mL" x "10g") cai no fallback e preserva a massa correta.
+        const totalFromPres = totalDoseFromPresentation(item.presentation, qtyNum, ['massa', 'ui', 'meq']);
+        if (totalFromPres) return `${qtyStr} (total ${totalFromPres}${totalVolPart})`;
+        // Fallback (sem apresentação contável utilizável): usa a dose informada.
         const perUnitAmount = parseFloat(doseAmountMatch[1].replace(',', '.'));
         const massUnit = doseAmountMatch[2];
         if (!isNaN(perUnitAmount) && perUnitAmount > 0) {
           const totalMass = perUnitAmount * qtyNum;
           const totalMassStr = Number.isInteger(totalMass) ? String(totalMass) : String(totalMass).replace('.', ',');
-          // Volume embutido na dose (ex.: "1g (2mL)") também escala, se houver.
-          const mlMatch = doseRaw.match(/(\d[\d.,]*)\s*m[lL]\b/i);
-          let totalVolPart = '';
-          if (mlMatch) {
-            const perUnitVol = parseFloat(mlMatch[1].replace(',', '.'));
-            if (!isNaN(perUnitVol) && perUnitVol > 0) {
-              const totalVol = perUnitVol * qtyNum;
-              const totalVolStr = Number.isInteger(totalVol) ? String(totalVol) : String(totalVol).replace('.', ',');
-              totalVolPart = ` / ${totalVolStr}mL`;
-            }
-          }
           return `${qtyStr} (total ${totalMassStr}${massUnit}${totalVolPart})`;
         }
       }

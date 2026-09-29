@@ -6641,6 +6641,27 @@ const PrescricaoPage = () => {
         base.dose = '';
       }
 
+      // Coerencia dose<->Qtd (mesma regra de deriveNewItemDoseFields/aplicarCalc):
+      // o guia ATB gravava a dose TOTAL ("1g") em base.dose mantendo a Qtd calculada,
+      // e o campo dose (que deve ser a forca POR UNIDADE) ficava inconsistente. Aqui,
+      // quando a dose total do guia divide certo pela apresentacao, movemos o total
+      // para doseValue/doseUnit (campo "Dose total") e gravamos a forca por-unidade em
+      // base.dose, com a Qtd derivada da apresentacao. Cristalino: a dose depende da
+      // apresentacao, da forma e da quantidade. So dispara quando calcula qty>1 com
+      // seguranca (nao mexe em concentracao/faixa/dose por peso -> computeUnitsFromDose
+      // recusa e nada muda).
+      const totalSplit = splitDose(base.dose);
+      if (totalSplit) {
+        const calc = computeUnitsFromDose({ presentation: base.presentation, dose: base.dose });
+        if (calc && calc.ok && calc.quantity !== '1') {
+          base.doseValue = totalSplit.value;
+          base.doseUnit = totalSplit.unit;
+          base.quantity = calc.quantity;
+          base.quantityUnit = calc.unit;
+          base.dose = calc.perUnitDose;
+        }
+      }
+
       base.atbStartDate = entry.startDate || format(new Date(), 'yyyy-MM-dd');
       base.atbPlannedDays = entry.plannedDuration || '';
       base.atbInfectionSite = entry.infectionSite || '';
