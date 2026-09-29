@@ -11,13 +11,12 @@ import { PrintPatientLayout } from "@/components/PrintPatientLayout";
 import { PrintPatientPreviewDialog } from "@/components/PrintPatientPreviewDialog";
 import { PrintMapPreviewDialog } from "@/components/PrintMapPreviewDialog";
 import { PrintUtiPreviewDialog } from "@/components/PrintUtiPreviewDialog";
-import { RoundSectorPrintDialog } from "@/components/RoundSectorPrintDialog";
 import { SectorLoader } from "@/components/SectorLoader";
 import { usePageReady } from "@/hooks/usePageReady";
 import { MainLayout } from "@/components/MainLayout";
 import { ShiftReminderDialog } from "@/components/ShiftReminderDialog";
 import { Patient, isSectorType, type SectorType } from "@/types/patient";
-import { Printer, Eye, EyeOff, CheckSquare, Trash2, GripVertical, ClipboardCheck, RefreshCw, Maximize2, Minimize2 } from "lucide-react";
+import { Printer, Eye, EyeOff, CheckSquare, Trash2, GripVertical, RefreshCw, Maximize2, Minimize2 } from "lucide-react";
 import { BreadcrumbBar } from "@/components/BreadcrumbBar";
 import { SectorSelector } from "@/components/SectorSelector";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -270,7 +269,6 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
   const [previewPatientId, setPreviewPatientId] = useState<string | null>(null);
   const [previewMapMode, setPreviewMapMode] = useState<'compact' | 'detailed' | null>(null);
   const [previewUtiMapMode, setPreviewUtiMapMode] = useState<'compact' | 'detailed' | null>(null);
-  const [roundSectorDialogOpen, setRoundSectorDialogOpen] = useState(false);
   const [showOnlyOccupied, setShowOnlyOccupied] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedPatients, setSelectedPatients] = useState<Set<string>>(new Set());
@@ -961,18 +959,6 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
           />
         )}
 
-        {/* Round do setor — pop-up de seleção de leitos para impressão em branco */}
-        <RoundSectorPrintDialog
-          open={roundSectorDialogOpen}
-          onOpenChange={setRoundSectorDialogOpen}
-          patients={(() => {
-            const map: Record<string, Patient[]> = {
-              red: redPatients, yellow: yellowPatients, blue: bluePatients, outside: outsidePatients,
-            };
-            return map[activeSector] ?? patients.filter((p) => p.sector === activeSector || p.sectorName === activeSector);
-          })()}
-          sectorLabel={activeSector?.toUpperCase()}
-        />
         
         <div className={printMode ? 'print-hide' : ''}>
           {/* Main Content — sem cabeçalho duplicado; ações ficam no BreadcrumbBar */}
@@ -1004,15 +990,6 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent><p>Imprimir mapa</p></TooltipContent>
-                      </Tooltip>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button variant="outline" size="icon" onClick={() => setRoundSectorDialogOpen(true)}
-                            className="h-8 w-8 bg-white/95 text-foreground border-white/40 hover:bg-white hover:text-primary shadow-sm">
-                            <ClipboardCheck className="h-4 w-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent><p>Imprimir Round do Setor</p></TooltipContent>
                       </Tooltip>
 
                       <div className="h-6 w-px bg-white/30" />
@@ -1119,15 +1096,6 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
                           </TooltipTrigger>
                           <TooltipContent><p>Imprimir mapa</p></TooltipContent>
                         </Tooltip>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="outline" size="icon"
-                              onClick={() => setRoundSectorDialogOpen(true)} className="h-8 w-8">
-                              <ClipboardCheck className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent><p>Imprimir Round do Setor</p></TooltipContent>
-                        </Tooltip>
                       </div>
                     </TooltipProvider>
                   </div>
@@ -1190,7 +1158,6 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
                   onReleasePreAdmissionBed={handleReleasePreAdmissionBed}
                   onUndeletePatient={handleUndeletePatient}
                   onPrintSector={() => handlePrintSector(activeSector)}
-                  onPrintRound={() => setRoundSectorDialogOpen(true)}
                   onAddExtraBed={() => handleAddExtraBed(activeSector as Patient['sector'])}
                   selectionMode={selectionMode}
                   selectedPatients={selectedPatients}

@@ -12,7 +12,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, Eye, ClipboardList, Clock, AlertTriangle, Pencil, Check, X, Plus} from "lucide-react";
+import { Search, Eye, ClipboardList, Clock, AlertTriangle, Pencil, Check, X, Plus, Printer} from "lucide-react";
+import { RoundSectorPrintDialog } from "@/components/RoundSectorPrintDialog";
 import { toast } from "@/hooks/use-toast";
 import { BreadcrumbBar } from "@/components/BreadcrumbBar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -165,6 +166,7 @@ export default function PainelClinicoPage() {
   }, [accessProfile, navigate]);
 
   const [search, setSearch] = useState("");
+  const [roundDialogOpen, setRoundDialogOpen] = useState(false);
   const [sectorFilter, setSectorFilter] = useState<string>(() => {
     return currentSectorCode || localStorage.getItem("selected_sector") || "all";
   });
@@ -255,14 +257,35 @@ export default function PainelClinicoPage() {
         <BreadcrumbBar
           variant="institutional"
           actions={
-            <Badge variant="outline" className="text-xs bg-white/95 text-foreground border-white/40 shadow-sm">
-              {filteredPatients.length} paciente{filteredPatients.length !== 1 ? "s" : ""}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setRoundDialogOpen(true)}
+                disabled={filteredPatients.length === 0}
+                className="h-6 gap-1 px-2 text-xs bg-white/95 text-foreground border-white/40 shadow-sm hover:bg-white"
+                title="Imprimir folhas de Round em branco dos pacientes listados"
+              >
+                <Printer className="h-3 w-3" />
+                Round
+              </Button>
+              <Badge variant="outline" className="text-xs bg-white/95 text-foreground border-white/40 shadow-sm">
+                {filteredPatients.length} paciente{filteredPatients.length !== 1 ? "s" : ""}
+              </Badge>
+            </div>
           }
         />
       </div>
 
       {/* SAPS 3 pending global banner removed — non-blocking indicator stays in table column */}
+      <RoundSectorPrintDialog
+        open={roundDialogOpen}
+        onOpenChange={setRoundDialogOpen}
+        patients={filteredPatients}
+        sectorLabel={sectorFilter === "all" ? "Todos os setores" : sectorFilter}
+      />
+
       {/* Search bar below header */}
       <div className="px-4 py-2">
         <div className="flex gap-2 items-center">
