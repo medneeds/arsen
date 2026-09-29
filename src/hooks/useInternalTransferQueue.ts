@@ -37,10 +37,18 @@ export function useInternalTransferQueue(sectorCode?: string | null) {
   const refresh = useCallback(async () => {
     if (!currentHospital?.id) return;
     setLoading(true);
+    // Lê sinalizações E os eventos que as encerram (conclusão/cancelamento). O item
+    // some da fila quando o evento MAIS RECENTE da internação já não é uma sinalização
+    // — foi concluído (completeInternalTransfer) ou cancelado. Re-sinalizar depois de
+    // um encerramento volta a exibir (a nova sinalização passa a ser a mais recente).
     const { data, error } = await supabase
       .from("logs_auditoria")
-      .select("id, internacao_id, criado_em, ator_user_id, motivo, dados_novos")
-      .eq("tipo_evento", "sinalizacao_transferencia_interna")
+      .select("id, internacao_id, criado_em, ator_user_id, motivo, dados_novos, tipo_evento")
+      .in("tipo_evento", [
+        "sinalizacao_transferencia_interna",
+        "conclusao_transferencia_interna",
+        "cancelamento_transferencia_interna",
+      ])
       .order("criado_em", { ascending: false })
       .limit(500);
 
@@ -49,10 +57,12 @@ export function useInternalTransferQueue(sectorCode?: string | null) {
       const mapped: InternalTransferRequestRow[] = [];
       for (const log of data as any[]) {
         const dn = (log.dados_novos as any) || {};
-        // Dedupe: só a sinalização mais recente de cada internação.
+        // Dedupe: só o evento mais recente de cada internação decide.
         const key = log.internacao_id || log.id;
         if (seen.has(key)) continue;
         seen.add(key);
+        // Se o mais recente for conclusão/cancelamento, a internação saiu da fila.
+        if (log.tipo_evento !== "sinalizacao_transferencia_interna") continue;
         if (sectorCode && dn.target_sector_code !== sectorCode) continue;
         mapped.push({
           id: log.id,

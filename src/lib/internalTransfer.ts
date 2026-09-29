@@ -165,7 +165,11 @@ export async function signalInternalTransfer(
 }
 
 export interface CompleteInternalTransferParams {
+  /** id do log de sinalização (logs_auditoria) — rastreio/auditoria. */
   requestId: string;
+  /** internacoes.id de ORIGEM (row.source_patient_id da fila). */
+  sourceInternacaoId: string;
+  /** Leito DESTINO vago (view-model). targetBedRow.id === leitos.id (leito vago). */
   targetBedRow: Patient;
   currentUserId?: string | null;
   hospitalUnitId: string;
@@ -173,79 +177,178 @@ export interface CompleteInternalTransferParams {
   department?: string | null;
 }
 
+/**
+ * Conclui a transferência interna sinalizada (etapa 2): move a internação ativa
+ * de origem para o leito de destino, ocupa o destino e libera a origem.
+ *
+ * MIGRAÇÃO: a RPC atômica `complete_internal_transfer_atomic` nunca foi deployada
+ * para o schema novo (a definição no git referencia tabelas mortas:
+ * internal_transfer_requests / patients / admission_histories) e sua assinatura
+ * divergiu do call site — por isso o clique em "Confirmar alocação" retornava
+ * "Could not find the function". Passamos a escrever direto no schema novo,
+ * espelhando `alocarPreAdmissaoNoLeito` e `useBedCensusActions.transferBed` (já em
+ * produção): a atomicidade real (transação) não existe sem RPC, então ORDENAMOS as
+ * escritas para que o pior estado parcial seja o menos perigoso — o destino é
+ * ocupado ANTES de a origem ser liberada, e qualquer falha na liberação da origem
+ * SOBE como aviso (nunca leito fantasma silencioso).
+ *
+ * DEGRADAÇÕES conhecidas (mantidas, não inventadas):
+ *  - `requires_saps` (escalada crítica): o paciente entra no leito crítico, mas o
+ *    marcador "SAPS pendente"/timer não persiste (sem coluna no schema novo).
+ *  - `escalada_intermediaria`: a mesma internação CONTINUA no destino (histórico
+ *    íntegro, ancorado em internacao_id) em vez de abrir nova admissão — mais
+ *    correto para transferência interna (é o mesmo atendimento até o desfecho).
+ */
 export async function completeInternalTransfer(
   params: CompleteInternalTransferParams,
-): Promise<{ ok: boolean; classification?: TransferClassification; needsSaps?: boolean; error?: string }> {
-  const { requestId, targetBedRow, currentUserId, hospitalUnitId, stateId, department } = params;
-  if (!requestId) return { ok: false, error: "request ausente" };
+): Promise<{ ok: boolean; aviso?: string | null; error?: string }> {
+  const { requestId, sourceInternacaoId, targetBedRow, currentUserId, hospitalUnitId } = params;
+  if (!sourceInternacaoId) return { ok: false, error: "internacao de origem ausente" };
   if (!targetBedRow?.id) return { ok: false, error: "leito destino ausente" };
 
   try {
-    // RPC atômica: lê a solicitação, popula destino, repointa histórico e conclui.
-    // RPC desconhecida → (supabase.rpc as any).
-    const { data: atomicData, error: atomicErr } = await (supabase as any).rpc(
-      "complete_internal_transfer_atomic",
-      {
-        p_request_id:        requestId,
-        p_target_patient_id: targetBedRow.id,
-        p_repoint_reason:    `Transferência interna (etapa 2) → ${targetBedRow.bedNumber} (${sectorLabelFromCode(targetBedRow.sector)})`,
-        p_current_user_id:   currentUserId ?? null,
-        p_hospital_unit_id:  hospitalUnitId,
-        p_state_id:          stateId,
-        p_department:        department ?? null,
-      },
-    );
-
-    if (!atomicErr) {
-      if (atomicData != null && (atomicData as any).success === false) {
-        return { ok: false, error: "Transferência não confirmada pelo banco de dados" };
-      }
-      const classification = (atomicData as any)?.classification as TransferClassification | undefined;
-      const needsSaps = (atomicData as any)?.needs_saps as boolean | undefined;
-      return { ok: true, classification, needsSaps };
+    // 1) Leito destino ainda livre? (bed.id === leitos.id de leito vago)
+    const { data: destLeito, error: destErr } = await supabase
+      .from("leitos")
+      .select("id, status, setor_id")
+      .eq("id", targetBedRow.id)
+      .maybeSingle();
+    if (destErr) throw destErr;
+    const dest = destLeito as { id: string; status: string; setor_id: string } | null;
+    if (!dest) return { ok: false, error: "Leito de destino não encontrado. Atualize o mapa e tente de novo." };
+    if (dest.status === "ocupado") {
+      return { ok: false, error: `Leito ${targetBedRow.bedNumber} já foi ocupado. Selecione outro leito.` };
     }
 
-    if (!isRpcMissing(atomicErr)) throw atomicErr;
+    // 2) Internação de origem ainda ativa? Guarda o leito de origem para liberar depois.
+    const { data: srcInt, error: srcErr } = await supabase
+      .from("internacoes")
+      .select("id, leito_id, data_alta")
+      .eq("id", sourceInternacaoId)
+      .maybeSingle();
+    if (srcErr) throw srcErr;
+    const src = srcInt as { id: string; leito_id: string | null; data_alta: string | null } | null;
+    if (!src) return { ok: false, error: "Internação de origem não encontrada. A fila pode estar desatualizada." };
+    if (src.data_alta != null) {
+      return { ok: false, error: "A internação de origem já foi encerrada — não é mais transferência interna." };
+    }
+    const originLeitoId = src.leito_id;
 
-    // MIGRAÇÃO: fallback sequencial degradado (dependia de internal_transfer_requests
-    // + patients + admission_histories, tabelas mortas).
-    console.warn("[completeInternalTransfer] RPC atômica indisponível — fluxo degradado");
-    return { ok: false, error: DEGRADED_MSG };
+    // 3) Move a internação para o leito/setor de destino e reativa o status
+    //    (sai de INTERNAL_TRANSFER_PENDING — relocação efetivada). O histórico
+    //    inteiro acompanha por ancorar em internacao_id.
+    const { error: moveErr } = await supabase
+      .from("internacoes")
+      .update({
+        leito_id: targetBedRow.id,
+        setor_classificacao_id: dest.setor_id,
+        status: "ativa",
+      })
+      .eq("id", sourceInternacaoId);
+    if (moveErr) throw moveErr;
+
+    // 4) Ocupa o destino ANTES de qualquer coisa destrutiva na origem.
+    let aviso: string | null = null;
+    const { error: occErr } = await supabase
+      .from("leitos")
+      .update({ status: "ocupado" })
+      .eq("id", targetBedRow.id);
+    if (occErr) {
+      aviso = `Paciente movido para o leito ${targetBedRow.bedNumber}, mas ele nao foi marcado como ocupado (${occErr.message}). Avise a gestao de leitos para evitar dupla alocacao.`;
+    }
+
+    // 5) Libera a origem por ULTIMO (recuperavel se falhar; nunca leito fantasma silencioso).
+    if (originLeitoId && originLeitoId !== targetBedRow.id) {
+      const { error: freeErr } = await supabase
+        .from("leitos")
+        .update({ status: "higienizacao" })
+        .eq("id", originLeitoId);
+      if (freeErr) {
+        aviso = `${aviso ? aviso + " " : ""}O leito de origem nao foi liberado (${freeErr.message}). Avise a gestao de leitos.`;
+      }
+    }
+
+    // 6) Auditoria: marca a CONCLUSAO — a fila (useInternalTransferQueue) usa este
+    //    evento para remover o item (evento mais recente por internacao vence).
+    const { error: logErr } = await supabase.from("logs_auditoria").insert({
+      tipo_evento: "conclusao_transferencia_interna",
+      acao: "UPDATE",
+      nome_tabela: "internacoes",
+      internacao_id: sourceInternacaoId,
+      registro_id: sourceInternacaoId,
+      ator_user_id: currentUserId ?? null,
+      motivo: `Transferencia interna concluida -> leito ${targetBedRow.bedNumber} (${sectorLabelFromCode(targetBedRow.sector)})`,
+      dados_novos: {
+        signal_log_id: requestId,
+        target_leito_id: targetBedRow.id,
+        target_bed: targetBedRow.bedNumber,
+        target_sector_code: targetBedRow.sector,
+      } as any,
+      hospital_id: hospitalUnitId,
+    } as any);
+    if (logErr) {
+      // Nao fatal: a alocacao ja aconteceu. Mas sem o evento a fila nao some — avisa.
+      console.error("[completeInternalTransfer] falha ao registrar conclusao:", logErr);
+      aviso = `${aviso ? aviso + " " : ""}A alocacao foi feita, mas o item pode continuar na fila (falha ao registrar conclusao: ${logErr.message}). Atualize a pagina.`;
+    }
+
+    return { ok: true, aviso };
   } catch (err: any) {
     console.error("[completeInternalTransfer] erro", err);
     return { ok: false, error: err?.message ?? "Erro desconhecido" };
   }
 }
 
+/**
+ * Cancela uma sinalização de transferência interna que ainda não foi alocada.
+ *
+ * MIGRAÇÃO: a RPC atômica nunca foi deployada no schema novo. Como a sinalização
+ * NÃO esvazia o leito de origem (o paciente permanece nele até a alocação — ver
+ * MovimentacaoForm), cancelar não restaura nada: apenas reativa o status da
+ * internação (sai de INTERNAL_TRANSFER_PENDING, limpando a tarja no mapa) e grava
+ * um evento de cancelamento em `logs_auditoria` — a fila usa esse evento (mais
+ * recente por internação vence) para remover o item.
+ */
 export async function cancelInternalTransferRequest(
   requestId: string,
+  internacaoId: string,
   reason: string,
   currentUserId?: string | null,
-): Promise<{ ok: boolean; restoredSourceBed?: boolean; error?: string }> {
+): Promise<{ ok: boolean; error?: string }> {
   if (!requestId) return { ok: false, error: "request ausente" };
+  if (!internacaoId) return { ok: false, error: "internacao ausente" };
   try {
-    // RPC atômica: cancela a solicitação e restaura o leito de origem se ainda vago.
-    // RPC desconhecida → (supabase.rpc as any).
-    const { data: atomicData, error: atomicErr } = await (supabase as any).rpc(
-      "cancel_internal_transfer_atomic",
-      {
-        p_request_id:      requestId,
-        p_reason:          reason,
-        p_current_user_id: currentUserId ?? null,
-      },
-    );
-
-    if (!atomicErr) {
-      return { ok: true, restoredSourceBed: !!(atomicData as any)?.restored_source_bed };
+    // Reativa o status apenas se a internação ainda estiver aberta (não pisar em alta).
+    const { data: srcInt, error: srcErr } = await supabase
+      .from("internacoes")
+      .select("id, data_alta")
+      .eq("id", internacaoId)
+      .maybeSingle();
+    if (srcErr) throw srcErr;
+    const src = srcInt as { data_alta: string | null } | null;
+    if (src && src.data_alta == null) {
+      const { error: statusErr } = await supabase
+        .from("internacoes")
+        .update({ status: "ativa" })
+        .eq("id", internacaoId);
+      if (statusErr) throw statusErr;
     }
 
-    if (!isRpcMissing(atomicErr)) throw atomicErr;
+    const { error: logErr } = await supabase.from("logs_auditoria").insert({
+      tipo_evento: "cancelamento_transferencia_interna",
+      acao: "UPDATE",
+      nome_tabela: "internacoes",
+      internacao_id: internacaoId,
+      registro_id: internacaoId,
+      ator_user_id: currentUserId ?? null,
+      motivo: reason || "Cancelamento de sinalizacao de transferencia interna",
+      dados_novos: { signal_log_id: requestId } as any,
+    } as any);
+    if (logErr) throw logErr;
 
-    // MIGRAÇÃO: fallback sequencial degradado (dependia de internal_transfer_requests
-    // + patients, tabelas mortas).
-    console.warn("[cancelInternalTransferRequest] RPC atômica indisponível — fluxo degradado");
-    return { ok: false, error: DEGRADED_MSG };
+    return { ok: true };
   } catch (err: any) {
+    console.error("[cancelInternalTransferRequest] erro", err);
     return { ok: false, error: err?.message ?? "Erro" };
   }
 }

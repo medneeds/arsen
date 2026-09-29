@@ -69,6 +69,7 @@ export function InternalTransferQueueSection({ sectorCode }: Props) {
       const { data: { user } } = await supabase.auth.getUser();
       const res = await completeInternalTransfer({
         requestId: target.id,
+        sourceInternacaoId: target.source_patient_id,
         targetBedRow: bed,
         currentUserId: user?.id ?? null,
         hospitalUnitId: currentHospital.id,
@@ -76,10 +77,15 @@ export function InternalTransferQueueSection({ sectorCode }: Props) {
         department: currentDepartment ?? null,
       });
       if (!res.ok) throw new Error(res.error);
-      toast({
-        title: target.requires_saps ? "Paciente pré-admitido (SAPS pendente)" : "Paciente alocado",
-        description: `Leito ${bed.bedNumber} • ${sectorLabelFromCode(bed.sector)}.`,
-      });
+      if (res.aviso) {
+        // Estado parcial recuperavel (ocupacao do destino / liberacao da origem / log) — nao silenciar.
+        toast({ title: "Alocacao concluida com ressalva", description: res.aviso, variant: "destructive" });
+      } else {
+        toast({
+          title: target.requires_saps ? "Paciente pré-admitido (SAPS pendente)" : "Paciente alocado",
+          description: `Leito ${bed.bedNumber} • ${sectorLabelFromCode(bed.sector)}.`,
+        });
+      }
       setTarget(null);
       setBedId("");
       refresh();
@@ -94,7 +100,7 @@ export function InternalTransferQueueSection({ sectorCode }: Props) {
     const reason = window.prompt("Motivo do cancelamento da transferência interna sinalizada:");
     if (!reason || reason.trim().length < 5) return;
     const { data: { user } } = await supabase.auth.getUser();
-    const res = await cancelInternalTransferRequest(row.id, reason.trim(), user?.id ?? null);
+    const res = await cancelInternalTransferRequest(row.id, row.source_patient_id, reason.trim(), user?.id ?? null);
     if (!res.ok) {
       toast({ title: "Erro", description: res.error, variant: "destructive" });
       return;
