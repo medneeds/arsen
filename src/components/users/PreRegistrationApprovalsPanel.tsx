@@ -80,9 +80,9 @@ interface PreReq {
 }
 
 const STATUS_META: Record<string, { label: string; cls: string }> = {
-  pendente: { label: "Pendente", cls: "bg-amber-500/10 text-amber-700 border-amber-500/20" },
-  aprovado: { label: "Aprovado", cls: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20" },
-  reprovado: { label: "Recusado", cls: "bg-red-500/10 text-red-700 border-red-500/20" },
+  pendente: { label: "Pendente", cls: "bg-warning-soft text-warning-on-soft border-warning-border" },
+  aprovado: { label: "Aprovado", cls: "bg-released-soft text-released-on-soft border-released-border" },
+  reprovado: { label: "Recusado", cls: "bg-critical-soft text-critical-on-soft border-critical-border" },
 };
 
 // MIGRAÇÃO: aprovação é feita pela edge function "aprovar-pre-cadastro", que exige

@@ -51,7 +51,7 @@ const clinicalStatusLabels: Record<string, { label: string; color: string }> = {
   gravissimo: { label: "Gravíssimo", color: "bg-critical text-white" },
   grave: { label: "Grave", color: "bg-warning text-white" },
   grave_estavel: { label: "Grave Estável", color: "bg-warning text-white" },
-  potencialmente_grave: { label: "Potencialmente Grave", color: "bg-warning text-black" },
+  potencialmente_grave: { label: "Potencialmente Grave", color: "bg-warning text-warning-foreground" },
   regular: { label: "Regular", color: "bg-released text-white" },
   paliativado: { label: "Paliativado", color: "bg-primary text-white" },
 };

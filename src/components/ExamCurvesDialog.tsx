@@ -202,7 +202,7 @@ export function ExamCurvesDialog({
                         className="flex-1 flex items-center gap-3 cursor-pointer"
                       >
                         <div className={cn(
-                          "h-8 w-8 rounded-lg bg-gradient-to-br flex items-center justify-center text-white text-xs font-semibold shadow-md",
+                          "h-8 w-8 rounded-lg bg-gradient-to-br flex items-center justify-center text-foreground text-xs font-semibold shadow-sm",
                           exam.color
                         )}>
                           {exam.abbreviation}

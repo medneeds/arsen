@@ -165,13 +165,13 @@ export function UserApprovalsPanel() {
 
       {/* KPI */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <Card className="p-4 border-amber-500/20 bg-amber-500/5">
+        <Card className="p-4 border-warning-border bg-warning-soft">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs text-amber-700 font-medium">Inativos</p>
-              <p className="text-2xl font-bold text-amber-700">{profissionais.length}</p>
+              <p className="text-xs text-warning-on-soft font-medium">Inativos</p>
+              <p className="text-2xl font-bold text-warning-on-soft">{profissionais.length}</p>
             </div>
-            <UserX className="h-8 w-8 text-amber-500/50" />
+            <UserX className="h-8 w-8 text-warning/50" />
           </div>
         </Card>
       </div>
@@ -239,7 +239,7 @@ export function UserApprovalsPanel() {
                   <TableCell>
                     <Badge
                       variant="outline"
-                      className="bg-gray-500/10 text-gray-700 border-gray-500/20 gap-1"
+                      className="bg-muted text-muted-foreground border-border gap-1"
                     >
                       <UserX className="h-3 w-3" />
                       Inativo
@@ -249,7 +249,7 @@ export function UserApprovalsPanel() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="text-emerald-700 border-emerald-500/30 hover:bg-emerald-500/10"
+                      className="text-released-on-soft border-released-border hover:bg-released-soft"
                       onClick={() => setTarget(p)}
                     >
                       <CheckCircle2 className="h-4 w-4 mr-1" />

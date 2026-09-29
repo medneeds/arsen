@@ -247,7 +247,7 @@ export default function AdminHospitalPage() {
                         <CardTitle className="text-base flex items-center gap-2"><Layers className="h-4 w-4" /> {ala.nome}</CardTitle>
                         {ala.descricao && <CardDescription>{ala.descricao}</CardDescription>}
                       </div>
-                      <Button size="sm" variant="ghost" className="text-red-600" disabled={delAla.isPending}
+                      <Button size="sm" variant="ghost" className="text-destructive" disabled={delAla.isPending}
                         onClick={() => { if (confirm(`Excluir a ala "${ala.nome}" e tudo dentro dela?`)) delAla.mutate(ala.id); }}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -261,7 +261,7 @@ export default function AdminHospitalPage() {
                               <DoorOpen className="h-4 w-4 text-muted-foreground" /> {setor.nome}
                               <Badge variant="outline" className="text-[10px]">{SETOR_TIPOS.find(t => t.value === setor.tipo)?.label ?? setor.tipo}</Badge>
                             </div>
-                            <Button size="sm" variant="ghost" className="text-red-600 h-7 w-7 p-0" disabled={delSetor.isPending}
+                            <Button size="sm" variant="ghost" className="text-destructive h-7 w-7 p-0" disabled={delSetor.isPending}
                               onClick={() => { if (confirm(`Excluir o setor "${setor.nome}"?`)) delSetor.mutate(setor.id); }}>
                               <Trash2 className="h-3.5 w-3.5" />
                             </Button>
@@ -271,7 +271,7 @@ export default function AdminHospitalPage() {
                               <span key={leito.id} className="inline-flex items-center gap-1 rounded-md border bg-card px-2 py-1 text-xs">
                                 <Bed className="h-3 w-3" /> {leito.numero}
                                 <span className={`h-2 w-2 rounded-full ${statusVariant[leito.status] ?? "bg-slate-400"}`} title={leito.status} />
-                                <button className="text-red-500 hover:text-red-700" title="Excluir leito"
+                                <button className="text-destructive hover:text-destructive/80" title="Excluir leito"
                                   onClick={() => delLeito.mutate(leito.id)}>×</button>
                               </span>
                             ))}
@@ -753,10 +753,10 @@ function EquipeTab({ hospitalId }: { hospitalId: string }) {
                     {s.justificativa && <div className="text-xs text-muted-foreground/80 italic truncate max-w-md">"{s.justificativa}"</div>}
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
-                    <Button size="sm" variant="outline" className="text-emerald-700 border-emerald-500/30 hover:bg-emerald-500/10" onClick={() => abrirAprovar(s)}>
+                    <Button size="sm" variant="outline" className="text-released-on-soft border-released-border hover:bg-released-soft" onClick={() => abrirAprovar(s)}>
                       <UserCheck className="h-3.5 w-3.5 mr-1" /> Aprovar
                     </Button>
-                    <Button size="sm" variant="outline" className="text-red-700 border-red-500/30 hover:bg-red-500/10" onClick={() => { setRecusando(s); setMotivo(""); }}>
+                    <Button size="sm" variant="outline" className="text-critical-on-soft border-critical-border hover:bg-critical-soft" onClick={() => { setRecusando(s); setMotivo(""); }}>
                       <XCircle className="h-3.5 w-3.5 mr-1" /> Recusar
                     </Button>
                   </div>

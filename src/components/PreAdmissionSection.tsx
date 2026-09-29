@@ -42,7 +42,7 @@ interface PreAdmission {
 const RISK_COLORS: Record<string, string> = {
   vermelho: "bg-critical text-white",
   laranja: "bg-warning text-white",
-  amarelo: "bg-warning text-black",
+  amarelo: "bg-warning text-warning-foreground",
   verde: "bg-released text-white",
   azul: "bg-primary text-white",
   branca: "bg-white text-foreground border border-border",

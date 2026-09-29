@@ -116,7 +116,7 @@ export function PendenciesTab() {
 
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button size="sm" className="bg-muted hover:from-muted hover:to-muted text-white shadow-md">
+            <Button size="sm" className="bg-muted text-foreground hover:bg-muted/80 shadow-sm">
               <Plus className="h-4 w-4 mr-2" /> Nova pendência
             </Button>
           </DialogTrigger>
@@ -155,7 +155,7 @@ export function PendenciesTab() {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-              <Button onClick={create} className="bg-muted text-white">Criar</Button>
+              <Button onClick={create} className="bg-muted text-foreground hover:bg-muted/80">Criar</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -241,10 +241,9 @@ const TONE_STYLES = {
 
 function KpiBox({ label, value, icon, tone = "blue" }: { label: string; value: number; icon?: React.ReactNode; tone?: keyof typeof TONE_STYLES }) {
   return (
-    <div className={`relative overflow-hidden rounded-lg p-4 bg-gradient-to-br ${TONE_STYLES[tone]} text-white shadow-md ring-1`}>
-      <div className="absolute -right-4 -top-4 h-16 w-16 rounded-full bg-white/10 blur-xl" />
+    <div className={`relative overflow-hidden rounded-lg p-4 bg-gradient-to-br ${TONE_STYLES[tone]} text-foreground shadow-sm ring-1`}>
       <div className="relative">
-        <div className="text-xs uppercase tracking-wider text-white/80 flex items-center gap-2 font-medium">{icon}{label}</div>
+        <div className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-2 font-medium">{icon}{label}</div>
         <div className="text-3xl font-semibold tabular-nums mt-2 drop-shadow-sm">{value}</div>
       </div>
     </div>

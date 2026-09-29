@@ -166,16 +166,16 @@ export function TriageExpressDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl p-0 overflow-hidden">
-        {/* Header com gradiente de urgência */}
-        <div className="bg-critical-soft text-white px-4 py-4">
+        {/* Header de urgencia — faixa soft com texto on-soft (legivel nos dois modos) */}
+        <div className="bg-critical-soft text-critical-on-soft px-4 py-4">
           <DialogHeader className="space-y-1">
-            <DialogTitle className="flex items-center gap-2 text-white">
+            <DialogTitle className="flex items-center gap-2 text-critical-on-soft">
               <Zap className="h-5 w-5" />
               Cadastro Express — Paciente sem identificação
               {receptionPoint && (
                 <Badge
                   variant="outline"
-                  className="ml-2 text-xs h-5 border-white/40 text-white bg-white/10 font-normal"
+                  className="ml-2 text-xs h-5 border-critical-border text-critical-on-soft bg-critical/10 font-normal"
                 >
                   {isHorizontal ? <Ambulance className="h-3 w-3 mr-1" /> : <Footprints className="h-3 w-3 mr-1" />}
                   Recepção {isHorizontal ? "Horizontal" : "Vertical"}

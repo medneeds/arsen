@@ -39,7 +39,7 @@ export default function TomografiasPage() {
       <div className="p-6 md:p-8 space-y-8 max-w-6xl">
         {/* Header */}
         <div className="space-y-2">
-          <h1 className="text-4xl font-semibold tracking-tight bg-muted bg-clip-text text-transparent">
+          <h1 className="text-4xl font-semibold tracking-tight bg-primary bg-clip-text text-transparent">
             Tomografias
           </h1>
           <p className="text-muted-foreground text-lg">

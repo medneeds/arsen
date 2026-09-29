@@ -149,7 +149,7 @@ export default function SetupPage() {
               Não foi possível verificar o estado do sistema. A função <code>existe_super_admin</code> pode
               ainda não estar disponível no backend.
             </p>
-            <p className="text-xs text-red-600 break-words">{checkError}</p>
+            <p className="text-xs text-destructive break-words">{checkError}</p>
             <Button variant="outline" onClick={() => navigate("/auth")} className="w-full">Ir para login</Button>
           </div>
         ) : fase === "ja_configurado" ? (

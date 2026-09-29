@@ -35,7 +35,7 @@ export default function RegulacoesPage() {
       <div className="p-6 md:p-8 space-y-8 max-w-6xl">
         {/* Header */}
         <div className="space-y-2">
-          <h1 className="text-4xl font-semibold tracking-tight bg-released-soft bg-clip-text text-transparent">
+          <h1 className="text-4xl font-semibold tracking-tight bg-released bg-clip-text text-transparent">
             Regulações SUS
           </h1>
           <p className="text-muted-foreground text-lg">
