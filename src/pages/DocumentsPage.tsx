@@ -11,7 +11,8 @@ import {
   Activity,
   Heart,
   Workflow,
-  ScanLine
+  ScanLine,
+  ClipboardCheck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,8 +26,17 @@ export default function DocumentsPage() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const documents = [
-    { 
-      id: "sepse", 
+    {
+      id: "round-multiprofissional",
+      title: "Round Multiprofissional",
+      description: "Round digital e folhas de round por setor",
+      route: "/round",
+      icon: ClipboardCheck,
+      color: "text-primary",
+      bgColor: "bg-primary/10"
+    },
+    {
+      id: "sepse",
       title: "Protocolo SEPSE", 
       description: "Protocolo institucional para manejo de sepse e choque séptico",
       route: "/sepsis-protocol",
