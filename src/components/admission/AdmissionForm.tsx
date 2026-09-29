@@ -83,6 +83,9 @@ interface AdmissionFormProps {
   };
   onClose: () => void;
   onSuccess?: () => void;
+  /** Modo pagina (dentro do shell ClinicalHeader): oculta o cabecalho interno de
+   *  dialogo (identidade duplicada), ja provido pelo shell. Diálogo usa false. */
+  embedded?: boolean;
 }
 
 /* ───────── Helpers ───────── */
@@ -182,7 +185,7 @@ const Section = ({
 
 /* ───────── Component ───────── */
 
-export function AdmissionForm({ patient, onClose, onSuccess }: AdmissionFormProps) {
+export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }: AdmissionFormProps) {
   const { currentHospital, currentState } = useHospital();
   const { currentDepartment } = useDepartment();
   const { user } = useAuth();
@@ -647,31 +650,35 @@ export function AdmissionForm({ patient, onClose, onSuccess }: AdmissionFormProp
   return (
     <>
       {/* Cabeçalho elegante — identidade unificada */}
-      <header className="flex flex-col space-y-2 text-center sm:text-left px-6 pt-4 pb-4 border-b bg-released-soft/10 space-y-3">
-        <h2 className="text-lg font-medium leading-none tracking-tight flex items-center gap-2 uppercase tracking-wider text-foreground">
-          <span className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-released/15 text-released-on-soft">
-            <Stethoscope className="h-4 w-4" />
-          </span>
-          Admissão Hospitalar
-          <Badge variant="outline" className="ml-2 border-released/40 bg-released/10 text-released-on-soft">
-            {isUti ? "UTI / UCI" : "ENFERMARIA"}
-          </Badge>
-        </h2>
-        <p className="text-sm text-muted-foreground text-xs">
-          Esta admissão será registrada como <strong>D0</strong> e aparecerá como primeira entrada na linha do tempo (ADMISSÃO HOSPITALAR). Após assinada, só pode ser editada via adendo ou suspensa com justificativa.
-        </p>
+      <header className={cn("flex flex-col space-y-2 text-center sm:text-left px-6 pt-4 pb-4 border-b space-y-3", !embedded && "bg-released-soft/10")}>
+        {!embedded && (
+          <>
+            <h2 className="text-lg font-medium leading-none tracking-tight flex items-center gap-2 uppercase tracking-wider text-foreground">
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-released/15 text-released-on-soft">
+                <Stethoscope className="h-4 w-4" />
+              </span>
+              Admissão Hospitalar
+              <Badge variant="outline" className="ml-2 border-released/40 bg-released/10 text-released-on-soft">
+                {isUti ? "UTI / UCI" : "ENFERMARIA"}
+              </Badge>
+            </h2>
+            <p className="text-sm text-muted-foreground text-xs">
+              Esta admissão será registrada como <strong>D0</strong> e aparecerá como primeira entrada na linha do tempo (ADMISSÃO HOSPITALAR). Após assinada, só pode ser editada via adendo ou suspensa com justificativa.
+            </p>
 
-        {/* Identificação do paciente — fonte única (mesmo cabeçalho do Painel Clínico) */}
-        <div className="rounded-md border border-released/20 bg-released/5 p-3">
-          <PatientIdentityHeader
-            patientId={patient.id}
-            fallbackName={patient.name}
-            fallbackBed={patient.bed}
-            fallbackSector={patient.sector}
-            fallbackAge={patient.age}
-            variant="dialog"
-          />
-        </div>
+            {/* Identificação do paciente — fonte única (mesmo cabeçalho do Painel Clínico) */}
+            <div className="rounded-md border border-released/20 bg-released/5 p-3">
+              <PatientIdentityHeader
+                patientId={patient.id}
+                fallbackName={patient.name}
+                fallbackBed={patient.bed}
+                fallbackSector={patient.sector}
+                fallbackAge={patient.age}
+                variant="dialog"
+              />
+            </div>
+          </>
+        )}
 
         {/* Faixa de status: rascunho automático + pendências */}
         <div className="flex flex-wrap items-center gap-2">

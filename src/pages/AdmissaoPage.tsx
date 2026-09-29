@@ -1,10 +1,11 @@
 import { useEffect, useMemo } from "react";
 import { useSearchParams, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { ArrowLeft, Stethoscope } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { AdmissionForm } from "@/components/admission/AdmissionForm";
+import { ClinicalHeader } from "@/components/ClinicalHeader";
+import { PatientCockpit } from "@/components/PatientCockpit";
+import type { Patient } from "@/types/patient";
 
 /**
  * Perfis claramente NAO clinicos (porta / recepcao / administrativo) nao podem
@@ -66,6 +67,25 @@ export default function AdmissaoPage() {
 
   const returnTo = state?.returnTo || (patientId ? `/paciente?patientId=${patientId}` : "/mapa");
 
+  // Paciente para o Cockpit do trilho direito — mesma harmonizacao dos demais
+  // modulos (stub a partir dos params; o Cockpit resolve o resto por id).
+  const cockpitPatient: Patient = useMemo(() => ({
+    id: patient.id || "admissao-stub",
+    bedNumber: patient.bed,
+    name: patient.name,
+    age: patient.age ? String(patient.age).replace(/\s*anos?$/i, "") : "",
+    sector: (patient.sector as Patient["sector"]) || "outside",
+    diagnoses: [],
+    medicalHistory: [],
+    relevantExams: [],
+    pendencies: [],
+    schedule: [],
+    admissionHistory: "",
+    admissionDate: "",
+    utiAllergies: [],
+    clinicalStatus: "regular",
+  }), [patient]);
+
   // ─── Guarda de permissao: perfil de porta/recepcao -> acesso negado
   useEffect(() => {
     if (denied) {
@@ -85,30 +105,24 @@ export default function AdmissaoPage() {
   if (denied || !patientId) return null;
 
   return (
-    <div className="mx-auto w-full max-w-[55rem] px-4 py-4 space-y-4">
-      <div className="flex items-center gap-3">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate(returnTo)}
-          className="gap-2"
-        >
-          <ArrowLeft className="h-4 w-4" /> Voltar
-        </Button>
-        <div className="flex items-center gap-2">
-          <span className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-released/15 text-released-on-soft">
-            <Stethoscope className="h-4 w-4" />
-          </span>
-          <h1 className="text-lg font-semibold uppercase tracking-wider text-foreground">Admissão</h1>
-        </div>
-      </div>
+    <div className="print:p-2">
+      {/* Shell institucional harmonizado — mesmo cabecalho/abas dos demais modulos */}
+      <ClinicalHeader moduleLabel="Admissão" />
 
-      <div className="rounded-lg border bg-background overflow-hidden">
-        <AdmissionForm
-          patient={patient}
-          onClose={() => navigate(returnTo)}
-          onSuccess={() => toast.success("Admissão hospitalar registrada. Módulos clínicos liberados.")}
-        />
+      <div className="flex print:block">
+        <div className="flex-1 min-w-0 p-3 sm:p-4">
+          <div className="rounded-lg border bg-card overflow-hidden">
+            <AdmissionForm
+              embedded
+              patient={patient}
+              onClose={() => navigate(returnTo)}
+              onSuccess={() => toast.success("Admissão hospitalar registrada. Módulos clínicos liberados.")}
+            />
+          </div>
+        </div>
+
+        {/* Cockpit no trilho direito — igual a Evolucao/Prescricao */}
+        <PatientCockpit patient={cockpitPatient} />
       </div>
     </div>
   );
