@@ -6,13 +6,15 @@ import { Printer, Plus, ChevronDown, ChevronsDownUp, ChevronsUpDown } from "luci
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Checkbox } from "@/components/ui/checkbox";
-import { regularBedCount, sectorCapacity } from "@/utils/bedNaming";
+import { occupiedBedCount, sectorCapacity } from "@/utils/bedNaming";
 
 type ColorVariant = 'blue' | 'yellow' | 'red' | 'green';
 
 interface UtiSectorSectionProps {
   sector: SectorType;
   patients: Patient[];
+  /** Todos os leitos do setor sem filtro de exibicao; base do contador de ocupacao. */
+  sectorPatients?: Patient[];
   onUpdatePatient: (patient: Patient) => void;
   onDeletePatient?: (patientId: string) => void;
   onReleasePreAdmissionBed?: (patientId: string, payload: { reason: string; reasonNote: string }) => void | Promise<void>;
@@ -105,6 +107,7 @@ function UtiRow(props: UtiRowProps) {
 export function UtiSectorSection({ 
   sector, 
   patients, 
+  sectorPatients,
   onUpdatePatient, 
   onDeletePatient,
   onReleasePreAdmissionBed,
@@ -253,7 +256,7 @@ export function UtiSectorSection({
             )}
             <div className={`flex items-center justify-center h-8 w-8 backdrop-blur-sm rounded-lg border print:h-6 print:w-6 ${counterClass}`}>
               <p className={`text-base font-semibold print:text-xs ${titleClass}`}>
-                {regularBedCount(patients)}
+                {occupiedBedCount(sectorPatients ?? patients)}
                 {sectorCapacity(sector) > 0 && (
                   <span className="text-xs font-normal opacity-60">/{sectorCapacity(sector)}</span>
                 )}

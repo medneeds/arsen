@@ -421,6 +421,16 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
   const bluePatients = filterPatients(patients.filter((p) => p.sector === "blue"));
   const outsidePatients = filterPatients(patients.filter((p) => p.sector === "outside"));
 
+  // Todos os leitos do setor ativo, SEM filtro de exibicao (usado na ocupacao real).
+  const activeSectorPatients = patients.filter(p =>
+    p.sector === activeSector ||
+    p.sectorName === activeSector || // MIGRAÇÃO: setor do banco (setores.nome)
+    (p as any).department === ({
+      ucc: 'UCC', blue: 'UCI 1', enfermaria_transicao: 'ENFERMARIA DE TRANSIÇÃO',
+      neuro_01: 'NEURO 01', neuro_02: 'NEURO 02', clinica_cirurgica: 'CLÍNICA CIRÚRGICA',
+    } as Record<string,string>)[activeSector]
+  );
+
   const totalPatients = patients.length;
   const criticalPatients = redPatients.length;
 
@@ -1145,14 +1155,8 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
               <div className="space-y-4">
                 <UtiSectorSection
                   sector={activeSector as any}
-                  patients={filterPatients(patients.filter(p =>
-                    p.sector === activeSector ||
-                    p.sectorName === activeSector || // MIGRAÇÃO: setor do banco (setores.nome)
-                    (p as any).department === ({
-                      ucc: 'UCC', blue: 'UCI 1', enfermaria_transicao: 'ENFERMARIA DE TRANSIÇÃO',
-                      neuro_01: 'NEURO 01', neuro_02: 'NEURO 02', clinica_cirurgica: 'CLÍNICA CIRÚRGICA',
-                    } as Record<string,string>)[activeSector]
-                  ))}
+                  patients={filterPatients(activeSectorPatients)}
+                  sectorPatients={activeSectorPatients}
                   onUpdatePatient={handleUpdatePatient}
                   onDeletePatient={handleDeletePatient}
                   onReleasePreAdmissionBed={handleReleasePreAdmissionBed}

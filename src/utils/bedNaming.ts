@@ -120,6 +120,18 @@ export function regularBedCount(patients: Array<{ bedNumber?: string; bed_number
 }
 
 /**
+ * Conta os pacientes efetivamente INTERNADOS (leitos com internacao ativa).
+ * Leitos vagos nao entram; leitos EXTRA ocupados entram (paciente internado e
+ * paciente internado, e o excesso sobre a capacidade precisa ficar visivel).
+ * Usar no numerador de ocupacao; o denominador e sectorCapacity().
+ *
+ * @param patients Leitos do setor (lista COMPLETA, sem filtro de exibicao)
+ */
+export function occupiedBedCount(patients: Array<{ isVacant?: boolean }>): number {
+  return patients.filter(p => !p.isVacant).length;
+}
+
+/**
  * Retorna a capacidade fixa de um setor conforme SECTOR_BED_CONFIG.
  * Preferir isso em vez de contar registros do banco (que pode incluir EXTRAs).
  */
