@@ -1,11 +1,12 @@
 import { useEffect } from "react";
 import { useSearchParams, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { ArrowLeft, ArrowRightLeft } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { MovimentacaoForm } from "@/components/movimentacao/MovimentacaoForm";
+import { ClinicalHeader } from "@/components/ClinicalHeader";
+import { PatientCockpit } from "@/components/PatientCockpit";
+import { useCockpitPatient } from "@/hooks/useCockpitPatient";
 import type { Patient } from "@/types/patient";
 import type { AnyMovementType } from "@/data/movementFlow";
 
@@ -42,7 +43,15 @@ export default function MovimentacaoPage() {
   // modulo (patientSector = CODIGO do setor). Servem para as abas / usePatientKey.
   const patientId = searchParams.get("patientId") || "";
   const state = (location.state ?? null) as MovimentacaoLocationState | null;
-  const patient = state?.patient ?? null;
+  // Snapshot completo quando aberto pela cockpit/Hub (state.patient). Ao abrir pela
+  // ABA de modulo / F5 / deep-link (so query params), reconstrói o paciente por
+  // patientId via useCockpitPatient (mesmo padrao da /movimentacoes) — que enriquece
+  // com usePatientLive. Assim a aba "Sinalização" abre sozinha, sem depender do state.
+  const cockpitPatient = useCockpitPatient();
+  // So aceita o paciente reconstruido quando ha patientId REAL na URL — o id do
+  // paciente e a ancora (internacao_id) de toda escrita da movimentacao. Sem
+  // patientId, nao caimos no stub de id falso: exigimos o snapshot do state.
+  const patient = state?.patient ?? (patientId ? cockpitPatient : null);
 
   // ─── Guarda de permissao — MESMO mecanismo da AdmissaoPage (access_profile em
   // localStorage) + role do AuthContext. Perfil de porta/recepcao nao sinaliza.
@@ -74,30 +83,18 @@ export default function MovimentacaoPage() {
   if (denied || !patient) return null;
 
   return (
-    <div className="mx-auto w-full max-w-[55rem] px-4 py-4 space-y-4">
-      <div className="flex items-center gap-3">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate(returnTo)}
-          className="gap-2"
-        >
-          <ArrowLeft className="h-4 w-4" /> Voltar
-        </Button>
-        <div className="flex items-center gap-2">
-          <span className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-released/15 text-released-on-soft">
-            <ArrowRightLeft className="h-4 w-4" />
-          </span>
-          <h1 className="text-lg font-semibold uppercase tracking-wider text-foreground">Movimentação</h1>
-        </div>
-      </div>
+    <div className="print:p-2">
+      {/* Shell institucional harmonizado — mesmo cabecalho/abas dos demais modulos */}
+      <ClinicalHeader moduleLabel="Sinalização" />
 
-      <div className="rounded-lg border bg-background overflow-hidden">
-        <MovimentacaoForm
-          patient={patient}
-          movementType={state?.subtype ?? null}
-          onClose={() => navigate(returnTo)}
-          onSuccess={() => {
+      <div className="flex print:block">
+        <div className="flex-1 min-w-0 p-3 sm:p-4">
+          <div className="rounded-lg border bg-card overflow-hidden">
+            <MovimentacaoForm
+              patient={patient}
+              movementType={state?.subtype ?? null}
+              onClose={() => navigate(returnTo)}
+              onSuccess={() => {
             // Preserva o comportamento pos-sinalizacao dos gatilhos originais
             // (cockpit / hub): invalida as MESMAS chaves que o dialog invalidava
             // no onSuccess, para que a tela de origem — cockpit ao lado, mapa —
@@ -108,7 +105,12 @@ export default function MovimentacaoPage() {
             queryClient.invalidateQueries({ queryKey: ["patient-movements"] });
             queryClient.invalidateQueries({ queryKey: ["internal-transfer-requests"] });
           }}
-        />
+            />
+          </div>
+        </div>
+
+        {/* Cockpit no trilho direito — igual aos demais modulos */}
+        <PatientCockpit patient={patient} />
       </div>
     </div>
   );
