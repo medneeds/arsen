@@ -128,16 +128,27 @@ function ProfileHomeRedirect() {
   const { role } = useAuth();
   // super_admin não tem hospital/setor — vai direto ao painel dele.
   if (role === "super_admin") return <Navigate to="/painel-super-admin" replace />;
-  // admin de hospital → painel administrativo (gestão do hospital), não o clínico.
-  if (role === "admin") return <Navigate to="/painel-admin" replace />;
-  const profile = typeof window !== "undefined" ? localStorage.getItem("access_profile") || "medico" : "medico";
-  if (profile === "ccih") return <Navigate to="/ccih" replace />;
-  if (profile === "imagem") return <Navigate to="/setor-imagem" replace />;
-  if (profile === "laboratorio") return <Navigate to="/setor-laboratorio" replace />;
-  if (profile === "administrativo") return <Navigate to="/recepcao" replace />;
-  if (profile === "nir") return <Navigate to="/nir" replace />;
-  if (profile === "gestor") return <Navigate to="/painel-gestor" replace />;
-  if (profile === "farmacia") return <Navigate to="/validacao-farmaceutica" replace />;
+
+  // O PERFIL ATIVO tem prioridade sobre o papel. Um admin de hospital que esta
+  // operando sob um perfil clinico/operacional (ex.: medico) deve voltar ao
+  // ambiente daquele perfil pelo botao Inicio — NAO ao Painel Administrativo. Os
+  // dois ambientes nao se misturam: o administrativo so aparece quando a pessoa
+  // esta de fato no perfil administrativo (sem perfil clinico/operacional ativo).
+  const rawProfile = typeof window !== "undefined" ? (localStorage.getItem("access_profile") || "") : "";
+  if (rawProfile === "ccih") return <Navigate to="/ccih" replace />;
+  if (rawProfile === "imagem") return <Navigate to="/setor-imagem" replace />;
+  if (rawProfile === "laboratorio") return <Navigate to="/setor-laboratorio" replace />;
+  if (rawProfile === "administrativo") return <Navigate to="/recepcao" replace />;
+  if (rawProfile === "nir") return <Navigate to="/nir" replace />;
+  if (rawProfile === "gestor") return <Navigate to="/painel-gestor" replace />;
+  if (rawProfile === "farmacia") return <Navigate to="/validacao-farmaceutica" replace />;
+
+  // Admin de hospital SEM perfil clinico/operacional ativo → Painel Administrativo.
+  if (role === "admin" && (rawProfile === "" || rawProfile === "admin")) {
+    return <Navigate to="/painel-admin" replace />;
+  }
+
+  // Demais casos (medico, multi, coord_*, ou admin operando clinicamente) → panorama do setor.
   return <ClinicalDashboardPage />;
 }
 
