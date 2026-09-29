@@ -11,6 +11,8 @@ import { printAdmissionNormaZero } from "@/lib/printAdmission";
 import { resolveCurrentBedSector } from "@/lib/resolvePatientHeader";
 import { useHospital } from "@/contexts/HospitalContext";
 import { fromEvolucaoStatusDb } from "@/lib/evolucaoStatus";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { usePatientIdentifiers } from "@/hooks/usePatientIdentifiers";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCockpitPatient } from "@/hooks/useCockpitPatient";
@@ -123,6 +125,9 @@ export default function PacienteHubPage() {
     requisicoes: "enviada" | null;
     monitoramento: "registrado" | null;
   }>({ prescricao: null, evolucao: null, requisicoes: null, monitoramento: null });
+  // Horario da ultima acao por modulo — alimenta o tooltip "há X" (informativo sem
+  // poluir a grade). ISO string ou null.
+  const [moduleAt, setModuleAt] = useState<Record<string, string | null>>({});
   /**
    * Contador que forca a releitura dos estados derivados. Incrementado por
    * refreshHubState() apos uma acao e ao voltar o foco para a aba.
@@ -152,8 +157,8 @@ export default function PacienteHubPage() {
         supabase.from("evolucoes").select("status, data_hora").eq("internacao_id", id).order("data_hora", { ascending: false }).limit(1),
         supabase.from("prescricoes").select("itens, criado_em").eq("internacao_id", id).order("criado_em", { ascending: false }).limit(1),
         supabase.from("prescricoes").select("id").eq("internacao_id", id).eq("status", "draft").gte("criado_em", iso).limit(1),
-        supabase.from("solicitacoes_exame").select("id").eq("internacao_id", id).limit(1),
-        supabase.from("sinais_vitais").select("id").eq("internacao_id", id).gte("data_hora", iso).limit(1),
+        supabase.from("solicitacoes_exame").select("criado_em").eq("internacao_id", id).order("criado_em", { ascending: false }).limit(1),
+        supabase.from("sinais_vitais").select("data_hora").eq("internacao_id", id).gte("data_hora", iso).order("data_hora", { ascending: false }).limit(1),
       ]);
       if (cancelled) return;
 
@@ -186,6 +191,12 @@ export default function PacienteHubPage() {
       const monState: "registrado" | null = !monRes.error && (monRes.data?.length ?? 0) > 0 ? "registrado" : null;
 
       setModuleStatus({ prescricao: prescState, evolucao: evoState, requisicoes: reqState, monitoramento: monState });
+      setModuleAt({
+        prescricao: prescState ? (prescRes.data?.[0]?.criado_em ?? null) : null,
+        evolucao: evoState ? (evoRow?.data_hora ?? null) : null,
+        requisicoes: reqState ? (reqRes.data?.[0]?.criado_em ?? null) : null,
+        monitoramento: monState ? (monRes.data?.[0]?.data_hora ?? null) : null,
+      });
     })();
     return () => { cancelled = true; };
   }, [ctx.patientId, refreshTick]);
@@ -704,6 +715,7 @@ export default function PacienteHubPage() {
             {/* Demais ações */}
             {CLINICAL_ACTIONS.map(({ key, label, icon: Icon, path }) => {
               const st = !locked ? MODULE_STATE_VISUAL[(moduleStatus[key as keyof typeof moduleStatus] ?? "")] : undefined;
+              const at = st ? moduleAt[key as keyof typeof moduleAt] : null;
               return (
               <button
                 key={key}
@@ -754,7 +766,10 @@ export default function PacienteHubPage() {
                     ruido, o oposto do que uma passagem de plantao precisa.
                   */}
                   {st && (
-                    <span className={cn("mt-1 inline-flex items-center gap-1 text-xs font-medium tracking-widest uppercase", st.text)}>
+                    <span
+                      title={at ? `${st.label} · ${formatDistanceToNow(new Date(at), { addSuffix: true, locale: ptBR })}` : undefined}
+                      className={cn("mt-1 inline-flex items-center gap-1 text-xs font-medium tracking-widest uppercase", st.text)}
+                    >
                       <span className={cn("h-1.5 w-1.5 rounded-full", st.dot)} />
                       {st.label}
                     </span>

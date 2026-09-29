@@ -666,6 +666,21 @@ export function usePatients(department?: Department, sector?: string) {
         { event: '*', schema: 'public', table: 'leitos' },
         () => { scheduleRefetch(); },
       )
+      .on(
+        // Tarja de sinalizacao (transf. interna) vive em logs_auditoria, nao numa
+        // coluna — sem este listener o mapa so a via ao recarregar. logs_auditoria e
+        // tabela de ALTO volume, entao filtramos NO CLIENTE: so refazemos quando o
+        // evento afeta a tarja (sinalizacao/conclusao/cancelamento/movimentacao). O
+        // debounce ja coalesce rajadas.
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'logs_auditoria' },
+        (payload) => {
+          const tipo = (payload?.new as { tipo_evento?: string } | undefined)?.tipo_evento || '';
+          if (/^(sinalizacao_|conclusao_|cancelamento_|movimentacao_)/.test(tipo)) {
+            scheduleRefetch();
+          }
+        },
+      )
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
           console.log('[usePatients] Realtime SUBSCRIBED — mapa atualiza em tempo real');
