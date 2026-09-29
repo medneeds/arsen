@@ -12,7 +12,7 @@ import { PrintPatientPreviewDialog } from "@/components/PrintPatientPreviewDialo
 import { PrintMapPreviewDialog } from "@/components/PrintMapPreviewDialog";
 import { PrintUtiPreviewDialog } from "@/components/PrintUtiPreviewDialog";
 import { RoundSectorPrintDialog } from "@/components/RoundSectorPrintDialog";
-import { PageLoader } from "@/components/PageLoader";
+import { SectorLoader } from "@/components/SectorLoader";
 import { usePageReady } from "@/hooks/usePageReady";
 import { MainLayout } from "@/components/MainLayout";
 import { ShiftReminderDialog } from "@/components/ShiftReminderDialog";
@@ -20,7 +20,6 @@ import { Patient, isSectorType, type SectorType } from "@/types/patient";
 import { Printer, Eye, EyeOff, CheckSquare, Trash2, GripVertical, ClipboardCheck, RefreshCw, Maximize2, Minimize2 } from "lucide-react";
 import { BreadcrumbBar } from "@/components/BreadcrumbBar";
 import { SectorSelector } from "@/components/SectorSelector";
-import { whitelabel } from "@/config/whitelabel";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { GlobalSearchDialog } from "@/components/GlobalSearchDialog";
 import { RequestNewAllocationDialog } from "@/components/RequestNewAllocationDialog";
@@ -879,10 +878,12 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
 
   // handleQuickView removido
 
-  const pageReady = usePageReady({ loading: authLoading || patientsLoading });
+  // minDisplayMs: piso curto para o loader nunca "piscar" em cargas rapidas — o
+  // circulo aparece suave e o setor so entra com os dados 100% carregados.
+  const pageReady = usePageReady({ loading: authLoading || patientsLoading, minDisplayMs: 300 });
   if (!pageReady) {
     const sectorLabel = SECTOR_VISUAL[activeSector]?.title;
-    return <PageLoader message={sectorLabel ? `Preparando ${sectorLabel}` : "Carregando mapa de leitos"} subMessage={whitelabel.institution.hospitalAbbreviation} />;
+    return <SectorLoader label={sectorLabel ? `Preparando ${sectorLabel}` : "Carregando mapa de leitos"} />;
   }
 
   // Moldura: MainLayout quando a pagina e a rota; Fragment quando embutida.

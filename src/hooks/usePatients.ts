@@ -110,7 +110,10 @@ export function usePatients(department?: Department, sector?: string) {
     };
   };
 
-  const fetchPatients = async () => {
+  const fetchPatients = async (opts?: { silent?: boolean }) => {
+    // Loader visivel so na carga inicial / troca de setor. As atualizacoes de
+    // realtime passam `silent` para nao piscar o loader do mapa a cada evento.
+    if (!opts?.silent) setIsLoading(true);
     try {
       if (!currentHospital || !currentState) {
         setIsLoading(false);
@@ -590,7 +593,7 @@ export function usePatients(department?: Department, sector?: string) {
       if (debounceTimer) clearTimeout(debounceTimer);
       debounceTimer = setTimeout(() => {
         debounceTimer = null;
-        fetchPatients();
+        fetchPatients({ silent: true });
       }, 800);
     };
 
@@ -618,8 +621,9 @@ export function usePatients(department?: Department, sector?: string) {
         if (status === 'SUBSCRIBED') {
           console.log('[usePatients] Realtime SUBSCRIBED — mapa atualiza em tempo real');
           // Primeiro SUBSCRIBED: o fetch inicial ja carregou — nao refazer.
-          // Reconexoes seguintes: refetch para recuperar mudancas perdidas.
-          if (!firstSubscribe) fetchPatients();
+          // Reconexoes seguintes: refetch silencioso (recupera mudancas perdidas
+          // sem piscar o loader).
+          if (!firstSubscribe) fetchPatients({ silent: true });
           firstSubscribe = false;
         } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
           console.warn('[usePatients] Realtime problema:', status, '— fazendo refetch manual');
@@ -641,6 +645,9 @@ export function usePatients(department?: Department, sector?: string) {
     deletePatient,
     releaseBedPreAdmission,
     reorderPatients,
-    refetch: fetchPatients,
+    // refetch manual (botao Atualizar / pos-mutacao) e SILENCIOSO: o feedback e o
+    // proprio spinner do botao; o loader de tela cheia so aparece na troca de setor
+    // (fetch inicial do efeito).
+    refetch: () => fetchPatients({ silent: true }),
   };
 }
