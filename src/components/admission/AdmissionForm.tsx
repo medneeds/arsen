@@ -488,13 +488,13 @@ export function AdmissionForm({ patient, onClose, onSuccess }: AdmissionFormProp
       const err = validate();
       if (err) {
         toast.error(err, {
-          description: "Preencha os campos obrigatórios e assine a admissão antes de imprimir.",
+          description: "Preencha os campos obrigatórios e valide a admissão antes de imprimir.",
         });
         return;
       }
-      toast.error("Assine e admita antes de imprimir", {
+      toast.error("Valide a admissão antes de imprimir", {
         description:
-          "A impressão só é liberada após clicar em “Assinar e Admitir (D0)”. " +
+          "A impressão só é liberada após clicar em “Validar admissão (D0)”. " +
           "Isso garante que o documento impresso corresponda a um registro salvo no sistema.",
       });
       return;
@@ -697,7 +697,7 @@ export function AdmissionForm({ patient, onClose, onSuccess }: AdmissionFormProp
           {!isSaved && (
             <span className="inline-flex items-center gap-2 rounded-full bg-warning-soft border border-warning-border px-3 py-1 text-xs text-warning-on-soft">
               <AlertTriangle className="h-3 w-3" />
-              Admissão <strong>ainda não registrada</strong> — clique em “Assinar e Admitir (D0)” para salvar e liberar a impressão
+              Admissão <strong>ainda não registrada</strong> — clique em “Validar admissão (D0)” para salvar e liberar a impressão
             </span>
           )}
         </div>
@@ -902,7 +902,7 @@ export function AdmissionForm({ patient, onClose, onSuccess }: AdmissionFormProp
           className="w-full sm:w-auto gap-2"
           title={isSaved
             ? "Imprimir o documento de admissão"
-            : "Disponível após assinar e admitir (D0). A impressão só é liberada quando a admissão estiver salva no sistema."}
+            : "Disponível após validar a admissão (D0). A impressão só é liberada quando a admissão estiver salva no sistema."}
         >
           <Printer className="h-4 w-4" /> Imprimir Admissão
         </Button>
@@ -923,7 +923,7 @@ export function AdmissionForm({ patient, onClose, onSuccess }: AdmissionFormProp
             className="w-full sm:w-auto gap-2 bg-released hover:bg-released text-white uppercase tracking-wider"
           >
             {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <ClipboardCheck className="h-4 w-4" />}
-            Assinar e Admitir (D0)
+            Validar admissão (D0)
           </Button>
         </div>
       </div>
@@ -937,17 +937,17 @@ export function AdmissionForm({ patient, onClose, onSuccess }: AdmissionFormProp
             </AlertDialogTitle>
             <AlertDialogDescription className="text-sm space-y-2">
               <span className="block">
-                Você preencheu a admissão mas <strong>ainda não a assinou</strong>. Se sair agora, ela
+                Você preencheu a admissão mas <strong>ainda não a validou</strong>. Se sair agora, ela
                 <strong> não ficará registrada no sistema</strong> — nenhum documento D0 será gerado no prontuário.
               </span>
               <span className="block text-xs text-muted-foreground">
                 O conteúdo permanece salvo como <strong>rascunho local</strong> neste navegador e pode ser retomado depois.
-                Para registrar a admissão de fato, volte e clique em “Assinar e Admitir (D0)”.
+                Para registrar a admissão de fato, volte e clique em “Validar admissão (D0)”.
               </span>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Voltar e assinar</AlertDialogCancel>
+            <AlertDialogCancel>Voltar e validar</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => { setConfirmCloseOpen(false); onClose(); }}
               className="bg-warning hover:bg-warning text-white"
@@ -962,9 +962,9 @@ export function AdmissionForm({ patient, onClose, onSuccess }: AdmissionFormProp
       <PasswordConfirmDialog
         open={passwordConfirmOpen}
         onOpenChange={setPasswordConfirmOpen}
-        title="Assinar e Admitir (D0)"
-        description="Confirme sua identidade para registrar a admissão clínica do paciente. Após assinado, o documento D0 será gerado no prontuário."
-        actionLabel="Assinar e Admitir"
+        title="Validar admissão (D0)"
+        description="Confirme sua identidade para registrar a admissão clínica do paciente. Após validada, o documento D0 será gerado no prontuário."
+        actionLabel="Validar admissão"
         onConfirmed={handleSubmit}
       />
     </>
