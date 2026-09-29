@@ -469,8 +469,26 @@ export function MovimentacaoForm({
               } as any,
             });
             if (logErr) {
+              // NAO silenciar: sem esse log, a tarja no Mapa de Leitos e a fila de
+              // alocacao do setor destino nao aparecem. Antes so ia para o console e o
+              // fluxo seguia dando "sucesso" — falha silenciosa.
               console.error("[MovimentacaoForm] falha ao registrar sinalização de transferência interna:", logErr);
+              toast({
+                title: "Sinalizacao registrada parcialmente",
+                description: `A movimentacao foi salva, mas a marcacao de transferencia pode nao aparecer no Mapa de Leitos (${logErr.message || "falha ao gravar o registro"}). Confira no mapa.`,
+                variant: "destructive",
+              });
             }
+          } else {
+            // Destino sem setor mapeado (ex.: HEMODINAMICA, ou "Outro"/custom): o log
+            // da tarja NAO e gravado e a alocacao no destino nao existe. Avisa em vez
+            // de fingir que a marcacao vai aparecer.
+            console.warn("[MovimentacaoForm] transferência interna sem setor destino mapeado:", finalDest);
+            toast({
+              title: "Destino sem setor mapeado",
+              description: `A transferencia interna para "${finalDest || "—"}" nao gera marcacao no Mapa de Leitos (destino sem setor correspondente). Selecione um setor destino valido para a alocacao aparecer.`,
+              variant: "destructive",
+            });
           }
         }
       }
