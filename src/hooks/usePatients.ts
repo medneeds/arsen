@@ -133,11 +133,16 @@ export function usePatients(department?: Department, sector?: string) {
             hipotese_diagnostica, conduta_inicial, exames_relevantes, pendencias, agenda,
             setor_classificacao_id, leito_id, paciente_id, registrado_por,
             paciente:pacientes (
-              id, nome_completo, nome_social, cpf, cns, data_nascimento, sexo,
-              nome_mae, telefone, endereco, tipo_sanguineo, alergias, comorbidades, prontuario
+              id, nome_completo, nome_social, data_nascimento
             )
           )
         `) as any)
+        // PERF: filtra a internacao ATIVA (data_alta IS NULL) no recurso aninhado —
+        // corta as encerradas do payload sem derrubar os leitos vagos (o embed nao e
+        // !inner, entao o filtro atua so no array de internacoes; a selecao em JS
+        // permanece como rede de seguranca). Colunas de paciente enxugadas para as 4
+        // usadas por mapLeitoToPatient.
+        .is('internacoes.data_alta', null)
         .eq('setor.ala.hospital_id', currentHospital.id);
 
       if (error) throw error;
@@ -592,6 +597,10 @@ export function usePatients(department?: Department, sector?: string) {
     // MIGRAÇÃO realtime: canal antigo em `patients` trocado por `internacoes` +
     // `leitos`. O payload não traz os joins (setor/paciente), então cada evento
     // agenda um refetch debounced (mais simples e robusto que o mapper incremental).
+    // PERF: o fetch inicial (acima) ja carrega no mount/troca de setor. O primeiro
+    // SUBSCRIBED nao deve refazer (era um segundo fetch do hospital inteiro por
+    // entrada de setor). So refazemos em RE-conexao (recuperar mudancas perdidas).
+    let firstSubscribe = true;
     const channelName = `patients-changes-${currentHospital.id}-${sector || department || 'all'}`;
     const channel = supabase
       .channel(channelName)
@@ -607,10 +616,11 @@ export function usePatients(department?: Department, sector?: string) {
       )
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
-          // Ao (re)conectar, faz refetch imediato para recuperar mudanças que
-          // possam ter sido perdidas durante uma instabilidade anterior.
           console.log('[usePatients] Realtime SUBSCRIBED — mapa atualiza em tempo real');
-          fetchPatients();
+          // Primeiro SUBSCRIBED: o fetch inicial ja carregou — nao refazer.
+          // Reconexoes seguintes: refetch para recuperar mudancas perdidas.
+          if (!firstSubscribe) fetchPatients();
+          firstSubscribe = false;
         } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
           console.warn('[usePatients] Realtime problema:', status, '— fazendo refetch manual');
           scheduleRefetch();

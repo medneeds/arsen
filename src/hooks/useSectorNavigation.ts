@@ -31,29 +31,26 @@ export function useSectorNavigation() {
   const query = useQuery({
     queryKey: ["sector-navigation", hospitalId],
     queryFn: async (): Promise<DbSector[]> => {
-      let alasQuery = supabase.from("alas").select("id, nome, hospital_id, ativo").eq("ativo", true);
-      if (hospitalId) alasQuery = alasQuery.eq("hospital_id", hospitalId);
-      const { data: alas, error: alasErr } = await alasQuery.order("nome");
-      if (alasErr) throw alasErr;
-      const alaList = (alas ?? []) as { id: string; nome: string }[];
-      if (alaList.length === 0) return [];
-
-      const alaIds = alaList.map((a) => a.id);
-      const { data: setores, error: setErr } = await supabase
+      // PERF: uma unica query (setores + join ala!inner) no lugar de duas em serie
+      // (alas depois setores). O !inner + filtro em ala.ativo/ala.hospital_id
+      // restringe aos setores de alas ativas do hospital — mesma logica de antes,
+      // um round-trip a menos no caminho do /setores e do seletor.
+      let q = supabase
         .from("setores")
-        .select("id, nome, tipo, ala_id, ativo")
-        .in("ala_id", alaIds)
+        .select("id, nome, tipo, ala_id, ala:alas!inner ( id, nome, hospital_id, ativo )")
         .eq("ativo", true)
+        .eq("ala.ativo", true)
         .order("nome");
-      if (setErr) throw setErr;
+      if (hospitalId) q = q.eq("ala.hospital_id", hospitalId);
+      const { data: setores, error } = await q;
+      if (error) throw error;
 
-      const alaNomeById = new Map(alaList.map((a) => [a.id, a.nome]));
       return (setores ?? []).map((s: any) => ({
         id: s.id,
         nome: s.nome,
         tipo: s.tipo ?? null,
         alaId: s.ala_id,
-        alaNome: alaNomeById.get(s.ala_id) ?? "Sem ala",
+        alaNome: s.ala?.nome ?? "Sem ala",
       }));
     },
     staleTime: 60_000,
