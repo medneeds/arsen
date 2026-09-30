@@ -72,6 +72,7 @@ export function usePatients(department?: Department, sector?: string) {
       bedNumber: leito.numero,
       name: pac ? (pac.nome_social || pac.nome_completo || '') : '',
       prontuario: (pac as { prontuario?: string | null } | null)?.prontuario ?? null,
+      birthDate: pac?.data_nascimento ?? null,
       registryId: pac?.id ?? null, // MIGRAÇÃO: registryId aponta para pacientes.id (patient_registry morto)
       age: formatAge(pac?.data_nascimento) || '',
       sector: sectorCode,

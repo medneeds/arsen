@@ -121,4 +121,7 @@ export interface Patient {
   therapeuticPlan?: string[];
   // Numero de prontuario (pacientes.prontuario) — identidade permanente da pessoa.
   prontuario?: string | null;
+  // Data de nascimento (pacientes.data_nascimento, ISO) — a idade (`age`) e
+  // derivada dela via formatAge.
+  birthDate?: string | null;
 }

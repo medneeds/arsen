@@ -82,6 +82,8 @@ export function PrintSectorCensus({ patients, sectorLabel }: Props) {
             <tr>
               <th style={th}>Leito</th>
               <th style={th}>Paciente</th>
+              <th style={{ ...th, textAlign: "center" }}>Idade</th>
+              <th style={th}>Nasc.</th>
               <th style={th}>Prontuário</th>
               <th style={th}>Atendimento</th>
               <th style={{ ...th, textAlign: "center" }}>DIH</th>
@@ -100,6 +102,8 @@ export function PrintSectorCensus({ patients, sectorLabel }: Props) {
                 <tr key={p.id}>
                   <td style={{ ...td, fontFamily: "ui-monospace, Menlo, monospace", fontWeight: 700, whiteSpace: "nowrap" }}>{p.bedNumber}</td>
                   <td style={{ ...td, fontWeight: 600 }}>{p.name}</td>
+                  <td style={{ ...td, textAlign: "center", whiteSpace: "nowrap" }}>{p.age || "—"}</td>
+                  <td style={{ ...td, whiteSpace: "nowrap" }}>{fmtDate(p.birthDate)}</td>
                   <td style={{ ...td, whiteSpace: "nowrap" }}>{p.prontuario || "—"}</td>
                   {/* Atendimento: sem coluna no schema novo (degradado) — placeholder. */}
                   <td style={{ ...td, whiteSpace: "nowrap", color: "#999" }}>—</td>
