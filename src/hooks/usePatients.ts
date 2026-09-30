@@ -138,6 +138,30 @@ export function usePatients(department?: Department, sector?: string) {
       // Em paralelo, mesma fonte — sem somar latencia.
       const sectorEntryPromise = fetchLatestSectorEntryByInternacao()
         .catch(() => new Map<string, string>());
+      // Tarja de SAIDA (obito/alta) tambem a partir do doc em `altas` — MESMA
+      // fonte da cockpit. Antes o mapa/painel derivavam so de internacoes.status;
+      // quando o status nao virava 'obito'/'alta' (dado antigo, ou escrita que
+      // nao pegou), a cockpit mostrava o desfecho e o mapa ficava cego. Doc
+      // SUSPENSO (conteudo.suspended) nao vale; evento mais recente por
+      // internacao vence.
+      const exitDocsPromise = (async () => {
+        const out = new Map<string, "death" | "discharge">();
+        const { data } = await supabase
+          .from("altas")
+          .select("internacao_id, tipo, conteudo, data_hora")
+          .in("tipo", ["obito", "alta_hospitalar", "alta_a_pedido"])
+          .order("data_hora", { ascending: false })
+          .limit(1000);
+        const seen = new Set<string>();
+        for (const d of (data ?? []) as { internacao_id: string | null; tipo: string; conteudo: { suspended?: boolean } | null }[]) {
+          const id = d.internacao_id;
+          if (!id || seen.has(id)) continue;
+          seen.add(id); // primeiro visto = mais recente (order desc)
+          if ((d.conteudo ?? {}).suspended) continue; // doc suspenso nao vale
+          out.set(id, d.tipo === "obito" ? "death" : "discharge");
+        }
+        return out;
+      })().catch(() => new Map<string, "death" | "discharge">());
 
       // Bed map = leitos do hospital (via setores → alas → hospitais), cada um
       // com sua internação ativa (data_alta IS NULL), se houver.
@@ -211,6 +235,7 @@ export function usePatients(department?: Department, sector?: string) {
       //    (internmentStatus) — dai derivamos a tarja.
       const pendingTransferIds = await pendingTransferPromise;
       const sectorEntryById = await sectorEntryPromise;
+      const exitDocsById = await exitDocsPromise;
       for (const p of sortedPatients) {
         if (p.isVacant) continue;
         // TPS: entrada no setor atual = ultimo conclusao_transferencia_interna;
@@ -220,6 +245,12 @@ export function usePatients(department?: Department, sector?: string) {
           p.admissionStatus = ADMISSION_STATUS.INTERNAL_TRANSFER_PENDING;
           continue;
         }
+        // SAIDA pelo doc em altas (mesma fonte da cockpit) — vence o status cru,
+        // cobrindo o caso do status nao ter virado obito/alta (dado antigo/escrita
+        // que nao pegou). Doc suspenso ja foi filtrado.
+        const exitKind = exitDocsById.get(p.id);
+        if (exitKind === "death") { p.admissionStatus = ADMISSION_STATUS.DEATH; continue; }
+        if (exitKind === "discharge") { p.admissionStatus = ADMISSION_STATUS.DISCHARGE_GIVEN; continue; }
         // internmentStatus carrega, em runtime, o internacoes.status real (o TIPO do
         // campo no view-model e outro dominio — cast para string p/ ler o valor cru).
         switch (p.internmentStatus as unknown as string | null) {
