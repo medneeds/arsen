@@ -1,11 +1,13 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { History, FileText, ArrowRightLeft, LogOut } from "lucide-react";
+import { History, FileText, ArrowRightLeft, LogOut, Printer, Ban } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePatientMovements } from "@/hooks/usePatientMovements";
-import { usePatientDischargeDocs } from "@/hooks/usePatientDischargeDocs";
+import { usePatientDischargeDocs, type DischargeDocRow } from "@/hooks/usePatientDischargeDocs";
 import { printDischargeDocument, DISCHARGE_DOC_SHORT } from "@/lib/dischargeDocuments";
+import { DischargeDocInlineView } from "@/components/movimentacao/DischargeDocInlineView";
+import { SuspendDischargeDialog } from "@/components/SuspendDischargeDialog";
 import type { Patient } from "@/types/patient";
 
 /**
@@ -59,6 +61,7 @@ export function SignalingFlowRecord({ patient }: Props) {
   // hospitalUnitId nao e mais usado na query (DEGRADADO no schema novo) — null.
   const { movements, loading } = usePatientMovements(patientId, patient.name, null);
   const { data: docs = [] } = usePatientDischargeDocs(patientId, patient.name);
+  const [suspendDoc, setSuspendDoc] = useState<DischargeDocRow | null>(null);
 
   const hasMovements = movements.length > 0;
   const hasDocs = docs.length > 0;
@@ -84,32 +87,40 @@ export function SignalingFlowRecord({ patient }: Props) {
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               Documentos de desfecho
             </p>
-            <ul className="space-y-2">
+            <ul className="space-y-3">
               {docs.map((d) => (
-                <li
-                  key={d.id}
-                  className="flex items-center justify-between gap-3 rounded-md border bg-muted/30 px-3 py-2"
-                >
-                  <div className="flex min-w-0 items-center gap-2">
-                    <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-foreground">
-                        {DISCHARGE_DOC_SHORT[d.document_type] ?? d.document_type}
-                      </p>
-                      <p className="truncate text-xs text-muted-foreground">
-                        Validado{d.signed_at ? ` em ${fmt(d.signed_at)}` : ""}
-                        {d.signed_by_crm ? ` · CRM ${d.signed_by_crm}` : ""}
-                      </p>
+                <li key={d.id} className="rounded-md border bg-muted/30 p-3 space-y-3">
+                  {/* Cabecalho do documento: identificacao + acoes (so ver/imprimir
+                      e SUSPENDER — sem edicao). */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-foreground">
+                          {DISCHARGE_DOC_SHORT[d.document_type] ?? d.document_type}
+                        </p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          Validado{d.signed_at ? ` em ${fmt(d.signed_at)}` : ""}
+                          {d.signed_by_crm ? ` · CRM ${d.signed_by_crm}` : ""}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <Button size="sm" variant="outline" onClick={() => printDischargeDocument(d.document_type, d.content)}>
+                        <Printer className="h-3.5 w-3.5 mr-1" /> Imprimir
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-critical-on-soft border-critical-border hover:bg-critical-soft"
+                        onClick={() => setSuspendDoc(d)}
+                      >
+                        <Ban className="h-3.5 w-3.5 mr-1" /> Suspender
+                      </Button>
                     </div>
                   </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="shrink-0"
-                    onClick={() => printDischargeDocument(d.document_type, d.content)}
-                  >
-                    Ver
-                  </Button>
+                  {/* Campos persistidos, VISIVEIS e READ-ONLY (sem edicao). */}
+                  <DischargeDocInlineView type={d.document_type} payload={d.content} />
                 </li>
               ))}
             </ul>
@@ -165,6 +176,19 @@ export function SignalingFlowRecord({ patient }: Props) {
           </p>
         )}
       </div>
+
+      {/* Suspensao (unica acao possivel sobre o documento — sem edicao). */}
+      {suspendDoc && (
+        <SuspendDischargeDialog
+          open={!!suspendDoc}
+          onOpenChange={(o) => { if (!o) setSuspendDoc(null); }}
+          docId={suspendDoc.id}
+          patientName={patient.name}
+          patientId={patientId}
+          docTypeLabel={DISCHARGE_DOC_SHORT[suspendDoc.document_type] ?? suspendDoc.document_type}
+          documentType={suspendDoc.document_type === "obito" ? "obito" : "alta"}
+        />
+      )}
     </section>
   );
 }
