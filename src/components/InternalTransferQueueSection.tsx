@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ArrowRightLeft, BedDouble, ChevronDown, ChevronUp, AlertTriangle, Clock, X, CheckCircle2 } from "lucide-react";
+import { ArrowRightLeft, BedDouble, ChevronDown, ChevronUp, AlertTriangle, Clock, X, CheckCircle2, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useHospital } from "@/contexts/HospitalContext";
@@ -29,7 +29,7 @@ export function InternalTransferQueueSection({ sectorCode }: Props) {
   // Buscar TODOS os pacientes do hospital (sem filtro de setor)
   // para encontrar leitos vagos em qualquer setor destino da transferência.
   // usePatients() sem parâmetros retorna apenas o setor ativo do usuário.
-  const { patients } = usePatients(undefined, undefined);
+  const { patients, isLoading: patientsLoading } = usePatients(undefined, undefined);
   const [target, setTarget] = useState<InternalTransferRequestRow | null>(null);
   const [bedId, setBedId] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -188,7 +188,13 @@ export function InternalTransferQueueSection({ sectorCode }: Props) {
             </div>
             <div className="space-y-2">
               <Label>Leito disponível *</Label>
-              {availableBeds.length === 0 ? (
+              {patientsLoading && availableBeds.length === 0 ? (
+                // Delay ate os leitos vagos carregarem: spinner em vez de mostrar
+                // "nenhum leito vago" cedo demais (padrao de loading da plataforma).
+                <div className="flex items-center gap-2 py-2 text-xs text-muted-foreground">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> Carregando leitos vagos...
+                </div>
+              ) : availableBeds.length === 0 ? (
                 <p className="text-xs text-destructive">Nenhum leito vago neste setor.</p>
               ) : (
                 <Select value={bedId} onValueChange={setBedId}>
