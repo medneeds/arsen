@@ -2,7 +2,7 @@ import React, { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ArrowLeft, ArrowRight, ArrowLeftRight, History, Loader2, BedDouble, Clock } from "lucide-react";
+import { ArrowLeft, ArrowRight, ArrowLeftRight, History, Loader2, BedDouble, Clock, Ban } from "lucide-react";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
 
 import { PatientCockpit } from "@/components/PatientCockpit";
@@ -49,6 +49,7 @@ interface MovementRow {
   release_status?: string | null;
   released_at?: string | null;
   released_by_name?: string | null;
+  is_suspension?: boolean;
 }
 
 const MovimentacoesPage = () => {
@@ -104,6 +105,7 @@ const MovimentacoesPage = () => {
       release_status: m.releaseStatus,
       released_at: m.releasedAt,
       released_by_name: null,
+      is_suspension: m.isSuspension,
     })),
     [movements],
   );
@@ -459,9 +461,16 @@ const MovimentacoesPage = () => {
                 const def = getSubtypeDef(m.movement_type);
                 const cat = def ? MOVEMENT_CATEGORIES.find((c) => c.id === def.category)! : null;
                 const tone = cat ? TONE_CLASSES[cat.tone] : TONE_CLASSES.primary;
-                const Icon = def?.icon ?? ArrowLeftRight;
-                const isPending = (m.release_status ?? "pending_release") === "pending_release";
-                const isReleased = m.release_status === "released";
+                const Icon = m.is_suspension ? Ban : (def?.icon ?? ArrowLeftRight);
+                // Suspensao reverte uma saida: nao aguarda liberacao de leito, entao
+                // nao mostra "pendente"/"liberado". Rotulo proprio e legivel.
+                const isPending = !m.is_suspension && (m.release_status ?? "pending_release") === "pending_release";
+                const isReleased = !m.is_suspension && m.release_status === "released";
+                const label = def?.label ?? (
+                  m.movement_type === "suspensao_alta" ? "Suspensao de alta"
+                  : m.movement_type === "suspensao_obito" ? "Suspensao de obito"
+                  : m.movement_type
+                );
                 return (
                   <li key={m.id} className="patient-id py-3 flex items-start gap-3">
                     <div className={cn("h-8 w-8 rounded-md flex items-center justify-center shrink-0", tone.bg)}>
@@ -469,7 +478,7 @@ const MovimentacoesPage = () => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <p className="text-sm font-medium">{def?.label ?? m.movement_type}</p>
+                        <p className="text-sm font-medium">{label}</p>
                         {cat && (
                           <Badge variant="outline" className={cn("text-xs uppercase tracking-wider", tone.badge, "border-transparent")}>
                             {cat.label}

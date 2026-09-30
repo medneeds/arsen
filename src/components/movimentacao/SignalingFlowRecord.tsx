@@ -30,6 +30,8 @@ const MOVEMENT_LABELS: Record<string, string> = {
   alta_pedido: "Alta a pedido",
   obito: "Obito",
   evasao: "Evasao",
+  suspensao_alta: "Suspensao de alta",
+  suspensao_obito: "Suspensao de obito",
 };
 
 function movementLabel(raw: string): string {
@@ -137,8 +139,9 @@ export function SignalingFlowRecord({ patient }: Props) {
           ) : hasMovements ? (
             <ol className="space-y-2.5">
               {movements.map((m) => {
+                // Suspensao reverte uma saida — icone proprio (Ban), nao LogOut.
                 const isExit = /alta|obito|evasao|externa/.test(m.movementType);
-                const Icon = isExit ? LogOut : ArrowRightLeft;
+                const Icon = m.isSuspension ? Ban : isExit ? LogOut : ArrowRightLeft;
                 return (
                   <li key={m.id} className="flex items-start gap-2.5">
                     <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border bg-muted/40">

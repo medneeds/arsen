@@ -13,6 +13,10 @@ export interface PatientMovement {
   releasedAt: string | null;
   createdAt: string;
   notes: string | null;
+  // Evento de suspensao (de alta/obito): NAO e uma movimentacao aguardando
+  // liberacao de leito — reverte uma saida sinalizada. Consumidores usam esta
+  // flag para nao rotular como "pendente liberacao".
+  isSuspension: boolean;
 }
 
 // MIGRAÇÃO: patient_movements (morta) → logs_auditoria.
@@ -21,7 +25,9 @@ export interface PatientMovement {
 // de movimentação foi migrado para `logs_auditoria` (tipo_evento='movimentacao_*' e
 // 'sinalizacao_transferencia_*'), com os campos ricos preservados em `dados_novos`.
 // Ver MIGRACAO_DEGRADACOES.md. patientId == internacoes.id.
-const MOVEMENT_EVENT_PREFIXES = ["movimentacao_", "sinalizacao_transferencia_"];
+// 'suspensao_' (suspensao_alta / suspensao_obito) tambem entra no registro do
+// fluxo: a suspensao de uma saida sinalizada e uma movimentacao consultavel.
+const MOVEMENT_EVENT_PREFIXES = ["movimentacao_", "sinalizacao_transferencia_", "suspensao_"];
 const isMovementEvent = (tipo: string | null | undefined) =>
   !!tipo && MOVEMENT_EVENT_PREFIXES.some((p) => tipo.startsWith(p));
 
@@ -69,6 +75,7 @@ export function usePatientMovements(
           releasedAt: dn.released_at ?? null,
           createdAt: r.criado_em,
           notes: dn.notes ?? r.motivo ?? null,
+          isSuspension: String(r.tipo_evento ?? "").startsWith("suspensao_"),
         };
       }));
     }

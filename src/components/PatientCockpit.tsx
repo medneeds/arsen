@@ -1192,12 +1192,20 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
                             <span className="font-medium text-foreground uppercase tracking-wide text-xs">
                               {m.movementType.replace(/_/g, " ")}
                             </span>
-                            <span className={cn(
-                              "text-xs uppercase font-medium px-1 rounded-md",
-                              released ? "text-released-on-soft" : "text-warning",
-                            )}>
-                              {released ? "liberado" : "pendente"}
-                            </span>
+                            {/* Suspensao nao aguarda liberacao de leito — nao exibe
+                                pendente/liberado; marca como "suspensa". */}
+                            {m.isSuspension ? (
+                              <span className="text-xs uppercase font-medium px-1 rounded-md text-critical-on-soft">
+                                suspensa
+                              </span>
+                            ) : (
+                              <span className={cn(
+                                "text-xs uppercase font-medium px-1 rounded-md",
+                                released ? "text-released-on-soft" : "text-warning",
+                              )}>
+                                {released ? "liberado" : "pendente"}
+                              </span>
+                            )}
                           </div>
                           <div className="flex items-center gap-1 text-muted-foreground preserve-case mt-1">
                             <span className="truncate">{origin || "—"}</span>
