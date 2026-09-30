@@ -557,7 +557,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
           icon={FileText}
           iconColor="text-muted-foreground"
           label="Plano Terapêutico"
-          hint="Condutas e ajustes — por item, sincroniza com o mapa"
+          hint="Condutas e ajustes — por item, sincroniza com o painel"
           complete={completion.plan}
           required
         >
@@ -575,7 +575,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
                 draggable
               />
               <p className="text-xs text-muted-foreground">
-                Arraste pelo ⋮⋮ para reordenar — a numeração e o PDF se ajustam automaticamente. Sincroniza com o mapa de leitos.
+                Arraste pelo ⋮⋮ para reordenar — a numeração e o PDF se ajustam automaticamente. Sincroniza com o painel clínico.
               </p>
 
               {/* Programações e Pendências — opcional, retraído */}
@@ -591,7 +591,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
                     {showPendencias ? "−" : "+"}
                   </span>
                   <span className="font-medium">Programações e Pendências</span>
-                  <span className="text-muted-foreground/60">(opcional — sincroniza com o mapa)</span>
+                  <span className="text-muted-foreground/60">(opcional — sincroniza com o painel)</span>
                 </button>
 
                 {showPendencias && onPendenciasItemsChange && (

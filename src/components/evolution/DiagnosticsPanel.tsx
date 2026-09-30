@@ -33,7 +33,7 @@ interface DiagnosticsPanelProps {
   onIsolationChange?: (value: string) => void;
 
 
-  /** Texto livre de hipóteses diagnósticas (uma por linha). Sincroniza com mapa de leitos. */
+  /** Texto livre de hipóteses diagnósticas (uma por linha). Sincroniza com o painel clínico. */
   diagnosticHypotheses?: string | string[];
   onDiagnosticHypothesesChange?: (value: string | string[]) => void;
   /** Antecedentes clínicos — novo campo por itens */
@@ -278,7 +278,7 @@ export function DiagnosticsPanel({
         )}
       </div>
 
-      {/* Hipóteses Diagnósticas — por item, ordenável, sincroniza com mapa de leitos */}
+      {/* Hipóteses Diagnósticas — por item, ordenável, sincroniza com o painel clínico */}
       {onDiagnosticHypothesesChange && (() => {
         // Normalizar: aceita string (legado) ou string[]
         const hypoItems: string[] = Array.isArray(diagnosticHypotheses)
@@ -294,7 +294,7 @@ export function DiagnosticsPanel({
               </Label>
               <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-foreground px-2 py-1 text-xs font-medium">
                 <Lock className="h-2.5 w-2.5" />
-                Sincroniza com o mapa
+                Sincroniza com o painel
               </span>
             </div>
             <ItemListEditor
@@ -307,13 +307,13 @@ export function DiagnosticsPanel({
               showReorder
             />
             <p className="text-xs text-muted-foreground leading-tight">
-              O item no topo é a hipótese principal. A ordem define prioridade no mapa de leitos.
+              O item no topo é a hipótese principal. A ordem define prioridade no painel clínico.
             </p>
           </div>
         );
       })()}
 
-      {/* Antecedentes Clínicos — novo campo por item, sincroniza com mapa de leitos */}
+      {/* Antecedentes Clínicos — novo campo por item, sincroniza com o painel clínico */}
       {onAntecedentesChange && (
         <div className="rounded-md border border-border/60 bg-background/40 p-3 space-y-2">
           <div className="flex items-center justify-between gap-2">
@@ -323,7 +323,7 @@ export function DiagnosticsPanel({
             </Label>
             <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-foreground px-2 py-1 text-xs font-medium">
               <Lock className="h-2.5 w-2.5" />
-              Sincroniza com o mapa
+              Sincroniza com o painel
             </span>
           </div>
           <ItemListEditor

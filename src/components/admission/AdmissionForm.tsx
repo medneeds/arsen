@@ -823,7 +823,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
               </div>
             </Section>
 
-            <Section icon={Stethoscope} title="Hipóteses Diagnósticas (texto livre)" hint="Uma hipótese por linha — sincroniza automaticamente com o mapa de leitos" tone="blue">
+            <Section icon={Stethoscope} title="Hipóteses Diagnósticas (texto livre)" hint="Uma hipótese por linha — sincroniza automaticamente com o painel clínico" tone="blue">
               <Textarea
                 value={diagnosticHypotheses}
                 onChange={(e) => setDiagnosticHypotheses(e.target.value)}
@@ -832,7 +832,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
                 className="mt-1 font-mono text-xs"
               />
               <p className="text-xs text-muted-foreground mt-1">
-                Cada linha vira uma hipótese no card do paciente. Esse campo passa a ser <strong>somente leitura no mapa</strong> e só é atualizado por nova evolução clínica.
+                Cada linha vira uma hipótese no card do paciente. Esse campo passa a ser <strong>somente leitura no painel</strong> e só é atualizado por nova evolução clínica.
               </p>
             </Section>
 
