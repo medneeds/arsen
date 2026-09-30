@@ -388,3 +388,30 @@ export async function fetchPendingInternalTransferInternacaoIds(): Promise<Set<s
   }
   return pending;
 }
+
+/**
+ * Momento de ENTRADA no setor ATUAL por internacao (para o TPS — Tempo de
+ * Permanencia no Setor). E o criado_em do ultimo evento
+ * conclusao_transferencia_interna de cada internacao em logs_auditoria: a
+ * transferencia interna reusa a mesma linha de internacao (data_entrada nao
+ * muda), entao a entrada no setor atual so existe aqui. Quem nunca transferiu
+ * nao tem evento — o chamador usa data_entrada como fallback (TPS = DIH).
+ */
+export async function fetchLatestSectorEntryByInternacao(): Promise<Map<string, string>> {
+  const byInternacao = new Map<string, string>();
+  const { data, error } = await supabase
+    .from("logs_auditoria")
+    .select("internacao_id, criado_em")
+    .eq("tipo_evento", "conclusao_transferencia_interna")
+    .order("criado_em", { ascending: false })
+    .limit(1000);
+  if (error || !data) return byInternacao;
+
+  const rows = data as { internacao_id: string | null; criado_em: string | null }[];
+  for (const log of rows) {
+    const key = log.internacao_id;
+    if (!key || !log.criado_em || byInternacao.has(key)) continue;
+    byInternacao.set(key, log.criado_em); // ordenado desc -> primeiro visto = mais recente
+  }
+  return byInternacao;
+}

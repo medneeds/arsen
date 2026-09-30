@@ -671,7 +671,14 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
   const { history: conductHistory, isLoading: conductHistoryLoading, recordChange } = useConductHistory(patient.id);
   const { role, user } = useAuth();
   const { requests } = useBedAllocationRequests();
-  const stayTimer = useSectorStayTimer(patient.admissionDate);
+  // TPS (Tempo de Permanencia no Setor): reinicia a cada transferencia interna.
+  // Usa sectorSince (entrada no setor atual); fallback admissionDate para quem
+  // nunca transferiu. Antes usava admissionDate direto — mostrava DIAS DE
+  // HOSPITAL (DIH) com rotulo de setor.
+  const stayTimer = useSectorStayTimer(patient.sectorSince ?? patient.admissionDate);
+  // DIH (Dias de Internacao Hospitalar): ancora na admissao hospitalar
+  // (data_entrada) e NAO reinicia em transferencia interna — distinta do TPS.
+  const dih = calcDIH(patient.admissionDate);
   const { namesHidden } = usePrivacy();
   const displayName = maskName(patient.name, namesHidden);
   
@@ -1480,13 +1487,23 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                 <div className="flex flex-col flex-1 min-w-0 md:col-span-3">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-xs md:text-xs font-medium text-muted-foreground">Paciente</span>
+                  {/* DIH (dias de internacao hospitalar) — total desde a admissao,
+                      distinto do TPS. Sempre visivel quando ha data de admissao. */}
+                  {dih != null && (
+                    <span
+                      className="inline-flex items-center gap-0.5 px-1.5 py-px rounded-full text-[11px] font-medium leading-none border bg-muted/60 text-muted-foreground border-border print:hidden"
+                      title={`DIH — Dias de Internacao Hospitalar: ${formatDIHLabel(dih)} (desde a admissao, nao reinicia na transferencia)`}
+                    >
+                      DIH {formatDIHLabel(dih)}
+                    </span>
+                  )}
                   {stayTimer && currentDepartment !== "UTI" && (
                     <div
                       className={cn(
                         "inline-flex items-center gap-0.5 px-1.5 py-px rounded-full text-[11px] font-medium leading-none border print:hidden",
                         stayTimer.colorClasses
                       )}
-                      title={`Permanência no setor: ${stayTimer.display}${stayTimer.level === "warning" ? " >24h" : stayTimer.level === "orange" ? " >48h" : stayTimer.level === "critical" || stayTimer.level === "pulsing" ? " >72h" : ""}`}
+                      title={`Permanência no setor (TPS): ${stayTimer.display}${stayTimer.level === "warning" ? " >24h" : stayTimer.level === "orange" ? " >48h" : stayTimer.level === "critical" || stayTimer.level === "pulsing" ? " >72h" : ""}`}
                     >
                       <Clock className="h-2.5 w-2.5" />
                       <span>{stayTimer.displayShort}</span>

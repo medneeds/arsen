@@ -98,11 +98,27 @@ export function usePatientLive(patientId: string | null) {
   const fetchOnce = useCallback(async () => {
     if (!patientId) { setPatient(null); return; }
     setLoading(true);
-    // Em paralelo: a internacao (dados do paciente) e a fila de transferencia
-    // interna pendente (MESMA fonte do usePatients) — para derivar a tarja.
-    const [{ data, error }, pendingIds] = await Promise.all([
+    // Em paralelo: a internacao (dados do paciente), a fila de transferencia
+    // interna pendente (MESMA fonte do usePatients, para a tarja) e a entrada no
+    // setor atual (ultimo conclusao_transferencia_interna, para o TPS).
+    const [{ data, error }, pendingIds, sectorEntry] = await Promise.all([
       supabase.from("internacoes").select(INTERNACAO_SELECT).eq("id", patientId).maybeSingle(),
       fetchPendingInternalTransferInternacaoIds().catch(() => new Set<string>()),
+      (async (): Promise<string | null> => {
+        try {
+          const { data } = await supabase
+            .from("logs_auditoria")
+            .select("criado_em")
+            .eq("internacao_id", patientId)
+            .eq("tipo_evento", "conclusao_transferencia_interna")
+            .order("criado_em", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          return (data as { criado_em: string | null } | null)?.criado_em ?? null;
+        } catch {
+          return null;
+        }
+      })(),
     ]);
     if (!error && data) {
       const p = rowToPatient(data);
@@ -111,6 +127,8 @@ export function usePatientLive(patientId: string | null) {
         p.internmentStatus as unknown as string | null,
         pendingIds.has(patientId),
       );
+      // TPS: entrada no setor atual; fallback data_entrada (=admissionDate).
+      p.sectorSince = sectorEntry ?? p.admissionDate ?? null;
       setPatient(p);
     }
     setLoading(false);

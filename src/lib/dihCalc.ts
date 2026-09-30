@@ -1,8 +1,18 @@
 /**
- * DIH — Dia de Internação Hospitalar.
- * Calculado a partir da data de admissão NO SETOR (não admissão hospitalar).
- * Quando o paciente é transferido entre setores, a data de admissão no setor
- * é resetada (via bed_census.admission_at) e o DIH se recalcula automaticamente.
+ * DIH — Dias de Internação Hospitalar.
+ * Calculado a partir da data de admissão HOSPITALAR (internacoes.data_entrada).
+ * NÃO reinicia em transferência interna: a transferência reusa a mesma linha de
+ * internação (completeInternalTransfer não toca data_entrada), então a DIH conta
+ * o tempo total no hospital de ponta a ponta.
+ *
+ * NÃO confundir com o TPS (Tempo de Permanência no Setor), que reinicia a cada
+ * transferência de setor — esse vem de `patient.sectorSince` (criado_em do último
+ * conclusao_transferencia_interna em logs_auditoria) e é medido pelo
+ * useSectorStayTimer, não por este helper.
+ *
+ * (Histórico: a doc antiga descrevia reset por setor via bed_census.admission_at,
+ * tabela do schema ANTIGO que não existe mais — comportamento nunca ocorreu no
+ * schema novo.)
  *
  * Convenção:
  *   D0   = dia da admissão (calendário)
@@ -56,12 +66,12 @@ export function formatAdmissionDateBR(admissionDateIso: string | null | undefine
 }
 
 /**
- * Resolve a data efetiva de admissão para fins de DIH/D-day.
- * Regra única (alinhada à política institucional): a admissão do setor é o
- * momento em que o paciente é alocado e admitido. Prioriza, nesta ordem:
+ * Resolve a data efetiva de admissão HOSPITALAR para fins de DIH/D-day (NÃO é
+ * tempo de setor — esse é o TPS, via sectorSince). Prioriza, nesta ordem:
  *   1) admitted_at         — timestamp oficial gravado quando a admissão é validada (D0 real)
  *   2) admission_date      — data informada no cadastro / Edição Avançada (fallback)
  *   3) uti_admission_date  — último recurso (somente se os dois acima estiverem vazios)
+ * No schema novo (1) e (2) mapeiam para internacoes.data_entrada.
  * Aceita Patient parcial (qualquer combinação dos campos abaixo).
  */
 export function getEffectiveAdmissionDate(p: {

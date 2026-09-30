@@ -11,7 +11,7 @@ import { formatAge } from "@/lib/patientAge";
 import { normalizePatientName } from "@/utils/normalizePatientName";
 import { resolveSectorCode, bedBelongsToSector } from "@/config/sectorCoverage";
 import { ADMISSION_STATUS } from "@/lib/admissionStatus";
-import { fetchPendingInternalTransferInternacaoIds } from "@/lib/internalTransfer";
+import { fetchPendingInternalTransferInternacaoIds, fetchLatestSectorEntryByInternacao } from "@/lib/internalTransfer";
 
 export const GHOST_PREFIXES = ['ARQ-', 'ARCHIVED-', '_GHOST_'];
 
@@ -129,6 +129,10 @@ export function usePatients(department?: Department, sector?: string) {
       // (mesma fonte da fila) para nao somar latencia na troca de setor.
       const pendingTransferPromise = fetchPendingInternalTransferInternacaoIds()
         .catch(() => new Set<string>());
+      // TPS: entrada no setor atual por internacao (ultimo conclusao_transferencia_interna).
+      // Em paralelo, mesma fonte — sem somar latencia.
+      const sectorEntryPromise = fetchLatestSectorEntryByInternacao()
+        .catch(() => new Map<string, string>());
 
       // Bed map = leitos do hospital (via setores → alas → hospitais), cada um
       // com sua internação ativa (data_alta IS NULL), se houver.
@@ -201,8 +205,12 @@ export function usePatients(department?: Department, sector?: string) {
       //    liberacao fisica (Opcao A), com o status de saida em internacoes.status
       //    (internmentStatus) — dai derivamos a tarja.
       const pendingTransferIds = await pendingTransferPromise;
+      const sectorEntryById = await sectorEntryPromise;
       for (const p of sortedPatients) {
         if (p.isVacant) continue;
+        // TPS: entrada no setor atual = ultimo conclusao_transferencia_interna;
+        // fallback data_entrada (=admissionDate) para quem nunca transferiu.
+        p.sectorSince = sectorEntryById.get(p.id) ?? p.admissionDate ?? null;
         if (pendingTransferIds.has(p.id)) {
           p.admissionStatus = ADMISSION_STATUS.INTERNAL_TRANSFER_PENDING;
           continue;
