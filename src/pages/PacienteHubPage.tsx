@@ -153,10 +153,9 @@ export default function PacienteHubPage() {
 
       // Uma leitura leve por modulo, em paralelo (o hub e de UM paciente).
       // MIGRAÇÃO: tudo ancora em internacao_id (ctx.patientId = internacoes.id).
-      const [evoRes, prescRes, draftRes, reqRes, monRes] = await Promise.all([
+      const [evoRes, prescRes, reqRes, monRes] = await Promise.all([
         supabase.from("evolucoes").select("status, data_hora").eq("internacao_id", id).order("data_hora", { ascending: false }).limit(1),
-        supabase.from("prescricoes").select("itens, criado_em").eq("internacao_id", id).order("criado_em", { ascending: false }).limit(1),
-        supabase.from("prescricoes").select("id").eq("internacao_id", id).eq("status", "draft").gte("criado_em", iso).limit(1),
+        supabase.from("prescricoes").select("status, criado_em").eq("internacao_id", id).order("criado_em", { ascending: false }).limit(1),
         supabase.from("solicitacoes_exame").select("criado_em").eq("internacao_id", id).order("criado_em", { ascending: false }).limit(1),
         supabase.from("sinais_vitais").select("data_hora").eq("internacao_id", id).gte("data_hora", iso).order("data_hora", { ascending: false }).limit(1),
       ]);
@@ -172,20 +171,18 @@ export default function PacienteHubPage() {
       }
       setEvolvedToday(evoRes.error ? null : evoToday);
 
-      // Prescricao: item validado hoje → validada; senao, rascunho do dia (status='draft').
-      let prescValidated = false;
-      if (!prescRes.error && prescRes.data?.length) {
-        const itens = Array.isArray((prescRes.data[0] as any).itens) ? (prescRes.data[0] as any).itens : [];
-        prescValidated = itens.some((raw: any) => {
-          const it = raw as { validated?: unknown; validatedAt?: unknown };
-          if (it?.validated !== true || typeof it?.validatedAt !== "string") return false;
-          const d = new Date(it.validatedAt);
-          return !Number.isNaN(d.getTime()) && d >= inicioDoDia;
-        });
-      }
-      const hasDraft = !draftRes.error && (draftRes.data?.length ?? 0) > 0;
-      const prescState: "rascunho" | "validada" | null = prescValidated ? "validada" : hasDraft ? "rascunho" : null;
-      setPrescribedToday(prescRes.error ? null : prescValidated);
+      // Prescricao: le o STATUS da linha mais recente (o que a prescricao grava:
+      // 'validated'/'signed' quando todos os itens ativos estao validados, senao
+      // 'draft'). Antes derivava de item.validatedAt de HOJE — fragil (timing +
+      // escopo de dia): a prescricao validada nao aparecia marcada no card.
+      const prescStatus = (!prescRes.error && prescRes.data?.length
+        ? (prescRes.data[0] as { status?: string | null }).status
+        : null) ?? null;
+      const prescState: "rascunho" | "validada" | null =
+        prescStatus === "validated" || prescStatus === "signed" ? "validada"
+        : prescStatus === "draft" ? "rascunho"
+        : null;
+      setPrescribedToday(prescRes.error ? null : prescState === "validada");
 
       const reqState: "enviada" | null = !reqRes.error && (reqRes.data?.length ?? 0) > 0 ? "enviada" : null;
       const monState: "registrado" | null = !monRes.error && (monRes.data?.length ?? 0) > 0 ? "registrado" : null;
