@@ -94,8 +94,9 @@ export function usePatients(department?: Department, sector?: string) {
       isDoorPatient: false, // MIGRAÇÃO: sem coluna equivalente
       allocationStatus: null, // MIGRAÇÃO: sem coluna equivalente
       // MIGRAÇÃO: bloco uti_* inteiro sem colunas no schema novo → default vazio.
+      // Exceção: previsão de alta agora tem coluna própria (internacoes.previsao_alta).
       utiAdmissionDate: [],
-      utiDischargePrediction: [],
+      utiDischargePrediction: active?.previsao_alta ? [active.previsao_alta] : [],
       utiAllergies: [],
       utiAdmissionReason: [],
       utiCurrentStatus: [],
@@ -142,7 +143,7 @@ export function usePatients(department?: Department, sector?: string) {
           ),
           internacoes (
             id, status, data_entrada, data_alta, queixa_principal, historia_clinica,
-            hipotese_diagnostica, conduta_inicial, exames_relevantes, pendencias, agenda,
+            hipotese_diagnostica, conduta_inicial, exames_relevantes, pendencias, agenda, previsao_alta,
             setor_classificacao_id, leito_id, paciente_id, registrado_por,
             paciente:pacientes (
               id, nome_completo, nome_social, data_nascimento
@@ -248,6 +249,7 @@ export function usePatients(department?: Department, sector?: string) {
       if (updates.pendencies !== undefined) internacaoUpdates.pendencias = updates.pendencies.join('\n');
       if (updates.schedule !== undefined) internacaoUpdates.agenda = updates.schedule.join('\n');
       if (updates.internmentStatus !== undefined) internacaoUpdates.status = updates.internmentStatus;
+      if (updates.utiDischargePrediction !== undefined) internacaoUpdates.previsao_alta = (updates.utiDischargePrediction || []).join('\n') || null;
 
       // Campos de cadastro do paciente.
       const pacienteUpdates: Record<string, any> = {};
