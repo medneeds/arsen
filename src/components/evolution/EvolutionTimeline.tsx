@@ -723,11 +723,18 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                     })() : (() => {
                       const localDiagnosticsSlot = isEditable ? (
                         <DiagnosticsPanel
-                          cidPrimary={cidPrimary || null}
-                          cidSecondary={cidSecondary ? cidSecondary.split(/[;,]\s*/).filter(Boolean) : []}
-
-                          onCidPrimaryChange={() => {}}
-                          onCidSecondaryChange={() => {}}
+                          // CID editável por evolução: grava no soap DESTA evolução
+                          // (local.soap), que handleSave -> updateEvolution persiste.
+                          // Antes os handlers eram no-op (() => {}), então o CID
+                          // (primário E secundário) nunca salvava ao EDITAR uma
+                          // evolução — só o formulário de NOVA evolução gravava.
+                          cidPrimary={((data.soap as any).__cid_primary as string) ?? cidPrimary ?? ""}
+                          cidSecondary={(() => {
+                            const s = (data.soap as any).__cid_secondary;
+                            return Array.isArray(s) ? s : (typeof s === "string" && s ? [s] : []);
+                          })()}
+                          onCidPrimaryChange={(v) => updateLocal(evo.id, "soap", "__cid_primary", v)}
+                          onCidSecondaryChange={(vals) => updateLocal(evo.id, "soap", "__cid_secondary", vals)}
                           diagnosticHypotheses={
                             Array.isArray((data.soap as any).diagnosticHypotheses)
                               ? (data.soap as any).diagnosticHypotheses
