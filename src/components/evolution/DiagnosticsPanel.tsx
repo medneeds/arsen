@@ -240,6 +240,42 @@ export function DiagnosticsPanel({
             />
           )}
         </div>
+
+        {/* Descritivo dos CIDs selecionados — campos bem visiveis (read-only).
+            Os chips acima sao compactos/truncados; aqui o codigo E a descricao
+            completa aparecem por extenso, para conferencia rapida. */}
+        {(!!cidPrimary || cidSecondary.some(Boolean)) && (
+          <div className="mt-2 space-y-1 rounded-md border border-border/50 bg-muted/30 p-2.5">
+            {cidPrimary && (() => {
+              const { code, desc } = parseCidValue(cidPrimary);
+              return (
+                <div className="flex items-start gap-2 text-xs leading-snug">
+                  <span className="mt-0.5 inline-flex h-4 shrink-0 items-center rounded bg-primary/15 px-1.5 font-semibold uppercase tracking-wide text-primary">
+                    Primário
+                  </span>
+                  <span className="min-w-0 text-foreground">
+                    <span className="font-mono font-semibold">{code}</span>
+                    {desc && <span className="text-muted-foreground"> — {desc}</span>}
+                  </span>
+                </div>
+              );
+            })()}
+            {cidSecondary.filter(Boolean).map((cid, idx) => {
+              const { code, desc } = parseCidValue(cid);
+              return (
+                <div key={`${cid}-${idx}`} className="flex items-start gap-2 text-xs leading-snug">
+                  <span className="mt-0.5 inline-flex h-4 shrink-0 items-center rounded bg-muted px-1.5 font-semibold uppercase tracking-wide text-muted-foreground">
+                    Sec. {idx + 1}
+                  </span>
+                  <span className="min-w-0 text-foreground">
+                    <span className="font-mono font-semibold">{code}</span>
+                    {desc && <span className="text-muted-foreground"> — {desc}</span>}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Hipóteses Diagnósticas — por item, ordenável, sincroniza com mapa de leitos */}
@@ -497,11 +533,22 @@ interface CidChipProps {
   icon?: React.ReactNode;
 }
 
+/**
+ * Separa o valor "codigo - descricao" (formato do CidSearchInput) em code/desc.
+ * Sem o separador " - ", trata tudo como codigo e desc vazio — evita o bug do
+ * substring(indexOf+3) quando nao ha separador.
+ */
+function parseCidValue(raw: string): { code: string; desc: string } {
+  if (!raw) return { code: "", desc: "" };
+  const sep = raw.indexOf(" - ");
+  if (sep < 0) return { code: raw, desc: "" };
+  return { code: raw.slice(0, sep), desc: raw.slice(sep + 3) };
+}
+
 function CidChip({ value, onChange, label, tone = "muted", placeholder, icon }: CidChipProps) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState("");
-  const code = value ? value.split(" - ")[0] : "";
-  const desc = value ? value.substring(value.indexOf(" - ") + 3) : "";
+  const { code, desc } = parseCidValue(value ?? "");
   const isReadOnly = !onChange;
 
   const toneClass =
