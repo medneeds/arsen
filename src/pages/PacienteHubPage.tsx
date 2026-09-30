@@ -789,12 +789,14 @@ export default function PacienteHubPage() {
                     Admissão
                   </span>
                   {isPreAdmitted && (
-                    <span className="text-xs font-medium text-warning-on-soft tracking-widest uppercase mt-1">
+                    <span className="mt-1 inline-flex items-center gap-1 text-[10px] font-normal text-warning-on-soft tracking-wide uppercase">
+                      <span className="h-1.5 w-1.5 rounded-full bg-warning shrink-0" />
                       {hasDraft ? "Rascunho em andamento" : "Pendente"}
                     </span>
                   )}
                   {isAdmitted && (
-                    <span className="text-xs font-medium text-released-on-soft tracking-widest uppercase mt-1">
+                    <span className="mt-1 inline-flex items-center gap-1 text-[10px] font-normal text-released-on-soft tracking-wide uppercase">
+                      <span className="h-1.5 w-1.5 rounded-full bg-released shrink-0" />
                       Concluída
                     </span>
                   )}
