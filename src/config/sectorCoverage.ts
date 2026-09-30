@@ -160,6 +160,18 @@ export const OUT_OF_SCOPE_SECTOR_CODES: readonly string[] = sectorsByLevel("out"
  * duas formas ao longo do tempo. Comparar por substring ("includes('uti')")
  * acertava o rotulo e errava o codigo, em silencio.
  */
+// Aliases de nomes REAIS de setor no banco (setores.nome) que divergem de
+// SECTOR_DISPLAY e de DEPARTMENT_TO_SECTOR. Ex.: a UCC est\u00e1 gravada como
+// "UCC \u2014 Unidade de Cuidados Cl\u00ednicos" (nome oficial/PDF, com travess\u00e3o), mas o
+// r\u00f3tulo curto do app \u00e9 s\u00f3 "UCC". Sem este alias, resolveSectorCode devolvia
+// undefined para a UCC \u2192 a transfer\u00eancia interna para UCC n\u00e3o sinalizava (n\u00e3o
+// aparecia na fila) e os leitos da UCC ficavam sem c\u00f3digo can\u00f4nico no mapa.
+// Chaves NORMALIZADAS (sem acento, min\u00fasculas, travess\u00e3o/\u2013/\u2014 \u2192 h\u00edfen).
+const SECTOR_NAME_ALIASES: Record<string, string> = {
+  "ucc - unidade de cuidados clinicos": "ucc",
+  "unidade de cuidados clinicos": "ucc",
+};
+
 export function resolveSectorCode(value: string | null | undefined): string | undefined {
   if (!value) return undefined;
   const raw = value.trim();
@@ -170,6 +182,10 @@ export function resolveSectorCode(value: string | null | undefined): string | un
   const norm = (t: string) =>
     t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
   const alvo = norm(raw);
+
+  // Alias por nome de banco (travess\u00e3o/en-dash normalizados para h\u00edfen).
+  const alvoDash = alvo.replace(/[\u2014\u2013]/g, "-").replace(/\s+/g, " ").trim();
+  if (SECTOR_NAME_ALIASES[alvoDash]) return SECTOR_NAME_ALIASES[alvoDash];
 
   for (const [code, label] of Object.entries(SECTOR_DISPLAY)) {
     if (norm(label) === alvo) return code;
