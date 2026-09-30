@@ -68,6 +68,8 @@ function rowToPatient(row: any): Patient {
     medicalHistory: splitLines(row.historia_clinica),
     relevantExams: splitLines(row.exames_relevantes),
     pendencies: splitLines(row.pendencias),
+    // Plano Terapeutico: conduta_inicial (fonte canonica da Evolucao).
+    therapeuticPlan: splitLines(row.conduta_inicial),
     schedule: splitLines(row.agenda),
     admissionDate: row.data_entrada || undefined,
     admittedAt: row.data_entrada || undefined,

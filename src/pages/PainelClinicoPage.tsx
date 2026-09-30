@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Search, Eye, ClipboardList, Clock, AlertTriangle, Pencil, Check, X, Plus, Printer} from "lucide-react";
 import { RoundSectorPrintDialog } from "@/components/RoundSectorPrintDialog";
+import { PassagemPlantaoDialog } from "@/components/PassagemPlantaoDialog";
 import { DischargeStatusRibbon } from "@/components/DischargeStatusRibbon";
 import { toast } from "@/hooks/use-toast";
 import { BreadcrumbBar } from "@/components/BreadcrumbBar";
@@ -156,6 +157,7 @@ export default function PainelClinicoPage() {
 
   const [search, setSearch] = useState("");
   const [roundDialogOpen, setRoundDialogOpen] = useState(false);
+  const [handoverOpen, setHandoverOpen] = useState(false);
   const [sectorFilter, setSectorFilter] = useState<string>(() => {
     return currentSectorCode || localStorage.getItem("selected_sector") || "all";
   });
@@ -274,6 +276,18 @@ export default function PainelClinicoPage() {
                 <Printer className="h-3 w-3" />
                 Round
               </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setHandoverOpen(true)}
+                disabled={filteredPatients.length === 0}
+                className="h-6 gap-1 px-2 text-xs bg-white/95 text-foreground border-white/40 shadow-sm hover:bg-white"
+                title="Abrir a passagem de plantao do setor (preview + imprimir)"
+              >
+                <ClipboardList className="h-3 w-3" />
+                Passagem de Plantão
+              </Button>
               <Badge variant="outline" className="text-xs bg-white/95 text-foreground border-white/40 shadow-sm">
                 {filteredPatients.length} paciente{filteredPatients.length !== 1 ? "s" : ""}
               </Badge>
@@ -283,6 +297,12 @@ export default function PainelClinicoPage() {
       </div>
 
       {/* SAPS 3 pending global banner removed — non-blocking indicator stays in table column */}
+      <PassagemPlantaoDialog
+        open={handoverOpen}
+        onClose={() => setHandoverOpen(false)}
+        patients={filteredPatients}
+        sectorLabel={sectorFilter === "all" ? "Todos os setores" : sectorFilter}
+      />
       <RoundSectorPrintDialog
         open={roundDialogOpen}
         onOpenChange={setRoundDialogOpen}

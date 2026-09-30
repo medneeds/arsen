@@ -79,6 +79,9 @@ export function usePatients(department?: Department, sector?: string) {
       medicalHistory: splitLines(active?.historia_clinica),
       relevantExams: splitLines(active?.exames_relevantes),
       pendencies: splitLines(active?.pendencias),
+      // Plano Terapeutico: fonte canonica e conduta_inicial (o que a Evolucao
+      // grava/le). O antigo utiDailyConducts era hardcoded [] — sempre vazio.
+      therapeuticPlan: splitLines(active?.conduta_inicial),
       highlightedPendencies: [], // MIGRAÇÃO: sem coluna de destaques no schema novo
       highlightedDiagnoses: [], // MIGRAÇÃO: idem
       highlightedMedicalHistory: [], // MIGRAÇÃO: idem

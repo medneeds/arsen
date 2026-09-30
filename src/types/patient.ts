@@ -117,4 +117,6 @@ export interface Patient {
   // Distinto de admissionDate/admittedAt (=data_entrada), que ancoram a DIH
   // (Dias de Internacao Hospitalar) e NAO reiniciam na transferencia interna.
   sectorSince?: string | null;
+  // Plano Terapeutico (internacoes.conduta_inicial) — fonte canonica (Evolucao).
+  therapeuticPlan?: string[];
 }
