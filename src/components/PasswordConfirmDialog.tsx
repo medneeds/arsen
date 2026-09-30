@@ -97,8 +97,10 @@ export function PasswordConfirmDialog({
         auth: { persistSession: false, autoRefreshToken: false, storageKey: "arsen-pwd-verify" },
       });
       const { error } = await verifier.auth.signInWithPassword({ email, password });
-      // Encerra a sessão efêmera (não afeta a sessão principal do app).
-      try { await verifier.auth.signOut(); } catch { /* noop */ }
+      // Encerra a sessão efêmera com escopo LOCAL — signOut() sem escopo é
+      // GLOBAL e revogaria o refresh token da sessão principal do app
+      // (causava logout ao confirmar senha em movimentações/ações).
+      try { await verifier.auth.signOut({ scope: 'local' }); } catch { /* noop */ }
 
       if (error) {
         const msg = (error.message || "").toLowerCase();
