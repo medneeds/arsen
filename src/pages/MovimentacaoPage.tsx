@@ -52,7 +52,13 @@ export default function MovimentacaoPage() {
   // So aceita o paciente reconstruido quando ha patientId REAL na URL — o id do
   // paciente e a ancora (internacao_id) de toda escrita da movimentacao. Sem
   // patientId, nao caimos no stub de id falso: exigimos o snapshot do state.
-  const patient = state?.patient ?? (patientId ? cockpitPatient : null);
+  const snapshot = state?.patient ?? (patientId ? cockpitPatient : null);
+  // A tarja de sinalizacao (transferencia) deriva SO de admissionStatus. Se o
+  // snapshot veio de uma tela que nao o preenchia, resolvemos pelo valor vivo do
+  // cockpit (chaveado pelo patientId) — sem perder o snapshot para a escrita.
+  const patient = snapshot
+    ? { ...snapshot, admissionStatus: snapshot.admissionStatus ?? cockpitPatient?.admissionStatus }
+    : null;
 
   // ─── Guarda de permissao — MESMO mecanismo da AdmissaoPage (access_profile em
   // localStorage) + role do AuthContext. Perfil de porta/recepcao nao sinaliza.

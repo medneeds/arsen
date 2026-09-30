@@ -8481,7 +8481,12 @@ const PrescricaoPage = () => {
       .map(s => s.trim())
       .filter(Boolean),
     clinicalStatus: 'regular',
-  }), [patient, searchParams, initialPatientSector]);
+    // Tarja de sinalizacao (transferencia) deriva SO de admissionStatus. O
+    // cockpit e montado a mao aqui (sem spread de livePatient), entao o campo
+    // sumia e a tarja nao aparecia na Prescricao. livePatientForBed ja e chaveado
+    // pelo patientId da URL (=internacao) e traz o admissionStatus derivado.
+    admissionStatus: livePatientForBed?.admissionStatus,
+  }), [patient, searchParams, initialPatientSector, livePatientForBed]);
 
   const pageReady = usePageReady({ loading: authLoading });
   if (!pageReady) {

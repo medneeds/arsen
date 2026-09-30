@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { AdmissionForm } from "@/components/admission/AdmissionForm";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
 import { PatientCockpit } from "@/components/PatientCockpit";
+import { usePatientLive } from "@/hooks/usePatientLive";
 import type { Patient } from "@/types/patient";
 
 /**
@@ -67,6 +68,11 @@ export default function AdmissaoPage() {
 
   const returnTo = state?.returnTo || (patientId ? `/paciente?patientId=${patientId}` : "/mapa");
 
+  // Linha viva da internacao — traz o admissionStatus derivado (transferencia/
+  // saida). Sem isso a tarja de sinalizacao do cockpit sumia na Admissao, porque
+  // o cockpitPatient era montado so a partir dos params (sem admissionStatus).
+  const { patient: livePatient } = usePatientLive(patient.id || null);
+
   // Paciente para o Cockpit do trilho direito — mesma harmonizacao dos demais
   // modulos (stub a partir dos params; o Cockpit resolve o resto por id).
   const cockpitPatient: Patient = useMemo(() => ({
@@ -84,7 +90,8 @@ export default function AdmissaoPage() {
     admissionDate: "",
     utiAllergies: [],
     clinicalStatus: "regular",
-  }), [patient]);
+    admissionStatus: livePatient?.admissionStatus,
+  }), [patient, livePatient]);
 
   // ─── Guarda de permissao: perfil de porta/recepcao -> acesso negado
   useEffect(() => {
