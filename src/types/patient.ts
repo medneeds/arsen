@@ -119,4 +119,6 @@ export interface Patient {
   sectorSince?: string | null;
   // Plano Terapeutico (internacoes.conduta_inicial) — fonte canonica (Evolucao).
   therapeuticPlan?: string[];
+  // Numero de prontuario (pacientes.prontuario) — identidade permanente da pessoa.
+  prontuario?: string | null;
 }

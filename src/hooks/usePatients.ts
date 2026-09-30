@@ -71,6 +71,7 @@ export function usePatients(department?: Department, sector?: string) {
       id: active ? active.id : leito.id, // ocupado → internacoes.id; vago → leitos.id
       bedNumber: leito.numero,
       name: pac ? (pac.nome_social || pac.nome_completo || '') : '',
+      prontuario: (pac as { prontuario?: string | null } | null)?.prontuario ?? null,
       registryId: pac?.id ?? null, // MIGRAÇÃO: registryId aponta para pacientes.id (patient_registry morto)
       age: formatAge(pac?.data_nascimento) || '',
       sector: sectorCode,
@@ -153,7 +154,7 @@ export function usePatients(department?: Department, sector?: string) {
             hipotese_diagnostica, conduta_inicial, exames_relevantes, pendencias, agenda, previsao_alta, data_admissao_uti,
             setor_classificacao_id, leito_id, paciente_id, registrado_por,
             paciente:pacientes (
-              id, nome_completo, nome_social, data_nascimento
+              id, nome_completo, nome_social, data_nascimento, prontuario
             )
           )
         `) as any)

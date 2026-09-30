@@ -7,6 +7,7 @@ import { PatientCard } from "@/components/PatientCard";
 import { PatientSidebar } from "@/components/PatientSidebar";
 import { PrintLayout } from "@/components/PrintLayout";
 import { PrintUtiLayout } from "@/components/PrintUtiLayout";
+import { PrintSectorCensus } from "@/components/PrintSectorCensus";
 import { PrintPatientLayout } from "@/components/PrintPatientLayout";
 import { PrintPatientPreviewDialog } from "@/components/PrintPatientPreviewDialog";
 import { PrintMapPreviewDialog } from "@/components/PrintMapPreviewDialog";
@@ -902,24 +903,26 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
         {/* Print-only layout - Hidden on screen, visible only when printing */}
         {printMode && (
           <div className="print-layout-container">
-            {currentDepartment === "UTI" ? (
-              <PrintUtiLayout 
-                uti1Patients={printingSector === "blue" ? bluePatients : printingSector === "selected" ? bluePatients.filter(p => selectedPatients.has(p.id)) : printingSector ? [] : bluePatients}
-                uti2Patients={printingSector === "yellow" ? yellowPatients : printingSector === "selected" ? yellowPatients.filter(p => selectedPatients.has(p.id)) : printingSector ? [] : yellowPatients}
-                outsidePatients={printingSector === "outside" ? outsidePatients : printingSector === "selected" ? outsidePatients.filter(p => selectedPatients.has(p.id)) : printingSector ? [] : outsidePatients}
-                mode={printMode}
-                isPreview={false}
-              />
-            ) : (
-              <PrintLayout 
-                redPatients={printingSector === "red" ? redPatients : printingSector === "selected" ? redPatients.filter(p => selectedPatients.has(p.id)) : printingSector ? [] : redPatients}
-                yellowPatients={printingSector === "yellow" ? yellowPatients : printingSector === "selected" ? yellowPatients.filter(p => selectedPatients.has(p.id)) : printingSector ? [] : yellowPatients}
-                bluePatients={printingSector === "blue" ? bluePatients : printingSector === "selected" ? bluePatients.filter(p => selectedPatients.has(p.id)) : printingSector ? [] : bluePatients}
-                outsidePatients={printingSector === "outside" ? outsidePatients : printingSector === "selected" ? outsidePatients.filter(p => selectedPatients.has(p.id)) : printingSector ? [] : outsidePatients}
-                mode={printMode}
-                isPreview={false}
-              />
-            )}
+            {/* Impressao do mapa = CENSO do setor (lista administrativa). O
+                detalhamento clinico saiu daqui e vive na Passagem de Plantao. */}
+            <PrintSectorCensus
+              patients={(() => {
+                const all = [...redPatients, ...yellowPatients, ...bluePatients, ...outsidePatients];
+                if (printingSector === "selected") return all.filter((p) => selectedPatients.has(p.id));
+                if (printingSector === "red") return redPatients;
+                if (printingSector === "yellow") return yellowPatients;
+                if (printingSector === "blue") return bluePatients;
+                if (printingSector === "outside") return outsidePatients;
+                return all;
+              })()}
+              sectorLabel={
+                printingSector === "selected"
+                  ? "Pacientes selecionados"
+                  : printingSector
+                  ? (SECTOR_VISUAL[printingSector]?.title ?? printingSector)
+                  : "Todos os setores"
+              }
+            />
           </div>
         )}
 
