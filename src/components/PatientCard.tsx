@@ -679,6 +679,12 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
   // DIH (Dias de Internacao Hospitalar): ancora na admissao hospitalar
   // (data_entrada) e NAO reinicia em transferencia interna — distinta do TPS.
   const dih = calcDIH(patient.admissionDate);
+
+  // O detalhamento clinico (hipoteses/antecedentes/pendencias) saiu do mapa e
+  // vive na Passagem de Plantao (Painel Clinico) — o mapa deixa de ser ambiente
+  // de edicao clinica. Flag desativa os blocos sem remover 380 linhas de JSX
+  // aninhado neste arquivo de alta colisao (remocao completa pode vir depois).
+  const SHOW_CLINICAL_DETAIL_ON_MAP = false;
   const { namesHidden } = usePrivacy();
   const displayName = maskName(patient.name, namesHidden);
   
@@ -1641,8 +1647,11 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
 
 
 
-            {/* Hipóteses / Diagnósticos - apenas para outros departamentos */}
-            {role !== 'farmacia' && (
+            {/* Detalhamento clinico (Hipoteses/Diagnosticos) DESATIVADO no mapa:
+                migrou para a Passagem de Plantao no Painel Clinico — o mapa deixa
+                de ser ambiente de edicao clinica. Bloco mantido inerte (nunca
+                renderiza) por seguranca neste arquivo de alta colisao. */}
+            {SHOW_CLINICAL_DETAIL_ON_MAP && role !== 'farmacia' && (
               <div className="flex flex-col md:col-span-3 relative">
                 <div className="flex items-center gap-1 mb-1">
                   <span className="text-xs font-medium text-muted-foreground">Hipóteses / Diagnósticos</span>
@@ -1748,8 +1757,9 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
               </div>
             )}
 
-            {/* Antecedentes - apenas para outros departamentos */}
-            {role !== 'farmacia' && (
+            {/* Detalhamento clinico (Antecedentes) DESATIVADO no mapa: migrou
+                para a Passagem de Plantao no Painel Clinico. Bloco inerte. */}
+            {SHOW_CLINICAL_DETAIL_ON_MAP && role !== 'farmacia' && (
               <div className="flex flex-col md:col-span-3 relative">
                 <div className="flex items-center gap-1 mb-1">
                   <span className="text-xs font-medium text-muted-foreground">Antecedentes</span>
@@ -1862,8 +1872,9 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
             )}
 
 
-            {/* Programações / Pendências - apenas para outros departamentos */}
-            {role !== 'farmacia' && (
+            {/* Detalhamento clinico (Programacoes/Pendencias) DESATIVADO no mapa:
+                migrou para a Passagem de Plantao no Painel Clinico. Bloco inerte. */}
+            {SHOW_CLINICAL_DETAIL_ON_MAP && role !== 'farmacia' && (
               <div className="flex flex-col md:col-span-5 relative">
                 <div className="flex items-center gap-3 mb-1">
                   <span className="text-xs font-medium text-muted-foreground">Programações / Pendências</span>
