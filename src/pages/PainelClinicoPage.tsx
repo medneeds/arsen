@@ -759,8 +759,11 @@ function EditableTextBlock({ icon: Icon, title, value, onSave }: { icon: React.E
 }
 
 // Mini timer for pending SAPS in table
+const SAPS_DEADLINE_MS = 24 * 3600 * 1000;
+
 function SapsPendingMiniTimer({ pendingSince }: { pendingSince: string | null }) {
   const [elapsed, setElapsed] = useState("");
+  const [expired, setExpired] = useState(false);
 
   useEffect(() => {
     if (!pendingSince) return;
@@ -769,6 +772,7 @@ function SapsPendingMiniTimer({ pendingSince }: { pendingSince: string | null })
       const hours = Math.floor(diff / 3600000);
       const minutes = Math.floor((diff % 3600000) / 60000);
       setElapsed(`${hours}h${String(minutes).padStart(2, "0")}m`);
+      setExpired(diff >= SAPS_DEADLINE_MS);
     };
     update();
     const interval = setInterval(update, 60000);
@@ -777,9 +781,17 @@ function SapsPendingMiniTimer({ pendingSince }: { pendingSince: string | null })
 
   if (!pendingSince) return null;
 
+  // Ate 24h: contagem em ambar. Passou de 24h (expirado): a contagem CONTINUA e
+  // vira alerta vermelho pulsante — prazo de preenchimento do SAPS estourado.
   return (
-    <span className="font-mono text-xs font-semibold text-warning-on-soft animate-pulse">
-      ⏱ {elapsed}
+    <span
+      className={cn(
+        "font-mono text-xs font-semibold",
+        expired ? "text-critical-on-soft animate-pulse" : "text-warning-on-soft",
+      )}
+      title={expired ? "SAPS 3 expirado — mais de 24h sem preenchimento" : "Prazo de 24h para preencher o SAPS 3"}
+    >
+      {expired ? `⚠ EXPIRADO · ${elapsed}` : `⏱ ${elapsed} / 24h`}
     </span>
   );
 }
