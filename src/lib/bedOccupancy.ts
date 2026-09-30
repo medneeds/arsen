@@ -24,6 +24,7 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 import { getNextBedNumber } from "@/utils/bedNaming";
+import { bedBelongsToSector } from "@/config/sectorCoverage";
 import type { SectorType } from "@/types/patient";
 
 export interface OccupyBedParams {
@@ -67,8 +68,13 @@ export async function occupyBedInSector(params: OccupyBedParams): Promise<Occupy
     .select("id, nome, tipo, ala:alas!inner(hospital_id)") as any)
     .eq("ala.hospital_id", hospitalUnitId);
   if (setorErr) throw setorErr;
+  // Casamento por IDENTIDADE de setor (nome real ou codigo canonico resolvido
+  // do nome) — NUNCA por setores.tipo, que e classificacao (clinico/cirurgico)
+  // compartilhada por varios setores. O antigo `s.tipo === sector` nem casava
+  // (sector e um codigo, tipo e classificacao) e `s.nome === sector` errava
+  // (nome completo vs codigo). Ver bedBelongsToSector.
   const setorMatch = ((setoresData || []) as any[]).find(
-    (s) => s.tipo === sector || s.nome === sector,
+    (s) => bedBelongsToSector(s, sector),
   );
   if (!setorMatch) throw new Error(`Setor "${sector}" não encontrado no hospital atual.`);
 
