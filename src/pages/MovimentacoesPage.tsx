@@ -157,6 +157,19 @@ const MovimentacoesPage = () => {
       // destino/médico/notas/departamento) são preservados em `dados_novos`. patientId ==
       // internacao_id (uuid ou null). state_id/hospital_unit_id degradados (hospital_id).
       const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(patientId);
+      // Transferência INTERNA vira item na fila de alocação do setor destino, que
+      // precisa da internação de ORIGEM (UUID). Sem internação real (patientId não-UUID,
+      // ex.: paciente de emergência/NIR sem internação aberta) o item seria inalocável
+      // ("internação de origem ausente"). Bloqueia em vez de criar uma sinalização órfã.
+      if (subtypeDef.id === "TRANSFERENCIA_INTERNA" && !isUuid) {
+        toast({
+          title: "Sem internação de origem",
+          description: "Este paciente não tem internação aberta para transferência interna. Interne/aloque o paciente primeiro.",
+          variant: "destructive",
+        });
+        setSubmitting(false);
+        return;
+      }
       const tipoEvento =
         subtypeDef.id === "TRANSFERENCIA_INTERNA" ? "sinalizacao_transferencia_interna"
         : subtypeDef.id === "TRANSFERENCIA_EXTERNA" ? "sinalizacao_transferencia_externa"

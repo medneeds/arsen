@@ -2,6 +2,9 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useHospital } from "@/contexts/HospitalContext";
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const isUuid = (v: unknown): v is string => typeof v === "string" && UUID_RE.test(v);
+
 export interface InternalTransferRequestRow {
   id: string;
   source_patient_id: string;
@@ -57,8 +60,14 @@ export function useInternalTransferQueue(sectorCode?: string | null) {
       const mapped: InternalTransferRequestRow[] = [];
       for (const log of data as any[]) {
         const dn = (log.dados_novos as any) || {};
+        // Sinalizações SEM internacao_id (UUID) são órfãs: a alocação depende da
+        // internação de origem — sem ela, completeInternalTransfer devolve
+        // "internação de origem ausente" e o item nunca some. Elas vêm de
+        // MovimentacoesPage quando o patientId não era um UUID (paciente sem
+        // internação real, ex.: código NIR) → nunca são alocáveis, fora da fila.
+        if (!isUuid(log.internacao_id)) continue;
         // Dedupe: só o evento mais recente de cada internação decide.
-        const key = log.internacao_id || log.id;
+        const key = log.internacao_id;
         if (seen.has(key)) continue;
         seen.add(key);
         // Se o mais recente for conclusão/cancelamento, a internação saiu da fila.
