@@ -257,7 +257,18 @@ export async function alocarPreAdmissaoNoLeito({
     })
     .select("id")
     .single();
-  if (interErr) throw interErr;
+  if (interErr) {
+    // Rede de seguranca do banco: o indice unico parcial
+    // uniq_internacao_ativa_por_leito (internacoes.leito_id WHERE status='ativa')
+    // rejeita uma SEGUNDA internacao ativa no mesmo leito. O check de ocupacao
+    // acima ja barra o caso comum, mas tem janela de corrida (TOCTOU): dois
+    // inserts simultaneos passam o check e o indice derruba o segundo. Traduz o
+    // 23505 cru numa mensagem clara em vez de vazar "duplicate key ...".
+    if (interErr.code === "23505" && /uniq_internacao_ativa_por_leito/.test(interErr.message ?? "")) {
+      throw new Error(`Leito ${finalBed} acabou de ser ocupado por outra internacao. Atualize o mapa e selecione outro leito.`);
+    }
+    throw interErr;
+  }
 
   // 4) Ocupa o leito. O resultado era descartado: se a escrita falhasse (RLS,
   //    rede), a internacao existia e o leito seguia "livre" em silencio,
