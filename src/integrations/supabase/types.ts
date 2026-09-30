@@ -256,9 +256,14 @@ export type Database = {
           ph_mais_baixo: number | null
           plaquetas_mais_baixas: number | null
           relacao_pao2_fio2: number | null
+          pending_since: string | null
+          respostas: Json | null
+          status: string
           status_cirurgico: string | null
           temperatura_mais_baixa: number | null
           tipo_cirurgia: string | null
+          validado_em: string | null
+          validado_por: string | null
           ventilacao_mecanica: boolean | null
         }
         Insert: {
@@ -286,12 +291,17 @@ export type Database = {
           motivo_admissao_detalhe?: string | null
           origem_admissao?: string | null
           pas_mais_baixa?: number | null
+          pending_since?: string | null
           ph_mais_baixo?: number | null
           plaquetas_mais_baixas?: number | null
           relacao_pao2_fio2?: number | null
+          respostas?: Json | null
+          status?: string
           status_cirurgico?: string | null
           temperatura_mais_baixa?: number | null
           tipo_cirurgia?: string | null
+          validado_em?: string | null
+          validado_por?: string | null
           ventilacao_mecanica?: boolean | null
         }
         Update: {
@@ -319,12 +329,17 @@ export type Database = {
           motivo_admissao_detalhe?: string | null
           origem_admissao?: string | null
           pas_mais_baixa?: number | null
+          pending_since?: string | null
           ph_mais_baixo?: number | null
           plaquetas_mais_baixas?: number | null
           relacao_pao2_fio2?: number | null
+          respostas?: Json | null
+          status?: string
           status_cirurgico?: string | null
           temperatura_mais_baixa?: number | null
           tipo_cirurgia?: string | null
+          validado_em?: string | null
+          validado_por?: string | null
           ventilacao_mecanica?: boolean | null
         }
         Relationships: [

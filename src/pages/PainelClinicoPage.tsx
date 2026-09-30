@@ -181,24 +181,39 @@ export default function PainelClinicoPage() {
 
   // Fetch SAPS 3 scores for all patients
   useEffect(() => {
+    // MIGRAÇÃO: saps3_assessments → avaliacoes_saps3 (keyed by internacao_id = patient.id).
+    // Agora le status/pending_since REAIS (colunas aplicadas) — o ramo pendente
+    // (cronometro) e o validado (escore) saem da MESMA fonte.
     const fetchSaps = async () => {
-      // MIGRAÇÃO: saps3_assessments → avaliacoes_saps3 (keyed by internacao_id = patient.id).
-      // DEGRADADO: sem colunas status/pending_since no schema novo → sempre 'completed'.
       const { data } = await supabase
         .from("avaliacoes_saps3")
-        .select("id, internacao_id, escore_total, mortalidade_prevista, criado_em")
+        .select("id, internacao_id, escore_total, mortalidade_prevista, status, pending_since, criado_em")
         .order("criado_em", { ascending: false });
       if (data) {
         const map: Record<string, { id: string; score: number; mortality: number; status: string; pending_since: string | null }> = {};
         (data as any[]).forEach((r: any) => {
           if (r.internacao_id && !map[r.internacao_id]) {
-            map[r.internacao_id] = { id: r.id, score: r.escore_total ?? 0, mortality: r.mortalidade_prevista ?? 0, status: 'completed', pending_since: null };
+            map[r.internacao_id] = {
+              id: r.id,
+              score: r.escore_total ?? 0,
+              mortality: r.mortalidade_prevista ?? 0,
+              status: r.status ?? "validada",
+              pending_since: r.pending_since ?? null,
+            };
           }
         });
         setSapsScores(map);
       }
     };
     fetchSaps();
+
+    // Sincroniza com o painel ao vivo: validar uma ficha em /saps3 reflete aqui
+    // sem exigir reload (a ficha pendente vira escore na mesma sessao).
+    const channel = supabase
+      .channel("painel-saps3")
+      .on("postgres_changes", { event: "*", schema: "public", table: "avaliacoes_saps3" }, () => fetchSaps())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
   // Painel clínico deve refletir exclusivamente o banco sincronizado com o mapa de leitos.
@@ -447,7 +462,7 @@ export default function PainelClinicoPage() {
                       </TableCell>
                       <TableCell className="text-center">
                         {sapsScores[patient.id] ? (
-                          sapsScores[patient.id].status === 'pending' ? (
+                          sapsScores[patient.id].status === 'pendente' ? (
                             <div className="flex flex-col items-center gap-1">
                               <div className="flex items-center gap-1 text-warning-on-soft">
                                 <Clock className="h-3.5 w-3.5 animate-pulse" />

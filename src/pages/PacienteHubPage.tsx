@@ -258,6 +258,9 @@ export default function PacienteHubPage() {
   const [department, setDepartment] = useState<string | null>(null);
   const [sapsPending, setSapsPending] = useState(false);
   const [sapsSince, setSapsSince] = useState<string | null>(null);
+  const [sapsFichaId, setSapsFichaId] = useState<string | null>(null);
+  const [sapsScore, setSapsScore] = useState<number | null>(null);
+  const [sapsMortality, setSapsMortality] = useState<number | null>(null);
   const [now, setNow] = useState(Date.now());
   const [hasDraft, setHasDraft] = useState(false);
 
@@ -316,11 +319,22 @@ export default function PacienteHubPage() {
 
     setAdmissionStatus(effectiveStatus);
 
-    // MIGRAÇÃO: saps_pending/saps_pending_since/saps_completed_at e a ficha
-    // saps3_assessments(status) não têm equivalente persistível no schema novo
-    // (avaliacoes_saps3 não tem coluna status) → SAPS pendente degradado p/ false.
-    setSapsPending(false);
-    setSapsSince(null);
+    // SAPS 3 real (colunas status/pending_since aplicadas): a ficha pendura na
+    // internacao (ctx.patientId = internacoes.id). Uma ficha por internacao.
+    const { data: sapsRow } = await supabase
+      .from("avaliacoes_saps3")
+      .select("id, status, pending_since, escore_total, mortalidade_prevista")
+      .eq("internacao_id", ctx.patientId)
+      .order("criado_em", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const isPend = sapsRow?.status === "pendente";
+    const isValid = sapsRow?.status === "validada";
+    setSapsPending(!!isPend);
+    setSapsSince(isPend ? (sapsRow?.pending_since ?? null) : null);
+    setSapsFichaId(sapsRow?.id ?? null);
+    setSapsScore(isValid ? (sapsRow?.escore_total ?? null) : null);
+    setSapsMortality(isValid ? (sapsRow?.mortalidade_prevista ?? null) : null);
     setStatusLoading(false);
   }, [ctx.patientId]);
 
@@ -399,11 +413,14 @@ export default function PacienteHubPage() {
   const handleGoSaps = async () => {
     const qs = new URLSearchParams();
     Object.entries(ctx).forEach(([k, v]) => v && qs.set(k, v));
-    // MIGRAÇÃO: saps3_assessments → avaliacoes_saps3, que NÃO tem coluna
-    // `status` (pendente/completa) nem `patient_name` → não dá para localizar
-    // uma ficha "pendente" para abrir direto. Sempre segue o caminho B
-    // (fromAllocation) — a própria página /saps3 resolve a partir da internação.
-    qs.set("fromAllocation", "true");
+    // Se ja existe ficha (pendente do defer, ou validada p/ consulta), abre a
+    // MESMA linha via completeSapsId — a /saps3 hidrata e ATUALIZA, sem criar
+    // uma segunda ficha. Sem ficha ainda, cai no caminho de alocacao.
+    if (sapsFichaId) {
+      qs.set("completeSapsId", sapsFichaId);
+    } else {
+      qs.set("fromAllocation", "true");
+    }
     navigate(`/saps3?${qs.toString()}`);
   };
 
@@ -592,6 +609,31 @@ export default function PacienteHubPage() {
                   "text-white"
                 )}>
                 <ShieldCheck className="h-3.5 w-3.5" /> Finalizar SAPS 3
+              </Button>
+            </div>
+          )}
+
+          {/* Card SAPS 3 validado — escore visivel para consulta dentro da
+              admissao (sincroniza com o painel; abre a ficha p/ reedicao). */}
+          {isAdmitted && !sapsPending && sapsScore !== null && !statusLoading && (
+            <div className="rounded-lg border bg-card p-4 flex flex-col sm:flex-row sm:items-center gap-3 shadow-sm">
+              <div className="flex h-10 w-10 items-center justify-center rounded-md shrink-0 bg-released-soft text-released-on-soft">
+                <ShieldCheck className="h-5 w-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold uppercase tracking-wide text-foreground">
+                  Ficha SAPS 3 — Validada
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Escore <strong className="font-mono text-foreground">{sapsScore}</strong>
+                  {sapsMortality !== null && (
+                    <> · mortalidade prevista <strong className="font-mono text-foreground">{sapsMortality}%</strong></>
+                  )}
+                </p>
+              </div>
+              <Button size="sm" variant="outline" onClick={handleGoSaps}
+                className="gap-2 uppercase tracking-wide text-xs">
+                <ClipboardList className="h-3.5 w-3.5" /> Ver ficha
               </Button>
             </div>
           )}

@@ -865,6 +865,23 @@ export default function Saps3Page() {
     mortalidade_prevista: scores.mortality,
   });
 
+  const nowIso = () => new Date().toISOString();
+
+  // UMA ficha por internacao: localiza a ficha ja existente (ex.: a pendente
+  // criada no momento da alocacao) para que "validar depois" ATUALIZE a mesma
+  // linha em vez de inserir uma segunda. Sem isso, deferir + validar geraria
+  // duas fichas SAPS para a mesma internacao.
+  const findSapsIdForInternacao = async (internacaoId: string): Promise<string | null> => {
+    const { data } = await supabase
+      .from("avaliacoes_saps3")
+      .select("id")
+      .eq("internacao_id", internacaoId)
+      .order("criado_em", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    return (data as { id: string } | null)?.id ?? null;
+  };
+
   // ─── Checklist de validação (tempo real) ───
   type MissingItem = { id: string; label: string; anchor: string; hint?: string; chave?: string };
   const missingFields = useMemo<MissingItem[]>(() => {
@@ -941,9 +958,22 @@ export default function Saps3Page() {
       try {
         // MIGRAÇÃO: update em avaliacoes_saps3. internacao_id e criado_por são
         // preservados (removidos do payload de update).
+        const validadoPor = await resolveProfissionalId(user?.id);
         const sapsPayload: any = buildSapsPayload(completingPatientId || "", null);
         delete sapsPayload.internacao_id;
         delete sapsPayload.criado_por;
+        if (asPending) {
+          // Mantem pendente: nao carimba validado_* e nao mexe em pending_since
+          // (o cronometro segue do inicio). So garante o status.
+          sapsPayload.status = "pendente";
+        } else {
+          // Validacao: gera o desfecho da ficha — status validada, quem validou
+          // e quando, e guarda o snapshot das respostas (auditoria/reedicao).
+          sapsPayload.status = "validada";
+          sapsPayload.validado_por = validadoPor;
+          sapsPayload.validado_em = nowIso();
+          sapsPayload.respostas = respostas;
+        }
         const { error: updErr } = await supabase
           .from("avaliacoes_saps3")
           .update(sapsPayload)
@@ -1045,16 +1075,37 @@ export default function Saps3Page() {
         alocadoAgora = true;
       }
 
-      // SAPS pendente: só aloca. avaliacoes_saps3 não tem coluna de status, então
-      // gravar a ficha incompleta a deixaria indistinguível de uma validada
-      // (decisão da Direção Clínica, 28/09/2026). A ficha é gravada quando for
-      // preenchida de fato, pela internação.
+      // UMA ficha por internacao: se ja existe (ex.: pendente criada num defer
+      // anterior), reaproveita a linha em vez de duplicar.
+      const existingSapsId = internacaoId ? await findSapsIdForInternacao(internacaoId) : null;
+
+      // SAPS pendente: agora GRAVA a ficha pendente ancorada na internacao
+      // (status='pendente', pending_since=agora). Antes nao gravava nada e o
+      // pendente ficava orfao — painel e hub nao tinham o que mostrar nem
+      // cronometro. Agora o cronometro de 24h nasce aqui.
       if (asPending) {
         const sectorLabelPend = UTI_SECTORS.find(s => s.value === selectedSector)?.label || selectedSector;
+        if (existingSapsId) {
+          const { error: pendErr } = await supabase
+            .from("avaliacoes_saps3")
+            .update({ status: "pendente" })
+            .eq("id", existingSapsId);
+          if (pendErr) throw pendErr;
+        } else {
+          const { error: pendErr } = await supabase
+            .from("avaliacoes_saps3")
+            .insert({
+              internacao_id: internacaoId,
+              criado_por: criadoPor,
+              status: "pendente",
+              pending_since: nowIso(),
+            });
+          if (pendErr) throw pendErr;
+        }
         toast.success(
           alocadoAgora
-            ? `${patientName} alocado no ${selectedBed} (${sectorLabelPend}). SAPS 3 pendente — preencha pela internação.`
-            : "SAPS 3 segue pendente. Nenhuma ficha foi gravada.",
+            ? `${patientName} alocado no ${selectedBed} (${sectorLabelPend}). SAPS 3 registrado como pendente — cronometro de 24h ativo.`
+            : "SAPS 3 registrado como pendente. Cronometro de 24h ativo ate a validacao.",
           { duration: 7000 },
         );
         clearDraftAfterSave();
@@ -1066,14 +1117,39 @@ export default function Saps3Page() {
         return;
       }
 
-      const sapsPayload = buildSapsPayload(internacaoId, criadoPor);
-      const { data: sapsRecord, error: sapsError } = await supabase
-        .from("avaliacoes_saps3")
-        .insert(sapsPayload as any)
-        .select("id")
-        .single();
-      if (sapsError) throw sapsError;
-      createdSapsId = (sapsRecord as any)?.id || null;
+      // Mesmo cast do insert original (os tipos gerados rejeitam o payload rico
+      // do SAPS em insert/update) — feito UMA vez na construcao, para nao
+      // multiplicar `as any` nos dois ramos.
+      const sapsPayload: any = {
+        ...buildSapsPayload(internacaoId, criadoPor),
+        status: "validada",
+        validado_por: criadoPor,
+        validado_em: nowIso(),
+        respostas,
+      };
+      if (existingSapsId) {
+        // Ja havia ficha (defer -> validar): atualiza a MESMA linha, nao duplica.
+        // createdSapsId fica null de proposito: o rollback nao deve apagar uma
+        // linha preexistente que nao foi criada por este save. Preserva
+        // internacao_id/criado_por (o criador original) — validado_por carrega
+        // quem validou; por isso ambos saem do payload de update.
+        const upd = { ...sapsPayload };
+        delete upd.internacao_id;
+        delete upd.criado_por;
+        const { error: sapsError } = await supabase
+          .from("avaliacoes_saps3")
+          .update(upd)
+          .eq("id", existingSapsId);
+        if (sapsError) throw sapsError;
+      } else {
+        const { data: sapsRecord, error: sapsError } = await supabase
+          .from("avaliacoes_saps3")
+          .insert(sapsPayload)
+          .select("id")
+          .single();
+        if (sapsError) throw sapsError;
+        createdSapsId = (sapsRecord as any)?.id || null;
+      }
 
       // MIGRAÇÃO: alocação física do paciente no leito REMOVIDA (degradada) —
       // dependia de patients(bed rows)/bed_allocation_requests, tabelas mortas.
