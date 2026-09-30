@@ -1,12 +1,27 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { Printer, ClipboardCheck, Activity } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { AdmissionForm } from "@/components/admission/AdmissionForm";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
 import { PatientCockpit } from "@/components/PatientCockpit";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { SapsView, type SapsRow } from "@/components/saps3/SapsView";
+import { printSapsDocument } from "@/lib/printSaps";
 import { usePatientLive } from "@/hooks/usePatientLive";
 import type { Patient } from "@/types/patient";
+
+// Setores que exigem SAPS 3 (UTI 1 / UTI 2 / UCI 2) — mesmo criterio da alocacao.
+const SAPS_SECTORS = ["red", "yellow", "outside"];
+const SAPS_SELECT =
+  "id, status, pending_since, validado_em, escore_box1, escore_box2, escore_box3, escore_total, " +
+  "mortalidade_prevista, idade, dias_hospital_antes_uti, origem_admissao, comorbidades, admissao_planejada, " +
+  "motivo_admissao, motivo_admissao_detalhe, status_cirurgico, tipo_cirurgia, infeccao_na_admissao, " +
+  "escore_glasgow, fc_mais_alta, pas_mais_baixa, temperatura_mais_baixa, bilirrubina_mais_alta, " +
+  "creatinina_mais_alta, leucocitos, plaquetas_mais_baixas, ph_mais_baixo, relacao_pao2_fio2, ventilacao_mecanica";
 
 /**
  * Perfis claramente NAO clinicos (porta / recepcao / administrativo) nao podem
@@ -73,6 +88,41 @@ export default function AdmissaoPage() {
   // o cockpitPatient era montado so a partir dos params (sem admissionStatus).
   const { patient: livePatient } = usePatientLive(patient.id || null);
 
+  // ─── Aba SAPS 3 dentro da Admissao (UTI 1/2, UCI 2) — visualizacao completa
+  // read-only da ficha ja gravada + impressao apos validacao. A ficha e editada
+  // na /saps3; aqui e consulta.
+  const [activeTab, setActiveTab] = useState<"admissao" | "saps">("admissao");
+  const [sapsRow, setSapsRow] = useState<SapsRow | null>(null);
+  const requiresSaps = SAPS_SECTORS.includes(patient.sector);
+
+  useEffect(() => {
+    if (!patientId) { setSapsRow(null); return; }
+    let cancel = false;
+    (async () => {
+      const { data } = await supabase
+        .from("avaliacoes_saps3")
+        .select(SAPS_SELECT)
+        .eq("internacao_id", patientId)
+        .order("criado_em", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!cancel) setSapsRow((data as unknown as SapsRow) ?? null);
+    })();
+    return () => { cancel = true; };
+  }, [patientId, activeTab]);
+
+  const showSapsTab = requiresSaps || !!sapsRow;
+  const sapsValidada = sapsRow?.status === "validada";
+  const openSapsFicha = () => {
+    const qs = new URLSearchParams();
+    qs.set("patientId", patientId);
+    if (patientName) qs.set("patientName", patientName);
+    if (patientBed) qs.set("patientBed", patientBed);
+    if (patientSector) qs.set("patientSector", patientSector);
+    if (sapsRow?.id) qs.set("completeSapsId", sapsRow.id);
+    navigate(`/saps3?${qs.toString()}`);
+  };
+
   // Paciente para o Cockpit do trilho direito — mesma harmonizacao dos demais
   // modulos (stub a partir dos params; o Cockpit resolve o resto por id).
   const cockpitPatient: Patient = useMemo(() => ({
@@ -118,14 +168,77 @@ export default function AdmissaoPage() {
 
       <div className="flex print:block">
         <div className="flex-1 min-w-0 p-3 sm:p-4">
-          <div className="rounded-lg border bg-card overflow-hidden">
-            <AdmissionForm
-              embedded
-              patient={patient}
-              onClose={() => navigate(returnTo)}
-              onSuccess={() => toast.success("Admissão hospitalar registrada. Módulos clínicos liberados.")}
-            />
-          </div>
+          {/* Toggle Admissao | SAPS — a aba SAPS so aparece nos setores que
+              exigem (UTI/UCI2) ou quando ja ha ficha. */}
+          {showSapsTab && (
+            <div className="mb-3 inline-flex rounded-lg border bg-muted/40 p-0.5 print:hidden">
+              <button
+                type="button"
+                onClick={() => setActiveTab("admissao")}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+                  activeTab === "admissao" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <ClipboardCheck className="h-3.5 w-3.5" /> Admissão
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("saps")}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+                  activeTab === "saps" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <Activity className="h-3.5 w-3.5" /> SAPS 3
+                {sapsRow?.status === "pendente" && (
+                  <span className="ml-1 h-1.5 w-1.5 rounded-full bg-warning" title="SAPS pendente" />
+                )}
+              </button>
+            </div>
+          )}
+
+          {activeTab === "saps" && showSapsTab ? (
+            <div className="rounded-lg border bg-card p-4">
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <h2 className="text-sm font-semibold tracking-tight text-foreground">Ficha SAPS 3</h2>
+                <div className="flex items-center gap-2">
+                  {sapsValidada && sapsRow && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => printSapsDocument(sapsRow, {
+                        patientName: patient.name,
+                        patientBed: patient.bed,
+                        patientSector: patient.sector,
+                      })}
+                    >
+                      <Printer className="h-3.5 w-3.5 mr-1" /> Imprimir
+                    </Button>
+                  )}
+                  <Button size="sm" onClick={openSapsFicha}>
+                    {sapsValidada ? "Ver / editar ficha" : sapsRow ? "Validar ficha" : "Preencher SAPS"}
+                  </Button>
+                </div>
+              </div>
+              {sapsRow ? (
+                <SapsView row={sapsRow} />
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Nenhuma ficha SAPS 3 registrada para esta internação. Use "Preencher SAPS" para iniciar.
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="rounded-lg border bg-card overflow-hidden">
+              <AdmissionForm
+                embedded
+                patient={patient}
+                onClose={() => navigate(returnTo)}
+                onSuccess={() => toast.success("Admissão hospitalar registrada. Módulos clínicos liberados.")}
+              />
+            </div>
+          )}
         </div>
 
         {/* Cockpit no trilho direito — igual a Evolucao/Prescricao */}

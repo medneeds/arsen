@@ -1,0 +1,158 @@
+import { COMORBIDADES, milParaContagem, formatarContagem } from "@/lib/saps3";
+
+/**
+ * Visualizacao READ-ONLY completa de uma ficha SAPS 3 ja gravada (avaliacoes_saps3).
+ * Mostra o escore (box1/2/3, total, mortalidade prevista) e todos os campos
+ * preenchidos, agrupados por Box. Sem inputs — apos a validacao a ficha nao e
+ * mais editavel, so consultada/impressa. Campos vazios sao escondidos.
+ */
+
+export interface SapsRow {
+  id: string;
+  status?: string | null;
+  pending_since?: string | null;
+  validado_em?: string | null;
+  escore_box1?: number | null;
+  escore_box2?: number | null;
+  escore_box3?: number | null;
+  escore_total?: number | null;
+  mortalidade_prevista?: number | null;
+  // Box I
+  idade?: number | null;
+  dias_hospital_antes_uti?: number | null;
+  origem_admissao?: string | null;
+  comorbidades?: unknown;
+  admissao_planejada?: boolean | null;
+  // Box II
+  motivo_admissao?: string | null;
+  motivo_admissao_detalhe?: string | null;
+  status_cirurgico?: string | null;
+  tipo_cirurgia?: string | null;
+  infeccao_na_admissao?: string | null;
+  // Box III
+  escore_glasgow?: number | null;
+  fc_mais_alta?: number | null;
+  pas_mais_baixa?: number | null;
+  temperatura_mais_baixa?: number | null;
+  bilirrubina_mais_alta?: number | null;
+  creatinina_mais_alta?: number | null;
+  leucocitos?: number | null;
+  plaquetas_mais_baixas?: number | null;
+  ph_mais_baixo?: number | null;
+  relacao_pao2_fio2?: number | null;
+  ventilacao_mecanica?: boolean | null;
+}
+
+const num = (v?: number | null, suf = ""): string =>
+  v == null || Number.isNaN(Number(v)) ? "" : `${v}${suf}`;
+
+const comorbLabels = (raw: unknown): string => {
+  const arr = Array.isArray(raw) ? (raw as string[]) : [];
+  if (arr.length === 0) return "";
+  return arr
+    .map((id) => COMORBIDADES.find((c) => c.id === id)?.rotulo ?? id)
+    .join(" · ");
+};
+
+function Field({ label, value }: { label: string; value?: string }) {
+  const v = String(value ?? "").trim();
+  if (!v) return null;
+  return (
+    <div className="min-w-0">
+      <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className="text-sm text-foreground break-words">{v}</div>
+    </div>
+  );
+}
+
+function Group({ title, children }: { title: string; children: React.ReactNode }) {
+  const arr = Array.isArray(children) ? children : [children];
+  if (!arr.some(Boolean)) return null;
+  return (
+    <div className="space-y-2">
+      <div className="text-[11px] font-semibold uppercase tracking-wider text-primary border-b border-border/60 pb-0.5">{title}</div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2">{children}</div>
+    </div>
+  );
+}
+
+function mortalityTone(m?: number | null): string {
+  if (m == null) return "text-muted-foreground";
+  if (m < 10) return "text-released-on-soft";
+  if (m < 50) return "text-warning-on-soft";
+  return "text-critical-on-soft";
+}
+
+export function SapsView({ row }: { row: SapsRow }) {
+  const leuco = row.leucocitos != null ? formatarContagem(milParaContagem(row.leucocitos)) : "";
+  const plaq = row.plaquetas_mais_baixas != null ? formatarContagem(milParaContagem(row.plaquetas_mais_baixas)) : "";
+  const isPending = row.status === "pendente";
+
+  return (
+    <div className="space-y-5">
+      {/* Escore */}
+      <div className="rounded-lg border bg-muted/30 p-4">
+        {isPending ? (
+          <p className="text-sm font-medium text-warning-on-soft">
+            Ficha SAPS 3 pendente — ainda nao validada. Preencha e valide para gerar o escore.
+          </p>
+        ) : (
+          <div className="flex flex-wrap items-end gap-x-8 gap-y-2">
+            <div>
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Escore total</div>
+              <div className="text-3xl font-bold font-mono text-foreground leading-none">{num(row.escore_total) || "—"}</div>
+            </div>
+            <div>
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Mortalidade prevista</div>
+              <div className={`text-2xl font-bold font-mono leading-none ${mortalityTone(row.mortalidade_prevista)}`}>
+                {row.mortalidade_prevista != null ? `${row.mortalidade_prevista}%` : "—"}
+              </div>
+            </div>
+            <div className="text-xs text-muted-foreground">
+              Box I <strong className="text-foreground">{num(row.escore_box1) || "—"}</strong> ·
+              Box II <strong className="text-foreground">{num(row.escore_box2) || "—"}</strong> ·
+              Box III <strong className="text-foreground">{num(row.escore_box3) || "—"}</strong>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <Group title="Box I — Condições prévias">
+        <Field label="Idade" value={num(row.idade, " anos")} />
+        <Field label="Dias no hospital antes da UTI" value={num(row.dias_hospital_antes_uti)} />
+        <Field label="Origem" value={row.origem_admissao ?? ""} />
+        <Field label="Comorbidades" value={comorbLabels(row.comorbidades)} />
+        <Field label="Admissão planejada" value={row.admissao_planejada == null ? "" : row.admissao_planejada ? "Sim" : "Não"} />
+      </Group>
+
+      <Group title="Box II — Circunstâncias da admissão">
+        <Field label="Motivo" value={row.motivo_admissao_detalhe || row.motivo_admissao || ""} />
+        <Field label="Status cirúrgico" value={row.status_cirurgico ?? ""} />
+        <Field label="Tipo de cirurgia" value={row.tipo_cirurgia ?? ""} />
+        <Field label="Infecção na admissão" value={row.infeccao_na_admissao ?? ""} />
+      </Group>
+
+      <Group title="Box III — Fisiologia">
+        <Field label="Glasgow" value={num(row.escore_glasgow)} />
+        <Field label="FC (mais alta)" value={num(row.fc_mais_alta, " bpm")} />
+        <Field label="PAS (mais baixa)" value={num(row.pas_mais_baixa, " mmHg")} />
+        <Field label="Temperatura (mais baixa)" value={num(row.temperatura_mais_baixa, " °C")} />
+        <Field label="Bilirrubina (mais alta)" value={num(row.bilirrubina_mais_alta, " mg/dL")} />
+        <Field label="Creatinina (mais alta)" value={num(row.creatinina_mais_alta, " mg/dL")} />
+        <Field label="Leucócitos" value={leuco ? `${leuco} /mm³` : ""} />
+        <Field label="Plaquetas" value={plaq ? `${plaq} /mm³` : ""} />
+        <Field label="pH (mais baixo)" value={num(row.ph_mais_baixo)} />
+        <Field label="PaO₂/FiO₂" value={num(row.relacao_pao2_fio2)} />
+        <Field label="Ventilação mecânica" value={row.ventilacao_mecanica == null ? "" : row.ventilacao_mecanica ? "Sim" : "Não"} />
+      </Group>
+
+      {/* Ressalva: alguns itens do escore nao sao reconstruiveis (nunca gravados). */}
+      <p className="text-[11px] text-muted-foreground">
+        Observação: uso de vasoativo antes da UTI e detalhamento do Glasgow (O/V/M) não são
+        armazenados nesta ficha — o escore usa o valor consolidado no momento da validação.
+      </p>
+    </div>
+  );
+}
+
+export default SapsView;
