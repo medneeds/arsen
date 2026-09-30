@@ -388,7 +388,7 @@ export default function PainelClinicoPage() {
                           </div>
                         )}
                         <p className="text-xs text-muted-foreground mt-1">
-                          {patient.age ? `${patient.age} anos` : "—"}
+                          {patient.age ? `${String(patient.age).replace(/\s*a$/i, "")} anos` : "—"}
                           {days !== null && <span className={cn("ml-2", days > 7 && "text-destructive font-medium")}>{days}d int.</span>}
                           {saps && saps.status !== 'pending' && <span className="ml-2">SAPS {saps.score}</span>}
                         </p>
@@ -460,7 +460,7 @@ export default function PainelClinicoPage() {
                             </div>
                           )}
                           <p className="text-xs text-muted-foreground mt-1">
-                            {patient.age ? `${patient.age} anos` : "—"}
+                            {patient.age ? `${String(patient.age).replace(/\s*a$/i, "")} anos` : "—"}
                           </p>
                           {parseTextArray(patient.diagnoses).length > 0 && (
                             <p className="text-xs text-muted-foreground mt-1 line-clamp-1 max-w-[200px]">
