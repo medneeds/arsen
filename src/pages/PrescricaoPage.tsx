@@ -5526,6 +5526,16 @@ const PrescricaoPage = () => {
           // Registro ja assinado e nao ha nova assinatura -> nao rebaixar.
           return;
         }
+        // Regra clinica: prescricao VALIDADA jamais retorna a rascunho DENTRO do
+        // dia clinico. A virada das 05h e tratada no carregamento (renova em
+        // nova linha, currentPrescriptionId=null -> INSERT, nao este update).
+        // Aqui, dentro do dia, a recomputacao do status pode dar 'draft' (ex.:
+        // item novo ainda nao validado, autosave) — mas a linha validada
+        // permanece validada. Ainda persiste as mudancas (ex.: suspensao de
+        // item); so o rebaixamento do status e barrado.
+        if ((existing as any).status === 'validated' && !sig && basePayload.status === 'draft') {
+          basePayload.status = 'validated';
+        }
         // Defesa em profundidade: entre o SELECT acima e o UPDATE abaixo existe
         // uma ida e volta de rede (~250ms medidos ate o servidor) em que outro
         // medico pode assinar. Sem nova assinatura, o filtro impede no proprio
@@ -6917,23 +6927,43 @@ const PrescricaoPage = () => {
   const requestSuspendItem = useCallback((id: string) => {
     const item = items.find(i => i.id === id);
     if (!item) return;
+    // Regra clinica: item em RASCUNHO (nao validado) nao e suspenso — deve ser
+    // excluido. A suspensao e ato sobre um item ja validado (ordem ativa).
+    if (!isItemValidatedToday(item)) {
+      toast.error("Item em rascunho nao e suspenso", {
+        description: "Itens nao validados devem ser excluidos. A suspensao vale para itens ja validados.",
+      });
+      return;
+    }
     setSuspendTarget({ id, name: item.name });
     setSuspendDialogOpen(true);
-  }, [items]);
+  }, [items, isItemValidatedToday]);
 
   const confirmSuspend = useCallback((reason: string) => {
     const now = format(new Date(), "dd/MM HH:mm", { locale: ptBR });
     let nextItems: PrescriptionItem[] = [];
     if (suspendTarget.isBatch) {
+      // Regra clinica: so itens VALIDADOS sao suspensos. Rascunhos selecionados
+      // sao ignorados (devem ser excluidos, nao suspensos).
+      let suspendedCount = 0;
       setItems(prev => {
-        nextItems = prev.map(item =>
-          selectedIds.has(item.id) && item.status === 'active'
-            ? { ...item, status: 'suspended' as const, suspensionReason: reason, suspendedAt: now }
-            : item
-        );
+        nextItems = prev.map(item => {
+          if (selectedIds.has(item.id) && item.status === 'active' && isItemValidatedToday(item)) {
+            suspendedCount += 1;
+            return { ...item, status: 'suspended' as const, suspensionReason: reason, suspendedAt: now };
+          }
+          return item;
+        });
         return nextItems;
       });
-      toast.success(`${selectedIds.size} ${(selectedIds.size) === 1 ? 'item' : 'itens'} ${(selectedIds.size) === 1 ? 'suspenso' : 'suspensos'}`);
+      if (suspendedCount > 0) {
+        toast.success(`${suspendedCount} ${suspendedCount === 1 ? 'item suspenso' : 'itens suspensos'}`);
+      } else {
+        toast.error("Nenhum item validado na selecao", {
+          description: "Itens em rascunho devem ser excluidos, nao suspensos.",
+        });
+        nextItems = [];
+      }
       setSelectedIds(new Set());
     } else if (suspendTarget.id) {
       setItems(prev => {
@@ -6991,10 +7021,21 @@ const PrescricaoPage = () => {
   }, []);
 
   const deleteSelected = useCallback(() => {
-    setItems(prev => prev.filter(item => !selectedIds.has(item.id)));
-    toast.success(`${selectedIds.size} ${(selectedIds.size) === 1 ? 'item' : 'itens'} ${(selectedIds.size) === 1 ? 'excluído' : 'excluídos'}`);
+    // Regra clinica: item VALIDADO nao e excluido — so suspenso. Exclui apenas os
+    // selecionados em rascunho; validados na selecao ficam e sao sinalizados.
+    const blockedValidated = items.filter(i => selectedIds.has(i.id) && isItemValidatedToday(i)).length;
+    const deletable = new Set(items.filter(i => selectedIds.has(i.id) && !isItemValidatedToday(i)).map(i => i.id));
+    setItems(prev => prev.filter(item => !deletable.has(item.id)));
+    if (deletable.size > 0) {
+      toast.success(`${deletable.size} ${deletable.size === 1 ? 'item excluído' : 'itens excluídos'}`);
+    }
+    if (blockedValidated > 0) {
+      toast.error(`${blockedValidated} ${blockedValidated === 1 ? 'item validado nao excluido' : 'itens validados nao excluidos'}`, {
+        description: "Item validado so pode ser suspenso, nao excluido.",
+      });
+    }
     setSelectedIds(new Set());
-  }, [selectedIds]);
+  }, [selectedIds, items]);
 
   const duplicateSelected = useCallback(() => {
     setItems(prev => {
