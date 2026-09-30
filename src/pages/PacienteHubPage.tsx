@@ -800,6 +800,23 @@ export default function PacienteHubPage() {
                       Concluída
                     </span>
                   )}
+                  {/* SAPS 3 no card: check verde se validado; cronometro de 24h se
+                      pendente (vermelho/pulsante ao expirar). So aparece quando ha
+                      ficha (UTI/UCI2). */}
+                  {sapsScore !== null && (
+                    <span className="mt-1 inline-flex items-center gap-1 text-[10px] font-normal text-released-on-soft tracking-wide uppercase">
+                      <CheckCircle2 className="h-3 w-3 shrink-0" /> SAPS validado
+                    </span>
+                  )}
+                  {sapsPending && (
+                    <span className={cn(
+                      "mt-1 inline-flex items-center gap-1 text-[10px] font-normal tracking-wide uppercase",
+                      sapsExpired ? "text-critical-on-soft animate-pulse" : "text-warning-on-soft",
+                    )}>
+                      <Timer className="h-3 w-3 shrink-0" />
+                      SAPS {sapsExpired ? "EXPIRADO" : formatElapsed(sapsElapsedMs)}
+                    </span>
+                  )}
                 </div>
               </button>
 
