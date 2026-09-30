@@ -254,7 +254,7 @@ export default function PacienteHubPage() {
       case "death":
         return { label: "Saída · Óbito", tone: "danger" as const };
       case "discharge":
-        return { label: "Saída · Alta", tone: "info" as const };
+        return { label: "Saída · Alta", tone: "success" as const };
       case "transfer_external":
         return { label: "Saída · Transf. externa", tone: "warn" as const };
       case "transfer_internal":
@@ -871,7 +871,7 @@ export default function PacienteHubPage() {
                   {st && (
                     <span
                       title={at ? `${st.label} · ${formatDistanceToNow(new Date(at), { addSuffix: true, locale: ptBR })}` : undefined}
-                      className={cn("mt-1 inline-flex items-center gap-1 text-xs font-medium tracking-widest uppercase", st.text)}
+                      className={cn("mt-1 inline-flex items-center gap-1 text-[10px] font-normal tracking-wide uppercase", st.text)}
                     >
                       <span className={cn("h-1.5 w-1.5 rounded-full", st.dot)} />
                       {st.label}
@@ -911,8 +911,7 @@ export default function PacienteHubPage() {
                   : [
                       "cursor-pointer hover:scale-[1.02] hover:shadow-md",
                       signalState?.tone === "danger" && "border-critical-border",
-                      signalState?.tone === "info" && "border-border",
-                      signalState?.tone === "warn" && "border-warning-border",
+                      signalState?.tone === "success" && "border-released-border",                      signalState?.tone === "warn" && "border-warning-border",
                       !signalState && "border-border",
                     ],
               )}>
@@ -920,8 +919,7 @@ export default function PacienteHubPage() {
                   "absolute top-0 left-0 right-0 h-1",
                   locked ? "bg-muted-foreground/30"
                     : signalState?.tone === "danger" ? "bg-critical"
-                    : signalState?.tone === "info" ? "bg-primary"
-                    : signalState?.tone === "warn" ? "bg-warning"
+                    : signalState?.tone === "success" ? "bg-released"                    : signalState?.tone === "warn" ? "bg-warning"
                     : "bg-primary/70",
                 )} />
                 {locked && (
@@ -933,8 +931,7 @@ export default function PacienteHubPage() {
                   "p-3 rounded-lg mb-3 transition-colors",
                   locked ? "bg-transparent"
                     : signalState?.tone === "danger" ? "bg-critical-soft"
-                    : signalState?.tone === "info" ? "bg-muted"
-                    : signalState?.tone === "warn" ? "bg-warning-soft"
+                    : signalState?.tone === "success" ? "bg-released-soft"                    : signalState?.tone === "warn" ? "bg-warning-soft"
                     : "bg-muted group-hover:bg-primary/10",
                 )}>
                   <ArrowLeftRight
@@ -943,8 +940,7 @@ export default function PacienteHubPage() {
                       !locked && "group-hover:translate-x-0.5",
                       locked ? "text-muted-foreground/40"
                         : signalState?.tone === "danger" ? "text-critical-on-soft"
-                        : signalState?.tone === "info" ? "text-foreground"
-                        : signalState?.tone === "warn" ? "text-warning-on-soft"
+                        : signalState?.tone === "success" ? "text-released-on-soft"                        : signalState?.tone === "warn" ? "text-warning-on-soft"
                         : "text-muted-foreground group-hover:text-primary",
                     )}
                     strokeWidth={1.5}
@@ -958,11 +954,17 @@ export default function PacienteHubPage() {
                 </span>
                 {signalState && !locked && (
                   <span className={cn(
-                    "text-xs font-medium tracking-widest uppercase mt-1 text-center px-1 leading-tight",
+                    // Fonte menor e mais fina que o titulo "Sinalizacao" (text-xs
+                    // font-semibold) — o sub-rotulo diferencia sem competir.
+                    "mt-1 inline-flex items-center gap-1 text-[10px] font-normal tracking-wide uppercase text-center px-1 leading-tight",
                     signalState.tone === "danger" && "text-critical-on-soft",
-                    signalState.tone === "info" && "text-foreground",
-                    signalState.tone === "warn" && "text-warning-on-soft",
+                    signalState.tone === "success" && "text-released-on-soft",                    signalState.tone === "warn" && "text-warning-on-soft",
                   )}>
+                    <span className={cn(
+                      "h-1.5 w-1.5 rounded-full shrink-0",
+                      signalState.tone === "danger" && "bg-critical",
+                      signalState.tone === "success" && "bg-released",
+                      signalState.tone === "warn" && "bg-warning",                    )} />
                     {signalState.label}
                   </span>
                 )}
