@@ -8728,7 +8728,11 @@ const PrescricaoPage = () => {
             ) : (
               <Input
                 value={patient.weight}
-                onChange={(e) => updatePatient("weight", e.target.value)}
+                // Ao comecar a digitar com o campo vazio, entra em modo edicao —
+                // senao, ao 1o digito o peso vira nao-vazio, a condicao flipa para
+                // o display read-only e o input "fecha sozinho". Fecha so no
+                // blur/Enter (salvo e fechado).
+                onChange={(e) => { if (!editingWeight) setEditingWeight(true); updatePatient("weight", e.target.value); }}
                 onBlur={() => { if (patient.weight.trim()) setEditingWeight(false); }}
                 onKeyDown={(e) => { if (e.key === "Enter" && patient.weight.trim()) { e.preventDefault(); (e.target as HTMLInputElement).blur(); setEditingWeight(false); } }}
                 autoFocus={editingWeight}
