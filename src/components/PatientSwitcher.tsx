@@ -3,6 +3,7 @@ import { useSearchParams, useLocation, useNavigate } from "react-router-dom";
 import { ChevronDown, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { resolveSectorCode } from "@/config/sectorCoverage";
 import { useHospital } from "@/contexts/HospitalContext";
 import { formatAge } from "@/lib/patientAge";
 import {
@@ -73,21 +74,26 @@ export function PatientSwitcher({ variant = "dark" }: PatientSwitcherProps) {
           paciente:pacientes ( nome_completo, nome_social, data_nascimento ),
           leito:leitos!inner (
             numero,
-            setor:setores!inner ( tipo, ala:alas!inner ( hospital_id ) )
+            setor:setores!inner ( nome, ala:alas!inner ( hospital_id ) )
           )
         `) as any)
         .is("data_alta", null)
-        .eq("leito.setor.ala.hospital_id", currentHospital.id)
-        .eq("leito.setor.tipo", patientSector);
+        .eq("leito.setor.ala.hospital_id", currentHospital.id);
 
       if (Array.isArray(data)) {
-        const mapped: SectorPatient[] = data.map((row: any) => {
+        // MIGRAÇÃO: filtro por setor no cliente — resolve o CÓDIGO a partir de
+        // setores.nome (setor.tipo é clinico/cirurgico, não o código do setor).
+        const doSetor = data.filter((row: any) => {
+          const nome = row.leito?.setor?.nome;
+          return resolveSectorCode(nome) === patientSector || nome === patientSector;
+        });
+        const mapped: SectorPatient[] = doSetor.map((row: any) => {
           const pac = row.paciente || {};
           return {
             id: row.id,
             name: pac.nome_social || pac.nome_completo || "",
             bed_number: row.leito?.numero || "",
-            sector: row.leito?.setor?.tipo || patientSector,
+            sector: resolveSectorCode(row.leito?.setor?.nome) || patientSector,
             age: formatAge(pac.data_nascimento),
             patient_registry_id: row.paciente_id ?? null,
           };
