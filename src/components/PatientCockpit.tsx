@@ -386,7 +386,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
             "shadow-[-2px_0_8px_rgba(10,22,56,0.08),_-8px_0_32px_rgba(10,22,56,0.18),_-16px_0_48px_rgba(10,22,56,0.08)]",
             "backdrop-blur-sm",
             "transition-[width] duration-300 ease-out",
-            isExpanded ? "w-[min(24rem,85vw)]" : "w-11",
+            isExpanded ? "w-[min(24rem,85vw)]" : "w-14",
           ],
           variant === "inline" && "w-full h-full bg-card border border-primary/20 rounded-lg overflow-hidden",
           "flex-col print:hidden",
