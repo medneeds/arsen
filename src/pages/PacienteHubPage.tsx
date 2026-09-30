@@ -349,13 +349,26 @@ export default function PacienteHubPage() {
       .limit(1)
       .maybeSingle();
     const pendingInternal = lastTr?.tipo_evento === "sinalizacao_transferencia_interna";
+    // Saida tambem pelo doc em `altas` (MESMA fonte da cockpit/mapa): cobre o
+    // caso do internacoes.status nao ter virado obito/alta. Doc suspenso nao vale.
+    const { data: exitDoc } = await supabase
+      .from("altas")
+      .select("tipo, conteudo")
+      .eq("internacao_id", ctx.patientId)
+      .in("tipo", ["obito", "alta_hospitalar", "alta_a_pedido"])
+      .order("data_hora", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const exitKind = exitDoc && !((exitDoc.conteudo ?? {}) as { suspended?: boolean }).suspended
+      ? (exitDoc.tipo === "obito" ? "death" : "discharge")
+      : null;
     if (pendingInternal) {
       const dn = (lastTr?.dados_novos ?? {}) as { target_sector_label?: string; target_sector_code?: string };
       setSignalingKind("transfer_internal");
       setSignalingDestination(dn.target_sector_label ?? dn.target_sector_code ?? null);
-    } else if (row.status === "obito") {
+    } else if (exitKind === "death" || row.status === "obito") {
       setSignalingKind("death"); setSignalingDestination(null);
-    } else if (row.status === "alta") {
+    } else if (exitKind === "discharge" || row.status === "alta") {
       setSignalingKind("discharge"); setSignalingDestination(null);
     } else if (row.status === "transferida") {
       setSignalingKind("transfer_external"); setSignalingDestination(null);
@@ -543,7 +556,11 @@ export default function PacienteHubPage() {
   const ageDisplay = (() => {
     if (!ctx.patientAge) return "";
     const raw = ctx.patientAge.trim();
-    return /anos?/i.test(raw) ? raw : `${raw} anos`;
+    if (/anos?/i.test(raw)) return raw;
+    // Remove o sufixo abreviado "a"/"A" (ex.: "53a") antes de anexar "anos" —
+    // senao vira "53A ANOS". Deve ser so numero + "anos" ("53 anos").
+    const n = raw.replace(/\s*a\.?$/i, "").trim();
+    return n ? `${n} anos` : raw;
   })();
 
   const AdmissionIcon = isAdmitted ? CheckCircle2 : ClipboardCheck;
