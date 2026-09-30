@@ -29,11 +29,22 @@ export function InternalTransferQueueSection({ sectorCode }: Props) {
   // Buscar TODOS os pacientes do hospital (sem filtro de setor)
   // para encontrar leitos vagos em qualquer setor destino da transferência.
   // usePatients() sem parâmetros retorna apenas o setor ativo do usuário.
-  const { patients, isLoading: patientsLoading } = usePatients(undefined, undefined);
+  const { patients, isLoading: patientsLoading, refetch } = usePatients(undefined, undefined);
   const [target, setTarget] = useState<InternalTransferRequestRow | null>(null);
   const [bedId, setBedId] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [refreshingBeds, setRefreshingBeds] = useState(false);
   const [open, setOpen] = useState(true);
+
+  // Abre o diálogo e RE-BUSCA os leitos vagos na hora. O realtime (self-hosted)
+  // é intermitente na VPS, então um leito recém-desalocado podia demorar a
+  // aparecer; buscar no clique garante a lista fresca sem recarregar a página.
+  const openAllocate = async (r: InternalTransferRequestRow) => {
+    setTarget(r);
+    setBedId("");
+    setRefreshingBeds(true);
+    try { await refetch(); } finally { setRefreshingBeds(false); }
+  };
 
   const availableBeds = useMemo(() => {
     if (!target?.target_sector_code) return [];
@@ -89,6 +100,9 @@ export function InternalTransferQueueSection({ sectorCode }: Props) {
       setTarget(null);
       setBedId("");
       refresh();
+      // Re-busca o mapa: o leito recém-ocupado sai da lista de vagos e a origem
+      // liberada entra, sem depender do realtime (intermitente na VPS) nem de F5.
+      refetch();
     } catch (err: any) {
       toast({ title: "Erro ao alocar", description: err?.message ?? "Tente novamente.", variant: "destructive" });
     } finally {
@@ -149,7 +163,7 @@ export function InternalTransferQueueSection({ sectorCode }: Props) {
                     {r.reason && <p className="text-xs text-muted-foreground mt-1 italic">"{r.reason}"</p>}
                   </div>
                   <div className="flex items-center gap-2">
-                    <Button size="sm" onClick={() => { setTarget(r); setBedId(""); }}>
+                    <Button size="sm" onClick={() => openAllocate(r)}>
                       <BedDouble className="h-3.5 w-3.5 mr-1" />
                       {r.requires_saps ? "Pré-admitir" : "Alocação direta"}
                     </Button>
@@ -188,7 +202,7 @@ export function InternalTransferQueueSection({ sectorCode }: Props) {
             </div>
             <div className="space-y-2">
               <Label>Leito disponível *</Label>
-              {patientsLoading && availableBeds.length === 0 ? (
+              {(patientsLoading || refreshingBeds) && availableBeds.length === 0 ? (
                 // Delay ate os leitos vagos carregarem: spinner em vez de mostrar
                 // "nenhum leito vago" cedo demais (padrao de loading da plataforma).
                 <div className="flex items-center gap-2 py-2 text-xs text-muted-foreground">
