@@ -270,7 +270,7 @@ export default function PainelClinicoPage() {
                 size="sm"
                 onClick={() => setRoundDialogOpen(true)}
                 disabled={filteredPatients.length === 0}
-                className="h-6 gap-1 px-2 text-xs bg-white/95 text-foreground border-white/40 shadow-sm hover:bg-white"
+                className="h-6 gap-1 px-2 text-xs bg-white text-slate-900 border-white/50 shadow-sm hover:bg-white"
                 title="Imprimir folhas de Round em branco dos pacientes listados"
               >
                 <Printer className="h-3 w-3" />
@@ -282,13 +282,13 @@ export default function PainelClinicoPage() {
                 size="sm"
                 onClick={() => setHandoverOpen(true)}
                 disabled={filteredPatients.length === 0}
-                className="h-6 gap-1 px-2 text-xs bg-white/95 text-foreground border-white/40 shadow-sm hover:bg-white"
+                className="h-6 gap-1 px-2 text-xs bg-white text-slate-900 border-white/50 shadow-sm hover:bg-white"
                 title="Abrir a passagem de plantao do setor (preview + imprimir)"
               >
                 <ClipboardList className="h-3 w-3" />
                 Passagem de Plantão
               </Button>
-              <Badge variant="outline" className="text-xs bg-white/95 text-foreground border-white/40 shadow-sm">
+              <Badge variant="outline" className="text-xs bg-white text-slate-900 border-white/50 shadow-sm">
                 {filteredPatients.length} paciente{filteredPatients.length !== 1 ? "s" : ""}
               </Badge>
             </div>
