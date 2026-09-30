@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { Pill, Stethoscope, ClipboardList, FolderOpen, History, ClipboardCheck, Lock, CheckCircle2, AlertTriangle, Printer, ShieldCheck, Timer, ArrowLeftRight, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BreadcrumbBar } from "@/components/BreadcrumbBar";
@@ -68,6 +68,7 @@ const draftKeyForRegistry = (registryId: string) => `admission_draft:v2:${regist
 export default function PacienteHubPage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
+  const location = useLocation();
   const { currentHospital } = useHospital();
   const queryClient = useQueryClient();
 
@@ -413,6 +414,19 @@ export default function PacienteHubPage() {
       document.removeEventListener("visibilitychange", aoVoltar);
     };
   }, [refreshHubState]);
+
+  // Refresh ao NAVEGAR de volta para o Hub (breadcrumb/voltar). As rotas de
+  // modulo (/prescricao, /evolucao...) sao irmas do /paciente, mas o retorno
+  // nem sempre remonta esta pagina e a navegacao interna NAO dispara focus/
+  // visibilitychange — entao, sem isto, o card so atualizaria via realtime.
+  // Como o realtime do Supabase self-hosted pode nao publicar essas tabelas
+  // (falha silenciosa), a correcao NAO pode depender dele: toda entrada nesta
+  // rota re-deriva o status do banco (fonte unica), independente do realtime.
+  // location.key muda a cada navegacao (inclusive voltar ao mesmo URL).
+  useEffect(() => {
+    if (ctx.patientId) refreshHubState();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.key]);
 
   // Cronômetro vivo
   useEffect(() => {
