@@ -43,6 +43,7 @@ import { DischargeDocumentForm } from "@/components/DischargeDocumentForm";
 import { useDepartment } from "@/contexts/DepartmentContext";
 import { DischargeConfirmDialog } from "@/components/DischargeConfirmDialog";
 import { MovementConfirmDialog, type MovementConsequence, type MovementSummaryItem } from "@/components/MovementConfirmDialog";
+import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
 import {
   type DischargeDocType,
   type DischargeDocPayload,
@@ -120,6 +121,10 @@ export function MovimentacaoForm({
   const [docComplete, setDocComplete] = useState(false);
   const [signerProfile, setSignerProfile] = useState<{ name: string; crm: string }>({ name: "", crm: "" });
   const [confirmOpen, setConfirmOpen] = useState(false);
+  // Confirmacao por SENHA obrigatoria para TODA sinalizacao (transferencia
+  // interna/externa, alta, obito, evasao): o confirm didatico abre a senha, e so
+  // apos a senha valida a escrita (handleSubmit) acontece.
+  const [askPassword, setAskPassword] = useState(false);
   // Pop-up didático pós-confirmação — pedido do gestor 16/07/2026: depois de
   // sinalizar, o usuário precisa saber (de forma resumida e visual) que
   // existe o fluxo de suspensão, que o Mapa de Leitos já mostra a marcação,
@@ -244,6 +249,7 @@ export function MovimentacaoForm({
 
   const handleClose = () => {
     resetWizard();
+    setAskPassword(false);
     onClose();
   };
 
@@ -295,6 +301,13 @@ export function MovimentacaoForm({
     }
     // Sempre abrir o popup — a validação visual e o bloqueio acontecem dentro dele
     setConfirmOpen(true);
+  };
+
+  // O confirm didatico (checklist/transferencia) aprova -> exige senha antes de
+  // gravar. handleSubmit so roda apos a senha validar.
+  const handlePasswordGate = () => {
+    setConfirmOpen(false);
+    setAskPassword(true);
   };
 
   const handleSubmit = async () => {
@@ -946,7 +959,7 @@ export function MovimentacaoForm({
         <DischargeConfirmDialog
           open={confirmOpen}
           onOpenChange={(o) => !isSubmitting && setConfirmOpen(o)}
-          onConfirm={handleSubmit}
+          onConfirm={handlePasswordGate}
           isSubmitting={isSubmitting}
           docType={requiredDocType}
           payload={docPayload}
@@ -965,7 +978,7 @@ export function MovimentacaoForm({
         <MovementConfirmDialog
           open={confirmOpen}
           onOpenChange={(o) => !isSubmitting && setConfirmOpen(o)}
-          onConfirm={handleSubmit}
+          onConfirm={handlePasswordGate}
           isSubmitting={isSubmitting}
           tone={subtypeDef.id === "EVASAO" ? "destructive" : "primary"}
           title={
@@ -1031,6 +1044,16 @@ export function MovimentacaoForm({
           finalNote={<>Se sinalizar por engano, dá pra <strong className="text-foreground">suspender essa sinalização</strong> depois, direto no Cockpit do paciente (com senha e motivo) — confira os dados antes de confirmar mesmo assim.</>}
         />
       )}
+
+      {/* Confirmacao por SENHA — obrigatoria para TODA sinalizacao. Abre depois
+          do confirm didatico; so apos a senha validar, handleSubmit grava. */}
+      <PasswordConfirmDialog
+        open={askPassword}
+        onOpenChange={(o) => { if (!isSubmitting) setAskPassword(o); }}
+        title="Confirmar sinalização com senha"
+        description="Digite sua senha para confirmar a sinalização."
+        onConfirmed={async () => { setAskPassword(false); await handleSubmit(); }}
+      />
 
     {/* Pop-up didático pós-confirmação — resume o que foi sinalizado e
         explica os 4 pontos que o usuário precisa saber: existe fluxo de
