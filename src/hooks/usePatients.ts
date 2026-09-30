@@ -9,7 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { isExtraBed } from "@/utils/bedNaming";
 import { formatAge } from "@/lib/patientAge";
 import { normalizePatientName } from "@/utils/normalizePatientName";
-import { resolveSectorCode } from "@/config/sectorCoverage";
+import { resolveSectorCode, bedBelongsToSector } from "@/config/sectorCoverage";
 import { ADMISSION_STATUS } from "@/lib/admissionStatus";
 import { fetchPendingInternalTransferInternacaoIds } from "@/lib/internalTransfer";
 
@@ -167,18 +167,14 @@ export function usePatients(department?: Department, sector?: string) {
       // setores.nome (best-effort — não há coluna department no schema novo).
       if (sector) {
         // `sector` pode chegar como código ("blue") OU como nome do banco
-        // ("UCI 1"). Casamos por tipo, por nome, ou pelo código canônico
-        // resolvido a partir do nome do setor — assim o filtro funciona nos dois
-        // formatos (antes só casava tipo/nome literais e esvaziava os setores).
-        const wantedCode = resolveSectorCode(sector) ?? sector;
-        rows = rows.filter((r) => {
-          const rowCode = resolveSectorCode(r.setor?.nome) ?? r.setor?.tipo;
-          return (
-            r.setor?.tipo === sector ||
-            r.setor?.nome === sector ||
-            rowCode === wantedCode
-          );
-        });
+        // ("UCI 1"). O casamento e por IDENTIDADE de setor (nome real ou codigo
+        // canonico resolvido do nome) — NUNCA por setores.tipo quando o pedido
+        // e uma CLASSIFICACAO (clinico/cirurgico). Casar por tipo era o "escape
+        // para o setor clinico": um valor de tipo poluido em selected_sector
+        // fundia os leitos de TODOS os setores clinicos numa grade fantasma
+        // (L01 repetido). Setor que nao resolve para um setor real casa NADA e o
+        // mapa fica vazio, em vez de inventar leitos. Ver bedBelongsToSector.
+        rows = rows.filter((r) => bedBelongsToSector(r.setor, sector));
       } else if (department) {
         rows = rows.filter((r) => r.setor?.nome === department);
       }

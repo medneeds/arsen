@@ -42,6 +42,7 @@
  *    de sinalizações. Ver docs/sql-cadeado-setores-dessincronizado.md.
  */
 import { SECTOR_DISPLAY, DEPARTMENT_TO_SECTOR } from "@/contexts/DepartmentContext";
+import { isSectorType } from "@/types/patient";
 
 /** Grau de cobertura da plataforma sobre o setor. */
 export type SectorCoverageLevel = "clinical" | "tracking" | "out";
@@ -177,6 +178,53 @@ export function resolveSectorCode(value: string | null | undefined): string | un
     if (norm(dep) === alvo) return code;
   }
   return undefined;
+}
+
+/**
+ * O leito, identificado pelo SETOR do banco a que pertence (nome + tipo),
+ * casa com o setor PEDIDO no filtro do mapa de leitos?
+ *
+ * Casamento por IDENTIDADE de setor: o nome real gravado no banco, ou o codigo
+ * canonico resolvido a partir do nome. NUNCA por `setores.tipo` quando o valor
+ * pedido e uma CLASSIFICACAO (ex.: 'clinico'/'cirurgico').
+ *
+ * `setores.tipo` e uma classificacao COMPARTILHADA por varios setores, nao a
+ * identidade de um setor. Casar o filtro por ela transformava um valor de tipo
+ * poluido em `selected_sector` numa GRADE FANTASMA — dezenas de leitos de
+ * setores distintos (todos os "clinico") fundidos numa unica tela, com L01
+ * repetido N vezes. Este e exatamente o "escape para o setor clinico".
+ *
+ * Regra de seguranca: um pedido que NAO resolve para um setor real (nem nome do
+ * banco, nem codigo valido) casa NADA — o mapa fica vazio em vez de inventar
+ * leitos. `tipo` so participa quando o proprio pedido e um SectorType valido
+ * (nunca uma classificacao), para preservar bases legadas em que `tipo` guarda
+ * o codigo do setor.
+ */
+export function bedBelongsToSector(
+  setor: { nome?: string | null; tipo?: string | null } | null | undefined,
+  requested: string | null | undefined,
+): boolean {
+  if (!requested) return false;
+  const req = requested.trim();
+  if (!req) return false;
+
+  const rowName = setor?.nome ?? null;
+  const rowTipo = setor?.tipo ?? null;
+
+  // 1) Nome real do setor do banco — forma canonica de identidade.
+  if (rowName != null && rowName === req) return true;
+
+  // 2) setores.tipo SO quando o pedido e um codigo de setor VALIDO (SectorType).
+  //    'clinico'/'cirurgico' nao sao SectorType, entao nunca entram por aqui.
+  if (isSectorType(req) && rowTipo != null && rowTipo === req) return true;
+
+  // 3) Codigo canonico resolvido dos DOIS lados. Fallback a tipo apenas quando
+  //    tipo e um codigo valido (nunca uma classificacao). Pedido irresolvivel
+  //    (wantedCode indefinido) nao casa nada.
+  const wantedCode = resolveSectorCode(req) ?? (isSectorType(req) ? req : undefined);
+  if (wantedCode == null) return false;
+  const rowCode = resolveSectorCode(rowName) ?? (isSectorType(rowTipo) ? rowTipo : undefined);
+  return rowCode != null && rowCode === wantedCode;
 }
 
 /** O destino pertence ao bloco de alta complexidade (UTI/UCI)? */
