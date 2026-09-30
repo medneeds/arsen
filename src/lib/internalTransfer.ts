@@ -229,20 +229,24 @@ export async function completeInternalTransfer(
     if (srcErr) throw srcErr;
     const src = srcInt as { id: string; leito_id: string | null; data_alta: string | null } | null;
     if (!src) return { ok: false, error: "Internação de origem não encontrada. A fila pode estar desatualizada." };
-    if (src.data_alta != null) {
-      return { ok: false, error: "A internação de origem já foi encerrada — não é mais transferência interna." };
-    }
+    // Origem encerrada (data_alta setado)? Isso acontece quando alguem desaloca o
+    // leito de origem (releaseBedPreAdmission fecha a internacao) ANTES de concluir
+    // a transferencia. Como esta funcao SO e chamada pela fila de transferencia
+    // interna pendente, a intencao de transferir e inequivoca — em vez de travar,
+    // REABRIMOS a internacao (data_alta = null) e movemos. Assim o desalocar
+    // prematuro do leito de origem nao deixa o paciente preso.
     const originLeitoId = src.leito_id;
 
-    // 3) Move a internação para o leito/setor de destino e reativa o status
-    //    (sai de INTERNAL_TRANSFER_PENDING — relocação efetivada). O histórico
-    //    inteiro acompanha por ancorar em internacao_id.
+    // 3) Move a internação para o leito/setor de destino, reativa o status e
+    //    REABRE (data_alta null) se tiver sido encerrada. O histórico inteiro
+    //    acompanha por ancorar em internacao_id.
     const { error: moveErr } = await supabase
       .from("internacoes")
       .update({
         leito_id: targetBedRow.id,
         setor_classificacao_id: dest.setor_id,
         status: "ativa",
+        data_alta: null,
       })
       .eq("id", sourceInternacaoId);
     if (moveErr) throw moveErr;
