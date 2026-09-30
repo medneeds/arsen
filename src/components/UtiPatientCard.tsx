@@ -932,7 +932,7 @@ export function UtiPatientCard({
                   >
                     <span className="text-xs">{admissionLabel}:</span>
                     <span className="text-xs font-medium w-20 truncate">
-                      {patient.utiAdmissionDate?.[0] || "—"}
+                      {formatDateBR(patient.utiAdmissionDate?.[0])}
                     </span>
                   </div>
 

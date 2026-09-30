@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
+import { formatDateBR } from "@/utils/dateUtils";
 import { ADMISSION_STATUS } from "@/lib/admissionStatus";
 import { useQueryClient } from "@tanstack/react-query";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -1172,7 +1173,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
               <CockpitSection icon={TrendingUp} title="Previsão de alta">
                 <div className="text-xs text-foreground preserve-case">
                   {patient.utiDischargePrediction && patient.utiDischargePrediction.length > 0
-                    ? patient.utiDischargePrediction.join(" • ")
+                    ? patient.utiDischargePrediction.map(formatDateBR).join(" • ")
                     : <EmptyMsg>Sem previsão definida.</EmptyMsg>}
                 </div>
               </CockpitSection>

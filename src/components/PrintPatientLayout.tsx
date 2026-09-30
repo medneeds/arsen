@@ -1,4 +1,5 @@
 import { Patient } from "@/types/patient";
+import { formatDateBR } from "@/utils/dateUtils";
 import { formatAgeDisplay } from "@/utils/ageDisplay";
 import { whitelabel, getConfidentialityFooter } from "@/config/whitelabel";
 import { getSectorDisplayLabel } from "@/utils/bedNaming";
@@ -255,13 +256,13 @@ export function PrintPatientLayout({ patient }: PrintPatientLayoutProps) {
             {patient.utiAdmissionDate?.[0] && (
               <div>
                 <span style={{ color: '#6b7280', fontWeight: '600' }}>Admissão UTI: </span>
-                <span style={{ color: '#111827' }}>{patient.utiAdmissionDate[0]}</span>
+                <span style={{ color: '#111827' }}>{formatDateBR(patient.utiAdmissionDate[0])}</span>
               </div>
             )}
             {patient.utiDischargePrediction?.[0] && (
               <div>
                 <span style={{ color: '#6b7280', fontWeight: '600' }}>Previsão Alta: </span>
-                <span style={{ color: '#111827' }}>{patient.utiDischargePrediction[0]}</span>
+                <span style={{ color: '#111827' }}>{formatDateBR(patient.utiDischargePrediction[0])}</span>
               </div>
             )}
           </div>
