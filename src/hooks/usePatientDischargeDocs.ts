@@ -37,7 +37,12 @@ export function usePatientDischargeDocs(patientId?: string | null, patientName?:
         .order("data_hora", { ascending: false })
         .limit(10);
       if (error) throw error;
-      return (data ?? []).map((r: any): DischargeDocRow => {
+      return (data ?? [])
+        // Documento SUSPENSO deixa de valer (a suspensao marca conteudo.suspended,
+        // pois altas nao tem coluna de status). Sem isto, a tarja de alta/obito
+        // continuava no cockpit mesmo apos suspender.
+        .filter((r: any) => !((r.conteudo ?? {}) as { suspended?: boolean }).suspended)
+        .map((r: any): DischargeDocRow => {
         const conteudo = (r.conteudo ?? {}) as DischargeDocPayload;
         return {
           id: r.id,

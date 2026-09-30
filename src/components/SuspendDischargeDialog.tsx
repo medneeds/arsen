@@ -65,14 +65,74 @@ export function SuspendDischargeDialog({
     if (submitting) return; // guard de reentrada — duplo clique/Enter antes do re-render (auditoria 22/07/2026)
     setSubmitting(true);
     try {
-      // MIGRAÇÃO: RPC custom não tipada no schema novo → via (supabase.rpc as any).
-      // A suspensão do documento de alta/óbito continua sendo responsabilidade da RPC
-      // (que reabre a internação e cancela a movimentação vinculada no backend).
-      const { error } = await (supabase.rpc as any)("suspend_discharge_document", {
-        p_doc_id: docId,
-        p_reason: reason.trim(),
-      });
-      if (error) throw error;
+      // ESCRITA DIRETA: o RPC suspend_discharge_document NAO existe no schema novo
+      // (404 "Could not find the function") — mesma situacao da alocacao. Reproduz
+      // o efeito pretendido em escrita direta: (1) marca o doc como suspenso dentro
+      // de conteudo (altas nao tem coluna de status; o doc fica preservado no
+      // historico), (2) reabre a internacao (status='ativa') e garante o leito
+      // 'ocupado' (o trigger sync_status_leito nao reverte ao voltar p/ ativa),
+      // (3) registra a auditoria da suspensao. usePatientDischargeDocs filtra
+      // docs com conteudo.suspended, entao a tarja some do cockpit.
+      const { data: doc, error: readErr } = await supabase
+        .from("altas")
+        .select("id, internacao_id, conteudo, tipo")
+        .eq("id", docId)
+        .maybeSingle();
+      if (readErr) throw readErr;
+      if (!doc) throw new Error("doc_not_found");
+      const conteudoAtual = (doc.conteudo ?? {}) as Record<string, unknown>;
+      if (conteudoAtual.suspended) throw new Error("already_suspended");
+
+      const nowIso = new Date().toISOString();
+      const { data: authData } = await supabase.auth.getUser();
+      const suspendedBy = authData?.user?.id ?? null;
+
+      // 1) marca o doc como suspenso (preserva o original)
+      const { error: updDocErr } = await supabase
+        .from("altas")
+        .update({
+          conteudo: {
+            ...conteudoAtual,
+            suspended: true,
+            suspended_at: nowIso,
+            suspension_reason: reason.trim(),
+            suspended_by: suspendedBy,
+          },
+        } as never)
+        .eq("id", docId);
+      if (updDocErr) throw updDocErr;
+
+      // 2) reabre a internacao e mantem o leito ocupado (o paciente segue no leito)
+      const internacaoId = doc.internacao_id;
+      if (internacaoId) {
+        const { error: updIntErr } = await supabase
+          .from("internacoes")
+          .update({ status: "ativa" } as never)
+          .eq("id", internacaoId);
+        if (updIntErr) throw updIntErr;
+        const { data: inter } = await supabase
+          .from("internacoes")
+          .select("leito_id")
+          .eq("id", internacaoId)
+          .maybeSingle();
+        const leitoId = (inter as { leito_id?: string } | null)?.leito_id ?? null;
+        if (leitoId) {
+          await supabase.from("leitos").update({ status: "ocupado" } as never).eq("id", leitoId);
+        }
+      }
+
+      // 3) auditoria da suspensao
+      await supabase.from("logs_auditoria").insert({
+        tipo_evento: doc.tipo === "obito" ? "suspensao_obito" : "suspensao_alta",
+        acao: "UPDATE",
+        nome_tabela: "altas",
+        internacao_id: internacaoId,
+        registro_id: docId,
+        ator_user_id: suspendedBy,
+        motivo: reason.trim(),
+        dados_novos: { suspended: true, doc_tipo: doc.tipo } as never,
+      } as never);
+
       await qc.invalidateQueries({ queryKey: ["discharge-docs"] });
       await qc.invalidateQueries({ queryKey: ["patient-movements"] });
       await qc.invalidateQueries({ queryKey: ["patients"] });
