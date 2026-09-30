@@ -228,6 +228,16 @@ export default function PacienteHubPage() {
     ctx.initialAdmissionStatus ?? null
   );
 
+  // Sinalizacao do card do grid — SEPARADO do admissionStatus (que governa o
+  // gating de modulos e nao pode virar obito/transf e travar a tela). Transf
+  // INTERNA vem de logs_auditoria (o status fica 'ativa' por design); SAIDAS
+  // (alta/obito/transf externa) vem de internacoes.status. Destino da transf
+  // interna vem do dados_novos do evento de sinalizacao.
+  const [signalingKind, setSignalingKind] = useState<
+    "transfer_internal" | "transfer_external" | "discharge" | "death" | null
+  >(null);
+  const [signalingDestination, setSignalingDestination] = useState<string | null>(null);
+
   /**
    * Estado de sinalizacao do paciente, para o card refletir a realidade em vez
    * de ser so um atalho. O card de Admissao ja faz isso ("Concluida"), e e o
@@ -240,15 +250,19 @@ export default function PacienteHubPage() {
    * o mesmo dado na mesma tela.
    */
   const signalState = (() => {
-    switch (admissionStatus) {
-      case "obito":
-        return { label: "Óbito sinalizado", tone: "danger" as const };
-      case "alta_dada":
-        return { label: "Alta sinalizada", tone: "info" as const };
-      case "transferencia_externa_pendente":
-        return { label: "Transf. externa", tone: "warn" as const };
-      case "transferencia_interna_pendente":
-        return { label: "Transf. interna", tone: "warn" as const };
+    switch (signalingKind) {
+      case "death":
+        return { label: "Saída · Óbito", tone: "danger" as const };
+      case "discharge":
+        return { label: "Saída · Alta", tone: "info" as const };
+      case "transfer_external":
+        return { label: "Saída · Transf. externa", tone: "warn" as const };
+      case "transfer_internal":
+        // Transferencia: seta (o icone do card ja e uma seta) + setor de destino.
+        return {
+          label: signalingDestination ? `→ ${signalingDestination}` : "Transf. interna",
+          tone: "warn" as const,
+        };
       default:
         return null;
     }
@@ -318,6 +332,36 @@ export default function PacienteHubPage() {
     }
 
     setAdmissionStatus(effectiveStatus);
+
+    // Sinalizacao do card: transf INTERNA pendente vem de logs_auditoria (o
+    // status fica 'ativa'); saidas vem de internacoes.status. Evento mais recente
+    // vence (sinalizacao = pendente; conclusao/cancelamento = saiu do pendente).
+    const { data: lastTr } = await supabase
+      .from("logs_auditoria")
+      .select("tipo_evento, dados_novos")
+      .eq("internacao_id", ctx.patientId)
+      .in("tipo_evento", [
+        "sinalizacao_transferencia_interna",
+        "conclusao_transferencia_interna",
+        "cancelamento_transferencia_interna",
+      ])
+      .order("criado_em", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const pendingInternal = lastTr?.tipo_evento === "sinalizacao_transferencia_interna";
+    if (pendingInternal) {
+      const dn = (lastTr?.dados_novos ?? {}) as { target_sector_label?: string; target_sector_code?: string };
+      setSignalingKind("transfer_internal");
+      setSignalingDestination(dn.target_sector_label ?? dn.target_sector_code ?? null);
+    } else if (row.status === "obito") {
+      setSignalingKind("death"); setSignalingDestination(null);
+    } else if (row.status === "alta") {
+      setSignalingKind("discharge"); setSignalingDestination(null);
+    } else if (row.status === "transferida") {
+      setSignalingKind("transfer_external"); setSignalingDestination(null);
+    } else {
+      setSignalingKind(null); setSignalingDestination(null);
+    }
 
     // SAPS 3 real (colunas status/pending_since aplicadas): a ficha pendura na
     // internacao (ctx.patientId = internacoes.id). Uma ficha por internacao.
