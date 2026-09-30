@@ -1368,7 +1368,7 @@ export default function Saps3Page() {
                       <li>Valores fora da faixa (GCS &gt; 15, idade negativa). O banco bloqueia e a mensagem agora aparece traduzida.</li>
                     </ul>
                   </div>
-                  <div className="rounded-md bg-white/70 border border-border p-3">
+                  <div className="rounded-md bg-muted/50 border border-border p-3">
                     <p className="font-medium flex items-center gap-2 mb-1"><Info className="h-3.5 w-3.5" /> Pré-admitir com SAPS pendente</p>
                     <p>Use quando os exames laboratoriais (gasometria, hemograma, creatinina, bilirrubina) ainda não chegaram. O paciente é alocado e um cronômetro fica ativo até a validação. Para essa via, basta nome + leito.</p>
                   </div>
@@ -1931,7 +1931,7 @@ export default function Saps3Page() {
                       <button
                         type="button"
                         onClick={() => { if (f.chave) abrirItem(f.chave); window.setTimeout(() => focusAnchor(f.anchor), 60); }}
-                        className="w-full text-left flex items-start gap-2 rounded-md border border-warning-border bg-white/70 px-3 py-2 hover:bg-warning-soft transition-colors"
+                        className="w-full text-left flex items-start gap-2 rounded-md border border-warning-border bg-card px-3 py-2 hover:bg-warning-soft transition-colors"
                       >
                         <XCircle className="h-3.5 w-3.5 text-warning-on-soft mt-1 shrink-0" />
                         <span className="flex-1 min-w-0">
