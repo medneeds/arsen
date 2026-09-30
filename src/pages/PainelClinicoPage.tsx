@@ -437,7 +437,9 @@ export default function PainelClinicoPage() {
                   return (
                     <TableRow
                       key={patient.id}
-                      className="cursor-pointer group hover:bg-accent/50 transition-colors"
+                      // Divisor entre pacientes discreto: borda sutil (40%) em vez
+                      // da linha cheia padrao do TableRow — leitura mais limpa.
+                      className="cursor-pointer group hover:bg-accent/50 transition-colors border-border/40"
                       onClick={() => goToPatientPanel(patient)}
                       title="Clique para abrir o atendimento • Use o olho para pré-visualizar"
                     >
