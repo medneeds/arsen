@@ -10,6 +10,7 @@ import { PatientCockpit } from "@/components/PatientCockpit";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { SapsView, type SapsRow } from "@/components/saps3/SapsView";
+import { AdmissaoReadOnlyView } from "@/components/admission/AdmissaoReadOnlyView";
 import { printSapsDocument } from "@/lib/printSaps";
 import { usePatientLive } from "@/hooks/usePatientLive";
 import type { Patient } from "@/types/patient";
@@ -115,6 +116,12 @@ export default function AdmissaoPage() {
   }, [patientId, activeTab]);
 
   const showSapsTab = requiresSaps || !!sapsRow;
+  // Admissao D0 ja concluida? Internacao ativa COM conteudo clinico (hipotese ou
+  // historia) = admissao registrada -> aba Admissao vira consulta read-only (nao
+  // reeditavel aqui). Sem isso, mostra o formulario editavel.
+  const admissionDone =
+    (livePatient?.internmentStatus as unknown as string | null) === "ativa" &&
+    (((livePatient?.diagnoses?.length ?? 0) > 0) || ((livePatient?.medicalHistory?.length ?? 0) > 0));
   const sapsValidada = sapsRow?.status === "validada";
   const openSapsFicha = () => {
     const qs = new URLSearchParams();
@@ -238,6 +245,12 @@ export default function AdmissaoPage() {
                   Nenhuma ficha SAPS 3 registrada para esta internação. Use "Preencher SAPS" para iniciar.
                 </p>
               )}
+            </div>
+          ) : admissionDone ? (
+            // Ja admitido: consulta READ-ONLY da D0 (nao reeditavel aqui).
+            <div className="rounded-lg border bg-card p-4">
+              <h2 className="mb-3 text-sm font-semibold tracking-tight text-foreground">Admissão (D0)</h2>
+              <AdmissaoReadOnlyView internacaoId={patientId} />
             </div>
           ) : (
             <div className="rounded-lg border bg-card overflow-hidden">
