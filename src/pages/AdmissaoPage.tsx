@@ -91,7 +91,10 @@ export default function AdmissaoPage() {
   // ─── Aba SAPS 3 dentro da Admissao (UTI 1/2, UCI 2) — visualizacao completa
   // read-only da ficha ja gravada + impressao apos validacao. A ficha e editada
   // na /saps3; aqui e consulta.
-  const [activeTab, setActiveTab] = useState<"admissao" | "saps">("admissao");
+  // Abre na aba SAPS quando o setor exige (SAPS vem antes da admissao no fluxo).
+  const [activeTab, setActiveTab] = useState<"admissao" | "saps">(
+    SAPS_SECTORS.includes(patientSector) ? "saps" : "admissao",
+  );
   const [sapsRow, setSapsRow] = useState<SapsRow | null>(null);
   const requiresSaps = SAPS_SECTORS.includes(patient.sector);
 
@@ -172,16 +175,8 @@ export default function AdmissaoPage() {
               exigem (UTI/UCI2) ou quando ja ha ficha. */}
           {showSapsTab && (
             <div className="mb-3 inline-flex rounded-lg border bg-muted/40 p-0.5 print:hidden">
-              <button
-                type="button"
-                onClick={() => setActiveTab("admissao")}
-                className={cn(
-                  "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
-                  activeTab === "admissao" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                <ClipboardCheck className="h-3.5 w-3.5" /> Admissão
-              </button>
+              {/* SAPS vem ANTES da Admissao — reflete a ordem do fluxo (SAPS 3 e
+                  preenchido/validado antes da admissao D0). */}
               <button
                 type="button"
                 onClick={() => setActiveTab("saps")}
@@ -194,6 +189,16 @@ export default function AdmissaoPage() {
                 {sapsRow?.status === "pendente" && (
                   <span className="ml-1 h-1.5 w-1.5 rounded-full bg-warning" title="SAPS pendente" />
                 )}
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("admissao")}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+                  activeTab === "admissao" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <ClipboardCheck className="h-3.5 w-3.5" /> Admissão
               </button>
             </div>
           )}
@@ -216,9 +221,14 @@ export default function AdmissaoPage() {
                       <Printer className="h-3.5 w-3.5 mr-1" /> Imprimir
                     </Button>
                   )}
-                  <Button size="sm" onClick={openSapsFicha}>
-                    {sapsValidada ? "Ver / editar ficha" : sapsRow ? "Validar ficha" : "Preencher SAPS"}
-                  </Button>
+                  {/* Ficha VALIDADA nao pode ser editada — so consulta (abaixo) e
+                      impressao. O botao de preencher/validar so aparece quando NAO
+                      esta validada. */}
+                  {!sapsValidada && (
+                    <Button size="sm" onClick={openSapsFicha}>
+                      {sapsRow ? "Validar ficha" : "Preencher SAPS"}
+                    </Button>
+                  )}
                 </div>
               </div>
               {sapsRow ? (

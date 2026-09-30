@@ -580,6 +580,16 @@ export default function Saps3Page() {
           return;
         }
 
+        // Regra: ficha SAPS 3 VALIDADA nao pode ser editada. Bloqueia a abertura
+        // no formulario editavel e manda para a consulta read-only (aba SAPS na
+        // Admissao / escore no painel).
+        if ((sapsRow as { status?: string }).status === "validada") {
+          toast.info("Ficha SAPS 3 já validada — não pode ser editada. Consulte pela aba SAPS na Admissão.");
+          const dest = patientIdParam || (sapsRow as { internacao_id?: string }).internacao_id;
+          navigate(dest ? `/paciente?patientId=${dest}` : "/painel-clinico");
+          return;
+        }
+
         const r: any = sapsRow;
         // MIGRAÇÃO: avaliacoes_saps3 não tem patient_name → nome vem do contexto.
         const namePref = patientNameFromContext || "";
