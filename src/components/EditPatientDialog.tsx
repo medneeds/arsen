@@ -24,12 +24,10 @@ import {
   Stethoscope,
   CalendarCheck,
   ArrowRightLeft,
-  UserCog,
   RefreshCw,
 } from "lucide-react";
 import { useDepartment } from "@/contexts/DepartmentContext";
 import { getSectorDisplayLabel } from "@/utils/bedNaming";
-import { MedicalResponsibilityDialog } from "./MedicalResponsibilityDialog";
 import { InternmentStatusDialog } from "./InternmentStatusDialog";
 import { AdmissionDateEditor } from "./AdmissionDateEditor";
 import { MedicalRecordEditDialog } from "./MedicalRecordEditDialog";
@@ -68,7 +66,6 @@ export function EditPatientDialog({
   const isUti = currentDepartment === "UTI";
 
   // Sub-dialog states
-  const [responsibilityOpen, setResponsibilityOpen] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
   const [recordEditOpen, setRecordEditOpen] = useState(false);
   const [operationalRelocOpen, setOperationalRelocOpen] = useState(false);
@@ -196,30 +193,6 @@ export function EditPatientDialog({
                 <div className="flex items-center gap-2 text-sm font-medium">
                   <ClipboardList className="h-4 w-4 text-primary" />
                   Dados Hospitalares
-                </div>
-
-                {/* Especialidades envolvidas */}
-                <div className="space-y-2">
-                  <Label className="text-xs font-medium flex items-center gap-2">
-                    <UserCog className="h-3.5 w-3.5 text-muted-foreground" />
-                    Especialidades Envolvidas
-                  </Label>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setResponsibilityOpen(true)}
-                    className="w-full h-9 justify-start text-xs"
-                  >
-                    {formData.medicalResponsibility?.type || (formData.medicalResponsibility?.specialties?.length ?? 0) > 0
-                      ? [
-                          formData.medicalResponsibility?.type?.toUpperCase(),
-                          (formData.medicalResponsibility?.specialties?.length ?? 0) > 0
-                            ? `${formData.medicalResponsibility!.specialties!.length} ${(formData.medicalResponsibility!.specialties!.length) === 1 ? 'especialidade' : 'especialidades'}`
-                            : null,
-                        ].filter(Boolean).join(" · ")
-                      : "Definir especialidades envolvidas"}
-                  </Button>
                 </div>
 
                 {/* Status clínico */}
@@ -375,17 +348,6 @@ export function EditPatientDialog({
       </Dialog>
 
       {/* Sub-dialogs */}
-      <MedicalResponsibilityDialog
-        open={responsibilityOpen}
-        onOpenChange={setResponsibilityOpen}
-        currentResponsibility={formData.medicalResponsibility}
-        sectorColor="primary"
-        onSave={(responsibility) => {
-          setFormData({ ...formData, medicalResponsibility: responsibility });
-          setResponsibilityOpen(false);
-        }}
-      />
-
       <InternmentStatusDialog
         isOpen={statusOpen}
         onClose={() => setStatusOpen(false)}

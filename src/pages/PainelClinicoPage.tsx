@@ -93,18 +93,6 @@ const getSectorColor = (sector: string) => {
   return map[sector] || "";
 };
 
-const RESPONSIBILITY_TYPE_LABEL: Record<string, string> = {
-  rotineiro: "Rotineiro", plantonista: "Plantonista", intercorrencista: "Intercorrencista",
-  lider: "Líder", porta: "Porta", conjunto: "Conjunto",
-  obstetra: "Obstetra", cirurgiao_geral: "Cirurgião Geral", traumatologista: "Traumatologista",
-};
-
-const getEspecialidadesInfo = (patient: Patient): { specialties: string[]; typeLabel: string | null } => {
-  const mr = patient.medicalResponsibility;
-  const specialties = mr?.specialties ?? [];
-  const typeLabel = mr?.type ? (RESPONSIBILITY_TYPE_LABEL[mr.type] ?? mr.type) : null;
-  return { specialties, typeLabel };
-};
 
 const getPrescriptionStatus = (status: TodaysPrescriptionStatus): { label: string; variant: "default" | "secondary" | "outline" | "destructive"; dotColor: string; pulsing: boolean } => {
   // Bolinha verde vinculada à VALIDAÇÃO — não à assinatura digital
@@ -417,7 +405,6 @@ export default function PainelClinicoPage() {
                   <TableHead className="w-28 text-center">Prescrição</TableHead>
                   <TableHead className="w-24 text-center hidden md:table-cell">Dias Int.</TableHead>
                   <TableHead className="w-36 hidden md:table-cell">Previsão Alta</TableHead>
-                  <TableHead className="w-44 hidden lg:table-cell">Especialidades Envolvidas</TableHead>
                   <TableHead className="w-20 text-center">Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -540,33 +527,6 @@ export default function PainelClinicoPage() {
                       </TableCell>
                       <TableCell>
                         <span className="text-xs text-muted-foreground">{getDischargeText(patient)}</span>
-                      </TableCell>
-                      <TableCell className="hidden lg:table-cell">
-                        {(() => {
-                          const { specialties, typeLabel } = getEspecialidadesInfo(patient);
-                          if (specialties.length === 0 && !typeLabel) {
-                            return <span className="text-xs text-muted-foreground">—</span>;
-                          }
-                          return (
-                            <div className="flex flex-col gap-1">
-                              {specialties.length > 0 && (
-                                <div className="flex flex-wrap gap-1">
-                                  {specialties.slice(0, 2).map(sp => (
-                                    <Badge key={sp} variant="outline" className="text-xs px-2 py-0 whitespace-nowrap font-normal">
-                                      {sp}
-                                    </Badge>
-                                  ))}
-                                  {specialties.length > 2 && (
-                                    <span className="text-xs text-primary">+{specialties.length - 2} mais</span>
-                                  )}
-                                </div>
-                              )}
-                              {typeLabel && (
-                                <span className="text-xs text-muted-foreground">{typeLabel}</span>
-                              )}
-                            </div>
-                          );
-                        })()}
                       </TableCell>
                       <TableCell className="text-center">
                         <Button
