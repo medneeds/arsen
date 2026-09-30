@@ -953,8 +953,8 @@ const RequisicaoUnificadaPage = () => {
           <div className="flex items-center gap-3 min-w-0 flex-1">
             {formPatientBed && (
               <div className="flex flex-col items-center justify-center h-12 w-12 rounded-lg bg-primary/15 border border-primary/20 shrink-0">
-                <span className="text-xs font-semibold uppercase tracking-wide text-primary/70 leading-none">Leito</span>
-                <span className="text-base font-semibold text-primary leading-tight mt-1">{formPatientBed}</span>
+                <span className="text-[9px] font-normal uppercase tracking-wide text-primary/60 leading-none">Leito</span>
+                <span className="text-xl font-bold text-primary leading-none mt-0.5">{formPatientBed}</span>
               </div>
             )}
             <div className="min-w-0">
