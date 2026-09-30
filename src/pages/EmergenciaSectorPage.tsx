@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { resolveSectorCode } from "@/config/sectorCoverage";
 import { MainLayout } from "@/components/MainLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -470,12 +471,11 @@ export default function EmergenciaSectorPage() {
             paciente:pacientes(nome_completo, nome_social, data_nascimento, prontuario)
           )
         `)
-        .eq("setor.tipo", activeSector)
         .eq("setor.ala.hospital_id", currentHospital.id);
 
       if (error) throw error;
 
-      const rows = (data as any[]) || [];
+      const rows = ((data as any[]) || []).filter((l: any) => resolveSectorCode(l.setor?.nome) === activeSector);
       const mapped: EmergencyPatient[] = rows.map((l: any) => {
         const internacoes = Array.isArray(l.internacoes) ? l.internacoes : [];
         const active = internacoes.find((i: any) => !i.data_alta) || null;

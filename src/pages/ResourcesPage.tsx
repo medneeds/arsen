@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { resolveSectorCode } from "@/config/sectorCoverage";
 import { Plus, FileText, Database, Import, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -100,7 +101,7 @@ const ResourcesPage = () => {
       .select(`
         id, historia_clinica, hipotese_diagnostica, data_alta,
         paciente:pacientes ( nome_completo, nome_social, data_nascimento ),
-        leito:leitos!inner ( numero, setor:setores!inner ( tipo, ala:alas!inner ( hospital_id ) ) )
+        leito:leitos!inner ( numero, setor:setores!inner ( tipo, nome, ala:alas!inner ( hospital_id ) ) )
       `) as any)
       .is("data_alta", null)
       .eq("leito.setor.ala.hospital_id", currentHospital.id);
@@ -117,7 +118,7 @@ const ResourcesPage = () => {
       id: r.id,
       name: (r.paciente?.nome_social || r.paciente?.nome_completo || "").toString(),
       bed_number: (r.leito?.numero ?? "").toString(),
-      sector: r.leito?.setor?.tipo ?? "",
+      sector: resolveSectorCode(r.leito?.setor?.nome) ?? r.leito?.setor?.nome ?? "",
       age: formatAge(r.paciente?.data_nascimento) || null,
       admission_history: r.historia_clinica ?? null,
       diagnoses: r.hipotese_diagnostica ?? null,

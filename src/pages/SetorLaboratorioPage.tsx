@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { resolveSectorCode } from "@/config/sectorCoverage";
 import { format, startOfDay, endOfDay, isWithinInterval, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -68,7 +69,7 @@ function normalizeSolicitacao(row: any): ExamRequest {
     internacao_id: row.internacao_id,
     patient_id: row.internacao_id,
     patient_name: paciente.nome_social || paciente.nome_completo || "",
-    patient_sector: internacao.setor?.tipo || null,
+    patient_sector: resolveSectorCode(internacao.setor?.nome) || null,
     patient_bed: internacao.leito?.numero || null,
     category: row.categoria,
     items: Array.isArray(row.itens) ? row.itens : [],

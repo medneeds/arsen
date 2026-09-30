@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
+import { resolveSectorCode } from "@/config/sectorCoverage";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Microscope, X, Eye } from "lucide-react";
@@ -88,7 +89,7 @@ export function CultureNotifications() {
         return {
           id: row.id,
           patient_name: paciente.nome_social || paciente.nome_completo || "",
-          patient_sector: internacao.setor?.tipo || "",
+          patient_sector: resolveSectorCode(internacao.setor?.nome) || "",
           patient_bed: internacao.leito?.numero || null,
           culture_type: row.tipo_cultura,
           microorganism: row.microorganismo,

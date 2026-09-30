@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { resolveSectorCode } from "@/config/sectorCoverage";
 import {
   Dialog,
   DialogContent,
@@ -88,7 +89,7 @@ export function OperationalRelocationDialog({
       // por hospital via setores→alas.hospital_id; `sector` vem de setores.tipo (código).
       const { data, error } = await (supabase
         .from("leitos")
-        .select("id, numero, status, setor:setores!inner(tipo, ala:alas!inner(hospital_id))") as any)
+        .select("id, numero, status, setor:setores!inner(tipo, nome, ala:alas!inner(hospital_id))") as any)
         .eq("setor.ala.hospital_id", currentHospital.id)
         .eq("status", "livre");
       if (cancelled) return;
@@ -98,7 +99,7 @@ export function OperationalRelocationDialog({
       const rows = ((data ?? []) as any[]).map((r: any) => ({
         id: r.id,
         bed_number: r.numero,
-        sector: r.setor?.tipo ?? "",
+        sector: resolveSectorCode(r.setor?.nome) ?? r.setor?.nome ?? "",
       }));
       setVacantBeds(rows);
       setLoading(false);

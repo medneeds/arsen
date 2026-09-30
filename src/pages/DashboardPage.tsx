@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { resolveSectorCode } from "@/config/sectorCoverage";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -193,6 +194,19 @@ const DashboardPage = () => {
   // setores.tipo guarda o código de setor (red/yellow/blue/...).
   const INT_JOIN = `id, data_entrada, data_alta, leito:leitos!inner ( setor:setores!inner ( tipo, ala:alas!inner ( hospital_id ) ) )`;
 
+  // setores.tipo é a classificação (clinico/cirurgico), NÃO o código do setor.
+  // Resolve os IDs dos setores do hospital cujo código (via nome real) == setor ativo,
+  // para filtrar por leito.setor_id no servidor (preserva as contagens head:true).
+  const getActiveSectorIds = async (hospitalId: string): Promise<string[]> => {
+    const { data } = await (supabase
+      .from("setores")
+      .select("id, nome, ala:alas!inner ( hospital_id )") as any)
+      .eq("ala.hospital_id", hospitalId);
+    return ((data as any[]) || [])
+      .filter((sx: any) => resolveSectorCode(sx.nome) === activeSector)
+      .map((sx: any) => sx.id as string);
+  };
+
   const fetchKPIs = async () => {
     if (!currentHospital) return;
     const hospitalId = currentHospital.id;
@@ -203,9 +217,9 @@ const DashboardPage = () => {
     const sectorConfig = SECTOR_BED_CONFIG[activeSector];
     const totalSectorBeds = sectorConfig?.maxRegularBeds || 0;
 
-    // Aplica o filtro hospital + setor sobre os embeds (cast por causa dos caminhos aninhados).
-    const scoped = (base: any) =>
-      base.eq("leito.setor.ala.hospital_id", hospitalId).eq("leito.setor.tipo", activeSector);
+    // Filtra por setor via IDs resolvidos (setores.tipo é clinico/cirurgico, não o código).
+    const sectorIds = await getActiveSectorIds(hospitalId);
+    const scoped = (base: any) => base.in("leito.setor_id", sectorIds);
 
     const [
       { data: activeForOcc },
@@ -276,8 +290,7 @@ const DashboardPage = () => {
       .from('solicitacoes_leito')
       .select('id, data_hora, status, setor_solicitado:setores!inner ( tipo, ala:alas!inner ( hospital_id ) )') as any)
       .eq('status', 'pendente')
-      .eq('setor_solicitado.ala.hospital_id', hospitalId)
-      .eq('setor_solicitado.tipo', activeSector)
+      .in('setor_solicitado_id', await getActiveSectorIds(hospitalId))
       .order('data_hora', { ascending: false })
       .limit(5);
 
@@ -308,8 +321,7 @@ const DashboardPage = () => {
     const { data: newAdmissions } = await (supabase
       .from('internacoes')
       .select(`id, data_entrada, paciente:pacientes ( nome_completo, nome_social ), leito:leitos!inner ( setor:setores!inner ( tipo, ala:alas!inner ( hospital_id ) ) )`) as any)
-      .eq('leito.setor.ala.hospital_id', hospitalId)
-      .eq('leito.setor.tipo', activeSector)
+      .in('leito.setor_id', await getActiveSectorIds(hospitalId))
       .gte('data_entrada', fortyEightHoursAgo.toISOString())
       .order('data_entrada', { ascending: false })
       .limit(10);
@@ -342,8 +354,7 @@ const DashboardPage = () => {
       .from('internacoes')
       .select(INT_JOIN) as any)
       .is('data_alta', null)
-      .eq('leito.setor.ala.hospital_id', hospitalId)
-      .eq('leito.setor.tipo', activeSector);
+      .in('leito.setor_id', await getActiveSectorIds(hospitalId));
 
     const occupied = ((data as any[]) || []).length;
     const sectorConfig = SECTOR_BED_CONFIG[activeSector];

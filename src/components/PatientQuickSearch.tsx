@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { resolveSectorCode } from "@/config/sectorCoverage";
 import { Search, Loader2, ArrowRight, BedDouble, UserSearch } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -103,7 +104,7 @@ export function PatientQuickSearch({ onIrParaSetor, onIrParaPaciente }: Props) {
         }).slice(0, 8);
         setResultados(
           filtrados.map((p: any) => {
-            const codigo = (p.leito?.setor?.tipo as string) ?? "";
+            const codigo = resolveSectorCode(p.leito?.setor?.nome) ?? (p.leito?.setor?.nome as string) ?? "";
             return {
               id: p.id as string,
               name: (p.paciente?.nome_completo as string) || "Sem nome",

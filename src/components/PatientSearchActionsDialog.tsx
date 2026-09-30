@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
+import { resolveSectorCode } from "@/config/sectorCoverage";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -218,7 +219,7 @@ export function PatientSearchActionsDialog({
         encounterCode: null,
         status: internacao.status,
         bedNumber: leito?.numero ?? null,
-        sectorCode: setor?.tipo ?? null,
+        sectorCode: resolveSectorCode(setor?.nome) ?? null,
         sectorLabel: setor?.nome ?? null,
         // MIGRAÇÃO: internacoes não tem admission_status.
         admissionStatus: null,

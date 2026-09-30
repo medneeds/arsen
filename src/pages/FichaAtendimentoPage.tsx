@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { resolveSectorCode } from "@/config/sectorCoverage";
 import { createPortal } from "react-dom";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
@@ -107,7 +108,7 @@ const FichaAtendimentoPage = () => {
 
         const inter = interRow as any;
         const pac = inter?.paciente || null;
-        const sectorCode: string = inter?.leito?.setor?.tipo || inter?.leito?.setor?.nome || "";
+        const sectorCode: string = resolveSectorCode(inter?.leito?.setor?.nome) || inter?.leito?.setor?.nome || "";
 
         if (pac) {
           pd.name = pac.nome_completo || patientName;

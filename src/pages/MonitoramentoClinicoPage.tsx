@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { resolveSectorCode } from "@/config/sectorCoverage";
 import { useSearchParams } from "react-router-dom";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -244,7 +245,7 @@ export default function MonitoramentoClinicoPage() {
         .select(`
           id, data_alta,
           paciente:pacientes ( nome_completo, nome_social ),
-          leito:leitos!inner ( numero, setor:setores!inner ( tipo, ala:alas!inner ( hospital_id ) ) )
+          leito:leitos!inner ( numero, setor:setores!inner ( tipo, nome, ala:alas!inner ( hospital_id ) ) )
         `) as any)
         .is("data_alta", null)
         .eq("leito.setor.ala.hospital_id", selectedUnit);
@@ -253,7 +254,7 @@ export default function MonitoramentoClinicoPage() {
         id: r.id,
         name: r.paciente?.nome_social || r.paciente?.nome_completo || "",
         bed_number: (r.leito?.numero ?? "").toString(),
-        sector: r.leito?.setor?.tipo ?? "",
+        sector: resolveSectorCode(r.leito?.setor?.nome) ?? r.leito?.setor?.nome ?? "",
       }));
       mapped.sort((a, b) => (a.bed_number || "").localeCompare(b.bed_number || "", undefined, { numeric: true }));
       setPatients(mapped);

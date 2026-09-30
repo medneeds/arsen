@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
+import { resolveSectorCode } from "@/config/sectorCoverage";
 import { ClipboardCheck, Search, Save, Printer, ChevronDown, ChevronRight, User, Calendar, BedDouble, Stethoscope, Target, MessageSquare, CheckCircle2, RefreshCw } from "lucide-react";
 import PrintableRound from "@/components/PrintableRound";
 import { Button } from "@/components/ui/button";
@@ -113,7 +114,7 @@ export default function RoundPage() {
       id: r.id,
       name: pac.nome_social || pac.nome_completo || "",
       // MIGRAÇÃO: `sector` usa setores.tipo (código de setor esperado por getSectorLabel).
-      sector: r.setor?.tipo || "",
+      sector: resolveSectorCode(r.setor?.nome) || r.setor?.nome || "",
       bed_number: r.leito?.numero || "",
       age: formatAge(pac.data_nascimento) || null,
       diagnoses: r.hipotese_diagnostica || null,

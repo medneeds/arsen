@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { resolveSectorCode } from "@/config/sectorCoverage";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -110,7 +111,7 @@ const CULTURE_SELECT = `id, tipo_cultura, data_coleta, resultado_texto, arquivos
   microorganismo, antibiograma, perfil_sensibilidade, status, lido_pelo_medico, criado_em, internacao_id,
   enviado:profissionais!resultados_cultura_enviado_por_fkey(nome),
   internacao:internacoes(id, paciente:pacientes(nome_completo, nome_social),
-    leito:leitos(numero), setor:setores(tipo))`;
+    leito:leitos(numero), setor:setores(tipo, nome))`;
 
 const mapInternacaoToBasic = (r: any): PatientBasic => {
   const pac = r.paciente || {};
@@ -118,7 +119,7 @@ const mapInternacaoToBasic = (r: any): PatientBasic => {
     id: r.id,
     name: pac.nome_social || pac.nome_completo || "",
     bed_number: r.leito?.numero || "",
-    sector: r.setor?.tipo || "",
+    sector: resolveSectorCode(r.setor?.nome) || "",
     age: formatAge(pac.data_nascimento) || null,
     diagnoses: r.hipotese_diagnostica || null,
     admission_date: r.data_entrada || null,
@@ -135,7 +136,7 @@ const mapCulture = (r: any): CultureResult => {
     id: r.id,
     patient_id: r.internacao_id ?? null,
     patient_name: pac.nome_social || pac.nome_completo || "",
-    patient_sector: inter.setor?.tipo || "",
+    patient_sector: resolveSectorCode(inter.setor?.nome) || "",
     patient_bed: inter.leito?.numero || null,
     culture_type: r.tipo_cultura,
     collection_date: r.data_coleta ?? null,
@@ -202,7 +203,7 @@ const CcihDashboardPage = () => {
           .select(`id, hipotese_diagnostica, data_entrada,
             paciente:pacientes(nome_completo, nome_social, data_nascimento),
             leito:leitos(numero),
-            setor:setores(tipo)`)
+            setor:setores(tipo, nome)`)
           .is("data_alta", null),
         supabase
           .from("resultados_cultura")

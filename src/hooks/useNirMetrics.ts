@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { getSectorCoverage, type SectorGroup, isHighComplexity } from "@/config/sectorCoverage";
+import { getSectorCoverage, resolveSectorCode, type SectorGroup, isHighComplexity } from "@/config/sectorCoverage";
 
 // Sectors classification heuristics — matches existing project structure
 /**
@@ -147,7 +147,7 @@ export function useNirMetrics(hospitalUnitId: string | undefined, filters: NirFi
       priority: r.prioridade ?? null,
       created_at: r.data_hora ?? r.criado_em,
       request_type: r.tipo_solicitacao,
-      origin_sector: r.internacao?.leito?.setor?.tipo ?? null,
+      origin_sector: resolveSectorCode(r.internacao?.leito?.setor?.nome) ?? null,
       destination_sector: r.unidade_destino ?? null,
       patient_name: nome,
       cid_primary: r.cid_primario ?? null,
@@ -232,7 +232,7 @@ export function useNirMetrics(hospitalUnitId: string | undefined, filters: NirFi
     const vacantByType = beds.reduce(
       (acc, b: any) => {
         if (b.status !== "livre") return acc;
-        const type = classifySector(b.sector_tipo);
+        const type = classifySector(resolveSectorCode(b.sector));
         acc[type] = (acc[type] || 0) + 1;
         return acc;
       },
@@ -259,7 +259,7 @@ export function useNirMetrics(hospitalUnitId: string | undefined, filters: NirFi
         sector,
         // Código taxonômico do setor — para a classificação de cobertura a
         // jusante (alta complexidade, sala vermelha); `sector` já é o nome real.
-        sectorTipo: v.tipo,
+        sectorTipo: resolveSectorCode(sector) ?? "",
         total: v.total,
         occupied: v.occupied,
         rate: v.total > 0 ? Math.round((v.occupied / v.total) * 100) : 0,

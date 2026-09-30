@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { resolveSectorCode } from "@/config/sectorCoverage";
 import { MainLayout } from "@/components/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -122,11 +123,7 @@ const ClinicalDashboardPage = () => {
             paciente:pacientes ( nome_completo, nome_social )
           `) as any)
           .is("data_alta", null)
-          .eq("leito.setor.ala.hospital_id", hospitalUnitId)
-          // Filtra o setor no servidor: antes vinham as internacoes ativas do
-          // hospital inteiro e o setor era recortado no navegador, atrasando a
-          // entrada em qualquer setor. O filtro local abaixo fica como rede.
-          .eq("leito.setor.tipo", activeSector),
+          .eq("leito.setor.ala.hospital_id", hospitalUnitId),
         (supabase
           .from("solicitacoes_leito")
           .select(`
@@ -148,10 +145,12 @@ const ClinicalDashboardPage = () => {
       const allInternacoes = (internacoesRes.data as any[]) || [];
       const bedRequests = (bedRequestsRes.data as any[]) || [];
 
-      // Filtra as internações ativas pelo setor ativo (setores.tipo guarda o código
-      // de setor — red/yellow/blue/...). Redundante com o filtro do servidor.
+      // Filtra as internações ativas pelo setor ativo. O código do setor é resolvido
+      // do NOME real (setores.nome), pois setores.tipo é a classificação
+      // clinico/cirurgico — não o código (red/yellow/blue/...). Filtro client-side:
+      // resolver o nome→código não é expressável no servidor (PostgREST).
       const internacoes = allInternacoes.filter(
-        (i) => i.leito?.setor?.tipo === activeSector,
+        (i) => resolveSectorCode(i.leito?.setor?.nome) === activeSector,
       );
 
       // Ocupação = internações ativas no setor. Total = capacidade FIXA (SECTOR_BED_CONFIG).

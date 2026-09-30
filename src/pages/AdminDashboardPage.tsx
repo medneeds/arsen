@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { resolveSectorCode } from "@/config/sectorCoverage";
 import { useSearchParams } from "react-router-dom";
 import { MainLayout } from "@/components/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -311,7 +312,7 @@ const AdminDashboardPage = () => {
         .from("internacoes")
         .select(`id, status, criado_em, paciente_id,
           paciente:pacientes(nome_completo, nome_social),
-          setor:setores(tipo)`)
+          setor:setores(tipo, nome)`)
         .order("criado_em", { ascending: false })
         .limit(20);
 
@@ -322,7 +323,7 @@ const AdminDashboardPage = () => {
           encounter_code: String(r.id).slice(0, 8),
           patient_name: r.paciente?.nome_social || r.paciente?.nome_completo || "",
           registry_id: r.paciente_id,
-          destination_sector: r.setor?.tipo || undefined,
+          destination_sector: resolveSectorCode(r.setor?.nome) || undefined,
           triage_status: undefined,
           status: r.status,
           created_at: r.criado_em,

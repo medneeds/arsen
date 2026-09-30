@@ -1,4 +1,5 @@
 import { useState, useEffect, forwardRef, useImperativeHandle, useRef, useCallback } from "react";
+import { resolveSectorCode } from "@/config/sectorCoverage";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useHospital } from "@/contexts/HospitalContext";
@@ -170,7 +171,7 @@ export const GlobalSearchDialog = forwardRef<GlobalSearchHandle, GlobalSearchDia
               id: row.id,
               name: pac.nome_social || pac.nome_completo || "",
               bed_number: leito?.numero || "",
-              sector: setor?.tipo || setor?.nome || "",
+              sector: resolveSectorCode(setor?.nome) || setor?.nome || "",
               // MIGRAÇÃO: internacoes não tem `department`.
               department: "",
               diagnoses: row.hipotese_diagnostica ?? null,
