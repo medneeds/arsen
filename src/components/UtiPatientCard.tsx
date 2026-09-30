@@ -833,21 +833,9 @@ export function UtiPatientCard({
             <div className="flex-1 p-2 space-y-2 min-w-0">
               {/* Row 1: Identification Header - Mobile optimized */}
               <div className="flex flex-wrap items-center gap-1 md:gap-2">
-                {/* Collapse/Expand Toggle Button */}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setIsCollapsed(!isCollapsed)}
-                  className="shrink-0 h-5 w-5 p-0 text-muted-foreground hover:text-foreground transition-colors"
-                  title={isCollapsed ? "Expandir subseções" : "Retrair subseções"}
-                >
-                  {isCollapsed ? (
-                    <ChevronRight className="h-4 w-4" />
-                  ) : (
-                    <ChevronDown className="h-4 w-4" />
-                  )}
-                </Button>
-                
+                {/* Seta de expandir/retrair REMOVIDA: sem a Row 2 (detalhamento
+                    clinico, migrado para a Passagem de Plantao) nao ha subsecoes
+                    para expandir. */}
                 {/* Bed Number - Compact (fixed by bed map allocation) */}
                 <div className={cn("shrink-0 px-2 py-1 rounded-md border", colors.bedBg)}>
                   <span
