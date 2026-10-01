@@ -1,4 +1,5 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Patient } from "@/types/patient";
 import { formatAge } from "@/lib/patientAge";
@@ -94,35 +95,42 @@ function rowToPatient(row: any): Patient {
 }
 
 export function usePatientLive(patientId: string | null) {
-  const [patient, setPatient] = useState<Patient | null>(null);
-  const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient();
 
-  const fetchOnce = useCallback(async () => {
-    if (!patientId) { setPatient(null); return; }
-    setLoading(true);
-    // Em paralelo: a internacao (dados do paciente), a fila de transferencia
-    // interna pendente (MESMA fonte do usePatients, para a tarja) e a entrada no
-    // setor atual (ultimo conclusao_transferencia_interna, para o TPS).
-    const [{ data, error }, pendingIds, sectorEntry] = await Promise.all([
-      supabase.from("internacoes").select(INTERNACAO_SELECT).eq("id", patientId).maybeSingle(),
-      fetchPendingInternalTransferInternacaoIds().catch(() => new Set<string>()),
-      (async (): Promise<string | null> => {
-        try {
-          const { data } = await supabase
-            .from("logs_auditoria")
-            .select("criado_em")
-            .eq("internacao_id", patientId)
-            .eq("tipo_evento", "conclusao_transferencia_interna")
-            .order("criado_em", { ascending: false })
-            .limit(1)
-            .maybeSingle();
-          return (data as { criado_em: string | null } | null)?.criado_em ?? null;
-        } catch {
-          return null;
-        }
-      })(),
-    ]);
-    if (!error && data) {
+  // PERFORMANCE: migrado de useState/useEffect para react-query. Agora os dados
+  // do paciente (identidade/leito/setor/status) ficam no cache compartilhado
+  // (queryKey por internacao_id), entao alternar entre modulos (Admissao ->
+  // Prescricao -> Evolucao...) REAPROVEITA o load em vez de buscar do zero a cada
+  // montagem. staleTime/gcTime vem do QueryClient (5min/30min). O realtime abaixo
+  // invalida a query quando a internacao/logs mudam, mantendo os dados frescos.
+  const query = useQuery({
+    queryKey: ["patient-live", patientId],
+    enabled: !!patientId,
+    queryFn: async (): Promise<Patient | null> => {
+      if (!patientId) return null;
+      // Em paralelo: a internacao (dados do paciente), a fila de transferencia
+      // interna pendente (MESMA fonte do usePatients, para a tarja) e a entrada no
+      // setor atual (ultimo conclusao_transferencia_interna, para o TPS).
+      const [{ data, error }, pendingIds, sectorEntry] = await Promise.all([
+        supabase.from("internacoes").select(INTERNACAO_SELECT).eq("id", patientId).maybeSingle(),
+        fetchPendingInternalTransferInternacaoIds().catch(() => new Set<string>()),
+        (async (): Promise<string | null> => {
+          try {
+            const { data } = await supabase
+              .from("logs_auditoria")
+              .select("criado_em")
+              .eq("internacao_id", patientId)
+              .eq("tipo_evento", "conclusao_transferencia_interna")
+              .order("criado_em", { ascending: false })
+              .limit(1)
+              .maybeSingle();
+            return (data as { criado_em: string | null } | null)?.criado_em ?? null;
+          } catch {
+            return null;
+          }
+        })(),
+      ]);
+      if (error || !data) return null;
       const p = rowToPatient(data);
       p.admissionStatus = deriveAdmissionStatus(
         // internmentStatus carrega, em runtime, o internacoes.status cru.
@@ -131,42 +139,34 @@ export function usePatientLive(patientId: string | null) {
       );
       // TPS: entrada no setor atual; fallback data_entrada (=admissionDate).
       p.sectorSince = sectorEntry ?? p.admissionDate ?? null;
-      setPatient(p);
-    }
-    setLoading(false);
-  }, [patientId]);
-
-  // 🔒 Reset imediato ao trocar de paciente — evita que dados stale do
-  // paciente anterior apareçam no cockpit/cabeçalho durante o fetch.
-  useEffect(() => {
-    setPatient(null);
-    setLoading(true);
-  }, [patientId]);
-
-  useEffect(() => { fetchOnce(); }, [fetchOnce]);
+      return p;
+    },
+  });
 
   useEffect(() => {
     if (!patientId) return;
     // MIGRAÇÃO: realtime em "internacoes" (antes "patients"), filtrando id=eq.<internacaoId>.
-    // O payload de realtime não traz os joins (paciente/leito/setor), então refazemos
-    // o fetch completo a cada evento para manter o view-model consistente.
+    // O payload nao traz os joins, entao invalidamos a query (refetch completo) a
+    // cada evento, mantendo o view-model consistente no cache compartilhado.
+    const invalidate = () => queryClient.invalidateQueries({ queryKey: ["patient-live", patientId] });
     const channel = supabase
       .channel(`patient-live-${patientId}`)
       .on("postgres_changes",
         { event: "*", schema: "public", table: "internacoes", filter: `id=eq.${patientId}` },
-        (payload) => {
-          if (payload.eventType === "DELETE") { setPatient(null); return; }
-          fetchOnce();
-        })
+        invalidate)
       // Tarja de transferencia interna vem de logs_auditoria (nao mexe em
       // internacoes.status), entao a sinalizacao/cancelamento so viraria ao vivo
-      // com este listener — mesma fonte do usePatients. Refaz o fetch completo.
+      // com este listener — mesma fonte do usePatients.
       .on("postgres_changes",
         { event: "*", schema: "public", table: "logs_auditoria", filter: `internacao_id=eq.${patientId}` },
-        () => { fetchOnce(); })
+        invalidate)
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [patientId, fetchOnce]);
+  }, [patientId, queryClient]);
 
-  return { patient, loading, refresh: fetchOnce };
+  return {
+    patient: query.data ?? null,
+    loading: query.isLoading,
+    refresh: async () => { await query.refetch(); },
+  };
 }

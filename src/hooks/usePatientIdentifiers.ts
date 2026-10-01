@@ -1,4 +1,5 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { detectUnidentified } from "@/lib/unidentifiedDetector";
 import { formatAge } from "@/lib/patientAge";
@@ -51,26 +52,18 @@ export function usePatientIdentifiers(
   patientName: string | null,
   hospitalUnitId: string | null,
 ): PatientIdentifiers {
-  const [state, setState] = useState<PatientIdentifiers>({
-    prontuario: null,
-    atendimento: null,
-    registry: null,
-    loading: false,
-  });
-
-  const [reloadTick, setReloadTick] = useState(0);
+  const queryClient = useQueryClient();
   const pacienteIdRef = useRef<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    if (!patientId && !patientName) {
-      setState({ prontuario: null, atendimento: null, registry: null, loading: false });
-      return;
-    }
-
-    const run = async () => {
-      setState((s) => ({ ...s, loading: true }));
-
+  // PERFORMANCE: migrado para react-query. A identidade do paciente (prontuario +
+  // registro permanente) fica no cache compartilhado (queryKey por internacao_id +
+  // nome), entao alternar entre modulos reaproveita o load. O realtime abaixo
+  // invalida a query quando a internacao/paciente muda.
+  type IdsData = Omit<PatientIdentifiers, "loading">;
+  const query = useQuery({
+    queryKey: ["patient-identifiers", patientId, patientName],
+    enabled: !!(patientId || patientName),
+    queryFn: async (): Promise<IdsData> => {
       let pacienteRow: any = null;
 
       // 1a) Via internação (patientId = internacoes.id) → pacientes
@@ -117,11 +110,9 @@ export function usePatientIdentifiers(
       // MIGRAÇÃO: patient_encounters não existe; degradado para null.
       const atendimento: string | null = null;
 
-      if (cancelled) return;
-
       pacienteIdRef.current = pacienteRow?.id || null;
 
-      setState({
+      return {
         prontuario,
         atendimento,
         registry: pacienteRow
@@ -150,39 +141,36 @@ export function usePatientIdentifiers(
               unidentifiedCode: null,
             }
           : null,
-        loading: false,
-      });
-    };
+      };
+    },
+  });
 
-    run().catch(() => {
-      if (!cancelled) setState((s) => ({ ...s, loading: false }));
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [patientId, patientName, hospitalUnitId, reloadTick]);
-
-  // Realtime: refaz a query quando muda a internação ou o paciente vinculado.
+  // Realtime: invalida a query quando muda a internação ou o paciente vinculado.
   // MIGRAÇÃO: canais de patients/medical_records/patient_encounters removidos
   // (tabelas mortas); agora ouvimos internacoes (id) e pacientes (id vinculado).
   useEffect(() => {
     if (!patientId) return;
-    const bump = () => setReloadTick((t) => t + 1);
+    const invalidate = () =>
+      queryClient.invalidateQueries({ queryKey: ["patient-identifiers", patientId, patientName] });
     const channel = supabase
       .channel(`patient-identifiers-${patientId}`)
       .on("postgres_changes",
         { event: "*", schema: "public", table: "internacoes", filter: `id=eq.${patientId}` },
-        bump)
+        invalidate)
       .on("postgres_changes",
         { event: "*", schema: "public", table: "pacientes" },
         (payload: any) => {
           const row = (payload.new || payload.old) as any;
-          if (row?.id && row.id === pacienteIdRef.current) bump();
+          if (row?.id && row.id === pacienteIdRef.current) invalidate();
         })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [patientId]);
+  }, [patientId, patientName, queryClient]);
 
-  return state;
+  return {
+    prontuario: query.data?.prontuario ?? null,
+    atendimento: query.data?.atendimento ?? null,
+    registry: query.data?.registry ?? null,
+    loading: query.isLoading,
+  };
 }
