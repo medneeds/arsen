@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { useHospital } from "@/contexts/HospitalContext";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -7,7 +8,7 @@ import {
   ArrowLeft, Search, Filter, Clock, User as UserIcon,
   Stethoscope, Pill, FlaskConical, Activity, BedDouble, FileText,
   Microscope, Truck, ClipboardEdit, Hospital, Loader2, Printer,
-  HeartPulse, Users, FileCheck
+  HeartPulse, Users, FileCheck, ChevronDown, CalendarDays, ClipboardList
 } from "lucide-react";
 import {
   usePatientTimeline,
@@ -21,8 +22,11 @@ import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { getSectorDisplayLabel } from "@/utils/bedNaming";
 import { PatientIdentityBar } from "@/components/PatientIdentityBar";
+import { SapsView, type SapsRow } from "@/components/saps3/SapsView";
+import { printSapsDocument } from "@/lib/printSaps";
 import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
@@ -68,6 +72,71 @@ const ICONS: Record<TimelineEventType, React.ElementType> = {
   receituario: FileText,
 };
 
+// Setores que exigem SAPS 3 (UTI 1 / UTI 2 / UCI 2) — mesmo criterio da
+// Admissao/alocacao. O codigo do setor vem de setores.nome.
+const SAPS_SECTORS = new Set(["red", "yellow", "outside"]);
+// Mesmo conjunto de colunas lido pela AdmissaoPage (+ internacao_id para o mapa).
+const SAPS_SELECT =
+  "id, internacao_id, status, pending_since, validado_em, escore_box1, escore_box2, escore_box3, escore_total, " +
+  "mortalidade_prevista, idade, dias_hospital_antes_uti, origem_admissao, comorbidades, admissao_planejada, " +
+  "motivo_admissao, motivo_admissao_detalhe, status_cirurgico, tipo_cirurgia, infeccao_na_admissao, " +
+  "escore_glasgow, fc_mais_alta, pas_mais_baixa, temperatura_mais_baixa, bilirrubina_mais_alta, " +
+  "creatinina_mais_alta, leucocitos, plaquetas_mais_baixas, ph_mais_baixo, relacao_pao2_fio2, ventilacao_mecanica, criado_em";
+
+// Blocos por categoria dentro de cada atendimento. A ordem aqui e a ordem de render.
+type BlockKey = "admissao" | "evolucoes" | "prescricoes" | "exames" | "movimentacoes" | "desfecho";
+const BLOCKS: { key: BlockKey; label: string; icon: React.ElementType }[] = [
+  { key: "admissao", label: "Admissao (D0)", icon: FileText },
+  { key: "evolucoes", label: "Evolucoes", icon: Stethoscope },
+  { key: "prescricoes", label: "Prescricoes", icon: Pill },
+  { key: "exames", label: "Requisicoes / Exames", icon: FlaskConical },
+  { key: "movimentacoes", label: "Movimentacoes", icon: Truck },
+  { key: "desfecho", label: "Desfecho / Documentos", icon: FileCheck },
+];
+// Cada tipo de evento cai em exatamente um bloco. Cobre todos os TimelineEventType
+// (mesmo os que a timeline atual nao gera) para o filtro por tipo nunca sumir com evento.
+const BLOCK_OF: Record<TimelineEventType, BlockKey> = {
+  pre_admission: "admissao",
+  encounter: "admissao",
+  admission_history: "admissao",
+  evolution: "evolucoes",
+  vital_signs: "evolucoes",
+  round: "evolucoes",
+  prescription: "prescricoes",
+  dispensation: "prescricoes",
+  dhd: "prescricoes",
+  exam_request: "exames",
+  culture_result: "exames",
+  movement: "movimentacoes",
+  conduct_change: "movimentacoes",
+  bed_status: "movimentacoes",
+  discharge_document: "desfecho",
+  documento_medico: "desfecho",
+  receituario: "desfecho",
+};
+
+interface EncounterRow {
+  id: string;
+  data_entrada: string;
+  data_alta: string | null;
+  status: string;
+  leito_id: string | null;
+  setor_classificacao_id: string | null;
+  setor?: { nome: string | null } | null;
+}
+
+// Desfecho do atendimento a partir de data_alta + status.
+function encounterOutcome(enc: EncounterRow): { label: string; active: boolean } {
+  const active = !enc.data_alta || enc.status === "ativa";
+  if (active) return { label: "Ativo", active: true };
+  switch (enc.status) {
+    case "obito": return { label: "Obito", active: false };
+    case "transferida": return { label: "Transf. externa", active: false };
+    case "alta": return { label: "Alta", active: false };
+    default: return { label: "Encerrado", active: false };
+  }
+}
+
 const ALLOWED_PROFILES = new Set([
   "admin",
   "medico",
@@ -93,26 +162,12 @@ export default function HistoricoPacientePage() {
     : null;
   let availableProfiles: string[] = [];
   try { availableProfiles = profilesRaw ? JSON.parse(profilesRaw) : []; } catch { /* ignore */ }
+  // Guarda de acesso (G9): calculada aqui, mas o render de "ACESSO RESTRITO" so
+  // acontece apos TODOS os hooks (abaixo), para nao violar as regras de hooks com
+  // um return adiantado. As queries ficam desabilitadas quando sem acesso, entao
+  // nenhum dado e buscado para quem nao pode ver.
   const hasAccess = ALLOWED_PROFILES.has(accessProfile)
     || availableProfiles.some((p) => ALLOWED_PROFILES.has(p));
-  if (!hasAccess) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-6">
-        <Card className="max-w-md p-6 text-center space-y-3">
-          <Hospital className="h-10 w-10 mx-auto text-muted-foreground" />
-          <h1 className="text-lg font-medium">ACESSO RESTRITO</h1>
-          <p className="text-sm text-muted-foreground">
-            O histórico longitudinal do prontuário é restrito a médicos, gestores e coordenações
-            (médica, enfermagem, multiprofissional).
-          </p>
-          <Button variant="outline" size="sm" onClick={() => navigate(-1)}>
-            <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
-          </Button>
-        </Card>
-      </div>
-    );
-  }
-
 
   const patientId = searchParams.get("patientId");
   const patientRegistryId = searchParams.get("patientRegistryId");
@@ -125,25 +180,115 @@ export default function HistoricoPacientePage() {
   const [fromDate, setFromDate] = useState<string>("");
   const [toDate, setToDate] = useState<string>("");
   const [printingId, setPrintingId] = useState<string | null>(null);
+  const [printingSaps, setPrintingSaps] = useState<string | null>(null);
 
+  // ── Resolucao da PESSOA (registry) ──
+  // A timeline multi-atendimento precisa de patientRegistryId (= pacientes.id).
+  // Prioriza o da URL; se ausente, resolve a partir do patientId (internacoes.id
+  // -> paciente_id). Enquanto resolve, registryResolving segura o loader.
+  const [resolvedRegistryId, setResolvedRegistryId] = useState<string | null>(patientRegistryId);
+  const [registryResolving, setRegistryResolving] = useState<boolean>(!patientRegistryId && !!patientId);
+  useEffect(() => {
+    if (!hasAccess) { setResolvedRegistryId(null); setRegistryResolving(false); return; }
+    if (patientRegistryId) { setResolvedRegistryId(patientRegistryId); setRegistryResolving(false); return; }
+    if (!patientId) { setResolvedRegistryId(null); setRegistryResolving(false); return; }
+    let cancel = false;
+    setRegistryResolving(true);
+    (async () => {
+      const { data } = await supabase
+        .from("internacoes")
+        .select("paciente_id")
+        .eq("id", patientId)
+        .maybeSingle();
+      if (!cancel) {
+        setResolvedRegistryId((data as { paciente_id: string | null } | null)?.paciente_id ?? null);
+        setRegistryResolving(false);
+      }
+    })();
+    return () => { cancel = true; };
+  }, [patientRegistryId, patientId, hasAccess]);
+
+  // Timeline da PESSOA: passa APENAS o registry (patientId null) para trazer os
+  // eventos de TODAS as internacoes. Os filtros continuam sendo aplicados pela
+  // propria hook, portanto `events` ja chega filtrado antes do agrupamento.
   const { data: events = [], isLoading } = usePatientTimeline({
-    patientRegistryId,
-    patientId,
+    patientRegistryId: resolvedRegistryId,
+    patientId: null,
     eventTypes: selectedTypes,
     fromDate: fromDate ? new Date(fromDate).toISOString() : undefined,
     toDate: toDate ? new Date(toDate + "T23:59:59").toISOString() : undefined,
     search,
   });
 
-  const grouped = useMemo(() => {
-    const map = new Map<string, TimelineEvent[]>();
-    events.forEach((e) => {
-      const day = format(new Date(e.event_at), "yyyy-MM-dd");
-      if (!map.has(day)) map.set(day, []);
-      map.get(day)!.push(e);
+  // Lista de ATENDIMENTOS (internacoes) da pessoa + rotulo do setor.
+  const { data: encounters = [] } = useQuery({
+    queryKey: ["historico-internacoes", resolvedRegistryId],
+    enabled: !!resolvedRegistryId,
+    queryFn: async (): Promise<EncounterRow[]> => {
+      const { data } = await supabase
+        .from("internacoes")
+        .select("id, data_entrada, data_alta, status, leito_id, setor_classificacao_id, setor:setores!internacoes_setor_classificacao_id_fkey(nome)")
+        .eq("paciente_id", resolvedRegistryId as string)
+        .order("data_entrada", { ascending: false });
+      return (data ?? []) as unknown as EncounterRow[];
+    },
+  });
+
+  const encounterIds = useMemo(() => encounters.map((e) => e.id), [encounters]);
+
+  // Fichas SAPS 3 por internacao (mapa internacao_id -> SapsRow). Prefere a validada.
+  const { data: sapsRows = [] } = useQuery({
+    queryKey: ["historico-saps", encounterIds],
+    enabled: encounterIds.length > 0,
+    queryFn: async (): Promise<(SapsRow & { internacao_id: string })[]> => {
+      const { data } = await supabase
+        .from("avaliacoes_saps3")
+        .select(SAPS_SELECT)
+        .in("internacao_id", encounterIds);
+      return (data ?? []) as unknown as (SapsRow & { internacao_id: string })[];
+    },
+  });
+
+  const sapsByEncounter = useMemo(() => {
+    const m = new Map<string, SapsRow>();
+    sapsRows.forEach((r) => {
+      const prev = m.get(r.internacao_id);
+      // Prefere validada; na duvida mantem a mais recente (criado_em).
+      if (!prev) { m.set(r.internacao_id, r); return; }
+      const prevValidada = prev.status === "validada";
+      const curValidada = r.status === "validada";
+      if (curValidada && !prevValidada) m.set(r.internacao_id, r);
     });
-    return Array.from(map.entries()).sort((a, b) => b[0].localeCompare(a[0]));
+    return m;
+  }, [sapsRows]);
+
+  // Eventos agrupados por atendimento (patient_id = internacao_id).
+  const eventsByEncounter = useMemo(() => {
+    const m = new Map<string, TimelineEvent[]>();
+    events.forEach((e) => {
+      const k = e.patient_id ?? "";
+      if (!m.has(k)) m.set(k, []);
+      m.get(k)!.push(e);
+    });
+    return m;
   }, [events]);
+
+  // Ordem de exibicao (ativo primeiro, depois recentes->antigos) + N sequencial
+  // (1 = mais antigo).
+  const orderedEncounters = useMemo(() => {
+    const byOldest = [...encounters].sort(
+      (a, b) => new Date(a.data_entrada).getTime() - new Date(b.data_entrada).getTime(),
+    );
+    const nMap = new Map<string, number>();
+    byOldest.forEach((e, i) => nMap.set(e.id, i + 1));
+    const display = [...encounters].sort((a, b) => {
+      const aActive = encounterOutcome(a).active;
+      const bActive = encounterOutcome(b).active;
+      if (aActive !== bActive) return aActive ? -1 : 1;
+      return new Date(b.data_entrada).getTime() - new Date(a.data_entrada).getTime();
+    });
+    return display.map((e) => ({ enc: e, n: nMap.get(e.id) ?? 0 }));
+  }, [encounters]);
 
   const counts = useMemo(() => {
     const c: Partial<Record<TimelineEventType, number>> = {};
@@ -487,6 +632,217 @@ export default function HistoricoPacientePage() {
     setPrintingId(null);
   };
 
+  // Impressao da ficha SAPS 3 (reusa o mesmo helper da Admissao).
+  const handlePrintSaps = (enc: EncounterRow, saps: SapsRow) => {
+    setPrintingSaps(enc.id);
+    try {
+      printSapsDocument(saps, {
+        patientName,
+        patientBed,
+        patientSector: getSectorDisplayLabel(enc.setor?.nome ?? patientSector ?? ""),
+        hospitalName: currentHospital?.name ?? null,
+      });
+    } finally {
+      setPrintingSaps(null);
+    }
+  };
+
+  // ── Render de um evento (reaproveita ICONS/LABELS/COLORS + botao de impressao) ──
+  const renderEventItem = (e: TimelineEvent) => {
+    const Icon = ICONS[e.event_type] ?? FileText;
+    return (
+      <div key={e.event_id} className="flex items-start gap-2 rounded-md border border-border/60 bg-background px-3 py-2 hover:bg-muted/40 transition-colors group">
+        <div className={cn(
+          "mt-0.5 h-6 w-6 shrink-0 rounded-full border flex items-center justify-center",
+          EVENT_TYPE_COLORS[e.event_type] ?? "border-border",
+        )}>
+          <Icon className="h-3 w-3" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Badge variant="outline" className={cn("h-5 text-xs", EVENT_TYPE_COLORS[e.event_type])}>
+              {EVENT_TYPE_LABELS[e.event_type]}
+            </Badge>
+            <span className="text-xs text-muted-foreground flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              {format(new Date(e.event_at), "dd/MM/yyyy HH:mm")}
+            </span>
+            {e.author_email && (
+              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                <UserIcon className="h-3 w-3" />
+                {e.author_email}
+              </span>
+            )}
+          </div>
+          {e.event_label && <p className="text-sm font-medium mt-1 break-words">{e.event_label}</p>}
+          {e.summary && <p className="text-xs text-muted-foreground mt-0.5 break-words">{e.summary}</p>}
+        </div>
+        {PRINTABLE_TYPES.has(e.event_type) && (
+          <button
+            onClick={() => printDocumentFromHistory(e)}
+            disabled={printingId === e.event_id}
+            className="print:hidden opacity-0 group-hover:opacity-100 transition-opacity shrink-0 p-2 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground disabled:opacity-50"
+            title="Imprimir documento"
+          >
+            {printingId === e.event_id
+              ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              : <Printer className="h-3.5 w-3.5" />}
+          </button>
+        )}
+      </div>
+    );
+  };
+
+  // ── Render de um bloco recolhivel dentro de um atendimento ──
+  const renderBlock = (
+    block: { key: BlockKey; label: string; icon: React.ElementType },
+    blockEvents: TimelineEvent[],
+    extra: React.ReactNode | null,
+    defaultOpen: boolean,
+  ) => {
+    const count = blockEvents.length;
+    if (count === 0 && !extra) return null;
+    const BlockIcon = block.icon;
+    return (
+      <Collapsible key={block.key} defaultOpen={defaultOpen} className="rounded-lg border border-border/60 bg-muted/20">
+        <div className="flex items-center gap-1">
+          <CollapsibleTrigger className="flex flex-1 items-center gap-2 px-3 py-2 text-left [&[data-state=open]>svg.chev]:rotate-180">
+            <ChevronDown className="chev h-4 w-4 text-muted-foreground transition-transform shrink-0" />
+            <BlockIcon className="h-4 w-4 text-muted-foreground shrink-0" />
+            <span className="text-sm font-medium">{block.label}</span>
+            <Badge variant="secondary" className="h-5 text-xs">{count}</Badge>
+          </CollapsibleTrigger>
+          {count > 0 && (
+            <button
+              onClick={() => printEvents(blockEvents, block.label)}
+              className="print:hidden mr-2 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-md hover:bg-muted"
+              title={`Imprimir ${block.label}`}
+            >
+              <Printer className="h-3 w-3" />
+            </button>
+          )}
+        </div>
+        <CollapsibleContent>
+          <div className="space-y-1.5 px-3 pb-3 pt-1">
+            {extra}
+            {blockEvents.map(renderEventItem)}
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+    );
+  };
+
+  // ── Render de um atendimento inteiro (cabecalho + blocos) ──
+  const renderEncounter = (enc: EncounterRow, n: number) => {
+    const outcome = encounterOutcome(enc);
+    const encEvents = eventsByEncounter.get(enc.id) ?? [];
+    // Atendimento sem eventos apos filtro e ocultado — exceto o ativo (cabecalho).
+    if (encEvents.length === 0 && !outcome.active) return null;
+
+    const sectorCode = enc.setor?.nome ?? "";
+    const sectorLabel = getSectorDisplayLabel(sectorCode);
+    const saps = sapsByEncounter.get(enc.id) ?? null;
+    const dih = Math.max(0, Math.floor((Date.now() - new Date(enc.data_entrada).getTime()) / 86400000));
+
+    // Distribui os eventos em blocos.
+    const byBlock = new Map<BlockKey, TimelineEvent[]>();
+    encEvents.forEach((e) => {
+      const b = BLOCK_OF[e.event_type] ?? "evolucoes";
+      if (!byBlock.has(b)) byBlock.set(b, []);
+      byBlock.get(b)!.push(e);
+    });
+
+    const sapsExtra = saps ? (
+      <div className="rounded-md border border-border/60 bg-background p-3 space-y-3">
+        <div className="flex items-center gap-2">
+          <Activity className="h-4 w-4 text-primary" />
+          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Ficha SAPS 3</span>
+          <button
+            onClick={() => handlePrintSaps(enc, saps)}
+            disabled={printingSaps === enc.id}
+            className="print:hidden ml-auto flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-md hover:bg-muted disabled:opacity-50"
+            title="Ver/Imprimir ficha SAPS 3"
+          >
+            {printingSaps === enc.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Printer className="h-3 w-3" />}
+            Ver/Imprimir ficha SAPS
+          </button>
+        </div>
+        <SapsView row={saps} />
+      </div>
+    ) : null;
+
+    return (
+      <Card key={enc.id} className={cn("overflow-hidden", outcome.active && "border-primary/50 ring-1 ring-primary/20")}>
+        {outcome.active && (
+          <div className="bg-primary/10 text-primary px-4 py-1.5 text-xs font-semibold uppercase tracking-wide flex items-center gap-2">
+            <Activity className="h-3.5 w-3.5" /> Atendimento ativo
+          </div>
+        )}
+        <div className="px-4 py-3 border-b border-border/60">
+          <div className="flex items-center gap-2 flex-wrap">
+            <ClipboardList className="h-4 w-4 text-muted-foreground" />
+            <h2 className="text-sm font-semibold">Atendimento {n}</h2>
+            <Badge variant={outcome.active ? "default" : "secondary"} className="h-5 text-xs">
+              {outcome.active ? "Ativo" : `→ ${outcome.label}`}
+            </Badge>
+            {sectorLabel && (
+              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                <BedDouble className="h-3 w-3" /> {sectorLabel}
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
+            <span className="flex items-center gap-1">
+              <CalendarDays className="h-3 w-3" />
+              Admissao {format(new Date(enc.data_entrada), "dd/MM/yyyy 'as' HH:mm", { locale: ptBR })}
+            </span>
+            {!outcome.active && enc.data_alta && (
+              <span>{"→"} {outcome.label} em {format(new Date(enc.data_alta), "dd/MM/yyyy 'as' HH:mm", { locale: ptBR })}</span>
+            )}
+            {outcome.active && (
+              <Badge variant="outline" className="h-4 text-[10px]">DIH {dih}</Badge>
+            )}
+          </p>
+        </div>
+        <div className="p-3 space-y-2">
+          {BLOCKS.map((block) => {
+            const be = byBlock.get(block.key) ?? [];
+            const extra = block.key === "admissao" ? sapsExtra : null;
+            return renderBlock(block, be, extra, outcome.active && block.key === "admissao");
+          })}
+          {encEvents.length === 0 && outcome.active && !sapsExtra && (
+            <p className="text-xs text-muted-foreground px-1 py-2">
+              Nenhum evento para os filtros aplicados neste atendimento.
+            </p>
+          )}
+        </div>
+      </Card>
+    );
+  };
+
+  const visibleEncounters = orderedEncounters.filter(
+    ({ enc }) => (eventsByEncounter.get(enc.id)?.length ?? 0) > 0 || encounterOutcome(enc).active,
+  );
+
+  // Guarda de acesso (G9) — render apos todos os hooks.
+  if (!hasAccess) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-6">
+        <Card className="max-w-md p-6 text-center space-y-3">
+          <Hospital className="h-10 w-10 mx-auto text-muted-foreground" />
+          <h1 className="text-lg font-medium">ACESSO RESTRITO</h1>
+          <p className="text-sm text-muted-foreground">
+            O histórico longitudinal do prontuário é restrito a médicos, gestores e coordenações
+            (médica, enfermagem, multiprofissional).
+          </p>
+          <Button variant="outline" size="sm" onClick={() => navigate(-1)}>
+            <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
+          </Button>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -593,97 +949,21 @@ export default function HistoricoPacientePage() {
             </p>
           }
         />
-        {isLoading ? (
+        {(registryResolving || isLoading) ? (
           <SectionLoader
             message="Carregando histórico"
             subMessage="Buscando todos os registros longitudinais do paciente"
           />
-        ) : events.length === 0 ? (
+        ) : visibleEncounters.length === 0 ? (
           <Card className="p-8 text-center">
             <Clock className="h-10 w-10 mx-auto text-muted-foreground/40 mb-2" />
             <p className="text-sm text-muted-foreground">
-              Nenhum evento encontrado para os filtros aplicados.
+              Nenhum atendimento ou evento encontrado para os filtros aplicados.
             </p>
           </Card>
         ) : (
-          <div className="space-y-6 max-w-4xl mx-auto">
-            {grouped.map(([day, items]) => (
-              <div key={day}>
-                <div className="sticky top-[105px] z-[1] bg-background/95 backdrop-blur py-2 mb-2 border-b print:static">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                      {format(new Date(day + "T00:00:00"), "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
-                      <Badge variant="secondary" className="ml-2 h-4 text-xs">
-                        {items.length}
-                      </Badge>
-                    </h2>
-                    <button
-                      onClick={() => printEvents(
-                        items,
-                        format(new Date(day + "T00:00:00"), "EEEE, dd/MM/yyyy", { locale: ptBR })
-                      )}
-                      className="print:hidden flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-md hover:bg-muted"
-                      title="Imprimir registros deste dia"
-                    >
-                      <Printer className="h-3 w-3" />
-                      Imprimir dia
-                    </button>
-                  </div>
-                </div>
-                <div className="space-y-2 pl-2 border-l-2 border-border ml-2">
-                  {items.map((e) => {
-                    const Icon = ICONS[e.event_type] ?? FileText;
-                    return (
-                      <div key={e.event_id} className="relative pl-6">
-                        <div className={cn(
-                          "absolute -left-[13px] top-2 h-5 w-5 rounded-full border-2 bg-background flex items-center justify-center",
-                          EVENT_TYPE_COLORS[e.event_type]?.split(" ")[2] ?? "border-border"
-                        )}>
-                          <Icon className="h-2.5 w-2.5" />
-                        </div>
-                        <Card className="p-3 hover:shadow-sm transition-shadow-sm group">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <Badge variant="outline" className={cn("h-5 text-xs", EVENT_TYPE_COLORS[e.event_type])}>
-                                  {EVENT_TYPE_LABELS[e.event_type]}
-                                </Badge>
-                                <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                  <Clock className="h-3 w-3" />
-                                  {format(new Date(e.event_at), "HH:mm")}
-                                </span>
-                                {e.author_email && (
-                                  <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                    <UserIcon className="h-3 w-3" />
-                                    {e.author_email}
-                                  </span>
-                                )}
-                              </div>
-                              <p className="text-sm font-medium mt-1">{e.event_label}</p>
-                              {e.summary && (
-                                <p className="text-xs text-muted-foreground mt-1">{e.summary}</p>
-                              )}
-                            </div>
-                            {PRINTABLE_TYPES.has(e.event_type) && (
-                              <button
-                                onClick={() => printDocumentFromHistory(e)}
-                                disabled={printingId === e.event_id}
-                                className="print:hidden opacity-0 group-hover:opacity-100 transition-opacity shrink-0 p-2 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground disabled:opacity-50"
-                                title="Imprimir documento"
-                              >
-                                {printingId === e.event_id
-                                  ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                  : <Printer className="h-3.5 w-3.5" />}
-                              </button>
-                            )}
-                          </div>
-                        </Card>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
+          <div className="space-y-5 max-w-4xl mx-auto">
+            {visibleEncounters.map(({ enc, n }) => renderEncounter(enc, n))}
           </div>
         )}
       </div>
