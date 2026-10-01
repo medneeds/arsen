@@ -238,9 +238,22 @@ export function usePatients(department?: Department, sector?: string) {
       const exitDocsById = await exitDocsPromise;
       for (const p of sortedPatients) {
         if (p.isVacant) continue;
-        // TPS: entrada no setor atual = ultimo conclusao_transferencia_interna;
-        // fallback data_entrada (=admissionDate) para quem nunca transferiu.
-        p.sectorSince = sectorEntryById.get(p.id) ?? p.admissionDate ?? null;
+        // TPS: entrada no setor atual. Opcao X — a data MAIS RECENTE entre:
+        //  (a) ultimo evento de entrada de setor (conclusao_transferencia_interna/
+        //      conclusao_realocacao_setor), e
+        //  (b) data_admissao_uti (a "Admissao no setor" editavel na Edicao Avancada),
+        // com fallback data_entrada (admissao hospitalar) para quem nunca transferiu
+        // nem tem admissao de setor registrada. Assim, editar a admissao no setor
+        // reflete no TPS, e uma transferencia posterior tambem. (DIH continua
+        // ancorado em data_entrada, inalterado.)
+        {
+          const eventEntry = sectorEntryById.get(p.id) ?? null;
+          const utiAdm = p.utiAdmissionDate?.[0] ?? null;
+          const candidates = [eventEntry, utiAdm].filter(Boolean) as string[];
+          p.sectorSince = candidates.length
+            ? candidates.reduce((a, b) => (new Date(a).getTime() >= new Date(b).getTime() ? a : b))
+            : (p.admissionDate ?? null);
+        }
         if (pendingTransferIds.has(p.id)) {
           p.admissionStatus = ADMISSION_STATUS.INTERNAL_TRANSFER_PENDING;
           continue;
