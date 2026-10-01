@@ -881,7 +881,7 @@ export function UtiPatientCard({
                   {/* Classificação clínica (bola de gravidade) removida do mapa de leitos */}
 
                   {/* Pílula de desfecho sinalizado — informativa; ação somente pelo menu Movimentações */}
-                  <DischargeStatusRibbon status={patient.admissionStatus} />
+                  <DischargeStatusRibbon status={patient.admissionStatus} compact />
 
                   {/* Days in UTI - Fixed width for consistent alignment */}
                   {(() => {

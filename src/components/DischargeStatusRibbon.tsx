@@ -15,13 +15,27 @@ type DischargeStatus =
 interface DischargeStatusRibbonProps {
   status: DischargeStatus;
   className?: string;
+  /** Modo compacto para os cards do mapa/painel: rotulo abreviado e padding
+   *  menor, para nao espremer DIH/TPS. O texto completo continua no tooltip e na
+   *  aba de Movimentacoes. */
+  compact?: boolean;
 }
+
+// Rotulos abreviados para os cards (modo compact). O texto completo fica no
+// tooltip da pilula e na aba de Sinalizacoes/Movimentacoes.
+const SHORT_LABELS: Record<string, string> = {
+  alta_dada: "ALTA",
+  obito: "ÓBITO",
+  transferido: "TRANSF.",
+  transferencia_interna_pendente: "TRANSF. INT.",
+  transferencia_externa_pendente: "TRANSF. EXT.",
+};
 
 /**
  * Pílula INLINE de sinalização de desfecho (somente informativa).
  * A ação de desalocação é executada exclusivamente pelo menu "Movimentações" do card.
  */
-export function DischargeStatusRibbon({ status, className }: DischargeStatusRibbonProps) {
+export function DischargeStatusRibbon({ status, className, compact = false }: DischargeStatusRibbonProps) {
   const config = {
     alta_dada: {
       label: "ALTA SINALIZADA",
@@ -68,6 +82,7 @@ export function DischargeStatusRibbon({ status, className }: DischargeStatusRibb
   const entry = config[status as keyof typeof config];
   if (!entry) return null;
   const { Icon } = entry;
+  const labelText = compact ? (SHORT_LABELS[status as string] ?? entry.label) : entry.label;
 
   return (
     <TooltipProvider delayDuration={150}>
@@ -77,8 +92,9 @@ export function DischargeStatusRibbon({ status, className }: DischargeStatusRibb
             role="status"
             aria-label={entry.tooltipTitle}
             className={cn(
-              "group relative inline-flex items-center gap-2 rounded-full select-none",
-              "px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] leading-none",
+              "group relative inline-flex items-center rounded-full select-none",
+              compact ? "gap-1 px-2 py-0.5" : "gap-2 px-3 py-1",
+              "text-xs font-semibold uppercase tracking-[0.08em] leading-none",
               "shadow-sm transition-colors duration-200 ease-out cursor-help",
               entry.pill,
               "print:bg-white print:text-black print:ring-1 print:ring-ring print:shadow-none",
@@ -89,11 +105,13 @@ export function DischargeStatusRibbon({ status, className }: DischargeStatusRibb
               className="h-3.5 w-3.5 transition-transform duration-500 ease-in-out group-hover:rotate-6"
               strokeWidth={2.6}
             />
-            <span className="whitespace-nowrap">{entry.label}</span>
-            <Info
-              className="h-3 w-3 -ml-1 opacity-70 transition-opacity duration-300 group-hover:opacity-100 print:hidden"
-              strokeWidth={2.6}
-            />
+            <span className="whitespace-nowrap">{labelText}</span>
+            {!compact && (
+              <Info
+                className="h-3 w-3 -ml-1 opacity-70 transition-opacity duration-300 group-hover:opacity-100 print:hidden"
+                strokeWidth={2.6}
+              />
+            )}
           </span>
         </TooltipTrigger>
         <TooltipContent

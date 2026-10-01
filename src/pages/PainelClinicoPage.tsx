@@ -449,7 +449,7 @@ export default function PainelClinicoPage() {
                         </div>
                         {patient.admissionStatus && (
                           <div className="mt-1.5">
-                            <DischargeStatusRibbon status={patient.admissionStatus} />
+                            <DischargeStatusRibbon status={patient.admissionStatus} compact />
                           </div>
                         )}
                         {(days !== null || (saps && saps.status !== 'pendente')) && (
@@ -530,7 +530,7 @@ export default function PainelClinicoPage() {
                           </div>
                           {patient.admissionStatus && (
                             <div className="mt-1">
-                              <DischargeStatusRibbon status={patient.admissionStatus} />
+                              <DischargeStatusRibbon status={patient.admissionStatus} compact />
                             </div>
                           )}
                           {diagnoses.length > 0 && (
