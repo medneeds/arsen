@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { SapsView, type SapsRow } from "@/components/saps3/SapsView";
 import { AdmissaoReadOnlyView } from "@/components/admission/AdmissaoReadOnlyView";
+import Saps3Page from "@/pages/Saps3Page";
 import { printSapsDocument } from "@/lib/printSaps";
 import { usePatientLive } from "@/hooks/usePatientLive";
 import type { Patient } from "@/types/patient";
@@ -97,6 +98,8 @@ export default function AdmissaoPage() {
     SAPS_SECTORS.includes(patientSector) ? "saps" : "admissao",
   );
   const [sapsRow, setSapsRow] = useState<SapsRow | null>(null);
+  // Forca o refetch da sapsRow apos o embute salvar/validar (onEmbeddedDone).
+  const [sapsReloadTick, setSapsReloadTick] = useState(0);
   const requiresSaps = SAPS_SECTORS.includes(patient.sector);
 
   useEffect(() => {
@@ -113,7 +116,7 @@ export default function AdmissaoPage() {
       if (!cancel) setSapsRow((data as unknown as SapsRow) ?? null);
     })();
     return () => { cancel = true; };
-  }, [patientId, activeTab]);
+  }, [patientId, activeTab, sapsReloadTick]);
 
   const showSapsTab = requiresSaps || !!sapsRow;
   // Admissao D0 ja concluida? Internacao ativa COM conteudo clinico (hipotese ou
@@ -123,15 +126,6 @@ export default function AdmissaoPage() {
     (livePatient?.internmentStatus as unknown as string | null) === "ativa" &&
     (((livePatient?.diagnoses?.length ?? 0) > 0) || ((livePatient?.medicalHistory?.length ?? 0) > 0));
   const sapsValidada = sapsRow?.status === "validada";
-  const openSapsFicha = () => {
-    const qs = new URLSearchParams();
-    qs.set("patientId", patientId);
-    if (patientName) qs.set("patientName", patientName);
-    if (patientBed) qs.set("patientBed", patientBed);
-    if (patientSector) qs.set("patientSector", patientSector);
-    if (sapsRow?.id) qs.set("completeSapsId", sapsRow.id);
-    navigate(`/saps3?${qs.toString()}`);
-  };
 
   // Paciente para o Cockpit do trilho direito — mesma harmonizacao dos demais
   // modulos (stub a partir dos params; o Cockpit resolve o resto por id).
@@ -228,22 +222,27 @@ export default function AdmissaoPage() {
                       <Printer className="h-3.5 w-3.5 mr-1" /> Imprimir
                     </Button>
                   )}
-                  {/* Ficha VALIDADA nao pode ser editada — so consulta (abaixo) e
-                      impressao. O botao de preencher/validar so aparece quando NAO
-                      esta validada. */}
-                  {!sapsValidada && (
-                    <Button size="sm" onClick={openSapsFicha}>
-                      {sapsRow ? "Validar ficha" : "Preencher SAPS"}
-                    </Button>
-                  )}
+                  {/* Ficha VALIDADA nao pode ser editada — so consulta (SapsView
+                      abaixo) e impressao. Quando NAO validada, o formulario e
+                      embutido inline (sem abrir a pagina /saps3). */}
                 </div>
               </div>
-              {sapsRow ? (
+              {sapsValidada && sapsRow ? (
                 <SapsView row={sapsRow} />
               ) : (
-                <p className="text-sm text-muted-foreground">
-                  Nenhuma ficha SAPS 3 registrada para esta internação. Use "Preencher SAPS" para iniciar.
-                </p>
+                // Embute a ficha de preenchimento/validacao do SAPS 3 inline.
+                // embedCompleteSapsId: id da ficha pendente (se houver) -> update;
+                // sem ele, insere nova ficha ligada a internacao existente, sem
+                // alocar leito. onEmbeddedDone re-busca a sapsRow.
+                <Saps3Page
+                  embedded
+                  embedPatientId={patientId}
+                  embedPatientName={patientName}
+                  embedPatientBed={patientBed}
+                  embedPatientSector={patientSector}
+                  embedCompleteSapsId={sapsRow?.id}
+                  onEmbeddedDone={() => setSapsReloadTick((t) => t + 1)}
+                />
               )}
             </div>
           ) : admissionDone ? (

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useLocation, useSearchParams, useNavigate } from "react-router-dom";
 import { SapsConfirmationScreen } from "@/components/SapsConfirmationScreen";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -222,7 +222,28 @@ const GCS_MOTOR = [
   { v: "1", label: "Nenhuma" },
 ];
 
-export default function Saps3Page() {
+// Props opcionais para EMBUTIR a ficha dentro da aba SAPS da Admissao
+// (AdmissaoPage). Sem props (= {}), o componente se comporta EXATAMENTE como a
+// pagina /saps3 de hoje: todo comportamento novo fica atras de `if (embedded)`.
+interface Saps3PageProps {
+  embedded?: boolean;
+  embedPatientId?: string;        // = internacao_id
+  embedPatientName?: string;
+  embedPatientBed?: string;
+  embedPatientSector?: string;    // codigo do setor (red/yellow/outside...)
+  embedCompleteSapsId?: string;   // id da ficha existente (sapsRow.id), se houver
+  onEmbeddedDone?: () => void;    // chamado apos validar/salvar/trava
+}
+
+export default function Saps3Page({
+  embedded = false,
+  embedPatientId,
+  embedPatientName,
+  embedPatientBed,
+  embedPatientSector,
+  embedCompleteSapsId,
+  onEmbeddedDone,
+}: Saps3PageProps = {}) {
   const { user } = useAuth();
   const { currentHospital, currentState } = useHospital();
   const { currentDepartment, currentSectorCode } = useDepartment();
@@ -231,6 +252,12 @@ export default function Saps3Page() {
   const [searchParams] = useSearchParams();
   const hospitalId = currentHospital?.id;
   const stateId = currentState?.id;
+
+  // Ref para o callback do embute: mantem o effect de contexto livre da
+  // identidade de onEmbeddedDone (que o pai recria a cada render), evitando
+  // re-execucao do effect e reset do formulario.
+  const onEmbeddedDoneRef = useRef(onEmbeddedDone);
+  useEffect(() => { onEmbeddedDoneRef.current = onEmbeddedDone; });
 
   // ─── State ───
   const [pendingRequests, setPendingRequests] = useState<PendingRequest[]>([]);
@@ -546,20 +573,33 @@ export default function Saps3Page() {
   // ─── Pre-fill from allocation navigation / URL ───
   useEffect(() => {
     const state = location.state as any;
-    const completeSapsIdParam = state?.completeSapsId || searchParams.get("completeSapsId");
-    const fromAllocation = Boolean(state?.fromAllocation || searchParams.get("fromAllocation") === "true");
-    const patientNameFromContext = state?.patientName || searchParams.get("patientName");
+    // Embute (aba SAPS da Admissao): o contexto vem das props, nunca da URL/state.
+    const completeSapsIdParam = embedded
+      ? (embedCompleteSapsId || null)
+      : (state?.completeSapsId || searchParams.get("completeSapsId"));
+    const fromAllocation = embedded
+      ? false
+      : Boolean(state?.fromAllocation || searchParams.get("fromAllocation") === "true");
+    const patientNameFromContext = embedded
+      ? (embedPatientName || "")
+      : (state?.patientName || searchParams.get("patientName"));
 
     // Não dispara se não há contexto algum
     if (!completeSapsIdParam && !fromAllocation && !patientNameFromContext) return;
 
-    const patientAgeFromContext = state?.patientAge || searchParams.get("patientAge");
-    const destinationSectorFromContext = state?.destinationSector || searchParams.get("destinationSector");
-    const preAdmissionId = state?.preAdmissionId || searchParams.get("preAdmissionId");
-    const allocationRequestId = state?.allocationRequestId || searchParams.get("allocationRequestId");
-    const patientIdParam = state?.patientId || searchParams.get("patientId");
-    const patientBedParam = state?.patientBed || searchParams.get("patientBed") || searchParams.get("selectedBed");
-    const patientSectorParam = state?.patientSector || searchParams.get("patientSector") || searchParams.get("selectedSector");
+    const patientAgeFromContext = embedded ? null : (state?.patientAge || searchParams.get("patientAge"));
+    const destinationSectorFromContext = embedded ? null : (state?.destinationSector || searchParams.get("destinationSector"));
+    const preAdmissionId = embedded ? null : (state?.preAdmissionId || searchParams.get("preAdmissionId"));
+    const allocationRequestId = embedded ? null : (state?.allocationRequestId || searchParams.get("allocationRequestId"));
+    const patientIdParam = embedded
+      ? (embedPatientId || null)
+      : (state?.patientId || searchParams.get("patientId"));
+    const patientBedParam = embedded
+      ? (embedPatientBed || "")
+      : (state?.patientBed || searchParams.get("patientBed") || searchParams.get("selectedBed"));
+    const patientSectorParam = embedded
+      ? (embedPatientSector || "")
+      : (state?.patientSector || searchParams.get("patientSector") || searchParams.get("selectedSector"));
 
     // Caminho A — Completar SAPS pendente de paciente JÁ ADMITIDO.
     // Carrega o registro SAPS existente e hidrata o formulário; não passa pelo fluxo de alocação.
@@ -585,6 +625,12 @@ export default function Saps3Page() {
         // Admissao / escore no painel).
         if ((sapsRow as { status?: string }).status === "validada") {
           toast.info("Ficha SAPS 3 já validada — não pode ser editada. Consulte pela aba SAPS na Admissão.");
+          if (embedded) {
+            // No embute o pai (AdmissaoPage) ja mostra a ficha validada read-only;
+            // nao navega — so avisa o pai para re-buscar.
+            onEmbeddedDoneRef.current?.();
+            return;
+          }
           const dest = patientIdParam || (sapsRow as { internacao_id?: string }).internacao_id;
           navigate(dest ? `/paciente?patientId=${dest}` : "/painel-clinico");
           return;
@@ -692,8 +738,8 @@ export default function Saps3Page() {
       if (ageStr) setAge(ageStr);
     }
 
-    const sectorFromUrl = state?.selectedSector || searchParams.get("selectedSector");
-    const bedFromUrl = state?.selectedBed || searchParams.get("selectedBed");
+    const sectorFromUrl = embedded ? null : (state?.selectedSector || searchParams.get("selectedSector"));
+    const bedFromUrl = embedded ? null : (state?.selectedBed || searchParams.get("selectedBed"));
     setSelectedSector(sectorFromUrl || resolveSectorFromContext(destinationSectorFromContext || patientSectorParam, currentSectorCode || currentDepartment));
     setSelectedBed(bedFromUrl || patientBedParam || "");
     setComorbidities([]); setLosBeforeIcu(""); setAdmissionSource(""); setPlanejada(""); setVasoativo(""); setFaixas({}); setMostrarPendentes(false); setItemAberto("idade"); setComorbRevisada(false);
@@ -703,7 +749,8 @@ export default function Saps3Page() {
     setPao2Fio2(""); setOxigenacao("");
     setBox1Open(true); setBox2Open(true); setBox3Open(true);
     toast.info(`Preencha o SAPS 3 para ${patientNameFromContext}`);
-  }, [location.state, searchParams, currentDepartment, currentSectorCode, hospitalId, stateId, navigate]);
+  }, [location.state, searchParams, currentDepartment, currentSectorCode, hospitalId, stateId, navigate,
+    embedded, embedCompleteSapsId, embedPatientId, embedPatientName, embedPatientBed, embedPatientSector]);
 
   // ─── Chave estável do rascunho local (autosave) ───
   const draftKey = useMemo(() => {
@@ -898,7 +945,9 @@ export default function Saps3Page() {
     const out: MissingItem[] = [];
     if (!patientName.trim()) out.push({ id: "name", label: "Nome do paciente", anchor: "saps-banner" });
     if (!hospitalId || !stateId) out.push({ id: "hosp", label: "Hospital / Estado", anchor: "saps-banner", hint: "Selecione no topo da página" });
-    if (!completingSapsId) {
+    // No embute o paciente JA esta alocado (leito/setor vem da internacao); nao
+    // exige selecao de leito.
+    if (!completingSapsId && !embedded) {
       if (!selectedSector) out.push({ id: "sector", label: "Setor da UTI", anchor: "saps-bed" });
       if (!selectedBed) out.push({ id: "bed", label: "Leito de destino", anchor: "saps-bed" });
     }
@@ -932,7 +981,7 @@ export default function Saps3Page() {
     exigir(respostas.ph, "ph", "pH", "saps-box3", "ph");
     exigir(respostas.oxigenacao, "oxi", "Oxigenação / ventilação", "saps-box3", "oxigenacao");
     return out;
-  }, [patientName, hospitalId, stateId, completingSapsId, selectedSector, selectedBed, sedationStatus, gcsO, gcsV, gcsM, respostas]);
+  }, [patientName, hospitalId, stateId, completingSapsId, embedded, selectedSector, selectedBed, sedationStatus, gcsO, gcsV, gcsM, respostas]);
 
   const focusAnchor = (anchor: string) => {
     if (typeof document === "undefined") return;
@@ -950,7 +999,7 @@ export default function Saps3Page() {
     // Validação unificada — pendente exige apenas identidade + leito; finalização exige checklist completa.
     if (!patientName.trim()) { toast.error("Nome do paciente é obrigatório"); focusAnchor("saps-banner"); return; }
     if (!hospitalId || !stateId) { toast.error("Hospital / Estado não selecionado"); focusAnchor("saps-banner"); return; }
-    if (!completingSapsId) {
+    if (!completingSapsId && !embedded) {
       if (!selectedSector) { toast.error("Selecione o setor da UTI"); focusAnchor("saps-bed"); return; }
       if (!selectedBed) { toast.error("Selecione o leito"); focusAnchor("saps-bed"); return; }
     }
@@ -1000,11 +1049,13 @@ export default function Saps3Page() {
         if (asPending) {
           // Manter pendente: NÃO mostra animação de validação. Apenas atualiza e volta para a lista.
           clearDraftAfterSave();
+          toast.success("Ficha SAPS 3 mantida como pendente. Cronômetro segue ativo até a validação.");
+          // Embute: nao navega nem mexe na lista — o pai (AdmissaoPage) re-busca.
+          if (embedded) { onEmbeddedDone?.(); return; }
           setSelectedRequest(null);
           setCompletingSapsId(null);
           setCompletingPatientId(null);
           loadRecords();
-          toast.success("Ficha SAPS 3 mantida como pendente. Cronômetro segue ativo até a validação.");
           // Redireciona de volta para o painel clínico do paciente preservando contexto
           if (completingPatientId) {
             navigate(`/paciente?patientId=${completingPatientId}`);
@@ -1012,6 +1063,11 @@ export default function Saps3Page() {
           return;
         }
 
+        clearDraftAfterSave();
+        toast.success("Ficha SAPS 3 validada com sucesso.");
+        // Embute: sem animacao de confirmacao (tela cheia); avisa o pai para
+        // re-buscar a sapsRow (que passa a 'validada' e vira read-only no pai).
+        if (embedded) { onEmbeddedDone?.(); return; }
         setConfirmationData({
           patientName,
           bedNumber: selectedBed || "—",
@@ -1023,12 +1079,10 @@ export default function Saps3Page() {
           age: age ? `${age} anos` : null,
           mode: "validation",
         });
-        clearDraftAfterSave();
         setSelectedRequest(null);
         setCompletingSapsId(null);
         setCompletingPatientId(null);
         loadRecords();
-        toast.success("Ficha SAPS 3 validada com sucesso.");
       } catch (err: any) {
         toast.error(humanizeSaveError(err), { duration: 7000 });
       } finally {
@@ -1057,6 +1111,13 @@ export default function Saps3Page() {
       // nenhum paciente entrava nesses setores. Agora aloca pela MESMA função
       // do diálogo, e só então a ficha pendura na internação criada.
       if (!internacaoId) {
+        // Embute: o paciente JA tem internacao (embedPatientId). Se chegou aqui
+        // sem internacao resolvida, aborta — o embute NUNCA aloca leito nem cria
+        // internacao (isso e responsabilidade do fluxo de alocacao/admissao).
+        if (embedded) {
+          toast.error("Sem internação vinculada para esta ficha SAPS. Reabra a admissão do paciente.", { duration: 8000 });
+          return;
+        }
         const preId = !selectedRequest?.allocation_request_id ? asUuidOrNull(selectedRequest?.id) : null;
         const preAdmissao = preId ? await carregarPreAdmissao(preId) : null;
         if (!preAdmissao) {
@@ -1119,6 +1180,8 @@ export default function Saps3Page() {
           { duration: 7000 },
         );
         clearDraftAfterSave();
+        // Embute: nao navega nem mexe nas listas — o pai (AdmissaoPage) re-busca.
+        if (embedded) { onEmbeddedDone?.(); return; }
         setSelectedRequest(null);
         loadPendingRequests();
         loadRecords();
@@ -1170,7 +1233,7 @@ export default function Saps3Page() {
       // MIGRAÇÃO: destination_bed/destination_sector não existem em pre_admissoes;
       // apenas o status é atualizado.
       // Quando a alocação acabou de ser feita acima, a pré-admissão já foi marcada.
-      if (!alocadoAgora && selectedRequest?.id && !selectedRequest.allocation_request_id) {
+      if (!alocadoAgora && !embedded && selectedRequest?.id && !selectedRequest.allocation_request_id) {
         const preId = asUuidOrNull(selectedRequest.id);
         if (preId) {
           const { error: updatePreAdmissionError } = await supabase
@@ -1181,6 +1244,13 @@ export default function Saps3Page() {
         }
       }
 
+      clearDraftAfterSave();
+      // Embute: sem animacao de confirmacao; avisa o pai para re-buscar a sapsRow.
+      if (embedded) {
+        toast.success("Ficha SAPS 3 validada com sucesso.");
+        onEmbeddedDone?.();
+        return;
+      }
       const sectorLabel = UTI_SECTORS.find(s => s.value === selectedSector)?.label || selectedSector;
       setConfirmationData({
         patientName,
@@ -1192,7 +1262,6 @@ export default function Saps3Page() {
         sectorCode: selectedSector,
         age: age ? `${age} anos` : null,
       });
-      clearDraftAfterSave();
       setSelectedRequest(null);
       loadPendingRequests();
       loadRecords();
@@ -1256,8 +1325,10 @@ export default function Saps3Page() {
   const headerSectorLabel = currentSectorLabel || selectedRequest?.destination_sector || "UTI";
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 md:px-8 lg:px-8 py-6 space-y-6">
-      {confirmationData && (
+    // Embute (aba SAPS da Admissao): so o bloco do formulario, sem o chrome de
+    // pagina (container max-w, header, listas, confirmacao de tela cheia).
+    <div className={embedded ? "space-y-6" : "mx-auto w-full max-w-6xl px-4 md:px-8 lg:px-8 py-6 space-y-6"}>
+      {!embedded && confirmationData && (
         <SapsConfirmationScreen
           patientName={confirmationData.patientName}
           bedNumber={confirmationData.bedNumber}
@@ -1272,6 +1343,7 @@ export default function Saps3Page() {
         />
       )}
       {/* Header */}
+      {!embedded && (
       <div>
         <h1 className="text-2xl font-semibold text-foreground flex items-center gap-2">
           <Calculator className="h-6 w-6 text-primary" />
@@ -1281,9 +1353,10 @@ export default function Saps3Page() {
           Fluxo admissional: Solicitação → Avaliação médica → Alocação de leito + SAPS 3
         </p>
       </div>
+      )}
 
       {/* ─── Step 1: Pending UTI Bed Requests ─── */}
-      {!isFormMode && (
+      {!embedded && !isFormMode && (
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center justify-between text-base">
@@ -1963,7 +2036,7 @@ export default function Saps3Page() {
             <Button
               variant="outline"
               onClick={() => handleSave(true)}
-              disabled={saving || (!completingSapsId && !selectedBed)}
+              disabled={saving || (!completingSapsId && !embedded && !selectedBed)}
               className="gap-2 border-warning-border text-warning-on-soft hover:bg-warning-soft"
             >
               <Clock className="h-4 w-4" />
@@ -1993,7 +2066,7 @@ export default function Saps3Page() {
       )}
 
       {/* ─── Pending SAPS ─── */}
-      {!isFormMode && records.some(r => r.status === 'pending') && (
+      {!embedded && !isFormMode && records.some(r => r.status === 'pending') && (
         <Card className="border-warning-border bg-warning-soft/50">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base text-warning-on-soft">
@@ -2035,7 +2108,7 @@ export default function Saps3Page() {
       )}
 
       {/* ─── History ─── */}
-      {!isFormMode && (
+      {!embedded && !isFormMode && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
@@ -2081,6 +2154,7 @@ export default function Saps3Page() {
       )}
 
       {/* Delete confirmation */}
+      {!embedded && (
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -2095,6 +2169,7 @@ export default function Saps3Page() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      )}
     </div>
   );
 }
