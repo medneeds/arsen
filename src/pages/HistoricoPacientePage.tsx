@@ -18,7 +18,7 @@ import {
   type TimelineEvent,
 } from "@/hooks/usePatientTimeline";
 import { Button } from "@/components/ui/button";
-import { ThemeToggle } from "@/components/layout/ThemeToggle";
+import { ClinicalHeader } from "@/components/ClinicalHeader";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -31,7 +31,6 @@ import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { SectionLoader } from "@/components/SectionLoader";
 import { supabase } from "@/integrations/supabase/client";
@@ -1012,30 +1011,35 @@ export default function HistoricoPacientePage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b print:hidden">
-        <div className="container mx-auto px-4 py-3 flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
-            <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
-          </Button>
-          <Separator orientation="vertical" className="h-6" />
-          <Clock className="h-4 w-4 text-primary" />
-          <div className="flex-1 min-w-0">
-            <h1 className="text-base font-medium truncate">
-              Histórico longitudinal
-            </h1>
-            <p className="text-xs text-muted-foreground">
-              {events.length} eventos registrados
-            </p>
-          </div>
-          <ThemeToggle />
+      {/* Cabecalho PADRAO do fluxo clinico (ClinicalHeader): integra o Historico
+          ao guarda-chuva do painel (navegacao de modulos + voltar + contexto do
+          paciente), no lugar do header proprio com "Voltar". O Imprimir vai no
+          slot de acoes. */}
+      <ClinicalHeader
+        moduleLabel="Histórico"
+        actions={
           <Button variant="outline" size="sm" onClick={handlePrint}>
             <Printer className="h-4 w-4 mr-1" /> Imprimir
           </Button>
-        </div>
+        }
+      />
 
-        {/* Filtros */}
-        <div className="container mx-auto px-4 pb-3 flex flex-wrap items-center gap-2">
+      {/* Conteúdo — largura total (igual aos demais modulos), sem container
+          centralizado, para aproveitar o espaco. */}
+      <div className="p-3 sm:p-4">
+        {/* Sub-cabecalho padrao de identidade — unica fonte de identidade. */}
+        <PatientIdentityBar
+          patientId={patientId}
+          className="print:hidden rounded-lg border border-border bg-card/60 px-3 py-3 mb-4"
+          rightSlot={
+            <p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground leading-tight">
+              HISTÓRICO DO PACIENTE
+            </p>
+          }
+        />
+
+        {/* Filtros do historico (busca / periodo / tipos) + contagem. */}
+        <div className="print:hidden mb-4 flex flex-wrap items-center gap-2">
           <div className="relative flex-1 min-w-[200px] max-w-sm">
             <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <Input
@@ -1098,22 +1102,8 @@ export default function HistoricoPacientePage() {
               </div>
             </PopoverContent>
           </Popover>
+          <span className="ml-auto text-xs text-muted-foreground">{events.length} eventos</span>
         </div>
-      </div>
-
-      {/* Conteúdo */}
-      <div className="container mx-auto px-4 py-6">
-        {/* Sub-cabecalho padrao de identidade (abaixo do header sticky, que mantem
-            Voltar/Imprimir/filtros + titulo). Adiciona idade/nascimento/prontuario. */}
-        <PatientIdentityBar
-          patientId={patientId}
-          className="print:hidden rounded-lg border border-border bg-card/60 px-3 py-3 mb-4"
-          rightSlot={
-            <p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground leading-tight">
-              HISTÓRICO DO PACIENTE
-            </p>
-          }
-        />
         {(registryResolving || isLoading) ? (
           <SectionLoader
             message="Carregando histórico"
