@@ -26,6 +26,14 @@ interface PatientIdentityBarProps {
   /** Conteudo do lado direito — titulo do modulo, data, badges etc. */
   rightSlot?: ReactNode;
   className?: string;
+  /**
+   * Escopo da identidade exibida:
+   *  - "encounter" (padrao): leito + setor + identidade permanente (modulos de atendimento).
+   *  - "registry": identidade permanente do PRONTUARIO (nome, idade, nascimento,
+   *    prontuario), SEM leito/setor — usado no Historico, que mostra o prontuario
+   *    da pessoa atraves dos atendimentos (leito/setor mudam com realocacao).
+   */
+  scope?: "encounter" | "registry";
 }
 
 function formatBirth(bd: string | null | undefined): string {
@@ -40,11 +48,12 @@ function formatBirth(bd: string | null | undefined): string {
   }
 }
 
-export function PatientIdentityBar({ patientId, rightSlot, className }: PatientIdentityBarProps) {
+export function PatientIdentityBar({ patientId, rightSlot, className, scope = "encounter" }: PatientIdentityBarProps) {
   const { patient } = usePatientLive(patientId || null);
   const { currentHospital } = useHospital();
   const ids = usePatientIdentifiers(patientId || null, patient?.name || null, currentHospital?.id || null);
 
+  const registryOnly = scope === "registry";
   const bed = patient?.bedNumber || "—";
   const name = patient?.name || "Paciente não identificado";
   const sector = patient?.sector || ""; // setores.nome = rotulo
@@ -56,16 +65,18 @@ export function PatientIdentityBar({ patientId, rightSlot, className }: PatientI
     <div className={cn("hidden sm:flex items-center justify-between gap-4", className)}>
       {/* ESQUERDA: identidade do paciente */}
       <div className="flex items-center gap-3 min-w-0 flex-1">
-        <div className="flex flex-col items-center justify-center h-12 w-12 rounded-lg bg-primary/15 border border-primary/20 shrink-0">
-          <span className="text-[9px] font-normal uppercase tracking-wide text-primary/60 leading-none">Leito</span>
-          <span className="text-xl font-bold text-primary leading-none mt-0.5">{bed}</span>
-        </div>
+        {!registryOnly && (
+          <div className="flex flex-col items-center justify-center h-12 w-12 rounded-lg bg-primary/15 border border-primary/20 shrink-0">
+            <span className="text-[9px] font-normal uppercase tracking-wide text-primary/60 leading-none">Leito</span>
+            <span className="text-xl font-bold text-primary leading-none mt-0.5">{bed}</span>
+          </div>
+        )}
         <div className="min-w-0">
           <p className="text-base font-semibold text-foreground uppercase tracking-wide leading-tight truncate">
             {name}
           </p>
           <div className="flex items-center gap-2 flex-wrap mt-1">
-            {sector && (
+            {!registryOnly && sector && (
               <span className="px-2 py-1 rounded-md bg-muted text-muted-foreground text-xs font-medium uppercase tracking-wide">
                 {sector}
               </span>

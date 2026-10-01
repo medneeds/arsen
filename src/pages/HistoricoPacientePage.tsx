@@ -284,6 +284,26 @@ export default function HistoricoPacientePage() {
   const [toDate, setToDate] = useState<string>("");
   const [printingId, setPrintingId] = useState<string | null>(null);
   const [printingSaps, setPrintingSaps] = useState<string | null>(null);
+  // Timeline de atendimentos: cada atendimento nasce RETRAIDO (Set vazio =
+  // tudo colapsado, inclusive o ativo) para economizar espaco com muitos
+  // atendimentos ao longo dos anos. O usuario expande sob demanda.
+  const [expandedEncounters, setExpandedEncounters] = useState<Set<string>>(new Set());
+  const toggleEncounter = (id: string) =>
+    setExpandedEncounters((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  // Impressao do historico: o conteudo colapsado e desmontado pelo Collapsible,
+  // entao ao imprimir forcamos a expansao de TODOS os atendimentos (o documento
+  // clinico precisa sair completo), imprimimos no efeito (ja com o DOM montado) e
+  // voltamos ao estado colapsado.
+  const [printingAll, setPrintingAll] = useState(false);
+  useEffect(() => {
+    if (!printingAll) return;
+    window.print();
+    setPrintingAll(false);
+  }, [printingAll]);
 
   // ── Resolucao da PESSOA (registry) ──
   // A timeline multi-atendimento precisa de patientRegistryId (= pacientes.id).
@@ -513,7 +533,7 @@ export default function HistoricoPacientePage() {
     );
   };
 
-  const handlePrint = () => window.print();
+  const handlePrint = () => setPrintingAll(true);
 
   // Imprime um subconjunto de eventos (card individual ou grupo de dia)
   const printEvents = (eventsToprint: TimelineEvent[], title: string) => {
@@ -1047,6 +1067,9 @@ export default function HistoricoPacientePage() {
       <>{encMovItems.map(renderMovItem)}</>
     ) : null;
 
+    const expanded = printingAll || expandedEncounters.has(enc.id);
+    const totalRegistros = encEvents.length + encMovItems.length;
+
     return (
       <Card key={enc.id} className={cn("overflow-hidden", outcome.active && "border-primary/50 ring-1 ring-primary/20")}>
         {outcome.active && (
@@ -1054,47 +1077,64 @@ export default function HistoricoPacientePage() {
             <Activity className="h-3.5 w-3.5" /> Atendimento ativo
           </div>
         )}
-        <div className="px-4 py-3 border-b border-border/60">
-          <div className="flex items-center gap-2 flex-wrap">
-            <ClipboardList className="h-4 w-4 text-muted-foreground" />
-            <h2 className="text-sm font-semibold">Atendimento {n}</h2>
-            <Badge variant={outcome.active ? "default" : "secondary"} className="h-5 text-xs">
-              {outcome.active ? "Ativo" : `→ ${outcome.label}`}
-            </Badge>
-            {sectorLabel && (
-              <span className="text-xs text-muted-foreground flex items-center gap-1">
-                <BedDouble className="h-3 w-3" /> {sectorLabel}
-              </span>
-            )}
-          </div>
-          <p className="text-xs text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
-            <span className="flex items-center gap-1">
-              <CalendarDays className="h-3 w-3" />
-              Admissao {format(new Date(enc.data_entrada), "dd/MM/yyyy 'as' HH:mm", { locale: ptBR })}
-            </span>
-            {!outcome.active && enc.data_alta && (
-              <span>{"→"} {outcome.label} em {format(new Date(enc.data_alta), "dd/MM/yyyy 'as' HH:mm", { locale: ptBR })}</span>
-            )}
-            {outcome.active && (
-              <Badge variant="outline" className="h-4 text-[10px]">DIH {dih}</Badge>
-            )}
-          </p>
-        </div>
-        <div className="p-3 space-y-2">
-          {BLOCKS.map((block) => {
-            const be = byBlock.get(block.key) ?? [];
-            const extra = block.key === "admissao"
-              ? sapsExtra
-              : block.key === "movimentacoes" ? movExtra : null;
-            const extraCount = block.key === "movimentacoes" ? encMovItems.length : 0;
-            return renderBlock(block, be, extra, outcome.active && block.key === "admissao", extraCount);
-          })}
-          {encEvents.length === 0 && outcome.active && !sapsExtra && (
-            <p className="text-xs text-muted-foreground px-1 py-2">
-              Nenhum evento para os filtros aplicados neste atendimento.
-            </p>
-          )}
-        </div>
+        {/* Atendimento RETRAIDO por padrao — cabecalho vira o gatilho; o corpo
+            (blocos de admissao/evolucoes/prescricoes/etc.) so monta ao expandir. */}
+        <Collapsible open={expanded} onOpenChange={() => toggleEncounter(enc.id)}>
+          <CollapsibleTrigger asChild>
+            <button
+              type="button"
+              className="group w-full text-left px-4 py-3 border-b border-border/60 hover:bg-muted/40 transition-colors"
+            >
+              <div className="flex items-center gap-2 flex-wrap">
+                <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                <ClipboardList className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-semibold">Atendimento {n}</span>
+                <Badge variant={outcome.active ? "default" : "secondary"} className="h-5 text-xs">
+                  {outcome.active ? "Ativo" : `→ ${outcome.label}`}
+                </Badge>
+                {sectorLabel && (
+                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                    <BedDouble className="h-3 w-3" /> {sectorLabel}
+                  </span>
+                )}
+                {totalRegistros > 0 && (
+                  <Badge variant="outline" className="h-5 text-[10px]">
+                    {totalRegistros} registro{totalRegistros !== 1 ? "s" : ""}
+                  </Badge>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
+                <span className="flex items-center gap-1">
+                  <CalendarDays className="h-3 w-3" />
+                  Admissao {format(new Date(enc.data_entrada), "dd/MM/yyyy 'as' HH:mm", { locale: ptBR })}
+                </span>
+                {!outcome.active && enc.data_alta && (
+                  <span>{"→"} {outcome.label} em {format(new Date(enc.data_alta), "dd/MM/yyyy 'as' HH:mm", { locale: ptBR })}</span>
+                )}
+                {outcome.active && (
+                  <Badge variant="outline" className="h-4 text-[10px]">DIH {dih}</Badge>
+                )}
+              </p>
+            </button>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="p-3 space-y-2">
+              {BLOCKS.map((block) => {
+                const be = byBlock.get(block.key) ?? [];
+                const extra = block.key === "admissao"
+                  ? sapsExtra
+                  : block.key === "movimentacoes" ? movExtra : null;
+                const extraCount = block.key === "movimentacoes" ? encMovItems.length : 0;
+                return renderBlock(block, be, extra, outcome.active && block.key === "admissao", extraCount);
+              })}
+              {encEvents.length === 0 && outcome.active && !sapsExtra && (
+                <p className="text-xs text-muted-foreground px-1 py-2">
+                  Nenhum evento para os filtros aplicados neste atendimento.
+                </p>
+              )}
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
       </Card>
     );
   };
@@ -1146,6 +1186,7 @@ export default function HistoricoPacientePage() {
         {/* Sub-cabecalho padrao de identidade — unica fonte de identidade. */}
         <PatientIdentityBar
           patientId={patientId}
+          scope="registry"
           className="print:hidden rounded-lg border border-border bg-card/60 px-3 py-3 mb-4"
           rightSlot={
             <p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground leading-tight">
