@@ -1019,7 +1019,7 @@ export default function HistoricoPacientePage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div>
       {/* Cabecalho PADRAO do fluxo clinico (ClinicalHeader): integra o Historico
           ao guarda-chuva do painel (navegacao de modulos + voltar + contexto do
           paciente), no lugar do header proprio com "Voltar". O Imprimir vai no

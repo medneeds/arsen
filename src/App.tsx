@@ -361,7 +361,7 @@ const App = () => {
               <Route path="/alta-desfecho" element={<ProtectedRoute><MainLayout><AltaDesfechoPage /></MainLayout></ProtectedRoute>} />
               <Route path="/emergencia" element={<ProtectedRoute><EmergenciaSectorPage /></ProtectedRoute>} />
               <Route path="/ficha-atendimento" element={<ProtectedRoute><MainLayout><FichaAtendimentoPage /></MainLayout></ProtectedRoute>} />
-              <Route path="/historico-paciente" element={<ProtectedRoute><HistoricoPageWrapper /></ProtectedRoute>} />
+              <Route path="/historico-paciente" element={<ProtectedRoute><MainLayout><HistoricoPageWrapper /></MainLayout></ProtectedRoute>} />
               <Route path="/dev-console" element={<ProtectedRoute><MainLayout><IpRestricted moduleKey="dev_console" moduleLabel="Console Dev"><DevConsolePage /></IpRestricted></MainLayout></ProtectedRoute>} />
               <Route path="/admin/ip-allowlist" element={<ProtectedRoute><MainLayout><IpAllowlistPage /></MainLayout></ProtectedRoute>} />
               {/* Painel do super_admin (Feature 1). Sem MainLayout — super_admin não tem hospital/shell clínico.
