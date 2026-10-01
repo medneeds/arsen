@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toSexoDb } from "@/lib/sexo";
+import { resolveSectorCode } from "@/config/sectorCoverage";
 
 /**
  * Alocacao de uma pre-admissao em leito: garantir leito -> garantir paciente ->
@@ -105,16 +106,24 @@ export async function carregarPreAdmissao(id: string): Promise<PreAdmissionFull 
   return data ? mapPreAdmissao(data) : null;
 }
 
-// MIGRAÇÃO: Patient.sector ← setores.nome (usePatientLive) → o código do setor está em setores.nome.
+// Resolve o CÓDIGO interno do setor (ex.: "yellow", "red", "outside", "ucc") para
+// o id da linha em `setores`. CORREÇÃO: `setores.nome` guarda o NOME REAL do setor
+// ("UTI 2", "UTI 1", "UCI 2", "UCC — Unidade de Cuidados Clínicos"...), NÃO o
+// código — então `.eq("nome", code)` falhava para todos (ex.: "yellow" nunca
+// casava com "UTI 2") e a pré-admissao quebrava com "Setor yellow nao encontrado".
+// Agora casamos pelo mapeamento canônico nome→código (resolveSectorCode, que trata
+// rótulos e aliases/variações de nome), com fallback a nome === code por robustez.
 export async function resolveSetorId(code: string): Promise<string | null> {
   if (!code) return null;
   try {
     const { data } = await supabase
       .from("setores")
-      .select("id")
-      .eq("nome", code)
-      .maybeSingle();
-    return (data as any)?.id ?? null;
+      .select("id, nome");
+    const rows = (data as { id: string; nome: string }[] | null) ?? [];
+    const match =
+      rows.find((s) => s.nome === code) ??
+      rows.find((s) => resolveSectorCode(s.nome) === code);
+    return match?.id ?? null;
   } catch {
     return null;
   }
