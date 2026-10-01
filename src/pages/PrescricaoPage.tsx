@@ -16,7 +16,7 @@ import {
   Search, AlertTriangle, UtensilsCrossed, Droplets, Syringe, History,
   ClipboardList, X, Check, Shield, Wind, TestTube, FileText, FlaskConical,
   GripVertical, CheckSquare, Square, Pause, MoreHorizontal, CopyPlus, Lock, Eye, EyeOff, ShieldCheck, Fingerprint,
-  Zap, Loader2, CalendarDays, Circle, RotateCw, Package, Hash, List, AlignJustify, ChevronUp, Wand2, BedDouble, PlusCircle, ChevronDown } from "lucide-react";
+  Zap, Loader2, CalendarDays, Circle, RotateCw, Package, Hash, List, AlignJustify, ChevronUp, Wand2, BedDouble, PlusCircle, ChevronDown, User as UserIcon } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
@@ -4922,6 +4922,40 @@ const PrescricaoPage = () => {
 
   // Phase 5 state — Persistence
   const [currentPrescriptionId, setCurrentPrescriptionId] = useState<string | null>(null);
+  // Etapa C (rastreio de autoria): criado_por da prescricao carregada (FK
+  // profissionais.id) e o nome/CRM resolvidos a partir dele. Somente leitura.
+  const [prescriptionCreatedBy, setPrescriptionCreatedBy] = useState<string | null>(null);
+  const [createdByProfessional, setCreatedByProfessional] = useState<{ nome: string; crm: string | null } | null>(null);
+  // Resolve nome/CRM do criador. prescricoes.criado_por referencia
+  // profissionais.id; o CRM vive na coluna numero_conselho (nao ha coluna crm).
+  useEffect(() => {
+    let cancelled = false;
+    if (!prescriptionCreatedBy) {
+      setCreatedByProfessional(null);
+      return;
+    }
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from('profissionais')
+          .select('nome, numero_conselho')
+          .eq('id', prescriptionCreatedBy)
+          .maybeSingle();
+        if (cancelled) return;
+        if (data) {
+          setCreatedByProfessional({
+            nome: (data as { nome: string }).nome,
+            crm: (data as { numero_conselho: string | null }).numero_conselho ?? null,
+          });
+        } else {
+          setCreatedByProfessional(null);
+        }
+      } catch {
+        if (!cancelled) setCreatedByProfessional(null);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [prescriptionCreatedBy]);
   const [saving, setSaving] = useState(false);
 
   // ─── Sincronização com PatientSwitcher (cabeçalho) ─────────────────────────
@@ -4988,6 +5022,7 @@ const PrescricaoPage = () => {
     setItems([]);
     setCurrentPrescriptionId(null);
     setDigitalSignature(null);
+    setPrescriptionCreatedBy(null);
     setSelectedIds(new Set());
     setAppliedCareProfiles(new Set());
     setSavedPrescriptions([]);
@@ -7307,6 +7342,7 @@ const PrescricaoPage = () => {
         setSelectedIds(new Set());
         setCurrentPrescriptionId(null);
         setDigitalSignature(null);
+        setPrescriptionCreatedBy(null);
       }
 
       toast.success("Rascunho excluído", { description: `v${draftToDelete.version} — motivo registrado em auditoria.` });
@@ -7497,6 +7533,7 @@ const PrescricaoPage = () => {
           isLoadingRef.current = false;
           setItems(renewedItems);
           setDigitalSignature(null);
+          setPrescriptionCreatedBy(null);
           setCurrentPrescriptionId(null);
           setSelectedIds(new Set());
           return true;
@@ -7587,6 +7624,7 @@ const PrescricaoPage = () => {
         // Libera o isDirty — a partir daqui somente edições reais do usuário marcam dirty.
         isLoadingRef.current = false;
         setDigitalSignature((data as any).assinatura_digital as unknown as DigitalSignature | null);
+        setPrescriptionCreatedBy((data as { criado_por?: string | null }).criado_por ?? null);
         setCurrentPrescriptionId(data.id);
         setSelectedIds(new Set());
         fetchVersionHistory(id);
@@ -8715,6 +8753,24 @@ const PrescricaoPage = () => {
                 )}
                 <span className="text-xs text-muted-foreground font-mono">{prescriptionDate}</span>
               </div>
+              {(createdByProfessional || digitalSignature) && (
+                <div className="flex flex-col items-end gap-0.5 mt-1">
+                  {createdByProfessional && (
+                    <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                      <UserIcon className="h-2.5 w-2.5" />
+                      Criada por <strong className="text-foreground font-medium">{createdByProfessional.nome}</strong>
+                      {createdByProfessional.crm && ` · CRM ${createdByProfessional.crm}`}
+                    </span>
+                  )}
+                  {digitalSignature && (
+                    <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                      <UserIcon className="h-2.5 w-2.5" />
+                      Validada por <strong className="text-foreground font-medium">{digitalSignature.doctorName}</strong>
+                      {digitalSignature.crm && ` · CRM ${digitalSignature.crm}`}
+                    </span>
+                  )}
+                </div>
+              )}
             </>
           }
         />

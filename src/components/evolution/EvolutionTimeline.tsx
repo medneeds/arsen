@@ -4,6 +4,7 @@ import { ptBR } from "date-fns/locale";
 import {
   ChevronDown, ChevronUp, Copy, Trash2, ShieldCheck, ShieldOff,
   Clock, FileText, AlertTriangle, Loader2, Calendar, Search, Filter, X, Star, Zap, Printer, CheckCircle2,
+  User as UserIcon,
 } from "lucide-react";
 import { printEvolution } from "@/lib/printEvolution";
 import { PostValidationPrintDialog } from "@/components/PostValidationPrintDialog";
@@ -531,9 +532,18 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                           Validada em {format(new Date(evo.validated_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                         </span>
                       )}
-                      <span className="text-xs text-muted-foreground">
-                        por <strong className="text-foreground">{evo.created_by_name || "Médico"}</strong>
-                      </span>
+                      {evo.created_by_name && (
+                        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                          <UserIcon className="h-2.5 w-2.5" />
+                          por <strong className="text-foreground">{evo.created_by_name}</strong>
+                        </span>
+                      )}
+                      {evo.validated_by_name && (
+                        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                          <UserIcon className="h-2.5 w-2.5" />
+                          validada por <strong className="text-foreground">{evo.validated_by_name}</strong>
+                        </span>
+                      )}
                       {isAdmission && (
                         <Badge className="text-xs px-2 py-0 h-4 bg-released text-white gap-1 uppercase tracking-wider">
                           {group.dayLabel} — Admissão Hospitalar
