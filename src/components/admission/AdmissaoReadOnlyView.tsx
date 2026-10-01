@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2 } from "lucide-react";
+import { Loader2, User as UserIcon } from "lucide-react";
 
 /**
  * Visao READ-ONLY inline da admissao (D0) ja registrada — mostrada na aba
@@ -19,6 +19,7 @@ interface D0 {
   vs: Record<string, unknown>;
   pe: Record<string, unknown>;
   validatedByName?: string | null;
+  createdByName?: string | null;
   dataHora?: string | null;
 }
 
@@ -79,6 +80,7 @@ export function AdmissaoReadOnlyView({ internacaoId }: Props) {
           vs: (soap.__vital_signs ?? {}) as Record<string, unknown>,
           pe: (soap.__physical_exam ?? {}) as Record<string, unknown>,
           validatedByName: (soap.__validated_by_name as string) ?? null,
+          createdByName: (soap.__created_by_name as string) ?? null,
           dataHora: root.data_hora ?? null,
         });
       } else {
@@ -138,6 +140,13 @@ export function AdmissaoReadOnlyView({ internacaoId }: Props) {
       <Group title="Plano terapêutico">
         <Field label="Conduta inicial" value={soap.plan || hist?.conduta_inicial} />
       </Group>
+
+      {d0?.createdByName && (
+        <p className="flex items-center gap-1 text-xs text-muted-foreground">
+          <UserIcon className="h-3 w-3" />
+          Admissão por {d0.createdByName}
+        </p>
+      )}
 
       {d0?.validatedByName && (
         <p className="text-[11px] text-muted-foreground">

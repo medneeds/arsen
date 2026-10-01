@@ -20,7 +20,7 @@ import type { Patient } from "@/types/patient";
 // Setores que exigem SAPS 3 (UTI 1 / UTI 2 / UCI 2) — mesmo criterio da alocacao.
 const SAPS_SECTORS = ["red", "yellow", "outside"];
 const SAPS_SELECT =
-  "id, status, pending_since, validado_em, escore_box1, escore_box2, escore_box3, escore_total, " +
+  "id, status, pending_since, validado_em, validado_por, escore_box1, escore_box2, escore_box3, escore_total, " +
   "mortalidade_prevista, idade, dias_hospital_antes_uti, origem_admissao, comorbidades, admissao_planejada, " +
   "motivo_admissao, motivo_admissao_detalhe, status_cirurgico, tipo_cirurgia, infeccao_na_admissao, " +
   "escore_glasgow, fc_mais_alta, pas_mais_baixa, temperatura_mais_baixa, bilirrubina_mais_alta, " +

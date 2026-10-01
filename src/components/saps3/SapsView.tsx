@@ -1,3 +1,6 @@
+import { useQuery } from "@tanstack/react-query";
+import { User as UserIcon } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { COMORBIDADES, milParaContagem, formatarContagem } from "@/lib/saps3";
 
 /**
@@ -12,6 +15,7 @@ export interface SapsRow {
   status?: string | null;
   pending_since?: string | null;
   validado_em?: string | null;
+  validado_por?: string | null;
   escore_box1?: number | null;
   escore_box2?: number | null;
   escore_box3?: number | null;
@@ -88,6 +92,20 @@ export function SapsView({ row }: { row: SapsRow }) {
   const plaq = row.plaquetas_mais_baixas != null ? formatarContagem(milParaContagem(row.plaquetas_mais_baixas)) : "";
   const isPending = row.status === "pendente";
 
+  // Nome/CRM de quem validou a ficha (validado_por e FK profissionais.id).
+  const { data: validador } = useQuery({
+    queryKey: ["saps-validador", row.validado_por],
+    enabled: !!row.validado_por,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profissionais")
+        .select("nome, numero_conselho")
+        .eq("id", row.validado_por as string)
+        .maybeSingle();
+      return (data as { nome?: string | null; numero_conselho?: string | null } | null) ?? null;
+    },
+  });
+
   return (
     <div className="space-y-5">
       {/* Escore */}
@@ -114,6 +132,12 @@ export function SapsView({ row }: { row: SapsRow }) {
               Box III <strong className="text-foreground">{num(row.escore_box3) || "—"}</strong>
             </div>
           </div>
+        )}
+        {!isPending && validador?.nome && (
+          <p className="mt-3 flex items-center gap-1 text-xs text-muted-foreground">
+            <UserIcon className="h-3 w-3" />
+            Validada por {validador.nome}{validador.numero_conselho ? ` · CRM ${validador.numero_conselho}` : ""}
+          </p>
         )}
       </div>
 
