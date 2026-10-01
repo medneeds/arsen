@@ -866,6 +866,28 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
       </AlertDialogContent>
     </AlertDialog>
 
+    {/* Loading elegante durante a alocacao: a pre-admissao faz varias escritas
+        (leito -> paciente -> internacao -> leito ocupado) e leva alguns segundos.
+        Overlay fixo, centralizado, independente do scroll do dialogo. Some sozinho
+        quando a alocacao conclui (isSubmitting volta a false) e o mapa ja refez a
+        busca (onAllocated -> refetch), entao o paciente aparece sem recarregar. */}
+    {isSubmitting && (
+      <div className="fixed inset-0 z-[70] flex items-center justify-center bg-background/70 backdrop-blur-sm animate-fade-in">
+        <div className="flex flex-col items-center gap-4 rounded-2xl border border-border bg-card px-10 py-8 shadow-xl">
+          <span className="relative flex h-12 w-12 items-center justify-center">
+            <span className="absolute inline-flex h-full w-full rounded-full bg-primary/20 animate-ping" />
+            <Loader2 className="h-9 w-9 animate-spin text-primary" />
+          </span>
+          <div className="text-center">
+            <p className="text-sm font-semibold text-foreground">Alocando paciente no leito…</p>
+            <p className="mt-1 text-xs text-muted-foreground max-w-[240px]">
+              Criando a internação e ocupando o leito. O mapa atualiza sozinho ao concluir.
+            </p>
+          </div>
+        </div>
+      </div>
+    )}
+
     {/* MIGRAÇÃO: PisRegistrySyncDialog removido — sincronizava PIS → patient_registry (tabela
         morta). Sem destino no schema novo; a identidade vem direto de pacientes. */}
     </>

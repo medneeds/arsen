@@ -1120,6 +1120,7 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
               <div className="print:hidden space-y-3">
                 <PreAdmissionSection
                   ref={preAdmissionRef}
+                  onAllocated={refetch}
                   sectorFilterLabel={
                     activeSector === "ue_vertical" || activeSector === "ue_horizontal"
                       ? undefined

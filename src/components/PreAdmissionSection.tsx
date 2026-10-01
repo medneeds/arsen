@@ -64,6 +64,13 @@ interface PreAdmissionSectionProps {
    * Quando undefined (ex.: visão UE), mostra todos.
    */
   sectorFilterLabel?: string;
+  /**
+   * Chamado apos uma alocacao (pre-admissao em leito) concluir — o pai usa para
+   * rebuscar o MAPA de leitos, que nao e atualizado por fetchPreAdmissions (so a
+   * lista de pre-admissoes). Sem isso, o paciente alocado so aparecia no mapa
+   * apos recarregar a pagina.
+   */
+  onAllocated?: () => void;
 }
 
 export interface PreAdmissionSectionHandle {
@@ -71,7 +78,7 @@ export interface PreAdmissionSectionHandle {
 }
 
 export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmissionSectionProps>(function PreAdmissionSection(
-  { sectorFilterLabel }: PreAdmissionSectionProps,
+  { sectorFilterLabel, onAllocated }: PreAdmissionSectionProps,
   ref
 ) {
   const [preAdmissions, setPreAdmissions] = useState<PreAdmission[]>([]);
@@ -624,7 +631,7 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
         open={!!admitTarget}
         onOpenChange={(open) => !open && setAdmitTarget(null)}
         preAdmission={admitTarget}
-        onSuccess={fetchPreAdmissions}
+        onSuccess={() => { fetchPreAdmissions(); onAllocated?.(); }}
       />
 
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
