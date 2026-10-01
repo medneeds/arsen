@@ -8998,7 +8998,7 @@ const PrescricaoPage = () => {
         </div>
 
         {/* Row 2 — Prescription actions (Nova, Extra, Interações, ATM, TEV, Validar | Compacto | Imprimir) */}
-        <div className="flex items-center gap-1 flex-wrap px-3 py-2 border-t border-border bg-muted/40 rounded-b-lg [&_button.h-7]:hover:bg-primary/10 [&_button.h-7]:hover:text-primary [&_button.h-7]:transition-colors">
+        <div className="flex items-center gap-1 flex-wrap px-3 py-2 border-t border-border bg-muted/40 rounded-b-lg">
 
           <Tooltip>
             <TooltipTrigger asChild>
@@ -9016,7 +9016,7 @@ const PrescricaoPage = () => {
                     setNewRxChoiceOpen(true);
                   }}
                   disabled={prescriptionLocked}
-                  className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2 disabled:opacity-50"
+                  className="gap-1 text-xs text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors h-7 px-2 disabled:opacity-50"
                 >
                   <Plus className="h-3 w-3" /> Nova
                 </Button>
@@ -9035,7 +9035,7 @@ const PrescricaoPage = () => {
               if (!canPrescribe) { toast.error("Preencha o peso e as alergias antes de prescrever"); return; }
               setExtraChooserOpen(true);
             }}
-            className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2"
+            className="gap-1 text-xs text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors h-7 px-2"
           >
             <Syringe className="h-3 w-3" /> Extra
           </Button>
@@ -9051,7 +9051,7 @@ const PrescricaoPage = () => {
               }
               setInteractionDialogOpen(true);
             }}
-            className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2"
+            className="gap-1 text-xs text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors h-7 px-2"
           >
             <Zap className="h-3 w-3" /> Interações
           </Button>
@@ -9079,7 +9079,7 @@ const PrescricaoPage = () => {
                   variant="ghost"
                   size="sm"
                   onClick={() => setCompactView(!compactView)}
-                  className={cn("gap-1 text-xs h-7 px-2", compactView ? "text-primary" : "text-muted-foreground hover:text-foreground")}
+                  className={cn("gap-1 text-xs h-7 px-2 transition-colors", compactView ? "text-primary hover:bg-primary/10" : "text-muted-foreground hover:bg-primary/10 hover:text-primary")}
                 >
                   {compactView ? <AlignJustify className="h-3 w-3" /> : <List className="h-3 w-3" />}
                 {compactView ? 'Expandido' : 'Compacto'}
@@ -9096,10 +9096,10 @@ const PrescricaoPage = () => {
               onClick={requestValidateAll}
               disabled={allItemsValidated}
               className={cn(
-                "gap-1 text-xs h-7 px-2",
+                "gap-1 text-xs h-7 px-2 transition-colors",
                 prescriptionLocked
-                  ? "text-muted-foreground hover:text-foreground"
-                  : "bg-released hover:bg-released text-white"
+                  ? "text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                  : "bg-released hover:bg-released/85 text-white"
               )}
             >
               <ShieldCheck className="h-3 w-3" />
