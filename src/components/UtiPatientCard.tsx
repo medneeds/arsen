@@ -1,6 +1,7 @@
 import { Patient } from "@/types/patient";
 import { DischargeStatusRibbon } from "./DischargeStatusRibbon";
 import { calcDIH, getEffectiveAdmissionDate } from "@/lib/dihCalc";
+import { useSectorStayTimer } from "@/hooks/useSectorStayTimer";
 import { isExtraBed } from "@/utils/bedNaming";
 import { formatDateBR } from "@/utils/dateUtils";
 import {
@@ -726,6 +727,12 @@ export function UtiPatientCard({
     return calcDIH(eff) ?? 0;
   }, [patient.utiAdmissionDate, patient.admittedAt, patient.admissionDate, patient.sector]);
 
+  // TPS (Tempo de Permanencia no Setor): entrada no setor atual (sectorSince =
+  // conclusao da ultima transferencia interna); fallback admissao hospitalar para
+  // quem nunca transferiu. Distinto do DIH (hospital, nao reinicia). Mesma fonte
+  // e hook do PatientCard (nao-UTI) — so faltava no card da UTI.
+  const stayTimer = useSectorStayTimer(patient.sectorSince ?? patient.admissionDate);
+
   const getFieldArray = (key: keyof Patient): string[] => {
     const value = patient[key];
     if (Array.isArray(value)) {
@@ -893,22 +900,32 @@ export function UtiPatientCard({
                         ? "text-warning-on-soft"
                         : "text-released-on-soft";
                     return (
-                      <div
-                        className={cn(
-                          "shrink-0 flex items-center justify-center gap-1 w-[70px] md:w-[80px] px-2 py-1 rounded-md border",
-                          containerCls
+                      // DIH (hospital, nao reinicia) e TPS (setor, reinicia na
+                      // transferencia) empilhados — um sobre o outro, compacto, no
+                      // mesmo slot de largura fixa (alinhamento consistente).
+                      <div className="shrink-0 flex flex-col gap-0.5 w-[72px] md:w-[82px]">
+                        <div
+                          className={cn(
+                            "flex items-center justify-center gap-1 px-2 py-0.5 rounded-md border",
+                            containerCls
+                          )}
+                          title={`DIH — Dias de Internacao Hospitalar (desde a admissao, nao reinicia na transferencia). Verde <=7 · Amarelo 8-10 · Vermelho >10`}
+                        >
+                          <span className={cn("text-[11px] font-semibold", textCls)}>DIH</span>
+                          <span className={cn("text-[11px] font-semibold", textCls)}>{daysInUti}</span>
+                        </div>
+                        {stayTimer && (
+                          <div
+                            className={cn(
+                              "flex items-center justify-center gap-1 px-2 py-0.5 rounded-md border",
+                              stayTimer.colorClasses
+                            )}
+                            title={`TPS — Tempo de Permanencia no Setor: ${stayTimer.display} (desde a entrada no setor atual)`}
+                          >
+                            <span className="text-[11px] font-semibold">TPS</span>
+                            <span className="text-[11px] font-semibold">{stayTimer.displayShort}</span>
+                          </div>
                         )}
-                        title="DIH — Verde ≤7 dias · Amarelo 8–10 · Vermelho >10"
-                      >
-                        <span className={cn("text-xs font-semibold", textCls)}>DIH:</span>
-                        <span className={cn("text-xs font-semibold min-w-[20px] text-center", textCls)}>
-                          {daysInUti}
-                        </span>
-                        {dihLevel === "red" ? (
-                          <span title="Longa permanência" className="sr-only">
-                            DIH crítico
-                          </span>
-                        ) : null}
                       </div>
                     );
                   })()}
