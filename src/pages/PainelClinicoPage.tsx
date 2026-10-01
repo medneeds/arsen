@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { prefetchPatient, prefetchPatients } from "@/lib/prefetchPatient";
+import { prefetchPatient } from "@/lib/prefetchPatient";
 import { usePatients } from "@/hooks/usePatients";
 import { useSectorNavigation } from "@/hooks/useSectorNavigation";
 import { useTodaysPrescriptions, type TodaysPrescriptionStatus } from "@/hooks/useTodaysPrescriptions";
@@ -238,13 +238,12 @@ export default function PainelClinicoPage() {
     setSelectedPatient(prev => prev ? { ...prev, [field]: items } : prev);
   }, [updatePatient]);
 
-  // PERFORMANCE: ao carregar/mudar a lista do setor (ex.: abrir a UTI-2), aquece o
-  // cache de TODOS os pacientes do setor -> selecionar qualquer um abre instantaneo.
-  // react-query deduplica e respeita o staleTime, entao nao refaz o que ja esta fresco.
-  useEffect(() => {
-    if (filteredPatients.length === 0) return;
-    prefetchPatients(qc, filteredPatients.map((p) => ({ id: p.id, name: p.name })));
-  }, [filteredPatients, qc]);
+  // PERFORMANCE: o prefetch do paciente acontece no HOVER de cada linha (abaixo).
+  // NAO fazemos prefetch em lote de todos os pacientes do setor ao carregar: isso
+  // disparava ~2 requisicoes por paciente de uma vez (burst), saturava o limite de
+  // conexoes do navegador e STARVAVA a query do proprio Painel (usePatients) ->
+  // isLoading preso -> PageLoader eterno ("bug de carregamento ao abrir o setor").
+  // O hover aquece so o paciente que o usuario vai abrir, sem burst.
 
   const openPatient = (patient: Patient) => {
     setSelectedPatient(patient);
