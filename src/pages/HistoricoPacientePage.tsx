@@ -8,7 +8,7 @@ import {
   ArrowLeft, Search, Filter, Clock, User as UserIcon,
   Stethoscope, Pill, FlaskConical, Activity, BedDouble, FileText,
   Microscope, Truck, ClipboardEdit, Hospital, Loader2, Printer,
-  HeartPulse, Users, FileCheck, ChevronDown, CalendarDays, ClipboardList
+  HeartPulse, Users, FileCheck, ChevronDown, CalendarDays, ClipboardList, Ban
 } from "lucide-react";
 import {
   usePatientTimeline,
@@ -137,6 +137,65 @@ function encounterOutcome(enc: EncounterRow): { label: string; active: boolean }
   }
 }
 
+// ── Movimentacoes de logs_auditoria (nao modeladas em transferencias) ──
+// Prefixos de tipo_evento que representam movimentacao/sinalizacao/suspensao,
+// mesmos de usePatientMovements. Ancoram em internacao_id.
+const MOVIMENTACAO_PREFIXES = ["movimentacao_", "sinalizacao_transferencia_", "suspensao_"];
+
+// Rotulo amigavel dos tipos conhecidos (mesma ideia do SignalingFlowRecord).
+const MOVIMENTACAO_LABELS: Record<string, string> = {
+  transferencia_interna: "Transferencia interna",
+  transferencia_externa: "Transferencia externa",
+  alta_hospitalar: "Alta hospitalar",
+  obito: "Obito",
+  evasao: "Evasao",
+  suspensao_alta: "Suspensao de alta",
+  suspensao_obito: "Suspensao de obito",
+};
+
+// Remove o prefixo da fonte e prettifica; checa o mapa antes e depois da limpeza.
+function movimentacaoLabel(tipoEvento: string): string {
+  if (MOVIMENTACAO_LABELS[tipoEvento]) return MOVIMENTACAO_LABELS[tipoEvento];
+  const cleaned = tipoEvento
+    .replace(/^movimentacao_/, "")
+    .replace(/^sinalizacao_transferencia_/, "transferencia_")
+    .replace(/^sinalizacao_/, "");
+  if (MOVIMENTACAO_LABELS[cleaned]) return MOVIMENTACAO_LABELS[cleaned];
+  const pretty = cleaned.replace(/_/g, " ");
+  return pretty.charAt(0).toUpperCase() + pretty.slice(1);
+}
+
+interface MovimentacaoLog {
+  id: string;
+  internacao_id: string;
+  tipo_evento: string;
+  label: string;
+  data: string;
+  destino: string | null;
+  motivo: string | null;
+}
+
+// Linha crua de logs_auditoria (so os campos lidos aqui), para tipar sem `any`.
+interface LogAuditoriaRow {
+  id: string;
+  internacao_id: string | null;
+  tipo_evento: string | null;
+  criado_em: string;
+  motivo: string | null;
+  dados_novos: { destination?: string | null; target_sector_label?: string | null; notes?: string | null } | null;
+}
+
+// Turno/tipo da evolucao a partir de soap.__evolution_type.
+function evolutionShiftLabel(soap: { __evolution_type?: string | null } | null | undefined): string {
+  switch (soap?.__evolution_type) {
+    case "admission": return "Admissao";
+    case "vespertina": return "Vespertina";
+    case "noturna": return "Noturna";
+    case "intercurrence": return "Intercorrencia";
+    default: return "Rotina";
+  }
+}
+
 const ALLOWED_PROFILES = new Set([
   "admin",
   "medico",
@@ -261,6 +320,45 @@ export default function HistoricoPacientePage() {
     });
     return m;
   }, [sapsRows]);
+
+  // Movimentacoes/sinalizacoes reais de logs_auditoria (ancoradas em internacao_id).
+  // A timeline so traz "movement" de transferencias (leito->leito); as demais
+  // (transferencia externa, alta, obito, evasao, suspensoes) vivem aqui.
+  const { data: movLogs = [] } = useQuery({
+    queryKey: ["historico-movimentacoes", encounterIds],
+    enabled: encounterIds.length > 0,
+    queryFn: async (): Promise<MovimentacaoLog[]> => {
+      const { data } = await supabase
+        .from("logs_auditoria")
+        .select("*")
+        .in("internacao_id", encounterIds);
+      const rows = (data ?? []) as unknown as LogAuditoriaRow[];
+      return rows
+        .filter((r) => !!r.tipo_evento && MOVIMENTACAO_PREFIXES.some((p) => r.tipo_evento!.startsWith(p)))
+        .map((r) => {
+          const dn = r.dados_novos ?? {};
+          const tipo = r.tipo_evento as string;
+          return {
+            id: r.id,
+            internacao_id: (r.internacao_id ?? "") as string,
+            tipo_evento: tipo,
+            label: movimentacaoLabel(tipo),
+            data: r.criado_em,
+            destino: dn.destination ?? dn.target_sector_label ?? null,
+            motivo: r.motivo ?? dn.notes ?? null,
+          };
+        });
+    },
+  });
+
+  const movByEncounter = useMemo(() => {
+    const m = new Map<string, MovimentacaoLog[]>();
+    movLogs.forEach((mv) => {
+      if (!m.has(mv.internacao_id)) m.set(mv.internacao_id, []);
+      m.get(mv.internacao_id)!.push(mv);
+    });
+    return m;
+  }, [movLogs]);
 
   // Eventos agrupados por atendimento (patient_id = internacao_id).
   const eventsByEncounter = useMemo(() => {
@@ -657,6 +755,11 @@ export default function HistoricoPacientePage() {
   // ── Render de um evento (reaproveita ICONS/LABELS/COLORS + botao de impressao) ──
   const renderEventItem = (e: TimelineEvent) => {
     const Icon = ICONS[e.event_type] ?? FileText;
+    // Evolucao: medico que executou (soap.__created_by_name, fallback author_email)
+    // e turno/tipo (soap.__evolution_type) exibido como Badge ao lado do tipo/hora.
+    const isEvolution = e.event_type === "evolution";
+    const evoSoap = isEvolution ? (e.payload?.soap ?? null) : null;
+    const evoMedico = isEvolution ? (evoSoap?.__created_by_name || e.author_email || null) : null;
     return (
       <div key={e.event_id} className="flex items-start gap-2 rounded-md border border-border/60 bg-background px-3 py-2 hover:bg-muted/40 transition-colors group">
         <div className={cn(
@@ -670,15 +773,29 @@ export default function HistoricoPacientePage() {
             <Badge variant="outline" className={cn("h-5 text-xs", EVENT_TYPE_COLORS[e.event_type])}>
               {EVENT_TYPE_LABELS[e.event_type]}
             </Badge>
+            {isEvolution && (
+              <Badge variant="secondary" className="h-5 text-xs">
+                {evolutionShiftLabel(evoSoap)}
+              </Badge>
+            )}
             <span className="text-xs text-muted-foreground flex items-center gap-1">
               <Clock className="h-3 w-3" />
               {format(new Date(e.event_at), "dd/MM/yyyy HH:mm")}
             </span>
-            {e.author_email && (
-              <span className="text-xs text-muted-foreground flex items-center gap-1">
-                <UserIcon className="h-3 w-3" />
-                {e.author_email}
-              </span>
+            {isEvolution ? (
+              evoMedico && (
+                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                  <UserIcon className="h-3 w-3" />
+                  por {evoMedico}
+                </span>
+              )
+            ) : (
+              e.author_email && (
+                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                  <UserIcon className="h-3 w-3" />
+                  {e.author_email}
+                </span>
+              )
             )}
           </div>
           {e.event_label && <p className="text-sm font-medium mt-1 break-words">{e.event_label}</p>}
@@ -700,14 +817,43 @@ export default function HistoricoPacientePage() {
     );
   };
 
+  // ── Render de um item de movimentacao de logs_auditoria ──
+  const renderMovItem = (m: MovimentacaoLog) => {
+    const Icon = m.tipo_evento.startsWith("suspensao_") ? Ban : Truck;
+    return (
+      <div key={m.id} className="flex items-start gap-2 rounded-md border border-border/60 bg-background px-3 py-2">
+        <div className={cn(
+          "mt-0.5 h-6 w-6 shrink-0 rounded-full border flex items-center justify-center",
+          EVENT_TYPE_COLORS.movement,
+        )}>
+          <Icon className="h-3 w-3" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm font-medium break-words">{m.label}</span>
+            {m.destino && (
+              <span className="text-xs text-muted-foreground">{"→"} {m.destino}</span>
+            )}
+            <span className="text-xs text-muted-foreground flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              {format(new Date(m.data), "dd/MM/yyyy 'as' HH:mm")}
+            </span>
+          </div>
+          {m.motivo && <p className="text-xs text-muted-foreground mt-0.5 break-words">{m.motivo}</p>}
+        </div>
+      </div>
+    );
+  };
+
   // ── Render de um bloco recolhivel dentro de um atendimento ──
   const renderBlock = (
     block: { key: BlockKey; label: string; icon: React.ElementType },
     blockEvents: TimelineEvent[],
     extra: React.ReactNode | null,
     defaultOpen: boolean,
+    extraCount = 0,
   ) => {
-    const count = blockEvents.length;
+    const count = blockEvents.length + extraCount;
     if (count === 0 && !extra) return null;
     const BlockIcon = block.icon;
     return (
@@ -719,7 +865,7 @@ export default function HistoricoPacientePage() {
             <span className="text-sm font-medium">{block.label}</span>
             <Badge variant="secondary" className="h-5 text-xs">{count}</Badge>
           </CollapsibleTrigger>
-          {count > 0 && (
+          {blockEvents.length > 0 && (
             <button
               onClick={() => printEvents(blockEvents, block.label)}
               className="print:hidden mr-2 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-md hover:bg-muted"
@@ -743,8 +889,10 @@ export default function HistoricoPacientePage() {
   const renderEncounter = (enc: EncounterRow, n: number) => {
     const outcome = encounterOutcome(enc);
     const encEvents = eventsByEncounter.get(enc.id) ?? [];
-    // Atendimento sem eventos apos filtro e ocultado — exceto o ativo (cabecalho).
-    if (encEvents.length === 0 && !outcome.active) return null;
+    const encMovItems = movByEncounter.get(enc.id) ?? [];
+    // Atendimento sem eventos nem movimentacoes apos filtro e ocultado — exceto o
+    // ativo (cabecalho). Movimentacoes de logs_auditoria contam para a visibilidade.
+    if (encEvents.length === 0 && encMovItems.length === 0 && !outcome.active) return null;
 
     const sectorCode = enc.setor?.nome ?? "";
     const sectorLabel = getSectorDisplayLabel(sectorCode);
@@ -776,6 +924,12 @@ export default function HistoricoPacientePage() {
         </div>
         <SapsView row={saps} />
       </div>
+    ) : null;
+
+    // Movimentacoes de logs_auditoria renderizadas dentro do bloco "Movimentacoes",
+    // alem dos eventos de timeline que ja caem nesse bloco.
+    const movExtra = encMovItems.length > 0 ? (
+      <>{encMovItems.map(renderMovItem)}</>
     ) : null;
 
     return (
@@ -814,8 +968,11 @@ export default function HistoricoPacientePage() {
         <div className="p-3 space-y-2">
           {BLOCKS.map((block) => {
             const be = byBlock.get(block.key) ?? [];
-            const extra = block.key === "admissao" ? sapsExtra : null;
-            return renderBlock(block, be, extra, outcome.active && block.key === "admissao");
+            const extra = block.key === "admissao"
+              ? sapsExtra
+              : block.key === "movimentacoes" ? movExtra : null;
+            const extraCount = block.key === "movimentacoes" ? encMovItems.length : 0;
+            return renderBlock(block, be, extra, outcome.active && block.key === "admissao", extraCount);
           })}
           {encEvents.length === 0 && outcome.active && !sapsExtra && (
             <p className="text-xs text-muted-foreground px-1 py-2">
@@ -828,7 +985,10 @@ export default function HistoricoPacientePage() {
   };
 
   const visibleEncounters = orderedEncounters.filter(
-    ({ enc }) => (eventsByEncounter.get(enc.id)?.length ?? 0) > 0 || encounterOutcome(enc).active,
+    ({ enc }) =>
+      (eventsByEncounter.get(enc.id)?.length ?? 0) > 0
+      || (movByEncounter.get(enc.id)?.length ?? 0) > 0
+      || encounterOutcome(enc).active,
   );
 
   // Guarda de acesso (G9) — render apos todos os hooks.
@@ -861,13 +1021,11 @@ export default function HistoricoPacientePage() {
           <Separator orientation="vertical" className="h-6" />
           <Clock className="h-4 w-4 text-primary" />
           <div className="flex-1 min-w-0">
-            <h1 className="text-base font-medium truncate patient-id">
-              Histórico longitudinal • {patientName}
+            <h1 className="text-base font-medium truncate">
+              Histórico longitudinal
             </h1>
             <p className="text-xs text-muted-foreground">
-              {patientBed && <span className="patient-id">Leito {patientBed}</span>}
-              {patientSector && <span className="patient-id"> · {getSectorDisplayLabel(patientSector)}</span>}
-              <span className="ml-2">{events.length} eventos registrados</span>
+              {events.length} eventos registrados
             </p>
           </div>
           <ThemeToggle />
@@ -969,7 +1127,7 @@ export default function HistoricoPacientePage() {
             </p>
           </Card>
         ) : (
-          <div className="space-y-5 max-w-4xl mx-auto">
+          <div className="space-y-5">
             {visibleEncounters.map(({ enc, n }) => renderEncounter(enc, n))}
           </div>
         )}
