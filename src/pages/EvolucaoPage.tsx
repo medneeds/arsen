@@ -261,11 +261,15 @@ const EvolucaoPage = () => {
 
   const hasPatient = patient.name.trim() !== "";
 
-  // Setor é UTI/UCI? Mostra previsão de alta da UTI também.
+  // Setor monitorizado (UTI/UCI ou Sala Laranja)? Liga o enquadramento de
+  // previsao de alta / monitorado. A Sala Laranja e semi-UTI (pacientes
+  // monitorizados), entao reusa o mesmo fluxo de evolucao da UTI. Checa pelo
+  // CODIGO do setor (robusto) e, por seguranca, tambem pelo rotulo.
   const isUtiSector = useMemo(() => {
     const u = (patient.unit || "").toUpperCase();
-    return u.includes("UTI") || u.includes("UCI");
-  }, [patient.unit]);
+    const monitoredCode = initialPatientSector === "sala_laranja";
+    return monitoredCode || u.includes("UTI") || u.includes("UCI") || u.includes("LARANJA");
+  }, [patient.unit, initialPatientSector]);
 
   const resetNewForm = () => {
     setNewSoap({ subjective: "", objective: "", assessment: "", plan: "" });
