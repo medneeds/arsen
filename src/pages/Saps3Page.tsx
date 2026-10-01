@@ -233,6 +233,7 @@ interface Saps3PageProps {
   embedPatientSector?: string;    // codigo do setor (red/yellow/outside...)
   embedCompleteSapsId?: string;   // id da ficha existente (sapsRow.id), se houver
   onEmbeddedDone?: () => void;    // chamado apos validar/salvar/trava
+  onEmbeddedGoToAdmission?: () => void; // "Seguir para admissao" no card de validacao
 }
 
 export default function Saps3Page({
@@ -243,6 +244,7 @@ export default function Saps3Page({
   embedPatientSector,
   embedCompleteSapsId,
   onEmbeddedDone,
+  onEmbeddedGoToAdmission,
 }: Saps3PageProps = {}) {
   const { user } = useAuth();
   const { currentHospital, currentState } = useHospital();
@@ -1065,9 +1067,23 @@ export default function Saps3Page({
 
         clearDraftAfterSave();
         toast.success("Ficha SAPS 3 validada com sucesso.");
-        // Embute: sem animacao de confirmacao (tela cheia); avisa o pai para
-        // re-buscar a sapsRow (que passa a 'validada' e vira read-only no pai).
-        if (embedded) { onEmbeddedDone?.(); return; }
+        // Embute: mostra a MESMA animacao de confirmacao, mas sem auto-navegar.
+        // O card revela Fechar/Seguir; nao chama onEmbeddedDone aqui (o card e
+        // quem chama no Fechar/Seguir, re-buscando a sapsRow read-only no pai).
+        if (embedded) {
+          setConfirmationData({
+            patientName,
+            bedNumber: selectedBed || "—",
+            sectorLabel,
+            totalScore: scores.total,
+            predictedMortality: scores.mortality,
+            patientId: completingPatientId,
+            sectorCode: selectedSector,
+            age: age ? `${age} anos` : null,
+            mode: "validation",
+          });
+          return;
+        }
         setConfirmationData({
           patientName,
           bedNumber: selectedBed || "—",
@@ -1245,10 +1261,22 @@ export default function Saps3Page({
       }
 
       clearDraftAfterSave();
-      // Embute: sem animacao de confirmacao; avisa o pai para re-buscar a sapsRow.
+      // Embute: mostra a MESMA animacao de confirmacao (mode validacao), sem
+      // auto-navegar. O card revela Fechar/Seguir e chama onEmbeddedDone de la.
       if (embedded) {
         toast.success("Ficha SAPS 3 validada com sucesso.");
-        onEmbeddedDone?.();
+        const sectorLabelEmbed = UTI_SECTORS.find(s => s.value === selectedSector)?.label || selectedSector;
+        setConfirmationData({
+          patientName,
+          bedNumber: selectedBed,
+          sectorLabel: sectorLabelEmbed,
+          totalScore: scores.total,
+          predictedMortality: scores.mortality,
+          patientId: internacaoId,
+          sectorCode: selectedSector,
+          age: age ? `${age} anos` : null,
+          mode: "validation",
+        });
         return;
       }
       const sectorLabel = UTI_SECTORS.find(s => s.value === selectedSector)?.label || selectedSector;
@@ -1328,7 +1356,7 @@ export default function Saps3Page({
     // Embute (aba SAPS da Admissao): so o bloco do formulario, sem o chrome de
     // pagina (container max-w, header, listas, confirmacao de tela cheia).
     <div className={embedded ? "space-y-6" : "mx-auto w-full max-w-6xl px-4 md:px-8 lg:px-8 py-6 space-y-6"}>
-      {!embedded && confirmationData && (
+      {confirmationData && (
         <SapsConfirmationScreen
           patientName={confirmationData.patientName}
           bedNumber={confirmationData.bedNumber}
@@ -1339,7 +1367,17 @@ export default function Saps3Page({
           sectorCode={confirmationData.sectorCode}
           age={confirmationData.age}
           mode={confirmationData.mode}
-          onComplete={() => setConfirmationData(null)}
+          embedded={embedded}
+          // Standalone: o card navega sozinho antes de onComplete; aqui so limpa.
+          // Embute ("Fechar"): limpa o card e avisa o pai para re-buscar a sapsRow.
+          onComplete={() => { setConfirmationData(null); if (embedded) onEmbeddedDone?.(); }}
+          // Embute ("Seguir para admissao"): limpa o card (overlay fixed), re-busca
+          // a sapsRow (aba SAPS vira read-only validada) e troca para a aba Admissao.
+          onProceedToAdmission={() => {
+            setConfirmationData(null);
+            onEmbeddedDone?.();
+            onEmbeddedGoToAdmission?.();
+          }}
         />
       )}
       {/* Header */}

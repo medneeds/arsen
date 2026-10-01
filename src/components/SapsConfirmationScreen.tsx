@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, Activity, TrendingUp, Bed, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
 
 interface SapsConfirmationProps {
   patientName: string;
@@ -15,6 +16,10 @@ interface SapsConfirmationProps {
   sectorCode?: string;
   age?: string | null;
   mode?: "admission" | "validation";
+  // Embute (aba SAPS da /admissao): nao auto-navega. Ao concluir a animacao,
+  // revela dois botoes (Fechar / Seguir para admissao) em vez de redirecionar.
+  embedded?: boolean;
+  onProceedToAdmission?: () => void;
   onComplete: () => void;
 }
 
@@ -28,12 +33,16 @@ export function SapsConfirmationScreen({
   sectorCode,
   age,
   mode = "admission",
+  embedded = false,
+  onProceedToAdmission,
   onComplete,
 }: SapsConfirmationProps) {
   const navigate = useNavigate();
   const isValidation = mode === "validation";
   const [countdown, setCountdown] = useState(3);
   const [progress, setProgress] = useState(0);
+  // Embute: vira true quando a animacao/progresso conclui — libera os botoes.
+  const [showEmbeddedActions, setShowEmbeddedActions] = useState(false);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -57,6 +66,12 @@ export function SapsConfirmationScreen({
     }, 1000);
 
     const timeout = setTimeout(() => {
+      if (embedded) {
+        // Embute: NAO navega e NAO chama onComplete aqui. So revela os botoes —
+        // quem fecha/segue e o usuario (onComplete / onProceedToAdmission).
+        setShowEmbeddedActions(true);
+        return;
+      }
       if (patientId) {
         const params = new URLSearchParams({
           patientId,
@@ -77,7 +92,7 @@ export function SapsConfirmationScreen({
       clearInterval(countdownInterval);
       clearTimeout(timeout);
     };
-  }, [navigate, onComplete, patientId, patientName, bedNumber, sectorCode, age]);
+  }, [navigate, onComplete, patientId, patientName, bedNumber, sectorCode, age, embedded]);
 
   const getMortalityColor = (m: number) => {
     if (m < 10) return "text-released";
@@ -186,17 +201,45 @@ export function SapsConfirmationScreen({
             </div>
           </motion.div>
 
-          {/* Redirect progress */}
+          {/* Redirect progress (standalone) OU acoes do card (embute) */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1.2 }}
             className="w-full space-y-2"
           >
-            <Progress value={progress} className="h-1.5" />
-            <p className="text-xs text-center text-muted-foreground">
-              {patientId ? `Abrindo painel clínico em ${countdown}s...` : `Abrindo painel clínico em ${countdown}s...`}
-            </p>
+            {embedded ? (
+              showEmbeddedActions ? (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="flex items-center gap-3 pt-1"
+                >
+                  <Button variant="ghost" className="flex-1" onClick={() => onComplete()}>
+                    Fechar
+                  </Button>
+                  <Button
+                    className="flex-1"
+                    onClick={() => (onProceedToAdmission ? onProceedToAdmission() : onComplete())}
+                  >
+                    Seguir para admissão
+                  </Button>
+                </motion.div>
+              ) : (
+                <>
+                  <Progress value={progress} className="h-1.5" />
+                  <p className="text-xs text-center text-muted-foreground">Finalizando validação...</p>
+                </>
+              )
+            ) : (
+              <>
+                <Progress value={progress} className="h-1.5" />
+                <p className="text-xs text-center text-muted-foreground">
+                  {patientId ? `Abrindo painel clínico em ${countdown}s...` : `Abrindo painel clínico em ${countdown}s...`}
+                </p>
+              </>
+            )}
           </motion.div>
         </motion.div>
       </AnimatePresence>

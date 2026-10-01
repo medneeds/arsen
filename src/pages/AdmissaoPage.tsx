@@ -242,6 +242,7 @@ export default function AdmissaoPage() {
                   embedPatientSector={patientSector}
                   embedCompleteSapsId={sapsRow?.id}
                   onEmbeddedDone={() => setSapsReloadTick((t) => t + 1)}
+                  onEmbeddedGoToAdmission={() => setActiveTab("admissao")}
                 />
               )}
             </div>
