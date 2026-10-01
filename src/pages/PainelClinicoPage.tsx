@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, Eye, ClipboardList, Clock, AlertTriangle, Pencil, Check, X, Plus, Printer} from "lucide-react";
+import { Search, Eye, ClipboardList, Clock, AlertTriangle, Pencil, Check, X, Plus, Printer, User as UserIcon} from "lucide-react";
 import { RoundSectorPrintDialog } from "@/components/RoundSectorPrintDialog";
 import { PassagemPlantaoDialog } from "@/components/PassagemPlantaoDialog";
 import { DischargeStatusRibbon } from "@/components/DischargeStatusRibbon";
@@ -30,6 +30,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PatientCockpit } from "@/components/PatientCockpit";
 import { PageLoader } from "@/components/PageLoader";
 import { usePageReady } from "@/hooks/usePageReady";
+import { useLastClinicalAction, type UltimaAcao } from "@/hooks/useLastClinicalAction";
 import { safeSetItem } from "@/lib/safeStorage";
 
 const parseTextArray = (input: string | string[] | undefined | null): string[] => {
@@ -114,6 +115,27 @@ const getDischargeText = (patient: Patient): string => {
   }
   return "Sem previsão";
 };
+
+// Linha discreta "Ultima: {tipo} por {autor} · ha X" — mostrada nas duas views
+// (card mobile e linha de tabela) quando houver ultima acao clinica.
+function LastActionLine({ action }: { action: UltimaAcao | undefined }) {
+  if (!action) return null;
+  let quando: string;
+  try {
+    quando = formatDistanceToNow(new Date(action.quando), { addSuffix: true, locale: ptBR });
+  } catch {
+    return null;
+  }
+  return (
+    <p className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+      <UserIcon className="h-3 w-3 shrink-0" />
+      <span className="line-clamp-1">
+        Última: {action.tipo}
+        {action.autor ? ` por ${action.autor}` : ""} · {quando}
+      </span>
+    </p>
+  );
+}
 
 // Documents list
 const DOCUMENTS = [
@@ -231,6 +253,11 @@ export default function PainelClinicoPage() {
         );
       });
   }, [patients, search, sectorFilter]);
+
+  // Ultima acao clinica (evolucao OU prescricao) por paciente — QUEM fez e QUANDO.
+  // Consultas EM LOTE (nao por paciente), chaveadas pelos ids do setor.
+  const sectorPatientIds = useMemo(() => filteredPatients.map((p) => p.id), [filteredPatients]);
+  const lastActionByPatient = useLastClinicalAction(sectorPatientIds);
 
   const handleInlineSave = useCallback(async (patientId: string, field: string, items: string[]) => {
     await updatePatient(patientId, { [field]: items } as Partial<Patient>);
@@ -412,6 +439,7 @@ export default function PainelClinicoPage() {
                         {pendencies.length > 0 && (
                           <p className="text-xs text-warning-on-soft mt-1 line-clamp-1">{pendencies[0]}{pendencies.length > 1 && ` +${pendencies.length - 1}`}</p>
                         )}
+                        <LastActionLine action={lastActionByPatient.get(patient.id)} />
                       </div>
                       <Button
                         variant="ghost"
@@ -482,6 +510,7 @@ export default function PainelClinicoPage() {
                               {parseTextArray(patient.diagnoses)[0]}
                             </p>
                           )}
+                          <LastActionLine action={lastActionByPatient.get(patient.id)} />
                         </div>
                       </TableCell>
                       <TableCell className="text-center">
