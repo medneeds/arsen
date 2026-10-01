@@ -620,7 +620,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
           <div className="space-y-2">
             <Label className="text-xs flex items-center gap-2">
               <Calendar className="h-3 w-3" />
-              Data e hora da admissão
+              Data e hora da admissão no setor
               <span className="text-xs font-normal text-muted-foreground">(sugerida — confirme ou edite)</span>
             </Label>
             <div className="flex gap-2">
@@ -683,7 +683,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
               />
             </div>
             <p className="text-xs text-muted-foreground">
-              Por padrão, usamos o momento atual. Ajuste se a admissão efetiva ocorreu em outro horário.
+              Por padrão, usamos o momento atual. Ajuste se a entrada no setor ocorreu em outro horário.
             </p>
           </div>
 
