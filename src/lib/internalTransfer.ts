@@ -401,12 +401,59 @@ export async function fetchPendingInternalTransferInternacaoIds(): Promise<Set<s
  * muda), entao a entrada no setor atual so existe aqui. Quem nunca transferiu
  * nao tem evento — o chamador usa data_entrada como fallback (TPS = DIH).
  */
+// Eventos que marcam ENTRADA no setor atual (ancora do TPS). Dois caminhos:
+//  - conclusao_transferencia_interna: fila sinalizar->concluir (completeInternalTransfer)
+//  - conclusao_realocacao_setor: realocacao direta entre setores (UtiReallocationDialog,
+//    OperationalRelocationDialog), gravado por recordSectorEntry.
+// Usar um tipo distinto para a realocacao direta evita mexer na fila de
+// transferencia, que remove itens APENAS pelo conclusao_transferencia_interna.
+export const SECTOR_ENTRY_EVENTS = [
+  "conclusao_transferencia_interna",
+  "conclusao_realocacao_setor",
+] as const;
+
+/**
+ * Registra a entrada no setor atual por realocacao DIRETA (fora da fila), para o
+ * TPS resetar. So deve ser chamado quando o setor realmente muda. Nao-bloqueante:
+ * o movimento ja aconteceu; falha aqui apenas deixa o TPS sem a nova ancora.
+ */
+export async function recordSectorEntry(params: {
+  internacaoId: string;
+  targetLeitoId?: string | null;
+  targetBed?: string | null;
+  targetSectorCode?: string | null;
+  actorUserId?: string | null;
+  hospitalId?: string | null;
+  motivo?: string | null;
+}): Promise<void> {
+  try {
+    const { error } = await supabase.from("logs_auditoria").insert({
+      tipo_evento: "conclusao_realocacao_setor",
+      acao: "UPDATE",
+      nome_tabela: "internacoes",
+      internacao_id: params.internacaoId,
+      registro_id: params.internacaoId,
+      ator_user_id: params.actorUserId ?? null,
+      motivo: params.motivo ?? "Entrada no setor por realocacao direta",
+      dados_novos: {
+        target_leito_id: params.targetLeitoId ?? null,
+        target_bed: params.targetBed ?? null,
+        target_sector_code: params.targetSectorCode ?? null,
+      },
+      hospital_id: params.hospitalId ?? null,
+    });
+    if (error) console.error("[recordSectorEntry] falha ao registrar entrada no setor:", error);
+  } catch (e) {
+    console.error("[recordSectorEntry] erro:", e);
+  }
+}
+
 export async function fetchLatestSectorEntryByInternacao(): Promise<Map<string, string>> {
   const byInternacao = new Map<string, string>();
   const { data, error } = await supabase
     .from("logs_auditoria")
     .select("internacao_id, criado_em")
-    .eq("tipo_evento", "conclusao_transferencia_interna")
+    .in("tipo_evento", SECTOR_ENTRY_EVENTS as unknown as string[])
     .order("criado_em", { ascending: false })
     .limit(1000);
   if (error || !data) return byInternacao;

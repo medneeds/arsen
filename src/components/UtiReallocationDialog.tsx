@@ -25,6 +25,7 @@ import { ArrowRightLeft, BedDouble, Check, User, MapPin, ClipboardList, Eye, His
 import { Badge } from "@/components/ui/badge";
 import { MovementConfirmDialog } from "@/components/MovementConfirmDialog";
 import { classifyTransfer, requiresSaps, classificationLabel } from "@/lib/sectorComplexity";
+import { recordSectorEntry } from "@/lib/internalTransfer";
 import { isExtraBed } from "@/utils/bedNaming";
 
 interface UtiReallocationDialogProps {
@@ -184,6 +185,20 @@ export function UtiReallocationDialog({
         } catch (e) {
           console.error("[UtiReallocationDialog] falha ao registrar transferencia:", e);
         }
+      }
+
+      // TPS: so reseta quando MUDA de setor (UTI 1 <-> UTI 2). Troca de leito na
+      // mesma unidade nao conta como nova entrada de setor.
+      if (!isSameUnit) {
+        await recordSectorEntry({
+          internacaoId: patient.id,
+          targetLeitoId,
+          targetBed: targetBedPatient.bedNumber,
+          targetSectorCode: targetUnit === "UTI 1" ? "red" : targetUnit === "UTI 2" ? "yellow" : null,
+          actorUserId: user?.id ?? null,
+          hospitalId: currentHospital?.id ?? null,
+          motivo: `Realocacao direta ${currentUtiUnit} -> ${targetUnit}`,
+        });
       }
 
       toast({

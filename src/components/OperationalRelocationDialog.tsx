@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { resolveSectorCode } from "@/config/sectorCoverage";
+import { recordSectorEntry } from "@/lib/internalTransfer";
 import {
   Dialog,
   DialogContent,
@@ -165,6 +166,19 @@ export function OperationalRelocationDialog({
         department: currentDepartment,
       });
       if (!result.ok) throw new Error(result.error);
+      // TPS: remanejamento operacional sempre muda de setor (destino em outro
+      // setor); registra a entrada no setor atual para o TPS resetar. Guard por
+      // seguranca caso origem e destino sejam o mesmo setor.
+      if (patient.sector !== targetBed.sector) {
+        await recordSectorEntry({
+          internacaoId: patient.id,
+          targetLeitoId: targetBed.id,
+          targetBed: targetBed.bed_number,
+          targetSectorCode: targetBed.sector,
+          hospitalId: currentHospital.id,
+          motivo: `Remanejamento operacional -> ${sectorLabelFromCode(targetBed.sector)}`,
+        });
+      }
       toast({
         title: "Remanejamento concluído",
         description: `${patient.name} movido para ${sectorLabelFromCode(targetBed.sector)} • Leito ${targetBed.bed_number}.`,
