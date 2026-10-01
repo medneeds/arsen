@@ -1,16 +1,24 @@
 import type { Patient } from "@/types/patient";
-import { calcDIH } from "@/lib/dihCalc";
 import { getMainPageTitle } from "@/config/whitelabel";
 
 /**
- * Censo do setor para impressao (lista administrativa) — o que o botao "imprimir
- * mapa do setor" gera agora, no lugar do detalhamento clinico (que migrou para a
- * Passagem de Plantao). Colunas: Leito, Paciente, Prontuario, Atendimento, DIH,
- * TPS, Adm. hospital, Adm. setor, Prev. alta do setor.
+ * Censo do setor para impressao (documento administrativo em lista) — o que o
+ * botao "imprimir mapa do setor" gera no lugar do detalhamento clinico (que
+ * migrou para a Passagem de Plantao).
  *
- * DIH (dias de internacao hospitalar) = desde a admissao hospitalar (data_entrada),
- * nao reinicia na transferencia. TPS (tempo de permanencia no setor) = desde a
- * entrada no setor atual (sectorSince; fallback data_entrada).
+ * Colunas (ordem definida pelo Artur): Leito, Prontuario, Atendimento, Paciente,
+ * Idade, Nascimento, Adm. hospital, Adm. setor, Prev. alta do setor.
+ *
+ * Orientacao PAISAGEM: nao existe @page no index.css (so um @media print), entao
+ * sem isto a folha sai em retrato e as colunas estouram. O @page vive num <style>
+ * escopado aqui — como o componente so e montado durante a impressao do censo
+ * (printMode no mapa), a regra landscape nao vaza para outros impressos (ex.: a
+ * prescricao, que e retrato).
+ *
+ * ATENDIMENTO: internacoes.numero_atendimento resolvido FORA da query principal
+ * do mapa (leitura tolerante, ver Index.tsx) e entregue aqui por atendimentoById,
+ * chaveado pelo patient.id (= internacao_id quando o leito esta ocupado). Ausente
+ * => "—" (coluna recem-criada; pode nao estar aplicada no banco ainda).
  *
  * Renderizado dentro de .print-layout-container (escondido na tela, visivel na
  * impressao). Estilos inline para nao depender de classes externas no papel.
@@ -19,6 +27,7 @@ import { getMainPageTitle } from "@/config/whitelabel";
 interface Props {
   patients: Patient[];
   sectorLabel?: string;
+  atendimentoById?: Map<string, string | null>;
 }
 
 function fmtDate(iso?: string | null): string {
@@ -28,29 +37,25 @@ function fmtDate(iso?: string | null): string {
   return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
-function fmtDays(n: number | null): string {
-  return n == null ? "—" : `${n}d`;
-}
-
 const th: React.CSSProperties = {
   textAlign: "left",
   fontSize: 9,
   textTransform: "uppercase",
   letterSpacing: 0.3,
-  color: "#333",
-  borderBottom: "1.5px solid #222",
-  padding: "5px 6px",
+  color: "#222",
+  borderBottom: "1.5px solid #111",
+  padding: "6px 8px",
   whiteSpace: "nowrap",
 };
 const td: React.CSSProperties = {
   fontSize: 10,
   color: "#111",
   borderBottom: "1px solid #ddd",
-  padding: "4px 6px",
+  padding: "5px 8px",
   verticalAlign: "top",
 };
 
-export function PrintSectorCensus({ patients, sectorLabel }: Props) {
+export function PrintSectorCensus({ patients, sectorLabel, atendimentoById }: Props) {
   const rows = patients
     .filter((p) => !p.isVacant && p.name?.trim() && p.bedNumber)
     .sort((a, b) => (a.bedNumber || "").localeCompare(b.bedNumber || "", "pt-BR", { numeric: true }));
@@ -60,15 +65,38 @@ export function PrintSectorCensus({ patients, sectorLabel }: Props) {
   });
 
   return (
-    <div style={{ fontFamily: "-apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif", color: "#111", padding: "6px 4px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", borderBottom: "2px solid #111", paddingBottom: 6, marginBottom: 8 }}>
+    <div
+      className="censo-doc"
+      style={{ fontFamily: "-apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif", color: "#111", padding: "2px 2px" }}
+    >
+      {/* Orientacao paisagem + comportamento de tabela em quebra de pagina.
+          Escopo do documento do censo (classe .censo-doc) — nao afeta outros
+          impressos do app. */}
+      <style>{`
+        @page { size: A4 landscape; margin: 8mm 10mm; }
+        @media print {
+          .censo-doc table { page-break-inside: auto; }
+          .censo-doc thead { display: table-header-group; }
+          .censo-doc tfoot { display: table-footer-group; }
+          .censo-doc tr { page-break-inside: avoid; }
+        }
+      `}</style>
+
+      {/* Cabecalho do documento: identidade (sistema/hospital) + titulo + meta. */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", borderBottom: "2px solid #111", paddingBottom: 8, marginBottom: 10 }}>
         <div>
-          <div style={{ fontSize: 14, fontWeight: 700 }}>Censo do Setor — {sectorLabel || "Setor"}</div>
-          <div style={{ fontSize: 10, color: "#444" }}>{getMainPageTitle()}</div>
+          <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, color: "#555" }}>
+            {getMainPageTitle()}
+          </div>
+          <div style={{ fontSize: 17, fontWeight: 800, marginTop: 2 }}>
+            Censo do Setor — {sectorLabel || "Setor"}
+          </div>
         </div>
-        <div style={{ fontSize: 10, color: "#444", textAlign: "right" }}>
-          {dateStr}<br />
-          {rows.length} paciente{rows.length !== 1 ? "s" : ""}
+        <div style={{ fontSize: 10, color: "#444", textAlign: "right", lineHeight: 1.5 }}>
+          <div>Emitido em {dateStr}</div>
+          <div style={{ fontWeight: 700, color: "#111" }}>
+            {rows.length} paciente{rows.length !== 1 ? "s" : ""}
+          </div>
         </div>
       </div>
 
@@ -81,13 +109,11 @@ export function PrintSectorCensus({ patients, sectorLabel }: Props) {
           <thead>
             <tr>
               <th style={th}>Leito</th>
-              <th style={th}>Paciente</th>
-              <th style={{ ...th, textAlign: "center" }}>Idade</th>
-              <th style={th}>Nasc.</th>
               <th style={th}>Prontuário</th>
               <th style={th}>Atendimento</th>
-              <th style={{ ...th, textAlign: "center" }}>DIH</th>
-              <th style={{ ...th, textAlign: "center" }}>TPS</th>
+              <th style={th}>Paciente</th>
+              <th style={{ ...th, textAlign: "center" }}>Idade</th>
+              <th style={th}>Nascimento</th>
               <th style={th}>Adm. hospital</th>
               <th style={th}>Adm. setor</th>
               <th style={th}>Prev. alta setor</th>
@@ -95,20 +121,16 @@ export function PrintSectorCensus({ patients, sectorLabel }: Props) {
           </thead>
           <tbody>
             {rows.map((p) => {
-              const dih = calcDIH(p.admissionDate);
-              const tps = calcDIH(p.sectorSince ?? p.admissionDate);
               const prevAlta = Array.isArray(p.utiDischargePrediction) ? p.utiDischargePrediction[0] : undefined;
+              const atendimento = atendimentoById?.get(p.id) ?? null;
               return (
                 <tr key={p.id}>
                   <td style={{ ...td, fontFamily: "ui-monospace, Menlo, monospace", fontWeight: 700, whiteSpace: "nowrap" }}>{p.bedNumber}</td>
+                  <td style={{ ...td, whiteSpace: "nowrap" }}>{p.prontuario || "—"}</td>
+                  <td style={{ ...td, fontFamily: "ui-monospace, Menlo, monospace", whiteSpace: "nowrap" }}>{atendimento || "—"}</td>
                   <td style={{ ...td, fontWeight: 600 }}>{p.name}</td>
                   <td style={{ ...td, textAlign: "center", whiteSpace: "nowrap" }}>{p.age || "—"}</td>
                   <td style={{ ...td, whiteSpace: "nowrap" }}>{fmtDate(p.birthDate)}</td>
-                  <td style={{ ...td, whiteSpace: "nowrap" }}>{p.prontuario || "—"}</td>
-                  {/* Atendimento: sem coluna no schema novo (degradado) — placeholder. */}
-                  <td style={{ ...td, whiteSpace: "nowrap", color: "#999" }}>—</td>
-                  <td style={{ ...td, textAlign: "center", whiteSpace: "nowrap" }}>{fmtDays(dih)}</td>
-                  <td style={{ ...td, textAlign: "center", whiteSpace: "nowrap" }}>{fmtDays(tps)}</td>
                   <td style={{ ...td, whiteSpace: "nowrap" }}>{fmtDate(p.admissionDate)}</td>
                   <td style={{ ...td, whiteSpace: "nowrap" }}>{fmtDate(p.sectorSince ?? p.admissionDate)}</td>
                   <td style={{ ...td, whiteSpace: "nowrap" }}>{fmtDate(prevAlta)}</td>

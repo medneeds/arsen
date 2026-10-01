@@ -8,6 +8,7 @@ import { PatientSidebar } from "@/components/PatientSidebar";
 import { PrintLayout } from "@/components/PrintLayout";
 import { PrintUtiLayout } from "@/components/PrintUtiLayout";
 import { PrintSectorCensus } from "@/components/PrintSectorCensus";
+import { supabase } from "@/integrations/supabase/client";
 import { PrintPatientLayout } from "@/components/PrintPatientLayout";
 import { PrintPatientPreviewDialog } from "@/components/PrintPatientPreviewDialog";
 import { PrintMapPreviewDialog } from "@/components/PrintMapPreviewDialog";
@@ -267,6 +268,11 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
   const [printingSector, setPrintingSector] = useState<string | null>(null);
   const [printMode, setPrintMode] = useState<'compact' | 'detailed' | null>(null);
   const [printingPatientId, setPrintingPatientId] = useState<string | null>(null);
+  // ATENDIMENTO (internacoes.numero_atendimento) para o censo impresso. Lido FORA
+  // da query principal do mapa, de forma tolerante: se a coluna ainda nao existir
+  // no banco (migration nao aplicada), a query falha e o mapa mantem o Map vazio
+  // (censo mostra "—") sem derrubar a tela.
+  const [atendimentoById, setAtendimentoById] = useState<Map<string, string | null>>(new Map());
   const [previewPatientId, setPreviewPatientId] = useState<string | null>(null);
   const [previewMapMode, setPreviewMapMode] = useState<'compact' | 'detailed' | null>(null);
   const [previewUtiMapMode, setPreviewUtiMapMode] = useState<'compact' | 'detailed' | null>(null);
@@ -421,6 +427,35 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
   const yellowPatients = filterPatients(patients.filter((p) => p.sector === "yellow"));
   const bluePatients = filterPatients(patients.filter((p) => p.sector === "blue"));
   const outsidePatients = filterPatients(patients.filter((p) => p.sector === "outside"));
+
+  // Resolve numero_atendimento dos leitos ocupados para o censo impresso. Chave
+  // estavel (ids ordenados) evita refetch a cada render. Leitura tolerante: erro
+  // (coluna ausente) mantem o mapa como esta — censo cai para "—".
+  const occupiedIdsKey = patients
+    .filter((p) => !p.isVacant && p.name?.trim())
+    .map((p) => p.id)
+    .sort()
+    .join(",");
+  useEffect(() => {
+    const ids = occupiedIdsKey ? occupiedIdsKey.split(",") : [];
+    if (ids.length === 0) { setAtendimentoById(new Map()); return; }
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from("internacoes")
+          .select("id, numero_atendimento")
+          .in("id", ids);
+        if (error || !data || cancelled) return;
+        const m = new Map<string, string | null>();
+        (data as Array<{ id: string; numero_atendimento?: string | null }>).forEach(
+          (r) => m.set(r.id, r.numero_atendimento ?? null),
+        );
+        setAtendimentoById(m);
+      } catch { /* tolerante: coluna/rede indisponivel -> censo mostra "—" */ }
+    })();
+    return () => { cancelled = true; };
+  }, [occupiedIdsKey]);
 
   // Todos os leitos do setor ativo, SEM filtro de exibicao (usado na ocupacao real).
   const activeSectorPatients = patients.filter(p =>
@@ -915,6 +950,7 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
                 if (printingSector === "outside") return outsidePatients;
                 return all;
               })()}
+              atendimentoById={atendimentoById}
               sectorLabel={
                 printingSector === "selected"
                   ? "Pacientes selecionados"
