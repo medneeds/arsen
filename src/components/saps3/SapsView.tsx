@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { User as UserIcon, ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { COMORBIDADES, milParaContagem, formatarContagem } from "@/lib/saps3";
+import { COMORBIDADES, milParaContagem, formatarContagem, LOCAL_ANTES_UTI, STATUS_CIRURGICO, SITIO_CIRURGICO, INFECCAO } from "@/lib/saps3";
 
 /**
  * Visualizacao READ-ONLY completa de uma ficha SAPS 3 ja gravada (avaliacoes_saps3).
@@ -59,6 +59,24 @@ const fmtFull = (iso?: string | null): string => {
   return d.toLocaleString("pt-BR", {
     day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit",
   });
+};
+
+// Traduz o codigo enum gravado (ex.: "operating_room") para o rotulo PT canonico
+// definido em saps3.ts. Fallback para o proprio codigo se nao mapear.
+const labelFrom = (faixas: { id: string; rotulo: string }[], code?: string | null): string => {
+  const c = String(code ?? "").trim();
+  if (!c) return "";
+  return faixas.find((f) => f.id === c)?.rotulo ?? c;
+};
+
+// motivo_admissao e um GRUPO (quando nao ha detalhe em PT). Rotulos PT do grupo.
+const MOTIVO_GRUPO: Record<string, string> = {
+  cardiovascular: "Cardiovascular",
+  neurological: "Neurológico",
+  hepatic: "Hepático",
+  digestive: "Digestivo",
+  respiratory: "Respiratório",
+  other: "Outro",
 };
 
 const comorbLabels = (raw: unknown): string => {
@@ -169,16 +187,16 @@ export function SapsView({ row }: { row: SapsRow }) {
       <Group title="Box I — Condições prévias" collapsible>
         <Field label="Idade" value={num(row.idade, " anos")} />
         <Field label="Dias no hospital antes da UTI" value={num(row.dias_hospital_antes_uti)} />
-        <Field label="Origem" value={row.origem_admissao ?? ""} />
+        <Field label="Origem" value={labelFrom(LOCAL_ANTES_UTI.faixas, row.origem_admissao)} />
         <Field label="Comorbidades" value={comorbLabels(row.comorbidades)} />
         <Field label="Admissão planejada" value={row.admissao_planejada == null ? "" : row.admissao_planejada ? "Sim" : "Não"} />
       </Group>
 
       <Group title="Box II — Circunstâncias da admissão" collapsible>
-        <Field label="Motivo" value={row.motivo_admissao_detalhe || row.motivo_admissao || ""} />
-        <Field label="Status cirúrgico" value={row.status_cirurgico ?? ""} />
-        <Field label="Tipo de cirurgia" value={row.tipo_cirurgia ?? ""} />
-        <Field label="Infecção na admissão" value={row.infeccao_na_admissao ?? ""} />
+        <Field label="Motivo" value={(row.motivo_admissao_detalhe || "").trim() || MOTIVO_GRUPO[String(row.motivo_admissao ?? "").trim()] || row.motivo_admissao || ""} />
+        <Field label="Status cirúrgico" value={labelFrom(STATUS_CIRURGICO.faixas, row.status_cirurgico)} />
+        <Field label="Tipo de cirurgia" value={labelFrom(SITIO_CIRURGICO.faixas, row.tipo_cirurgia)} />
+        <Field label="Infecção na admissão" value={labelFrom(INFECCAO.faixas, row.infeccao_na_admissao)} />
       </Group>
 
       <Group title="Box III — Fisiologia" collapsible>
