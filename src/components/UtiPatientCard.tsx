@@ -808,9 +808,10 @@ export function UtiPatientCard({
         {patient.isVacant ? (
           <div className="flex items-center justify-between p-2 gap-1">
             <div className="flex items-center gap-2">
-              {/* Bed Number */}
+              {/* Bed Number — mesma caixa do card ocupado (min-w + centralizado)
+                  para alinhar leito vago e ocupado na mesma coluna. */}
               <div className={cn("shrink-0 px-2 py-1 rounded-md border", colors.bedBg)}>
-                <span className={cn("patient-id text-xs font-semibold", colors.bedText)}>{patient.bedNumber}</span>
+                <span className={cn("patient-id block text-xs font-semibold min-w-8 md:min-w-10 text-center", colors.bedText)}>{patient.bedNumber}</span>
               </div>
               {/* Vacant Message */}
               <div className="flex items-center gap-2 text-muted-foreground">
