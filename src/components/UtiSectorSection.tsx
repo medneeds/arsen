@@ -2,7 +2,7 @@ import { Patient, SectorType } from "@/types/patient";
 import { ReactNode, useState, useEffect } from "react";
 import { UtiPatientCard } from "./UtiPatientCard";
 import { EmptySectorState } from "@/components/EmptySectorState";
-import { Printer, Plus, ChevronDown, ChevronsDownUp, ChevronsUpDown } from "lucide-react";
+import { Printer, Plus, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -134,7 +134,6 @@ export function UtiSectorSection({
   const displayTitle = customTitle || info.title;
   const displayIcon = customIcon || info.icon;
   const [internalIsOpen, setInternalIsOpen] = useState(patients.length > 0);
-  const [allCardsCollapsed, setAllCardsCollapsed] = useState(true);
 
   // Header color schemes based on colorVariant
   const headerStyles: Record<ColorVariant, { bg: string; title: string; button: string; chevron: string; counter: string }> = {
@@ -217,21 +216,6 @@ export function UtiSectorSection({
             </button>
           </CollapsibleTrigger>
           <div className="flex items-center gap-2">
-            {patients.length > 0 && (
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setAllCardsCollapsed(!allCardsCollapsed)}
-                className={`h-8 w-8 print:hidden ${buttonClass}`}
-                title={allCardsCollapsed ? "Expandir todos os pacientes" : "Retrair todos os pacientes"}
-              >
-                {allCardsCollapsed ? (
-                  <ChevronsUpDown className="h-3.5 w-3.5" />
-                ) : (
-                  <ChevronsDownUp className="h-3.5 w-3.5" />
-                )}
-              </Button>
-            )}
             {onAddExtraBed && (
               <Button
                 variant="outline"
@@ -254,7 +238,7 @@ export function UtiSectorSection({
                 <Printer className="h-3.5 w-3.5" />
               </Button>
             )}
-            <div className={`flex items-center justify-center h-8 w-8 backdrop-blur-sm rounded-lg border print:h-6 print:w-6 ${counterClass}`}>
+            <div className={`flex items-center justify-center h-8 min-w-8 px-2 backdrop-blur-sm rounded-lg border print:h-6 print:min-w-0 print:px-1 ${counterClass}`}>
               <p className={`text-base font-semibold print:text-xs ${titleClass}`}>
                 {occupiedBedCount(sectorPatients ?? patients)}
                 {sectorCapacity(sector) > 0 && (
@@ -289,7 +273,7 @@ export function UtiSectorSection({
                 isSelected={selectedPatients.has(patient.id)}
                 onToggleSelection={onToggleSelection}
                 colorVariant={colorVariant}
-                forceCollapsed={allCardsCollapsed}
+                forceCollapsed={true}
                 allPatients={allPatients}
                 currentUtiUnit={currentUtiUnit}
               />

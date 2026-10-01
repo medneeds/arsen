@@ -901,9 +901,9 @@ export function UtiPatientCard({
                         : "text-released-on-soft";
                     return (
                       // DIH (hospital, nao reinicia) e TPS (setor, reinicia na
-                      // transferencia) empilhados — um sobre o outro, compacto, no
-                      // mesmo slot de largura fixa (alinhamento consistente).
-                      <div className="shrink-0 flex flex-col gap-0.5 w-[72px] md:w-[82px]">
+                      // transferencia) LADO A LADO — duas pilulas compactas na
+                      // mesma linha, para nao alargar/alongar o card do leito.
+                      <div className="shrink-0 flex items-center gap-1">
                         <div
                           className={cn(
                             "flex items-center justify-center gap-1 px-2 py-0.5 rounded-md border",
