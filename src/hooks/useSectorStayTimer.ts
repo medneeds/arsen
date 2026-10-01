@@ -43,18 +43,24 @@ function parseAdmissionDate(dateString: string): Date | null {
   return null;
 }
 
+// A partir de 24h o TPS conta em DIAS (pedido: nao ficar "48h", "72h" e sim
+// "2d", "3d"). Abaixo de 24h segue em horas; abaixo de 1h, em minutos.
 function formatDuration(totalMinutes: number): string {
   if (totalMinutes < 0) return "0min";
-  const hours = Math.floor(totalMinutes / 60);
+  const days = Math.floor(totalMinutes / 1440);
+  const hours = Math.floor((totalMinutes % 1440) / 60);
   const minutes = totalMinutes % 60;
-  if (hours > 0) {
-    return `${hours}h${minutes > 0 ? `${minutes}min` : ""}`;
-  }
+  if (days > 0) return hours > 0 ? `${days}d ${hours}h` : `${days}d`;
+  if (hours > 0) return `${hours}h${minutes > 0 ? `${minutes}min` : ""}`;
   return `${minutes}min`;
 }
 
+// Versao curta para a pilula (nao alargar a linha do mapa): dias OU horas OU
+// minutos, sem combinar — "2d", "6h", "40min".
 function formatDurationShort(totalMinutes: number): string {
   if (totalMinutes < 0) return "0min";
+  const days = Math.floor(totalMinutes / 1440);
+  if (days > 0) return `${days}d`;
   const hours = Math.floor(totalMinutes / 60);
   if (hours > 0) return `${hours}h`;
   return `${totalMinutes}min`;
