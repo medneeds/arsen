@@ -172,6 +172,8 @@ interface MovimentacaoLog {
   data: string;
   destino: string | null;
   motivo: string | null;
+  // Autor da movimentacao (profissionais.id). Resolvido para {nome, crm} no render.
+  profissionalId: string | null;
 }
 
 // Linha crua de logs_auditoria (so os campos lidos aqui), para tipar sem `any`.
@@ -179,9 +181,52 @@ interface LogAuditoriaRow {
   id: string;
   internacao_id: string | null;
   tipo_evento: string | null;
+  profissional_id: string | null;
   criado_em: string;
   motivo: string | null;
   dados_novos: { destination?: string | null; target_sector_label?: string | null; notes?: string | null } | null;
+}
+
+// Linha de profissionais usada para resolver o autor (id -> nome/crm), sem `any`.
+interface ProfissionalRow {
+  id: string;
+  nome: string | null;
+  crm: string | null;
+}
+
+// Shape do soap (JSON da evolucao) nos campos de autoria/turno que lemos aqui.
+interface EvolutionSoap {
+  __evolution_type?: string | null;
+  __created_by_name?: string | null;
+  __validated_by_name?: string | null;
+}
+
+// Campos de autoria acessados no payload (a LINHA crua da fonte de cada evento),
+// cobrindo as colunas de todos os tipos. Tipado para nao introduzir `any` novo.
+interface EventAuthorPayload {
+  profissional_id?: string | null;
+  criado_por?: string | null;
+  registrado_por?: string | null;
+  solicitado_por?: string | null;
+  assinado_por?: string | null;
+  crm_assinatura?: string | null;
+  soap?: EvolutionSoap | null;
+  conteudo?: { signed_by_name?: string | null; signed_by_crm?: string | null } | null;
+}
+
+// Coluna de autor-criador por tipo de evento (para coleta e resolucao generica).
+// evolution/discharge tem logica propria no resolveAutor (preferem nome embutido).
+function eventAuthorId(e: TimelineEvent): string | null {
+  const p = e.payload as EventAuthorPayload;
+  switch (e.event_type) {
+    case "evolution": return p.profissional_id ?? null;
+    case "prescription": return p.criado_por ?? null;
+    case "exam_request": return p.solicitado_por ?? null;
+    case "culture_result": return p.solicitado_por ?? p.criado_por ?? null;
+    case "discharge_document": return p.assinado_por ?? null;
+    case "encounter": return p.criado_por ?? p.registrado_por ?? p.profissional_id ?? null;
+    default: return null;
+  }
 }
 
 // Turno/tipo da evolucao a partir de soap.__evolution_type.
@@ -354,6 +399,7 @@ export default function HistoricoPacientePage() {
             data: r.criado_em,
             destino: dn.destination ?? dn.target_sector_label ?? null,
             motivo: r.motivo ?? dn.notes ?? null,
+            profissionalId: r.profissional_id ?? null,
           };
         });
     },
@@ -367,6 +413,61 @@ export default function HistoricoPacientePage() {
     });
     return m;
   }, [movLogs]);
+
+  // ── Autores (nome + CRM) de TODOS os eventos e movimentacoes ──
+  // Coleta os ids de autor (coluna conforme o tipo + profissional_id das
+  // movimentacoes), dedup, sem nulos/vazios; resolve em profissionais(id,nome,crm).
+  const autorIds = useMemo(() => {
+    const s = new Set<string>();
+    const add = (id: string | null | undefined) => {
+      if (id && id.trim()) s.add(id);
+    };
+    events.forEach((e) => add(eventAuthorId(e)));
+    movLogs.forEach((mv) => add(mv.profissionalId));
+    return [...s];
+  }, [events, movLogs]);
+
+  const { data: autoresMap = new Map<string, ProfissionalRow>() } = useQuery({
+    queryKey: ["historico-autores", autorIds],
+    enabled: autorIds.length > 0,
+    queryFn: async (): Promise<Map<string, ProfissionalRow>> => {
+      const { data } = await supabase
+        .from("profissionais")
+        .select("id, nome, crm")
+        .in("id", autorIds);
+      const m = new Map<string, ProfissionalRow>();
+      ((data ?? []) as unknown as ProfissionalRow[]).forEach((r) => m.set(r.id, r));
+      return m;
+    },
+  });
+
+  // Autor de um evento: evolution/discharge preferem o nome embutido (soap/conteudo);
+  // os demais resolvem pela coluna de autor-criador via mapa. CRM so quando houver.
+  const resolveAutor = (e: TimelineEvent): { nome: string | null; crm: string | null } => {
+    const p = e.payload as EventAuthorPayload;
+    if (e.event_type === "evolution") {
+      const prof = p.profissional_id ? autoresMap.get(p.profissional_id) : undefined;
+      return {
+        nome: p.soap?.__created_by_name ?? prof?.nome ?? null,
+        crm: prof?.crm ?? null,
+      };
+    }
+    if (e.event_type === "discharge_document") {
+      const prof = p.assinado_por ? autoresMap.get(p.assinado_por) : undefined;
+      return {
+        nome: p.conteudo?.signed_by_name ?? prof?.nome ?? null,
+        crm: p.conteudo?.signed_by_crm ?? p.crm_assinatura ?? prof?.crm ?? null,
+      };
+    }
+    const id = eventAuthorId(e);
+    const prof = id ? autoresMap.get(id) : undefined;
+    return { nome: prof?.nome ?? null, crm: prof?.crm ?? null };
+  };
+
+  const resolveAutorMov = (m: MovimentacaoLog): { nome: string | null; crm: string | null } => {
+    const prof = m.profissionalId ? autoresMap.get(m.profissionalId) : undefined;
+    return { nome: prof?.nome ?? null, crm: prof?.crm ?? null };
+  };
 
   // Eventos agrupados por atendimento (patient_id = internacao_id).
   const eventsByEncounter = useMemo(() => {
@@ -763,11 +864,12 @@ export default function HistoricoPacientePage() {
   // ── Render de um evento (reaproveita ICONS/LABELS/COLORS + botao de impressao) ──
   const renderEventItem = (e: TimelineEvent) => {
     const Icon = ICONS[e.event_type] ?? FileText;
-    // Evolucao: medico que executou (soap.__created_by_name, fallback author_email)
-    // e turno/tipo (soap.__evolution_type) exibido como Badge ao lado do tipo/hora.
+    // Autor (nome + CRM quando houver) resolvido para TODOS os tipos.
+    // Para evolucao, o turno/tipo (soap.__evolution_type) sai como Badge e, se
+    // houver validador (soap.__validated_by_name), um segundo rotulo discreto.
     const isEvolution = e.event_type === "evolution";
-    const evoSoap = isEvolution ? (e.payload?.soap ?? null) : null;
-    const evoMedico = isEvolution ? (evoSoap?.__created_by_name || e.author_email || null) : null;
+    const evoSoap: EvolutionSoap | null = isEvolution ? ((e.payload as EventAuthorPayload).soap ?? null) : null;
+    const autor = resolveAutor(e);
     return (
       <div key={e.event_id} className="flex items-start gap-2 rounded-md border border-border/60 bg-background px-3 py-2 hover:bg-muted/40 transition-colors group">
         <div className={cn(
@@ -790,20 +892,16 @@ export default function HistoricoPacientePage() {
               <Clock className="h-3 w-3" />
               {format(new Date(e.event_at), "dd/MM/yyyy HH:mm")}
             </span>
-            {isEvolution ? (
-              evoMedico && (
-                <span className="text-xs text-muted-foreground flex items-center gap-1">
-                  <UserIcon className="h-3 w-3" />
-                  por {evoMedico}
-                </span>
-              )
-            ) : (
-              e.author_email && (
-                <span className="text-xs text-muted-foreground flex items-center gap-1">
-                  <UserIcon className="h-3 w-3" />
-                  {e.author_email}
-                </span>
-              )
+            {autor.nome && (
+              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                <UserIcon className="h-3 w-3" />
+                por {autor.nome}{autor.crm ? ` · CRM ${autor.crm}` : ""}
+              </span>
+            )}
+            {isEvolution && evoSoap?.__validated_by_name && (
+              <span className="text-xs text-muted-foreground">
+                validada por {evoSoap.__validated_by_name}
+              </span>
             )}
           </div>
           {e.event_label && <p className="text-sm font-medium mt-1 break-words">{e.event_label}</p>}
@@ -828,6 +926,7 @@ export default function HistoricoPacientePage() {
   // ── Render de um item de movimentacao de logs_auditoria ──
   const renderMovItem = (m: MovimentacaoLog) => {
     const Icon = m.tipo_evento.startsWith("suspensao_") ? Ban : Truck;
+    const autor = resolveAutorMov(m);
     return (
       <div key={m.id} className="flex items-start gap-2 rounded-md border border-border/60 bg-background px-3 py-2">
         <div className={cn(
@@ -846,6 +945,12 @@ export default function HistoricoPacientePage() {
               <Clock className="h-3 w-3" />
               {format(new Date(m.data), "dd/MM/yyyy 'as' HH:mm")}
             </span>
+            {autor.nome && (
+              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                <UserIcon className="h-3 w-3" />
+                por {autor.nome}{autor.crm ? ` · CRM ${autor.crm}` : ""}
+              </span>
+            )}
           </div>
           {m.motivo && <p className="text-xs text-muted-foreground mt-0.5 break-words">{m.motivo}</p>}
         </div>
