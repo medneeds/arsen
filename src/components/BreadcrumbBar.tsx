@@ -144,12 +144,17 @@ export function BreadcrumbBar({
           </>
         )}
 
+        {/* Chip do modulo atual. Quando as abas de modulo estao visiveis (desktop),
+            o chip e REDUNDANTE com a aba ja destacada — entao fica so no mobile
+            (onde as abas sao ocultas e o chip carrega o contexto). Sem abas de
+            modulo, o chip aparece normalmente. */}
         {moduleLabel && (
           <>
-            <ChevronRight className={cn("hidden sm:inline-block h-3.5 w-3.5 flex-shrink-0", isInstitutional ? "text-primary-foreground/80" : "text-muted-foreground/50")} />
+            <ChevronRight className={cn("h-3.5 w-3.5 flex-shrink-0", showModules ? "hidden" : "hidden sm:inline-block", isInstitutional ? "text-primary-foreground/80" : "text-muted-foreground/50")} />
             <span
               className={cn(
-                "px-2 sm:px-2 py-1 sm:py-1 rounded-md uppercase tracking-wide text-xs sm:text-xs whitespace-nowrap flex-shrink-0",
+                "px-2 py-1 rounded-md uppercase tracking-wide text-xs whitespace-nowrap flex-shrink-0",
+                showModules && "sm:hidden",
                 isInstitutional ? "bg-white/15 text-primary-foreground border border-white/20" : "bg-primary/10 text-primary",
               )}
             >
