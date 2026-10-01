@@ -313,10 +313,13 @@ export function useEvolutions(
           const parsed = parseDiagnosesText(diagnosticHypotheses);
           interUpdates.hipotese_diagnostica = Array.isArray(parsed) ? parsed.join("\n") : parsed;
         }
-        // Antecedentes → internacoes.historia_clinica
-        if (antecedentes && antecedentes.length > 0) {
-          interUpdates.historia_clinica = antecedentes.filter(Boolean).join("\n");
-        }
+        // Antecedentes: NAO gravar em internacoes.historia_clinica. Essa coluna
+        // guarda a HISTORIA ADMISSIONAL (HDA) escrita na admissao; gravar os
+        // antecedentes aqui sobrescrevia a HDA ja na 1a evolucao de rotina. Os
+        // antecedentes ja persistem em soap.antecedentes (de onde a evolucao os
+        // le) e, canonicamente, pertencem a pacientes.comorbidades — a
+        // sincronizacao com o cadastro entra na fase seguinte (admissao+evolucao
+        // gravando comorbidades). Aqui so paramos de corromper a HDA.
         // Plano Terapêutico → internacoes.conduta_inicial
         if (planItems && planItems.length > 0) {
           interUpdates.conduta_inicial = planItems.filter(Boolean).join("\n");
