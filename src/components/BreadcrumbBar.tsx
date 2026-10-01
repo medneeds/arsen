@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import { Building2, ChevronRight, ArrowLeft, HelpCircle } from "lucide-react";
+import { Building2, ChevronRight, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ClinicalNavTabs } from "@/components/ClinicalNavTabs";
@@ -9,7 +9,6 @@ import { PatientSwitcher } from "@/components/PatientSwitcher";
 import { SectorSelector } from "@/components/SectorSelector";
 import { whitelabel } from "@/config/whitelabel";
 import { cn } from "@/lib/utils";
-import { useRegisterHeaderHelp } from "@/contexts/HeaderHelpContext";
 
 interface BreadcrumbBarProps {
   /** Show the sector selector dropdown (default true) */
@@ -49,7 +48,6 @@ export function BreadcrumbBar({
 }: BreadcrumbBarProps) {
   const navigate = useNavigate();
   const isInstitutional = variant === "institutional";
-  useRegisterHeaderHelp();
 
   return (
     <nav
@@ -168,23 +166,7 @@ export function BreadcrumbBar({
         "flex items-center gap-2 flex-shrink-0",
         isInstitutional && "institutional-actions"
       )}>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => navigate("/ajuda")}
-          className={cn(
-            "h-6 gap-1 px-2 text-xs shadow-sm",
-            isInstitutional
-              ? "bg-white/95 text-foreground border-white/40 hover:bg-white"
-              : "bg-card text-foreground",
-          )}
-          title="Dúvidas Frequentes"
-          aria-label="Dúvidas Frequentes"
-        >
-          <HelpCircle className="h-3 w-3" />
-          <span className="hidden sm:inline">Dúvidas</span>
-        </Button>
+        {/* Botao "Duvidas Frequentes" movido para a sidebar (rodape). */}
         {actions}
       </div>
     </nav>
