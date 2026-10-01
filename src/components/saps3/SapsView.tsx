@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { User as UserIcon } from "lucide-react";
+import { User as UserIcon, ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { COMORBIDADES, milParaContagem, formatarContagem } from "@/lib/saps3";
 
 /**
@@ -50,6 +51,16 @@ export interface SapsRow {
 const num = (v?: number | null, suf = ""): string =>
   v == null || Number.isNaN(Number(v)) ? "" : `${v}${suf}`;
 
+// Data+hora completas do momento da validacao (ex.: 01/10/2026 as 14:32).
+const fmtFull = (iso?: string | null): string => {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleString("pt-BR", {
+    day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit",
+  });
+};
+
 const comorbLabels = (raw: unknown): string => {
   const arr = Array.isArray(raw) ? (raw as string[]) : [];
   if (arr.length === 0) return "";
@@ -69,13 +80,27 @@ function Field({ label, value }: { label: string; value?: string }) {
   );
 }
 
-function Group({ title, children }: { title: string; children: React.ReactNode }) {
+function Group({ title, children, collapsible }: { title: string; children: React.ReactNode; collapsible?: boolean }) {
   const arr = Array.isArray(children) ? children : [children];
   if (!arr.some(Boolean)) return null;
+  const grid = <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2">{children}</div>;
+  // Detalhamento dos boxes retraido por padrao (ficha ja preenchida ocupa menos
+  // espaco); o escore/validacao ficam sempre visiveis fora destes grupos.
+  if (collapsible) {
+    return (
+      <Collapsible defaultOpen={false} className="space-y-2">
+        <CollapsibleTrigger className="group flex w-full items-center justify-between gap-2 border-b border-border/60 pb-0.5 text-left">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-primary">{title}</span>
+          <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+        </CollapsibleTrigger>
+        <CollapsibleContent className="pt-2">{grid}</CollapsibleContent>
+      </Collapsible>
+    );
+  }
   return (
     <div className="space-y-2">
       <div className="text-[11px] font-semibold uppercase tracking-wider text-primary border-b border-border/60 pb-0.5">{title}</div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2">{children}</div>
+      {grid}
     </div>
   );
 }
@@ -136,12 +161,12 @@ export function SapsView({ row }: { row: SapsRow }) {
         {!isPending && validador?.nome && (
           <p className="mt-3 flex items-center gap-1 text-xs text-muted-foreground">
             <UserIcon className="h-3 w-3" />
-            Validada por {validador.nome}{validador.numero_conselho ? ` · CRM ${validador.numero_conselho}` : ""}
+            Validada por {validador.nome}{validador.numero_conselho ? ` · CRM ${validador.numero_conselho}-MA` : ""}{row.validado_em ? ` em ${fmtFull(row.validado_em)}` : ""}
           </p>
         )}
       </div>
 
-      <Group title="Box I — Condições prévias">
+      <Group title="Box I — Condições prévias" collapsible>
         <Field label="Idade" value={num(row.idade, " anos")} />
         <Field label="Dias no hospital antes da UTI" value={num(row.dias_hospital_antes_uti)} />
         <Field label="Origem" value={row.origem_admissao ?? ""} />
@@ -149,14 +174,14 @@ export function SapsView({ row }: { row: SapsRow }) {
         <Field label="Admissão planejada" value={row.admissao_planejada == null ? "" : row.admissao_planejada ? "Sim" : "Não"} />
       </Group>
 
-      <Group title="Box II — Circunstâncias da admissão">
+      <Group title="Box II — Circunstâncias da admissão" collapsible>
         <Field label="Motivo" value={row.motivo_admissao_detalhe || row.motivo_admissao || ""} />
         <Field label="Status cirúrgico" value={row.status_cirurgico ?? ""} />
         <Field label="Tipo de cirurgia" value={row.tipo_cirurgia ?? ""} />
         <Field label="Infecção na admissão" value={row.infeccao_na_admissao ?? ""} />
       </Group>
 
-      <Group title="Box III — Fisiologia">
+      <Group title="Box III — Fisiologia" collapsible>
         <Field label="Glasgow" value={num(row.escore_glasgow)} />
         <Field label="FC (mais alta)" value={num(row.fc_mais_alta, " bpm")} />
         <Field label="PAS (mais baixa)" value={num(row.pas_mais_baixa, " mmHg")} />
