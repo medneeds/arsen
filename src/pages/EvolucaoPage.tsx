@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { useUnsavedClinical } from "@/contexts/UnsavedPrescriptionContext";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
+import { SapsPendingAlert } from "@/components/SapsPendingAlert";
 import { SectionLoader } from "@/components/SectionLoader";
 
 
@@ -567,6 +568,12 @@ const EvolucaoPage = () => {
 
       <div className="flex print:hidden">
         <div className="flex-1 min-w-0 p-3 sm:p-4 space-y-3 sm:space-y-4">
+          <SapsPendingAlert
+            patientId={initialPatientId}
+            patientName={initialPatientName}
+            patientBed={initialPatientBed}
+            patientSector={initialPatientSector}
+          />
         {/* SAPS pending alert removed */}
         {/* Page Header — title + patient identity inline */}
         <div className="flex items-center justify-between gap-2 flex-wrap">

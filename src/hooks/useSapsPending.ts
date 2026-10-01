@@ -3,19 +3,23 @@ import { supabase } from "@/integrations/supabase/client";
 
 export interface SapsPendingInfo {
   id: string;
-  patient_name: string;
   pending_since: string | null;
 }
 
 /**
- * Watches saps3_assessments for the given patient name and returns the pending record (if any).
- * Realtime via Supabase channel on the saps3_assessments table.
+ * Observa a ficha SAPS 3 PENDENTE da internação e retorna o registro (se houver).
+ *
+ * MIGRAÇÃO: antes consultava a tabela morta `saps3_assessments` por `patient_name`
+ * e status 'pending' (inglês). A fonte viva é `avaliacoes_saps3`, ancorada em
+ * `internacao_id`, com status em português ('pendente'/'validada') e `pending_since`
+ * (colunas confirmadas no banco). A assinatura passou de patientName para
+ * internacaoId — a mesma âncora de todo dado clínico no schema novo.
  */
-export function useSapsPending(patientName?: string | null): SapsPendingInfo | null {
+export function useSapsPending(internacaoId?: string | null): SapsPendingInfo | null {
   const [pending, setPending] = useState<SapsPendingInfo | null>(null);
 
   useEffect(() => {
-    if (!patientName) {
+    if (!internacaoId) {
       setPending(null);
       return;
     }
@@ -24,24 +28,24 @@ export function useSapsPending(patientName?: string | null): SapsPendingInfo | n
 
     const fetchPending = async () => {
       const { data } = await supabase
-        .from("saps3_assessments" as any)
-        .select("id, patient_name, pending_since, status")
-        .eq("patient_name", patientName)
-        .eq("status", "pending")
-        .order("created_at", { ascending: false })
+        .from("avaliacoes_saps3")
+        .select("id, pending_since, status")
+        .eq("internacao_id", internacaoId)
+        .eq("status", "pendente")
+        .order("criado_em", { ascending: false })
         .limit(1);
       if (!active) return;
-      const row = (data as any[])?.[0];
-      setPending(row ? { id: row.id, patient_name: row.patient_name, pending_since: row.pending_since } : null);
+      const row = (data as { id: string; pending_since: string | null }[] | null)?.[0];
+      setPending(row ? { id: row.id, pending_since: row.pending_since } : null);
     };
 
     fetchPending();
 
     const channel = supabase
-      .channel(`saps-pending-${patientName}`)
+      .channel(`saps-pending-${internacaoId}`)
       .on(
-        "postgres_changes" as any,
-        { event: "*", schema: "public", table: "saps3_assessments" },
+        "postgres_changes" as never,
+        { event: "*", schema: "public", table: "avaliacoes_saps3", filter: `internacao_id=eq.${internacaoId}` },
         () => fetchPending(),
       )
       .subscribe();
@@ -50,58 +54,7 @@ export function useSapsPending(patientName?: string | null): SapsPendingInfo | n
       active = false;
       supabase.removeChannel(channel);
     };
-  }, [patientName]);
+  }, [internacaoId]);
 
   return pending;
-}
-
-/**
- * Returns a map of patient_name -> SapsPendingInfo for a list of patient names.
- */
-export function useSapsPendingMany(patientNames: string[]): Record<string, SapsPendingInfo> {
-  const [map, setMap] = useState<Record<string, SapsPendingInfo>>({});
-  const key = patientNames.slice().sort().join("|");
-
-  useEffect(() => {
-    let active = true;
-    const fetchAll = async () => {
-      if (patientNames.length === 0) {
-        setMap({});
-        return;
-      }
-      const { data } = await supabase
-        .from("saps3_assessments" as any)
-        .select("id, patient_name, pending_since, status, created_at")
-        .eq("status", "pending")
-        .in("patient_name", patientNames as any)
-        .order("created_at", { ascending: false });
-      if (!active) return;
-      const result: Record<string, SapsPendingInfo> = {};
-      (data as any[])?.forEach((r) => {
-        if (!result[r.patient_name]) {
-          result[r.patient_name] = { id: r.id, patient_name: r.patient_name, pending_since: r.pending_since };
-        }
-      });
-      setMap(result);
-    };
-
-    fetchAll();
-
-    const channel = supabase
-      .channel(`saps-pending-many-${key.slice(0, 60)}`)
-      .on(
-        "postgres_changes" as any,
-        { event: "*", schema: "public", table: "saps3_assessments" },
-        () => fetchAll(),
-      )
-      .subscribe();
-
-    return () => {
-      active = false;
-      supabase.removeChannel(channel);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key]);
-
-  return map;
 }

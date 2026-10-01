@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import { useLocation, useSearchParams } from "react-router-dom";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
+import { SapsPendingAlert } from "@/components/SapsPendingAlert";
 
 import { PatientCockpit } from "@/components/PatientCockpit";
 import { useCockpitPatient } from "@/hooks/useCockpitPatient";
@@ -945,6 +946,12 @@ const RequisicaoUnificadaPage = () => {
       </div>
       <div className="flex print:block">
         <div className="flex-1 min-w-0 p-4 md:p-6 space-y-4 print:p-0 print:m-0">
+          <SapsPendingAlert
+            patientId={formPatientId}
+            patientName={formPatientName}
+            patientBed={formPatientBed}
+            patientSector={formPatientSector}
+          />
         {/* SAPS pending alert removed */}
       {/* Header — title + patient identity inline */}
       <div className="hidden sm:block print:hidden">

@@ -51,7 +51,8 @@ export function SapsPendingAlert({
   className,
 }: SapsPendingAlertProps) {
   const navigate = useNavigate();
-  const pending = useSapsPending(patientName);
+  // Ancora na internacao (internacao_id), nao mais no nome do paciente.
+  const pending = useSapsPending(patientId);
   const [, setTick] = useState(0);
   const lastToastRef = useRef<number>(0);
 
@@ -71,8 +72,8 @@ export function SapsPendingAlert({
       toast({
         title: elapsed.over ? "SAPS 3 VENCIDO" : "SAPS 3 pendente",
         description: elapsed.over
-          ? `${pending.patient_name}: ficha SAPS 3 ultrapassou 24h. Complete agora para liberar o gate clínico.`
-          : `${pending.patient_name}: complete a ficha SAPS 3 (faltam ${elapsed.remaining} para vencer).`,
+          ? `${patientName ?? "Paciente"}: ficha SAPS 3 ultrapassou 24h. Complete agora para liberar o gate clínico.`
+          : `${patientName ?? "Paciente"}: complete a ficha SAPS 3 (faltam ${elapsed.remaining} para vencer).`,
         variant: elapsed.over || elapsed.criticalSoon ? "destructive" : "default",
       });
     };
@@ -80,7 +81,7 @@ export function SapsPendingAlert({
     fire();
     const id = window.setInterval(fire, Math.max(1, reminderMinutes) * 60_000);
     return () => window.clearInterval(id);
-  }, [pending, reminderMinutes]);
+  }, [pending, reminderMinutes, patientName]);
 
   const elapsed = useMemo(() => formatElapsed(pending?.pending_since ?? null), [pending]);
 
@@ -120,7 +121,7 @@ export function SapsPendingAlert({
           "text-sm font-medium",
           elapsed.over ? "text-critical-on-soft" : "text-warning-on-soft",
         )}>
-          SAPS 3 PENDENTE — {pending.patient_name}
+          SAPS 3 PENDENTE — {patientName ?? "Paciente"}
         </p>
         <p className="text-xs text-muted-foreground flex items-center gap-3 mt-1">
           <span className="inline-flex items-center gap-1">

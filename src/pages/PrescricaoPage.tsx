@@ -4,6 +4,7 @@ import { createPortal, flushSync } from "react-dom";
 import { useSearchParams } from "react-router-dom";
 import { useUnsavedPrescription } from "@/contexts/UnsavedPrescriptionContext";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
+import { SapsPendingAlert } from "@/components/SapsPendingAlert";
 import ReactMarkdown from "react-markdown";
 import { format, addDays, isAfter, setHours, setMinutes, setSeconds, startOfDay } from "date-fns";
 import { ArsenMark } from "@/components/brand/ArsenMark";
@@ -8539,7 +8540,12 @@ const PrescricaoPage = () => {
       <ClinicalHeader moduleLabel="Prescrição Médica" />
       <div className="flex print:block">
         <div className="flex-1 min-w-0 p-3 sm:p-6 space-y-4 sm:space-y-4">
-        {/* SAPS pending alert removed */}
+        <SapsPendingAlert
+          patientId={urlPatientId}
+          patientName={patient.name}
+          patientBed={patient.bed}
+          patientSector={initialPatientSector}
+        />
       {/* Print styles — hide everything except portal */}
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
