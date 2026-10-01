@@ -475,6 +475,9 @@ export function MovimentacaoForm({
               dados_novos: {
                 target_sector_code: sectorCode,
                 target_sector_label: sectorLabelFromCode(sectorCode) || finalDest || null,
+                // Chave canonica `destination` tambem gravada: o dialogo de
+                // desalocacao e o timeline (usePatientMovements) leem destination.
+                destination: sectorLabelFromCode(sectorCode) || finalDest || null,
                 source_bed: patient?.bedNumber || null,
                 source_sector: patient?.sector || null,
                 classification,

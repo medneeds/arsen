@@ -121,7 +121,11 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
         .order("criado_em", { ascending: false })
         .limit(1)
         .maybeSingle();
-      const destino = (data as any)?.dados_novos?.destination as string | undefined;
+      // O evento de sinalizacao grava o destino como `target_sector_label`
+      // (setor destino canonico); eventos legados usavam `destination`. Aceita as
+      // duas chaves para nao mostrar "sem destino" quando o destino existe.
+      const dn = (data as any)?.dados_novos;
+      const destino = (dn?.destination ?? dn?.target_sector_label) as string | undefined;
       if (!cancelled && destino) setSignaledDestination(destino);
     })();
     return () => { cancelled = true; };
