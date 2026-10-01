@@ -21,6 +21,10 @@ import { useWizardItemQueue } from "@/hooks/useWizardItemQueue";
 import { calcularQSofa } from "@/lib/qsofa";
 import { calculateNEWS2, news2RiskLabels, parseVitalNumber } from "@/lib/news2";
 import {
+  SOFA_COMPONENTES, calcularSofaTotal, componentesPreenchidos, pontosComponente,
+  type SofaRespostas, type SofaComponente,
+} from "@/lib/sofa";
+import {
   Stethoscope, Loader2, AlertTriangle, ClipboardCheck,
   HeartPulse, Activity, FileText, Pill, CalendarDays, Hash,
   Printer, ShieldCheck, Save, Trash2, Brain, Gauge, ClipboardList,
@@ -227,6 +231,56 @@ const GlasgowRow = ({
   </div>
 );
 
+/* ───────── UTI — justificativa de admissão (vocabulário fixo) ───────── */
+
+const UTI_JUSTIFICATIVAS: { codigo: string; rotulo: string }[] = [
+  { codigo: "pos_operatorio", rotulo: "Pós-operatório" },
+  { codigo: "pos_procedimento", rotulo: "Pós-procedimento" },
+  { codigo: "pos_pcr", rotulo: "Pós-parada cardiorrespiratória" },
+  { codigo: "infeccao_sepse", rotulo: "Nova infecção / sepse" },
+  { codigo: "disfuncao_aguda", rotulo: "Nova disfunção orgânica aguda" },
+  { codigo: "descompensacao_cronica", rotulo: "Descompensação de disfunção orgânica crônica ou doença crônica" },
+  { codigo: "outro", rotulo: "Outro" },
+];
+
+const rotuloJustificativa = (codigo: string): string =>
+  UTI_JUSTIFICATIVAS.find(j => j.codigo === codigo)?.rotulo ?? "";
+
+/* ───────── SOFA — linha de pills clicáveis (segue o estilo do GlasgowRow) ───────── */
+
+const SofaRow = ({
+  comp, value, onSelect,
+}: {
+  comp: SofaComponente; value: string | null | undefined; onSelect: (id: string) => void;
+}) => {
+  const pts = pontosComponente(comp, value);
+  return (
+    <div>
+      <div className="flex items-center justify-between gap-2">
+        <Label className="text-xs text-muted-foreground">{comp.titulo}</Label>
+        <span className={cn("text-xs font-semibold shrink-0", value ? "text-foreground" : "text-muted-foreground/60")}>
+          {value ? `${pts} pt${pts === 1 ? "" : "s"}` : "—"}
+        </span>
+      </div>
+      <div className="mt-1 flex flex-wrap gap-1.5">
+        {comp.faixas.map(f => (
+          <button
+            type="button" key={f.id} onClick={() => onSelect(f.id)}
+            className={cn(
+              "rounded-full border px-2.5 py-1 text-xs transition-colors",
+              value === f.id
+                ? "border-released bg-released text-white"
+                : "border-border bg-background text-foreground hover:bg-muted"
+            )}
+          >
+            <span>{f.rotulo}</span> <span className="opacity-70">({f.pontos})</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 /* ───────── Component ───────── */
 
 export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }: AdmissionFormProps) {
@@ -283,11 +337,20 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
   const [predictionDays, setPredictionDays] = useState<string>("5");
 
   // UTI extras
+  // admissionReason: estado legado (texto livre) — preservado como fallback do
+  // campo "outro" ao hidratar rascunho antigo; não tem mais UI própria.
   const [admissionReason, setAdmissionReason] = useState("");
   const [originSector, setOriginSector] = useState("");
   const [devices, setDevices] = useState("");
   const [culturesAtb, setCulturesAtb] = useState("");
   const [specialties, setSpecialties] = useState("");
+
+  // UTI estruturado (novos widgets)
+  const [utiJustificativa, setUtiJustificativa] = useState("");        // código do vocabulário
+  const [utiJustificativaOutro, setUtiJustificativaOutro] = useState(""); // texto quando "outro"
+  const [utiVasoativo, setUtiVasoativo] = useState<boolean | null>(null);
+  const [utiComDispositivos, setUtiComDispositivos] = useState<boolean | null>(null);
+  const [sofaRespostas, setSofaRespostas] = useState<SofaRespostas>({});
 
   const [submitting, setSubmitting] = useState(false);
   const [passwordConfirmOpen, setPasswordConfirmOpen] = useState(false);
@@ -318,6 +381,20 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
     glasgowEye != null && glasgowVerbal != null && glasgowMotor != null
       ? glasgowEye + glasgowVerbal + glasgowMotor
       : null;
+
+  // ── SOFA (admissão UTI) — total e preenchidos derivados das respostas ──────
+  const sofaTotal = useMemo(() => calcularSofaTotal(sofaRespostas), [sofaRespostas]);
+  const sofaPreenchidos = useMemo(() => componentesPreenchidos(sofaRespostas), [sofaRespostas]);
+
+  // Rótulo da justificativa para o SOAP/impresso: quando "outro", usa o texto
+  // digitado (ou o valor legado de admissionReason como fallback).
+  const utiJustificativaTexto = utiJustificativaOutro.trim() || admissionReason.trim();
+  const utiJustificativaLabel = !utiJustificativa
+    ? "—"
+    : utiJustificativa === "outro"
+      ? `Outro${utiJustificativaTexto ? ` — ${utiJustificativaTexto}` : ""}`
+      : rotuloJustificativa(utiJustificativa);
+  const simNao = (v: boolean | null) => (v == null ? "—" : v ? "Sim" : "Não");
 
   // Escores ao vivo — recalculados a cada mudanca de vitais/Glasgow.
   const qsofa = useMemo(
@@ -375,6 +452,8 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
     setPhysGeneral(""); setPhysCv(""); setPhysResp(""); setPhysAbd(""); setPhysExt(""); setPhysNeuro("");
     setPlan(""); setCidPrimary(""); setCidSecondary(""); setDiagnosticHypotheses("");
     setAdmissionReason(""); setOriginSector(""); setDevices(""); setCulturesAtb(""); setSpecialties("");
+    setUtiJustificativa(""); setUtiJustificativaOutro(""); setUtiVasoativo(null);
+    setUtiComDispositivos(null); setSofaRespostas({});
     setNoPrediction(false);
     setPredictionDate(toIsoDate(daysFromToday(5))); setPredictionDays("5");
     setIsSaved(false);
@@ -436,6 +515,28 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
         setAdmissionReason(d.admissionReason ?? ""); setOriginSector(d.originSector ?? "");
         setDevices(d.devices ?? ""); setCulturesAtb(d.culturesAtb ?? "");
         setSpecialties(d.specialties ?? "");
+        // UTI estruturado — retrocompat: rascunho antigo só tem admissionReason
+        // (texto) e devices (texto). admissionReason -> campo "outro" da
+        // justificativa; devices preenchido -> utiComDispositivos inferido = true.
+        {
+          const legacyReason = (d.admissionReason ?? "").trim();
+          if (d.utiJustificativa) {
+            setUtiJustificativa(d.utiJustificativa);
+            setUtiJustificativaOutro(d.utiJustificativaOutro ?? "");
+          } else if (legacyReason) {
+            setUtiJustificativa("outro");
+            setUtiJustificativaOutro(legacyReason);
+          } else {
+            setUtiJustificativa(""); setUtiJustificativaOutro("");
+          }
+        }
+        setUtiVasoativo(typeof d.utiVasoativo === "boolean" ? d.utiVasoativo : null);
+        if (typeof d.utiComDispositivos === "boolean") {
+          setUtiComDispositivos(d.utiComDispositivos);
+        } else {
+          setUtiComDispositivos((d.devices ?? "").trim() ? true : null);
+        }
+        setSofaRespostas(d.sofaRespostas && typeof d.sofaRespostas === "object" ? d.sofaRespostas : {});
         if (d.savedAt) setDraftSavedAt(new Date(d.savedAt));
       } else {
         resetForm();
@@ -460,6 +561,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
           plan, cidPrimary, cidSecondary, diagnosticHypotheses,
           noPrediction, predictionDate, predictionDays,
           admissionReason, originSector, devices, culturesAtb, specialties,
+          utiJustificativa, utiJustificativaOutro, utiVasoativo, utiComDispositivos, sofaRespostas,
           savedAt: new Date().toISOString(),
         };
         // só persiste se houver algum conteúdo
@@ -479,6 +581,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
     plan, cidPrimary, cidSecondary, diagnosticHypotheses,
     noPrediction, predictionDate, predictionDays,
     admissionReason, originSector, devices, culturesAtb, specialties,
+    utiJustificativa, utiJustificativaOutro, utiVasoativo, utiComDispositivos, sofaRespostas,
   ]);
 
   // Qualquer edição depois de salvo invalida o "isSaved" (o que está impresso
@@ -493,6 +596,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
     plan, cidPrimary, cidSecondary, diagnosticHypotheses,
     noPrediction, predictionDate, predictionDays,
     admissionReason, originSector, devices, culturesAtb, specialties,
+    utiJustificativa, utiJustificativaOutro, utiVasoativo, utiComDispositivos, sofaRespostas,
   ]);
 
   const discardDraft = () => {
@@ -508,7 +612,11 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
     physGeneral, physCv, physResp, physAbd, physExt, physNeuro,
     plan, cidPrimary, cidSecondary, diagnosticHypotheses,
     admissionReason, originSector, devices, culturesAtb, specialties,
-  ].some(v => typeof v === "string" && v.trim().length > 0) || glasgowTotal != null;
+    utiJustificativaOutro,
+  ].some(v => typeof v === "string" && v.trim().length > 0)
+    || glasgowTotal != null
+    || !!utiJustificativa || utiVasoativo != null || utiComDispositivos != null
+    || sofaPreenchidos > 0;
 
   // Sincronização dias -> data
   const handleDaysChange = (v: string) => {
@@ -570,6 +678,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
         plan, cidPrimary, cidSecondary, diagnosticHypotheses,
         noPrediction, predictionDate, predictionDays,
         admissionReason, originSector, devices, culturesAtb, specialties,
+        utiJustificativa, utiJustificativaOutro, utiVasoativo, utiComDispositivos, sofaRespostas,
         savedAt: new Date().toISOString(),
       };
       localStorage.setItem(draftKey, JSON.stringify(payload));
@@ -620,7 +729,18 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
       exam: { general: physGeneral, cv: physCv, resp: physResp, abd: physAbd, ext: physExt, neuro: physNeuro },
       plan, cidPrimary, cidSecondary,
       dischargePredictionLabel,
-      uti: isUti ? { admissionReason, originSector, devices, culturesAtb, specialties } : undefined,
+      // Mapeia os widgets novos para os 5 campos que o template do impresso ja
+      // consome (admissionReason/devices), sem alterar o template. Vasoativo e
+      // SOFA ficam no SOAP/JSON (sem linha propria no impresso por ora).
+      uti: isUti ? {
+        admissionReason: utiJustificativa ? utiJustificativaLabel : "",
+        originSector,
+        devices: utiComDispositivos
+          ? (devices.trim() || "Sim (sem detalhamento)")
+          : (utiComDispositivos === false ? "Nega dispositivos" : ""),
+        culturesAtb,
+        specialties,
+      } : undefined,
       sapsPending: isUti, // SAPS 3 sempre pendente em UTI/UCI até finalizar na página /saps3
     };
   };
@@ -703,7 +823,11 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
                    `SSVV admissionais: PA ${pa || "—"} | FC ${fc || "—"} | FR ${fr || "—"} | SpO₂ ${spo2 || "—"} | Tax ${tax || "—"} | Dx ${dx || "—"}${glasgowLine}`,
         assessment: `CID primário: ${cidPrimary}${cidSecondary ? `\nCID secundário: ${cidSecondary}` : ""}` +
                     (diagnosticHypotheses.trim() ? `\n\nHipóteses diagnósticas:\n${diagnosticHypotheses.trim()}` : "") +
-                    (isUti ? `\n\nMotivo internação UTI: ${admissionReason || "—"}\nOrigem: ${originSector || "—"}\nDispositivos: ${devices || "—"}\nCulturas/ATB: ${culturesAtb || "—"}\nEspecialidades em conjunto: ${specialties || "—"}` : ""),
+                    (isUti ? `\n\nJustificativa de admissão UTI: ${utiJustificativaLabel}` +
+                      `\nDroga vasoativa: ${simNao(utiVasoativo)}` +
+                      `\nVeio com dispositivos: ${simNao(utiComDispositivos)}${utiComDispositivos && devices.trim() ? ` — ${devices.trim()}` : ""}` +
+                      `\nOrigem: ${originSector || "—"}\nCulturas/ATB: ${culturesAtb || "—"}\nEspecialidades em conjunto: ${specialties || "—"}` +
+                      `\nSOFA: ${sofaTotal} (${sofaPreenchidos}/${SOFA_COMPONENTES.length} componentes)` : ""),
         plan: `${plan}\n\nPrevisão de alta: ${dischargePredictionLabel}`,
       };
 
@@ -740,6 +864,13 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
           __created_by: user.id,
           __created_by_name: doctorName,
           __evolution_type: "admission",
+          // UTI estruturado — chaves ADITIVAS (não substituem nada do schema).
+          ...(isUti ? {
+            __uti_justificativa: { codigo: utiJustificativa || null, outro: utiJustificativaOutro.trim() || admissionReason.trim() || null },
+            __uti_vasoativo: utiVasoativo,
+            __uti_dispositivos: { veioCom: utiComDispositivos, detalhe: devices },
+            __uti_sofa: { respostas: sofaRespostas, total: sofaTotal },
+          } : {}),
         };
         const { error: evError } = await supabase
           .from("evolucoes")
@@ -1131,10 +1262,101 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
             <>
             <GroupHeader step={6} title="UTI / UCI" />
             <div className="space-y-4">
-              <Section icon={AlertTriangle} title="Dados específicos da UTI" tone="amber">
-                <div><Label className="text-xs">Motivo de internação UTI</Label><Textarea value={admissionReason} onChange={e => setAdmissionReason(e.target.value)} rows={2} className="mt-1" /></div>
+              <Section icon={AlertTriangle} title="Justificativa de admissão na UTI" tone="amber">
+                <div className="flex flex-wrap gap-1.5">
+                  {UTI_JUSTIFICATIVAS.map(j => (
+                    <button
+                      type="button" key={j.codigo}
+                      onClick={() => setUtiJustificativa(prev => prev === j.codigo ? "" : j.codigo)}
+                      className={cn(
+                        "rounded-full border px-2.5 py-1 text-xs transition-colors",
+                        utiJustificativa === j.codigo
+                          ? "border-released bg-released text-white"
+                          : "border-border bg-background text-foreground hover:bg-muted"
+                      )}
+                    >
+                      {j.rotulo}
+                    </button>
+                  ))}
+                </div>
+                {utiJustificativa === "outro" && (
+                  <Input
+                    value={utiJustificativaOutro}
+                    onChange={e => setUtiJustificativaOutro(e.target.value)}
+                    placeholder="Delimitar justificativa..."
+                    className="mt-2"
+                  />
+                )}
+              </Section>
+
+              <Section icon={HeartPulse} title="Droga vasoativa" tone="slate">
+                <div className="flex flex-wrap items-center gap-3">
+                  <ToggleGroup
+                    type="single"
+                    value={utiVasoativo == null ? "" : utiVasoativo ? "sim" : "nao"}
+                    onValueChange={v => { if (v === "sim") setUtiVasoativo(true); else if (v === "nao") setUtiVasoativo(false); }}
+                  >
+                    <ToggleGroupItem value="nao" className="data-[state=on]:bg-released data-[state=on]:text-white">Não</ToggleGroupItem>
+                    <ToggleGroupItem value="sim" className="data-[state=on]:bg-critical data-[state=on]:text-white">Sim</ToggleGroupItem>
+                  </ToggleGroup>
+                  <span className="text-xs text-muted-foreground">Em uso de droga vasoativa na admissão?</span>
+                </div>
+              </Section>
+
+              <Section icon={Activity} title="Dispositivos na admissão" tone="slate">
+                <div className="flex flex-wrap items-center gap-3">
+                  <ToggleGroup
+                    type="single"
+                    value={utiComDispositivos == null ? "" : utiComDispositivos ? "sim" : "nao"}
+                    onValueChange={v => { if (v === "sim") setUtiComDispositivos(true); else if (v === "nao") setUtiComDispositivos(false); }}
+                  >
+                    <ToggleGroupItem value="nao" className="data-[state=on]:bg-released data-[state=on]:text-white">Não</ToggleGroupItem>
+                    <ToggleGroupItem value="sim" className="data-[state=on]:bg-critical data-[state=on]:text-white">Sim</ToggleGroupItem>
+                  </ToggleGroup>
+                  <span className="text-xs text-muted-foreground">Veio com dispositivos?</span>
+                </div>
+                {utiComDispositivos && (
+                  <div className="mt-2">
+                    <Label className="text-xs">Detalhar dispositivos</Label>
+                    <Textarea value={devices} onChange={e => setDevices(e.target.value)} rows={2} placeholder="IOT, CVC, SVD, ..." className="mt-1" />
+                  </div>
+                )}
+              </Section>
+
+              <Section
+                icon={Gauge}
+                title="SOFA — admissão"
+                hint={`Total ${sofaTotal} / 24 • ${sofaPreenchidos}/${SOFA_COMPONENTES.length} componentes`}
+                tone="slate"
+              >
+                <div className="space-y-3">
+                  {SOFA_COMPONENTES.map(comp => (
+                    <SofaRow
+                      key={comp.key}
+                      comp={comp}
+                      value={sofaRespostas[comp.key]}
+                      onSelect={id => setSofaRespostas(prev => ({ ...prev, [comp.key]: prev[comp.key] === id ? null : id }))}
+                    />
+                  ))}
+                  <div className="flex items-center justify-between rounded-md border border-border bg-background px-3 py-2">
+                    <span className="text-xs uppercase tracking-wide text-muted-foreground">
+                      Total SOFA {sofaPreenchidos < SOFA_COMPONENTES.length && <span className="normal-case">(parcial — {sofaPreenchidos}/{SOFA_COMPONENTES.length})</span>}
+                    </span>
+                    <span className={cn(
+                      "text-lg font-semibold",
+                      sofaPreenchidos === 0 ? "text-muted-foreground"
+                        : sofaTotal >= 11 ? "text-critical-on-soft"
+                        : sofaTotal >= 6 ? "text-warning-on-soft"
+                        : "text-released-on-soft"
+                    )}>
+                      {sofaTotal} / 24
+                    </span>
+                  </div>
+                </div>
+              </Section>
+
+              <Section icon={ClipboardList} title="Dados complementares UTI" tone="amber">
                 <div><Label className="text-xs">Origem (setor anterior)</Label><Input value={originSector} onChange={e => setOriginSector(e.target.value)} className="mt-1" /></div>
-                <div><Label className="text-xs">Dispositivos invasivos</Label><Textarea value={devices} onChange={e => setDevices(e.target.value)} rows={2} placeholder="IOT, CVC, SVD, ..." className="mt-1" /></div>
                 <div><Label className="text-xs">Culturas pendentes / ATB em curso</Label><Textarea value={culturesAtb} onChange={e => setCulturesAtb(e.target.value)} rows={2} className="mt-1" /></div>
                 <div><Label className="text-xs">Especialidades em conjunto</Label><Input value={specialties} onChange={e => setSpecialties(e.target.value)} className="mt-1" /></div>
               </Section>
