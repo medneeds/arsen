@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ArrowLeft, ArrowRight, ArrowLeftRight, History, Loader2, BedDouble, Clock, Ban } from "lucide-react";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
+import { PatientIdentityBar } from "@/components/PatientIdentityBar";
 
 import { PatientCockpit } from "@/components/PatientCockpit";
 import { useCockpitPatient } from "@/hooks/useCockpitPatient";
@@ -247,6 +248,16 @@ const MovimentacoesPage = () => {
 
       <div className="flex">
         <div className="flex-1 min-w-0 p-4 space-y-4 max-w-5xl mx-auto">
+          {/* Sub-cabecalho padrao de identidade (setor resolvido via usePatientLive). */}
+          <PatientIdentityBar
+            patientId={patientId}
+            className="print:hidden rounded-lg border border-border bg-card/60 px-3 py-3"
+            rightSlot={
+              <p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground leading-tight">
+                MOVIMENTAÇÕES
+              </p>
+            }
+          />
           {/* Page Header */}
         <div className="flex items-center justify-between gap-4">
           <div className="hidden sm:flex items-center gap-3">

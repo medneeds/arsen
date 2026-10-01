@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
+import { PatientIdentityBar } from "@/components/PatientIdentityBar";
 import { PatientCockpit } from "@/components/PatientCockpit";
 import { useCockpitPatient } from "@/hooks/useCockpitPatient";
 import { useHospital } from "@/contexts/HospitalContext";
@@ -151,32 +152,19 @@ const DocumentosPacientePage = () => {
       <ClinicalHeader moduleLabel="Documentos" />
       <div className="flex print:block">
         <div className="flex-1 min-w-0 p-4 md:p-6 space-y-4 max-w-5xl mx-auto">
-          {/* Title — patient identity inline */}
+          {/* Title — sub-cabecalho padrao de identidade (setor resolvido via
+              usePatientLive) + acoes do modulo a direita. */}
           <div className="flex items-center justify-between gap-3">
-            <div className="hidden sm:flex items-center justify-between gap-4 min-w-0 flex-1">
-              {/* ESQUERDA */}
-              <div className="flex items-center gap-3 min-w-0 flex-1">
-                {patientBed && (
-                  <div className="flex flex-col items-center justify-center h-12 w-12 rounded-lg bg-primary/15 border border-primary/20 shrink-0">
-                    <span className="text-[9px] font-normal uppercase tracking-wide text-primary/60 leading-none">Leito</span>
-                    <span className="text-xl font-bold text-primary leading-none mt-0.5">{patientBed}</span>
-                  </div>
-                )}
-                <div className="min-w-0">
-                  <p className="text-base font-semibold text-foreground uppercase tracking-wide leading-tight truncate">
-                    {patientName || "—"}
-                  </p>
-                  <div className="flex items-center gap-2 flex-wrap mt-1">
-                    {patientSector && <span className="px-2 py-1 rounded-md bg-muted text-muted-foreground text-xs font-medium uppercase tracking-wide">{patientSector}</span>}
-                  </div>
-                </div>
-              </div>
-              {/* DIREITA */}
-              <div className="text-right shrink-0">
-                <p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground leading-tight">DOCUMENTOS DO PACIENTE</p>
-                <p className="text-xs text-muted-foreground mt-1">Documentos clínicos vinculados</p>
-              </div>
-            </div>
+            <PatientIdentityBar
+              patientId={patientId}
+              className="print:hidden rounded-lg border border-border bg-card/60 px-3 py-3 flex-1"
+              rightSlot={
+                <>
+                  <p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground leading-tight">DOCUMENTOS DO PACIENTE</p>
+                  <p className="text-xs text-muted-foreground mt-1">Documentos clínicos vinculados</p>
+                </>
+              }
+            />
             <div className="flex items-center gap-2 shrink-0">
               <Badge variant="outline" className="text-xs">
                 {docs.length} no total

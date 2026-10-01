@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { resolveSectorCode } from "@/config/sectorCoverage";
 import { useSearchParams } from "react-router-dom";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
+import { PatientIdentityBar } from "@/components/PatientIdentityBar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -438,6 +439,16 @@ export default function MonitoramentoClinicoPage() {
     <PageTransition>
       <ClinicalHeader moduleLabel="Monitoramento Clínico" />
       <div className="space-y-4 p-4 md:p-6">
+        {/* Sub-cabecalho padrao de identidade (setor resolvido via usePatientLive). */}
+        <PatientIdentityBar
+          patientId={selectedPatientId}
+          className="print:hidden rounded-lg border border-border bg-card/60 px-3 py-3"
+          rightSlot={
+            <p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground leading-tight">
+              MONITORAMENTO CLÍNICO
+            </p>
+          }
+        />
         {/* Barra de acao do modulo: janela de tempo + NEWS2 do paciente selecionado */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <p className="text-sm text-muted-foreground">

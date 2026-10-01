@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { AdmissionForm } from "@/components/admission/AdmissionForm";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
+import { PatientIdentityBar } from "@/components/PatientIdentityBar";
 import { PatientCockpit } from "@/components/PatientCockpit";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -172,6 +173,16 @@ export default function AdmissaoPage() {
 
       <div className="flex print:block">
         <div className="flex-1 min-w-0 p-3 sm:p-4">
+          {/* Sub-cabecalho padrao de identidade (setor resolvido via usePatientLive). */}
+          <PatientIdentityBar
+            patientId={patientId}
+            className="print:hidden rounded-lg border border-border bg-card/60 px-3 py-3 mb-3"
+            rightSlot={
+              <p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground leading-tight">
+                ADMISSÃO
+              </p>
+            }
+          />
           {/* Toggle Admissao | SAPS — a aba SAPS so aparece nos setores que
               exigem (UTI/UCI2) ou quando ja ha ficha. */}
           {showSapsTab && (

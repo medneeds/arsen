@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { MovimentacaoForm } from "@/components/movimentacao/MovimentacaoForm";
 import { SignalingFlowRecord } from "@/components/movimentacao/SignalingFlowRecord";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
+import { PatientIdentityBar } from "@/components/PatientIdentityBar";
 import { PatientCockpit } from "@/components/PatientCockpit";
 import { useCockpitPatient } from "@/hooks/useCockpitPatient";
 import type { Patient } from "@/types/patient";
@@ -96,6 +97,16 @@ export default function MovimentacaoPage() {
 
       <div className="flex print:block">
         <div className="flex-1 min-w-0 p-3 sm:p-4">
+          {/* Sub-cabecalho padrao de identidade (setor resolvido via usePatientLive). */}
+          <PatientIdentityBar
+            patientId={patientId}
+            className="print:hidden rounded-lg border border-border bg-card/60 px-3 py-3 mb-3"
+            rightSlot={
+              <p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground leading-tight">
+                SINALIZAÇÃO
+              </p>
+            }
+          />
           <div className="rounded-lg border bg-card overflow-hidden">
             <MovimentacaoForm
               patient={patient}

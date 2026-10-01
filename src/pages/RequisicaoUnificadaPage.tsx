@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import { useLocation, useSearchParams } from "react-router-dom";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
+import { PatientIdentityBar } from "@/components/PatientIdentityBar";
 import { SapsPendingAlert } from "@/components/SapsPendingAlert";
 
 import { PatientCockpit } from "@/components/PatientCockpit";
@@ -953,33 +954,18 @@ const RequisicaoUnificadaPage = () => {
             patientSector={formPatientSector}
           />
         {/* SAPS pending alert removed */}
-      {/* Header — title + patient identity inline */}
-      <div className="hidden sm:block print:hidden">
-        <div className="flex items-center justify-between gap-4 mb-1">
-          {/* ESQUERDA */}
-          <div className="flex items-center gap-3 min-w-0 flex-1">
-            {formPatientBed && (
-              <div className="flex flex-col items-center justify-center h-12 w-12 rounded-lg bg-primary/15 border border-primary/20 shrink-0">
-                <span className="text-[9px] font-normal uppercase tracking-wide text-primary/60 leading-none">Leito</span>
-                <span className="text-xl font-bold text-primary leading-none mt-0.5">{formPatientBed}</span>
-              </div>
-            )}
-            <div className="min-w-0">
-              <p className="text-base font-semibold text-foreground uppercase tracking-wide leading-tight truncate">
-                {formPatientName || "—"}
-              </p>
-              <div className="flex items-center gap-2 flex-wrap mt-1">
-                {formPatientSector && <span className="px-2 py-1 rounded-md bg-muted text-muted-foreground text-xs font-medium uppercase tracking-wide">{formPatientSector}</span>}
-              </div>
-            </div>
-          </div>
-          {/* DIREITA */}
-          <div className="text-right shrink-0">
+      {/* Sub-cabecalho padrao de identidade (setor resolvido via usePatientLive —
+          deixa de sair como codigo cru e ganha idade/nascimento/prontuario). */}
+      <PatientIdentityBar
+        patientId={formPatientId}
+        className="print:hidden rounded-lg border border-border bg-card/60 px-3 py-3"
+        rightSlot={
+          <>
             <p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground leading-tight">REQUISIÇÕES</p>
             <p className="text-xs text-muted-foreground mt-1">Exames e pareceres</p>
-          </div>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {/* Identificação do paciente fica integralmente no cockpit à direita
           (com Prontuário, Atendimento e botão "Ver dados do prontuário"). */}
