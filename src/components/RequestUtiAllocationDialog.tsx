@@ -38,6 +38,9 @@ import { cn } from "@/lib/utils";
 interface RequestUtiAllocationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Chamado apos a solicitacao ser criada com sucesso — o mapa/fila atualizam
+   *  na hora, sem depender do realtime (instavel no gateway self-hosted). */
+  onAllocated?: () => void;
 }
 
 // Map UTI sectors to internal representation
@@ -110,7 +113,7 @@ function EditableListItem({
   );
 }
 
-export function RequestUtiAllocationDialog({ open, onOpenChange }: RequestUtiAllocationDialogProps) {
+export function RequestUtiAllocationDialog({ open, onOpenChange, onAllocated }: RequestUtiAllocationDialogProps) {
   const { toast } = useToast();
   const { currentDepartment } = useDepartment();
   const { currentHospital, currentState } = useHospital();
@@ -293,6 +296,7 @@ export function RequestUtiAllocationDialog({ open, onOpenChange }: RequestUtiAll
         description: `Solicitação de leito para ${targetUti} enviada com sucesso.`,
       });
 
+      onAllocated?.();
       handleClose();
     } catch (error) {
       console.error("Error submitting UTI allocation request:", error);

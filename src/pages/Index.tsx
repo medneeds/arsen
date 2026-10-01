@@ -1266,12 +1266,14 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
         open={allocationDialogOpen}
         onOpenChange={setAllocationDialogOpen}
         targetSector={allocationTargetSector}
+        onAllocated={() => { refetch(); preAdmissionRef.current?.refresh(); }}
       />
 
       {/* Request UTI Allocation Dialog */}
       <RequestUtiAllocationDialog
         open={utiAllocationDialogOpen}
         onOpenChange={setUtiAllocationDialogOpen}
+        onAllocated={() => { refetch(); preAdmissionRef.current?.refresh(); }}
       />
 
       {/* Department Change Password Dialog - Removido, apenas admin pode trocar */}

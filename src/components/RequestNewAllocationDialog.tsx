@@ -32,6 +32,9 @@ interface RequestNewAllocationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   targetSector: "Cuidados Especiais" | "Observação Amarela" | "Observação Azul";
+  /** Chamado apos a solicitacao ser criada com sucesso — o mapa/fila atualizam
+   *  na hora, sem depender do realtime (instavel no gateway self-hosted). */
+  onAllocated?: () => void;
 }
 
 const sectorToInternalSector: Record<string, Patient['sector']> = {
@@ -122,6 +125,7 @@ export function RequestNewAllocationDialog({
   open,
   onOpenChange,
   targetSector,
+  onAllocated,
 }: RequestNewAllocationDialogProps) {
   // Refs for keyboard navigation
   const doctorNameRef = useRef<HTMLInputElement>(null);
@@ -334,6 +338,7 @@ export function RequestNewAllocationDialog({
         title: "Solicitação enviada",
         description: `Paciente ${patientName} cadastrado e solicitação de alocação em ${targetSector} enviada ao líder.`,
       });
+      onAllocated?.();
       onOpenChange(false);
       resetForm();
     } catch (error) {
