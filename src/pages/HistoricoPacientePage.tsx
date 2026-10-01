@@ -371,6 +371,13 @@ export default function HistoricoPacientePage() {
   const printDocumentFromHistory = async (e: TimelineEvent) => {
     if (!PRINTABLE_TYPES.has(e.event_type)) return;
     setPrintingId(e.event_id);
+    // BUGFIX: event_id vem como `${event_type}-${row.id}` (prefixo do tipo), mas
+    // os lookups abaixo buscam por `id` = PK da linha de origem. Sem remover o
+    // prefixo, `.eq("id", event_id)` nunca casava e a reimpressao por item sempre
+    // falhava ("nao encontrada"). rawId = id real da linha.
+    const rawId = e.event_id.startsWith(`${e.event_type}-`)
+      ? e.event_id.slice(e.event_type.length + 1)
+      : e.event_id;
 
     const openPrint = (html: string) => {
       const w = window.open("", "_blank", "width=960,height=720");
@@ -426,7 +433,7 @@ export default function HistoricoPacientePage() {
         const { data } = await supabase
           .from("evolucoes")
           .select("*")
-          .eq("id", e.event_id)
+          .eq("id", rawId)
           .maybeSingle();
         if (!data) { alert("Evolução não encontrada."); setPrintingId(null); return; }
         const d = data as any;
@@ -474,7 +481,7 @@ export default function HistoricoPacientePage() {
         const { data: rx } = await supabase
           .from("prescricoes")
           .select("itens,status,versao,criado_em,observacoes")
-          .eq("id", e.event_id)
+          .eq("id", rawId)
           .maybeSingle();
         if (!rx) { alert("Prescrição não encontrada."); setPrintingId(null); return; }
         const data = {
@@ -516,7 +523,7 @@ export default function HistoricoPacientePage() {
         const { data: sol } = await supabase
           .from("solicitacoes_exame")
           .select("*")
-          .eq("id", e.event_id)
+          .eq("id", rawId)
           .maybeSingle();
         if (!sol) { alert("Requisição não encontrada."); setPrintingId(null); return; }
         const data = { ...(sol as any), items: (sol as any).itens, category: (sol as any).categoria };
@@ -543,7 +550,7 @@ export default function HistoricoPacientePage() {
         // historia_clinica, diagnostic_hypothesis→hipotese_diagnostica, initial_conduct→
         // conduta_inicial. DEGRADADO: cid_primary/cid_secondary/macro_diagnosis não têm
         // coluna em internacoes → bloco de CID/diagnóstico removido do impresso.
-        const admInternacaoId = patientId ?? e.event_id;
+        const admInternacaoId = rawId;
         const { data } = await supabase
           .from("internacoes")
           .select("queixa_principal,historia_clinica,hipotese_diagnostica,conduta_inicial,data_entrada,criado_em")
@@ -567,7 +574,7 @@ export default function HistoricoPacientePage() {
         const { data } = await supabase
           .from("altas")
           .select("tipo,conteudo")
-          .eq("id", e.event_id)
+          .eq("id", rawId)
           .maybeSingle();
         if (!data) { alert("Sumário de alta não encontrado."); setPrintingId(null); return; }
         await printDischargeDocument(
@@ -584,7 +591,7 @@ export default function HistoricoPacientePage() {
         const { data } = await supabase
           .from("altas")
           .select("*")
-          .eq("id", e.event_id)
+          .eq("id", rawId)
           .maybeSingle();
         if (!data) { alert("Documento não encontrado."); setPrintingId(null); return; }
         const { printDocumentoMedico } = await import("@/lib/documentoMedico");
@@ -603,7 +610,7 @@ export default function HistoricoPacientePage() {
         const { data } = await supabase
           .from("receituarios")
           .select("*")
-          .eq("id", e.event_id)
+          .eq("id", rawId)
           .maybeSingle();
         if (!data) { alert("Receituário não encontrado."); setPrintingId(null); return; }
         const { printReceituario } = await import("@/lib/receituario");
