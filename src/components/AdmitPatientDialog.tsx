@@ -15,6 +15,10 @@ import { toast } from "@/hooks/use-toast";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter,
+  AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
@@ -144,6 +148,12 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
   const [sectorFullAlert, setSectorFullAlert] = useState(false);
   const [extraBedRequested, setExtraBedRequested] = useState(false);
   const [bedsLoaded, setBedsLoaded] = useState(false);
+  // DESACOPLAMENTO SAPS: apos alocar um setor com SAPS, abrimos este pop-up perguntando
+  // se o SAPS 3 sera preenchido agora (/admissao) ou mantido pendente (24h). So aparece
+  // depois da alocacao bem-sucedida em setor SAPS (isUtiAdmission).
+  const [sapsPrompt, setSapsPrompt] = useState<
+    { internacaoId: string; patientName: string; bed: string; sectorCode: string } | null
+  >(null);
 
   // MIGRAÇÃO: estados da sincronização PIS → patient_registry removidos (tabela morta).
 
@@ -241,9 +251,6 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
 
     setIsSubmitting(true);
     try {
-      const age = calcAge(fullData.birth_date);
-      const destinationSectorLabel = SECTORS.find((sector) => sector.value === selectedSector)?.label || selectedSector;
-
       if (isUtiAdmission) {
         // Calcula o leito final (incluindo EXTRA dinâmico) já neste pop-up
         let finalBedUti = selectedBed;
@@ -256,40 +263,32 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
           finalBedUti = `EXTRA${nextExtra}`;
         }
         if (!finalBedUti) {
-          toast({ title: "Selecione um leito", description: "Escolha o leito antes de continuar para o SAPS 3.", variant: "destructive" });
+          toast({ title: "Selecione um leito", description: "Escolha o leito antes de pre-admitir.", variant: "destructive" });
           setIsSubmitting(false);
           return;
         }
 
-        // MIGRAÇÃO: pre_admissions → pre_admissoes. Colunas destination_sector/destination_bed/
-        // notes NÃO existem → degradadas (o leito/setor escolhidos seguem apenas via URL para o
-        // SAPS 3, que conclui a admissão). Persistimos só o status.
-        const { error: updateError } = await supabase
-          .from("pre_admissoes")
-          .update({ status: "classificado" })
-          .eq("id", fullData.id);
-
-        if (updateError) throw updateError;
-
-        const params = new URLSearchParams({
-          fromAllocation: "true",
-          preAdmissionId: fullData.id,
-          patientName: fullData.patient_name,
-          patientAge: age ? String(age) : "",
-          destinationSector: destinationSectorLabel,
-          selectedBed: finalBedUti,
-          selectedSector,
-        });
-        if (extraBedRequested || selectedBed === "EXTRA") params.set("extraBed", "true");
-        // A data/hora escolhida aqui é a da internação: o SAPS 3 a usa ao alocar.
-        // Sem isso a internação na UTI nascia com a hora em que o SAPS foi salvo.
-        if (admissionDate) params.set("admissionDate", admissionDate.toISOString());
-
-        toast({
-          title: "Encaminhado para admissão UTI",
-          description: "Preencha o SAPS 3 antes de definir o leito.",
+        // DESACOPLAMENTO SAPS: setores com SAPS agora ALOCAM imediatamente pela MESMA via
+        // dos demais setores (alocarPreAdmissaoNoLeito), em vez de navegar ao /saps3 e deixar
+        // o SAPS concluir a alocacao. A funcao ja marca a pre-admissao como admitida, entao
+        // NAO duplicamos aqui o antigo update de status em pre_admissoes.
+        const sectorCode = selectedSector;
+        const patientName = fullData.patient_name;
+        const registradoPor = await resolveProfissionalId(user?.id);
+        const { internacaoId, avisoLeito } = await alocarPreAdmissaoNoLeito({
+          preAdmissao: fullData,
+          sectorCode: selectedSector,
+          bed: finalBedUti,
+          dataEntrada: admissionDate ?? new Date(),
+          pendencias: admissionNotes || null,
+          registradoPor,
         });
 
+        toast({ title: "Paciente PRÉ-ADMITIDO", description: `${patientName} → Leito ${finalBedUti}.` });
+        if (avisoLeito) toast({ title: "Atenção: leito não marcado", description: avisoLeito, variant: "destructive" });
+
+        // Fecha o fluxo de selecao e abre o pop-up do SAPS 3 (somente setor SAPS, somente
+        // apos alocacao bem-sucedida). NAO navegamos mais para /saps3 daqui.
         onOpenChange(false);
         onSuccess();
         setSelectedSector("");
@@ -298,7 +297,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
         setFullData(null);
         setExtraBedRequested(false);
         setSectorFullAlert(false);
-        navigate(`/saps3?${params.toString()}`);
+        setSapsPrompt({ internacaoId, patientName, bed: finalBedUti, sectorCode });
         return;
       }
 
@@ -335,6 +334,49 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
       toast({ title: "Erro na admissão", description: err.message, variant: "destructive" });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // Pop-up SAPS 3 — "Preencher agora": vai para a aba SAPS embutida na /admissao.
+  const handleSapsNow = () => {
+    if (!sapsPrompt) return;
+    const { internacaoId, patientName, bed, sectorCode } = sapsPrompt;
+    setSapsPrompt(null);
+    navigate(
+      `/admissao?patientId=${internacaoId}&patientName=${encodeURIComponent(patientName)}&patientBed=${encodeURIComponent(bed)}&patientSector=${sectorCode}`
+    );
+  };
+
+  // Pop-up SAPS 3 — "Depois (manter pendente)": cria a ficha SAPS pendente (24h) se ainda
+  // nao houver uma para esta internacao, ancorada em internacao_id.
+  const handleSapsLater = async () => {
+    if (!sapsPrompt) return;
+    const { internacaoId } = sapsPrompt;
+    try {
+      const { data: existing } = await supabase
+        .from("avaliacoes_saps3")
+        .select("id")
+        .eq("internacao_id", internacaoId)
+        .limit(1)
+        .maybeSingle();
+      if (!existing) {
+        const registradoPor = await resolveProfissionalId(user?.id);
+        const { error } = await supabase
+          .from("avaliacoes_saps3")
+          .insert({
+            internacao_id: internacaoId,
+            status: "pendente",
+            pending_since: new Date().toISOString(),
+            criado_por: registradoPor,
+          });
+        if (error) throw error;
+      }
+      toast({ title: "SAPS 3 pendente", description: "Voce tem 24h para completar." });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      toast({ title: "Erro ao criar SAPS pendente", description: message, variant: "destructive" });
+    } finally {
+      setSapsPrompt(null);
     }
   };
 
@@ -611,7 +653,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
               </div>
               {isUtiAdmission && (
                 <p className="text-xs text-muted-foreground">
-                  O leito escolhido será reservado e aparecerá pré-selecionado no SAPS 3.
+                  Ao confirmar, o leito é ocupado imediatamente e você escolhe preencher o SAPS 3 agora ou mantê-lo pendente (24h).
                 </p>
               )}
             </div>
@@ -792,11 +834,38 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
             className="gap-1"
           >
             {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <BedDouble className="h-4 w-4" />}
-            {isUtiAdmission ? "Continuar para SAPS 3" : "Pré-admitir em Leito"}
+            Pré-admitir em Leito
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    {/* DESACOPLAMENTO SAPS: pop-up aberto apos alocacao em setor SAPS. Oferece preencher o
+        SAPS 3 agora (aba embutida na /admissao) ou mante-lo pendente por 24h. */}
+    <AlertDialog open={!!sapsPrompt} onOpenChange={(o) => { if (!o) setSapsPrompt(null); }}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="flex items-center gap-2">
+            <Activity className="h-5 w-5 text-primary" />
+            SAPS 3 — preencher agora?
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            {sapsPrompt?.patientName} foi alocado no leito {sapsPrompt?.bed}. O SAPS 3 depende de
+            exames laboratoriais e do historico de admissao. Voce pode preenche-lo agora ou mante-lo
+            pendente por ate 24h e completar quando os resultados chegarem.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={handleSapsLater}>
+            Depois (manter pendente — 24h)
+          </AlertDialogCancel>
+          <AlertDialogAction onClick={handleSapsNow}>
+            Preencher agora
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+
     {/* MIGRAÇÃO: PisRegistrySyncDialog removido — sincronizava PIS → patient_registry (tabela
         morta). Sem destino no schema novo; a identidade vem direto de pacientes. */}
     </>

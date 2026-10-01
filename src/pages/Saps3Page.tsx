@@ -2005,7 +2005,7 @@ export default function Saps3Page({
                     <><AlertTriangle className="h-4 w-4 text-warning-on-soft" /><span className="text-warning-on-soft">Faltam {missingFields.length} item(s) para validar</span></>
                   )}
                 </p>
-                <span className="text-xs text-muted-foreground">A "Pré-admitir com SAPS pendente" exige apenas nome + leito.</span>
+                <span className="text-xs text-muted-foreground">O "Salvar rascunho (SAPS pendente)" exige apenas nome + leito.</span>
               </div>
               {missingFields.length > 0 && (
                 <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -2040,15 +2040,11 @@ export default function Saps3Page({
               className="gap-2 border-warning-border text-warning-on-soft hover:bg-warning-soft"
             >
               <Clock className="h-4 w-4" />
-              {saving
-                ? (completingSapsId ? "Salvando..." : "Pré-admitindo...")
-                : (completingSapsId ? "Manter como pendente" : "Pré-admitir com SAPS pendente")}
+              {saving ? "Salvando..." : "Salvar rascunho (SAPS pendente)"}
             </Button>
             <Button onClick={() => handleSave(false)} disabled={saving} className="gap-2">
               <Save className="h-4 w-4" />
-              {saving
-                ? (completingSapsId ? "Validando..." : "Pré-admitindo...")
-                : (completingSapsId ? "Validar ficha SAPS" : `Pré-admitir no ${selectedBed || "leito"}`)}
+              {saving ? "Validando..." : "Validar ficha SAPS"}
             </Button>
           </div>
           <div className={`${completingSapsId ? "bg-released-soft border-released-border text-released-on-soft" : "bg-warning-soft border-warning-border text-warning-on-soft"} border rounded-lg p-3 text-sm`}>
@@ -2059,7 +2055,7 @@ export default function Saps3Page({
             <p className={`text-xs mt-1 ${completingSapsId ? "text-released-on-soft" : "text-warning-on-soft"}`}>
               {completingSapsId
                 ? "Ao validar, o cálculo SAPS 3 é recalculado com os valores atuais, a flag de pendência é removida do paciente e você é redirecionado para o painel clínico do leito correspondente para seguir com HDA, exame físico e plano."
-                : "Utilize \"Pré-admitir com SAPS pendente\" para alocar o paciente no leito agora e completar a ficha SAPS 3 quando os resultados de gasometria, hemograma, função renal e demais exames admissionais estiverem disponíveis. Um cronômetro será ativado para rastrear o tempo de pendência."}
+                : "Utilize \"Salvar rascunho (SAPS pendente)\" para manter a ficha SAPS 3 pendente e completá-la quando os resultados de gasometria, hemograma, função renal e demais exames admissionais estiverem disponíveis. Um cronômetro será ativado para rastrear o tempo de pendência."}
             </p>
           </div>
         </div>
