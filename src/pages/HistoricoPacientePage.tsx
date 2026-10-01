@@ -253,14 +253,23 @@ export default function HistoricoPacientePage() {
     let cancel = false;
     setRegistryResolving(true);
     (async () => {
-      const { data } = await supabase
-        .from("internacoes")
-        .select("paciente_id")
-        .eq("id", patientId)
-        .maybeSingle();
-      if (!cancel) {
-        setResolvedRegistryId((data as { paciente_id: string | null } | null)?.paciente_id ?? null);
-        setRegistryResolving(false);
+      try {
+        const { data } = await supabase
+          .from("internacoes")
+          .select("paciente_id")
+          .eq("id", patientId)
+          .maybeSingle();
+        if (!cancel) {
+          setResolvedRegistryId((data as { paciente_id: string | null } | null)?.paciente_id ?? null);
+        }
+      } catch {
+        // FIX: sem este catch, uma falha de rede nesta query (intermitente, "em
+        // alguns PCs") deixava registryResolving preso em true -> o loader do
+        // Historico ficava eterno. Em caso de erro, seguimos sem registry (o
+        // conteudo mostra estado vazio em vez de travar) e o loader e liberado.
+        if (!cancel) setResolvedRegistryId(null);
+      } finally {
+        if (!cancel) setRegistryResolving(false);
       }
     })();
     return () => { cancel = true; };
