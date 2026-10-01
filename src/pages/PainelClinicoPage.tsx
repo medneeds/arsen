@@ -49,6 +49,25 @@ const parseTextArray = (input: string | string[] | undefined | null): string[] =
   return str.split('\n').filter(item => item && item.trim());
 };
 
+// Diagnosticos para exibicao no Painel. parseTextArray resolve o campo cru, mas
+// dados legados chegam como array de UM elemento que ainda e um JSON-array
+// serializado (["Estado de mal epiletico"]) — o ramo Array.isArray do
+// parseTextArray nao re-parseia os elementos, entao colchetes/aspas sobrevivem.
+// Aqui desdobramos cada elemento que ainda seja [...] e tiramos aspas residuais,
+// devolvendo a lista limpa pronta para juntar com " / ". So apresentacao.
+const normalizeDiagnoses = (input: string | string[] | undefined | null): string[] => {
+  const out: string[] = [];
+  for (const item of parseTextArray(input)) {
+    const s = String(item).trim();
+    if (s.startsWith('[') && s.endsWith(']')) {
+      out.push(...parseTextArray(s));
+    } else {
+      out.push(s.replace(/^["']+|["']+$/g, '').trim());
+    }
+  }
+  return out.filter(Boolean);
+};
+
 const clinicalStatusLabels: Record<string, { label: string; color: string }> = {
   gravissimo: { label: "Gravíssimo", color: "bg-critical text-white" },
   grave: { label: "Grave", color: "bg-critical text-white" },
@@ -400,6 +419,8 @@ export default function PainelClinicoPage() {
                 const prescStatus = getPrescriptionStatus(getTodaysPrescriptionStatus(patient.name, patient.registryId));
                 const pendencies = parseTextArray(patient.pendencies);
                 const saps = sapsScores[patient.id];
+                const diagnoses = normalizeDiagnoses(patient.diagnoses);
+                const ageLabel = patient.age ? `${String(patient.age).replace(/\s*a$/i, "")} anos` : null;
                 return (
                   // MIGRAÇÃO/FIX: era <button> e continha outro <button> (Eye) → nesting inválido.
                   // Vira div com role=button + teclado para manter acessibilidade sem aninhar botões.
@@ -422,19 +443,23 @@ export default function PainelClinicoPage() {
                           <span className={cn("inline-block h-2 w-2 rounded-full", prescStatus.dotColor, prescStatus.pulsing && "animate-pulse-soft")} />
                           <span className="text-xs text-muted-foreground">{prescStatus.label}</span>
                         </div>
-                        <p className="font-medium text-sm text-foreground mt-2 leading-tight line-clamp-2">{patient.name}</p>
+                        <div className="mt-2 flex items-baseline gap-1.5">
+                          <p className="min-w-0 font-medium text-sm text-foreground leading-tight line-clamp-2">{patient.name}</p>
+                          {ageLabel && <span className="shrink-0 text-xs text-muted-foreground">{ageLabel}</span>}
+                        </div>
                         {patient.admissionStatus && (
                           <div className="mt-1.5">
                             <DischargeStatusRibbon status={patient.admissionStatus} />
                           </div>
                         )}
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {patient.age ? `${String(patient.age).replace(/\s*a$/i, "")} anos` : "—"}
-                          {days !== null && <span className={cn("ml-2", days > 7 && "text-destructive font-medium")}>{days}d int.</span>}
-                          {saps && saps.status !== 'pendente' && <span className="ml-2">SAPS {saps.score}</span>}
-                        </p>
-                        {parseTextArray(patient.diagnoses)[0] && (
-                          <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{parseTextArray(patient.diagnoses)[0]}</p>
+                        {(days !== null || (saps && saps.status !== 'pendente')) && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {days !== null && <span className={cn(days > 7 && "text-destructive font-medium")}>{days}d int.</span>}
+                            {saps && saps.status !== 'pendente' && <span className={cn(days !== null && "ml-2")}>SAPS {saps.score}</span>}
+                          </p>
+                        )}
+                        {diagnoses.length > 0 && (
+                          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{diagnoses.join("  /  ")}</p>
                         )}
                         {pendencies.length > 0 && (
                           <p className="text-xs text-warning-on-soft mt-1 line-clamp-1">{pendencies[0]}{pendencies.length > 1 && ` +${pendencies.length - 1}`}</p>
@@ -475,13 +500,16 @@ export default function PainelClinicoPage() {
                   const days = calcDaysInternment(patient.admissionDate);
                   const prescStatus = getPrescriptionStatus(getTodaysPrescriptionStatus(patient.name, patient.registryId));
                   const pendencies = parseTextArray(patient.pendencies);
-                  
+                  const diagnoses = normalizeDiagnoses(patient.diagnoses);
+                  const ageLabel = patient.age ? `${String(patient.age).replace(/\s*a$/i, "")} anos` : null;
+
                   return (
                     <TableRow
                       key={patient.id}
-                      // Divisor entre pacientes discreto: borda sutil (40%) em vez
-                      // da linha cheia padrao do TableRow — leitura mais limpa.
-                      className="cursor-pointer group hover:bg-accent/50 transition-colors border-border/40"
+                      // Divisor entre pacientes claro: borda cheia + zebra leve nas
+                      // linhas pares, para separar visivelmente um paciente do outro
+                      // (hover tem prioridade por especificidade do :hover).
+                      className="cursor-pointer group border-b border-border even:bg-muted/20 hover:bg-accent/50 transition-colors"
                       onClick={() => goToPatientPanel(patient)}
                       onMouseEnter={() => prefetchPatient(qc, patient.id, patient.name)}
                       title="Clique para abrir o atendimento • Use o olho para pré-visualizar"
@@ -496,18 +524,18 @@ export default function PainelClinicoPage() {
                       </TableCell>
                       <TableCell>
                         <div>
-                          <p className="font-medium text-foreground leading-tight hover:text-primary transition-colors">{patient.name}</p>
+                          <div className="flex items-baseline gap-1.5">
+                            <p className="min-w-0 font-medium text-foreground leading-tight hover:text-primary transition-colors">{patient.name}</p>
+                            {ageLabel && <span className="shrink-0 text-xs text-muted-foreground">{ageLabel}</span>}
+                          </div>
                           {patient.admissionStatus && (
                             <div className="mt-1">
                               <DischargeStatusRibbon status={patient.admissionStatus} />
                             </div>
                           )}
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {patient.age ? `${String(patient.age).replace(/\s*a$/i, "")} anos` : "—"}
-                          </p>
-                          {parseTextArray(patient.diagnoses).length > 0 && (
-                            <p className="text-xs text-muted-foreground mt-1 line-clamp-1 max-w-[200px]">
-                              {parseTextArray(patient.diagnoses)[0]}
+                          {diagnoses.length > 0 && (
+                            <p className="text-xs text-muted-foreground mt-1 line-clamp-1 max-w-[260px]">
+                              {diagnoses.join("  /  ")}
                             </p>
                           )}
                           <LastActionLine action={lastActionByPatient.get(patient.id)} />
