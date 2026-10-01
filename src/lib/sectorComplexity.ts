@@ -86,6 +86,31 @@ export function isMaxCriticalSector(sectorCode?: string | null): boolean {
   return getSectorComplexityLevel(sectorCode) === 1;
 }
 
+// ─── Modo de admissão por setor ────────────────────────────────
+export type AdmissionMode = "uti" | "enfermaria" | "emergencia";
+
+/**
+ * Setores que disparam o corpo de admissao UTI/UCI. Mesma lista historica
+ * usada em AdmissionForm (UTI_SECTORS) — centralizada aqui como fonte unica
+ * do modo de admissao.
+ */
+export const ADMISSION_UTI_SECTORS = ["red", "yellow", "outside", "uti_01", "uti_02", "uci_02"] as const;
+
+/**
+ * Deriva o modo de admissao a partir do codigo de setor.
+ *   - UTI/UCI (ADMISSION_UTI_SECTORS) -> "uti"
+ *   - Sala Vermelha (sala_vermelha)   -> "emergencia"
+ *   - qualquer outro                  -> "enfermaria" (inclui Sala Laranja)
+ *
+ * Correspondencia EXATA do codigo (sem trim/lowercase) para preservar
+ * byte-a-byte o antigo `isUti = UTI_SECTORS.includes(patient.sector)`.
+ */
+export function admissionModeForSector(sector: string): AdmissionMode {
+  if ((ADMISSION_UTI_SECTORS as readonly string[]).includes(sector)) return "uti";
+  if (sector === "sala_vermelha") return "emergencia";
+  return "enfermaria";
+}
+
 // ─── Tipos de transferência ────────────────────────────────────
 
 export type TransferClassification =

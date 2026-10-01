@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CidSearchInput } from "@/components/CidSearchInput";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { WizardItemQueue } from "@/components/shared/WizardItemQueue";
 import { useWizardItemQueue } from "@/hooks/useWizardItemQueue";
 import { calcularQSofa } from "@/lib/qsofa";
@@ -27,18 +28,17 @@ import {
 import {
   Stethoscope, Loader2, AlertTriangle, ClipboardCheck,
   HeartPulse, Activity, FileText, Pill, CalendarDays, Hash,
-  Printer, ShieldCheck, Save, Trash2, Brain, Gauge, ClipboardList,
+  Printer, ShieldCheck, Save, Trash2, Brain, Gauge, ClipboardList, ChevronDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { printAdmissionNormaZero } from "@/lib/printAdmission";
 import { resolveCurrentBedSector } from "@/lib/resolvePatientHeader";
+import { admissionModeForSector } from "@/lib/sectorComplexity";
 import { parseDiagnosesText } from "@/lib/diagnosesText";
 import { toEvolucaoStatusDb } from "@/lib/evolucaoStatus";
 import { PatientIdentityHeader } from "@/components/PatientIdentityHeader";
 import { usePatientIdentifiers } from "@/hooks/usePatientIdentifiers";
 import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
-
-const UTI_SECTORS = ["red", "yellow", "outside", "uti_01", "uti_02", "uci_02"];
 
 /** MIGRAÇÃO: profissionais.id ≠ auth.uid → resolve via profissionais.user_id. */
 async function resolveProfissionalId(userId: string | null | undefined): Promise<string | null> {
@@ -192,6 +192,25 @@ const Section = ({
   );
 };
 
+/* ───────── Secao colapsavel (modo emergencia — complementos recolhidos) ───────── */
+
+const EmergenciaCollapsible = ({
+  icon: Icon, title, children,
+}: {
+  icon: React.ElementType; title: string; children: React.ReactNode;
+}) => (
+  <Collapsible defaultOpen={false} className="rounded-lg border border-border bg-muted/20">
+    <CollapsibleTrigger className="group flex w-full items-center gap-2 px-4 py-2.5 text-left">
+      <Icon className="h-4 w-4 text-muted-foreground" />
+      <span className="text-xs font-medium uppercase tracking-wide text-foreground">{title}</span>
+      <ChevronDown className="ml-auto h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+    </CollapsibleTrigger>
+    <CollapsibleContent className="px-4 pb-4 pt-1 space-y-3">
+      {children}
+    </CollapsibleContent>
+  </Collapsible>
+);
+
 /* ───────── Glasgow (ECG) — opções reaproveitadas de RiskClassificationDialog ───────── */
 
 const GLASGOW_EYE = [
@@ -287,7 +306,11 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
   const { currentHospital, currentState } = useHospital();
   const { currentDepartment } = useDepartment();
   const { user } = useAuth();
-  const isUti = useMemo(() => UTI_SECTORS.includes(patient.sector), [patient.sector]);
+  // Modo de admissao derivado do setor. isUti preserva byte-a-byte o antigo
+  // UTI_SECTORS.includes(patient.sector) (mesma lista, correspondencia exata).
+  const admissionMode = useMemo(() => admissionModeForSector(patient.sector), [patient.sector]);
+  const isUti = admissionMode === "uti";
+  const isEmergencia = admissionMode === "emergencia";
   const identifiers = usePatientIdentifiers(patient.id, patient.name, currentHospital?.id || null);
   const registryId = identifiers.registry?.id ?? patient.patient_registry_id ?? null;
   const draftKey = useMemo(() => registryId ? draftKeyFor(registryId) : null, [registryId]);
@@ -649,20 +672,38 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
   };
   // Itens obrigatórios para VALIDAR a admissão (CID/previsão/SAPS são recomendados, não bloqueantes)
   // SAPS 3 segue como tarefa pendente paralela (cronômetro de 24 h), mas não bloqueia validar/imprimir admissão.
-  const missingList = [
-    missing.hda && "HDA",
-    missing.examGeneral && "Estado geral (exame físico)",
-    missing.plan && "Conduta inicial",
-  ].filter(Boolean) as string[];
+  //
+  // Modo EMERGENCIA (Sala Vermelha): obrigatorios reduzidos ao minimo do paciente
+  // em estabilizacao — HDA + CID primario + Conduta. "Estado geral" do exame fisico
+  // NAO bloqueia. Nos modos uti/enfermaria os obrigatorios atuais permanecem
+  // (HDA + Estado geral + Conduta).
+  const missingList = (isEmergencia
+    ? [
+        missing.hda && "HDA",
+        missing.cidPrimary && "CID primário",
+        missing.plan && "Conduta inicial",
+      ]
+    : [
+        missing.hda && "HDA",
+        missing.examGeneral && "Estado geral (exame físico)",
+        missing.plan && "Conduta inicial",
+      ]
+  ).filter(Boolean) as string[];
 
   const validate = (): string | null => {
     if (missing.hda) return "História da Doença Atual (HDA) é obrigatória";
-    if (missing.examGeneral) return "Estado geral (exame físico) é obrigatório";
+    if (isEmergencia) {
+      if (missing.cidPrimary) return "CID primário é obrigatório";
+    } else {
+      if (missing.examGeneral) return "Estado geral (exame físico) é obrigatório";
+    }
     if (missing.plan) return "Conduta inicial é obrigatória";
     return null;
   };
 
-  const canValidate = !missing.hda && !missing.examGeneral && !missing.plan;
+  const canValidate = isEmergencia
+    ? !missing.hda && !missing.cidPrimary && !missing.plan
+    : !missing.hda && !missing.examGeneral && !missing.plan;
 
   const handleSaveDraft = () => {
     try {
@@ -864,6 +905,8 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
           __created_by: user.id,
           __created_by_name: doctorName,
           __evolution_type: "admission",
+          // Modo de admissao (uti/enfermaria/emergencia) — chave ADITIVA, sempre presente.
+          __admission_mode: admissionMode,
           // UTI estruturado — chaves ADITIVAS (não substituem nada do schema).
           ...(isUti ? {
             __uti_justificativa: { codigo: utiJustificativa || null, outro: utiJustificativaOutro.trim() || admissionReason.trim() || null },
@@ -949,7 +992,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
               </span>
               Admissão Hospitalar
               <Badge variant="outline" className="ml-2 border-released/40 bg-released/10 text-released-on-soft">
-                {isUti ? "UTI / UCI" : "ENFERMARIA"}
+                {isUti ? "UTI / UCI" : isEmergencia ? "EMERGÊNCIA — SALA VERMELHA" : "ENFERMARIA"}
               </Badge>
             </h2>
             <p className="text-sm text-muted-foreground text-xs">
@@ -1001,6 +1044,192 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
       </header>
 
       <div className="px-4 sm:px-6 py-4 min-w-0 overflow-x-hidden">
+        {isEmergencia ? (
+        /* ═══════════ MODO EMERGENCIA (Sala Vermelha) — layout enxuto ═══════════
+           Nada e removido: o essencial fica aberto no topo; o resto vai para
+           secoes colapsadas por padrao (Collapsible defaultOpen=false). */
+        <div className="w-full min-w-0 space-y-4">
+          {/* Faixa de contexto do modo */}
+          <div className="rounded-lg border border-critical-border bg-critical-soft/40 px-4 py-2.5 flex flex-wrap items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-critical-on-soft" />
+            <span className="text-xs font-semibold uppercase tracking-wide text-critical-on-soft">Modo emergência — Sala Vermelha</span>
+            <span className="ml-auto text-xs text-muted-foreground">Estabilização: essencial aberto, complementos recolhidos</span>
+          </div>
+
+          {/* ───── ESSENCIAL (sempre aberto) ───── */}
+          <Section icon={FileText} title="História admissional (HDA)" tone="slate">
+            <ReqLabel missing={attempted && missing.hda}>HDA — História da Doença Atual (curta)</ReqLabel>
+            <Textarea value={hda} onChange={e => setHda(e.target.value)} rows={3}
+              placeholder="Paciente admitido com..." className={cn("mt-1", reqRing(attempted && missing.hda))} />
+          </Section>
+
+          <Section icon={FileText} title="Diagnóstico (CID-10)" hint="Busca por código ou descrição" tone="blue">
+            <ReqLabel missing={attempted && missing.cidPrimary}>CID primário</ReqLabel>
+            <CidSearchInput value={cidPrimary} onChange={setCidPrimary}
+              placeholder="Ex.: J18, pneumonia..." className={cn("mt-1", reqRing(attempted && missing.cidPrimary))} />
+          </Section>
+
+          <Section icon={Pill} title="Conduta inicial" tone="slate">
+            <ReqLabel missing={attempted && missing.plan}>Conduta inicial</ReqLabel>
+            <Textarea value={plan} onChange={e => setPlan(e.target.value)} rows={4}
+              placeholder={"• Monitorização\n• Suporte clínico\n• ..."} className={cn("mt-1", reqRing(attempted && missing.plan))} />
+          </Section>
+
+          <Section icon={HeartPulse} title="Sinais vitais" tone="emerald">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <div><Label className="text-xs">PA sistólica</Label><Input value={paSys} onChange={e => setPaSys(e.target.value)} placeholder="120" className="mt-1" inputMode="numeric" /></div>
+              <div><Label className="text-xs">PA diastólica</Label><Input value={paDia} onChange={e => setPaDia(e.target.value)} placeholder="80" className="mt-1" inputMode="numeric" /></div>
+              <div><Label className="text-xs">FC (bpm)</Label><Input value={fc} onChange={e => setFc(e.target.value)} placeholder="bpm" className="mt-1" inputMode="numeric" /></div>
+              <div><Label className="text-xs">FR (irpm)</Label><Input value={fr} onChange={e => setFr(e.target.value)} placeholder="irpm" className="mt-1" inputMode="numeric" /></div>
+              <div><Label className="text-xs">SpO₂ (%)</Label><Input value={spo2} onChange={e => setSpo2(e.target.value)} placeholder="%" className="mt-1" inputMode="numeric" /></div>
+              <div><Label className="text-xs">Temperatura (°C)</Label><Input value={tax} onChange={e => setTax(e.target.value)} placeholder="°C" className="mt-1" inputMode="decimal" /></div>
+            </div>
+          </Section>
+
+          <Section icon={Brain} title="Glasgow + escores ao vivo"
+            hint={glasgowTotal != null ? `Glasgow ${glasgowTotal} / 15` : "Selecione O / V / M"} tone="slate">
+            <div className="space-y-3">
+              <GlasgowRow label="Abertura ocular (1-4)" options={GLASGOW_EYE} value={glasgowEye} onSelect={setGlasgowEye} />
+              <GlasgowRow label="Resposta verbal (1-5)" options={GLASGOW_VERBAL} value={glasgowVerbal} onSelect={setGlasgowVerbal} />
+              <GlasgowRow label="Resposta motora (1-6)" options={GLASGOW_MOTOR} value={glasgowMotor} onSelect={setGlasgowMotor} />
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="flex items-center justify-between rounded-md border border-border bg-background px-3 py-2">
+                  <span className="text-xs uppercase tracking-wide text-muted-foreground">Glasgow</span>
+                  <span className={cn(
+                    "text-lg font-semibold",
+                    glasgowTotal == null ? "text-muted-foreground"
+                      : glasgowTotal <= 8 ? "text-critical-on-soft"
+                      : glasgowTotal <= 12 ? "text-warning-on-soft"
+                      : "text-released-on-soft"
+                  )}>
+                    {glasgowTotal != null ? `${glasgowTotal} / 15` : "— / 15"}
+                  </span>
+                </div>
+                <div className="rounded-md border border-border bg-background px-3 py-2">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">qSOFA</p>
+                  <p className="mt-1 flex items-baseline gap-2">
+                    <span className={cn("text-lg font-semibold", qsofa.alto ? "text-critical-on-soft" : "text-foreground")}>{qsofa.score}</span>
+                    <span className="text-xs text-muted-foreground">/ 3 {qsofa.alto && <strong className="text-critical-on-soft">alto risco</strong>}</span>
+                  </p>
+                </div>
+                <div className="rounded-md border border-border bg-background px-3 py-2">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">NEWS2</p>
+                  {news2 ? (
+                    <p className="mt-1 flex items-baseline gap-2">
+                      <span className="text-lg font-semibold text-foreground">{news2.score}</span>
+                      <span className={cn("text-xs rounded px-1.5 py-0.5", news2RiskLabels[news2.risk].className)}>{news2RiskLabels[news2.risk].label}</span>
+                    </p>
+                  ) : (
+                    <p className="mt-1 text-xs text-muted-foreground">Preencha os sinais vitais.</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </Section>
+
+          {/* ───── COMPLEMENTOS (colapsados por padrão) ───── */}
+          <EmergenciaCollapsible icon={CalendarDays} title="Previsão de alta">
+            <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-3 items-end">
+              <div>
+                <Label className="text-xs flex items-center gap-1"><Hash className="h-3 w-3" /> Dias previstos</Label>
+                <Input type="number" min={0} value={predictionDays} onChange={e => handleDaysChange(e.target.value)} disabled={noPrediction} className="mt-1" />
+              </div>
+              <div>
+                <Label className="text-xs flex items-center gap-1"><CalendarDays className="h-3 w-3" /> Data prevista</Label>
+                <Input type="date" value={predictionDate} onChange={e => handleDateChange(e.target.value)} disabled={noPrediction} className="mt-1" />
+              </div>
+              <label className="flex items-center gap-2 text-xs text-foreground pb-2 select-none">
+                <Checkbox checked={noPrediction} onCheckedChange={v => setNoPrediction(v === true)} />
+                Sem previsão
+              </label>
+            </div>
+            <p className="text-xs text-muted-foreground">Resultado: <strong className="text-foreground">{dischargePredictionLabel}</strong></p>
+          </EmergenciaCollapsible>
+
+          <EmergenciaCollapsible icon={ClipboardList} title="Antecedentes mórbidos pessoais">
+            <div className="flex gap-2">
+              <Input
+                value={antInput}
+                onChange={e => setAntInput(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); commitAntecedente(); } }}
+                placeholder="Ex.: HAS, DM2, tabagismo, ex-etilista..."
+                className="flex-1"
+              />
+            </div>
+            <WizardItemQueue
+              items={antQueue.items}
+              editingUid={antQueue.editingUid}
+              onEdit={editAntecedente}
+              onRemove={antQueue.remove}
+              onAddCurrent={commitAntecedente}
+              onSaveCurrent={commitAntecedente}
+              addLabel="Acrescentar antecedente"
+              accentClassName="border-border bg-muted/40 text-foreground"
+              hint="Digite um antecedente e clique em Acrescentar (ou Enter). Repita para adicionar vários."
+              disableAdd={!antInput.trim()}
+            />
+          </EmergenciaCollapsible>
+
+          <EmergenciaCollapsible icon={Pill} title="MUC — Medicações de uso contínuo">
+            <Textarea value={muc} onChange={e => setMuc(e.target.value)} rows={3} className="mt-1" placeholder="Uma medicação por linha..." />
+          </EmergenciaCollapsible>
+
+          <EmergenciaCollapsible icon={AlertTriangle} title="Alergias medicamentosas">
+            <div className="flex flex-wrap items-center gap-3">
+              <ToggleGroup type="single" value={allergyMode ?? ""} onValueChange={v => { if (v === "nao" || v === "sim") handleAllergyMode(v); }}>
+                <ToggleGroupItem value="nao" className="data-[state=on]:bg-released data-[state=on]:text-white">Nega</ToggleGroupItem>
+                <ToggleGroupItem value="sim" className="data-[state=on]:bg-critical data-[state=on]:text-white">Sim</ToggleGroupItem>
+              </ToggleGroup>
+              {allergyMode === "sim" && (
+                <Input value={allergies === "Nega" ? "" : allergies} onChange={e => setAllergies(e.target.value)} placeholder="Especificar alergia(s)..." className="flex-1 min-w-[12rem]" />
+              )}
+            </div>
+          </EmergenciaCollapsible>
+
+          <EmergenciaCollapsible icon={Activity} title="Antropometria e dextro">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <div><Label className="text-xs">Peso (kg)</Label><Input value={weight} onChange={e => setWeight(e.target.value)} placeholder="kg" className="mt-1" inputMode="decimal" /></div>
+              <div><Label className="text-xs">Altura (m ou cm)</Label><Input value={height} onChange={e => setHeight(e.target.value)} placeholder="1,70 ou 170" className="mt-1" inputMode="decimal" /></div>
+              <div>
+                <Label className="text-xs">IMC</Label>
+                <div className={cn("mt-1 h-10 rounded-md border bg-background px-3 flex items-center justify-between text-sm", imc ? "border-border/40" : "border-border text-muted-foreground/60")}>
+                  {imc ? (<><span className="font-medium text-foreground">{imc.value}</span><span className={cn("text-xs uppercase tracking-wide", imc.color)}>{imc.label}</span></>) : (<span className="text-xs">Peso + altura</span>)}
+                </div>
+              </div>
+              <div><Label className="text-xs">Dextro (mg/dL)</Label><Input value={dx} onChange={e => setDx(e.target.value)} placeholder="mg/dL" className="mt-1" inputMode="numeric" /></div>
+            </div>
+          </EmergenciaCollapsible>
+
+          <EmergenciaCollapsible icon={Stethoscope} title="Exame físico segmentar">
+            <div>
+              <Label className="text-xs">Estado geral</Label>
+              <Textarea value={physGeneral} onChange={e => setPhysGeneral(e.target.value)} rows={2} className="mt-1" />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div><Label className="text-xs">Cardiovascular</Label><Textarea value={physCv} onChange={e => setPhysCv(e.target.value)} rows={2} className="mt-1" /></div>
+              <div><Label className="text-xs">Respiratório</Label><Textarea value={physResp} onChange={e => setPhysResp(e.target.value)} rows={2} className="mt-1" /></div>
+              <div><Label className="text-xs">Abdome</Label><Textarea value={physAbd} onChange={e => setPhysAbd(e.target.value)} rows={2} className="mt-1" /></div>
+              <div><Label className="text-xs">Extremidades</Label><Textarea value={physExt} onChange={e => setPhysExt(e.target.value)} rows={2} className="mt-1" /></div>
+              <div className="sm:col-span-2"><Label className="text-xs">Neurológico</Label><Textarea value={physNeuro} onChange={e => setPhysNeuro(e.target.value)} rows={2} className="mt-1" placeholder="Glasgow, pupilas, força, sensibilidade, reflexos, sinais focais..." /></div>
+            </div>
+          </EmergenciaCollapsible>
+
+          <EmergenciaCollapsible icon={Stethoscope} title="Hipóteses diagnósticas (texto livre)">
+            <Textarea
+              value={diagnosticHypotheses}
+              onChange={(e) => setDiagnosticHypotheses(e.target.value)}
+              rows={4}
+              placeholder={"Ex.:\nSepse de foco pulmonar\nSuspeita de TEP associado\nDM2 descompensado"}
+              className="mt-1 font-mono text-xs"
+            />
+            <p className="text-xs text-muted-foreground mt-1">Cada linha vira uma hipótese no card do paciente.</p>
+          </EmergenciaCollapsible>
+
+          <EmergenciaCollapsible icon={FileText} title="CID secundário">
+            <CidSearchInput value={cidSecondary} onChange={setCidSecondary} placeholder="Opcional" className="mt-1" />
+          </EmergenciaCollapsible>
+        </div>
+        ) : (
         <div className="w-full min-w-0 space-y-6">
 
           {/* ───── Diagnóstico e previsão ───── */}
@@ -1380,6 +1609,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
             </>
           )}
         </div>
+        )}
       </div>
 
       <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 px-4 sm:px-6 py-4 border-t bg-muted/60 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
