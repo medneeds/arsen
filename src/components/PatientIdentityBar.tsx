@@ -60,6 +60,10 @@ export function PatientIdentityBar({ patientId, rightSlot, className, scope = "e
   const age = patient?.age || ids.registry?.age || "";
   const birthDate = ids.registry?.birthDate || null;
   const prontuario = ids.prontuario || null;
+  // Numero de atendimento (internacoes.numero_atendimento), resolvido de forma
+  // tolerante por usePatientIdentifiers. So aparece no escopo de atendimento
+  // (nao no historico, que e nivel de prontuario) e quando disponivel.
+  const atendimento = ids.atendimento || null;
 
   return (
     <div className={cn("hidden sm:flex items-center justify-between gap-4", className)}>
@@ -96,6 +100,12 @@ export function PatientIdentityBar({ patientId, rightSlot, className, scope = "e
               <>
                 <span className="text-muted-foreground/40 text-xs">·</span>
                 <span className="text-xs text-muted-foreground font-mono">Pront. {prontuario}</span>
+              </>
+            )}
+            {!registryOnly && atendimento && (
+              <>
+                <span className="text-muted-foreground/40 text-xs">·</span>
+                <span className="text-xs text-muted-foreground font-mono">Atend. {atendimento}</span>
               </>
             )}
           </div>
