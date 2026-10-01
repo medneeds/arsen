@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import { useLocation, useSearchParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
 import { PatientIdentityBar } from "@/components/PatientIdentityBar";
 import { SapsPendingAlert } from "@/components/SapsPendingAlert";
@@ -15,7 +16,7 @@ import {
   XCircle, FileText, AlertTriangle, Loader2, Send, Trash2,
   ChevronDown, ChevronUp, Eye, ClipboardList, Package, TrendingUp,
   CalendarIcon, Printer, RotateCcw, FileCheck, Microscope, Droplet, Syringe,
-  ShieldAlert, ChevronRight,
+  ShieldAlert, ChevronRight, User as UserIcon,
 } from "lucide-react";
 import { HemocomponentRequestDialog } from "@/components/HemocomponentRequestDialog";
 import { printHemocomponentRequest, type HemocomponentRequestData } from "@/components/PrintableHemocomponentRequest";
@@ -75,6 +76,15 @@ async function resolveProfissionalId(userId: string | null | undefined): Promise
   } catch { return null; }
 }
 
+// AUTORIA: linha minima de profissionais para resolver autor (id -> nome/CRM),
+// sem introduzir `any`. CRM vive em numero_conselho (nao ha coluna `crm`);
+// o alias PostgREST (crm:numero_conselho) mantem o campo `crm` no view-model.
+interface ProfissionalLite {
+  id: string;
+  nome: string | null;
+  crm: string | null;
+}
+
 // MIGRAÇÃO: solicitacoes_exame só tem internacao_id + campos clínicos — não há
 // colunas de paciente/unidade/documento/solicitante. Normaliza a linha nova
 // para o shape legado que RequestCard e os builders de impressão consomem
@@ -101,7 +111,11 @@ function normalizeSolicitacao(
     completed_at: row.concluido_em || null,
     completed_by: null,                        // MIGRAÇÃO: concluido_por é FK profissional; nome não resolvido
     created_at: row.criado_em,
-    requested_by_name: "",                     // MIGRAÇÃO: sem coluna no schema novo
+    // AUTORIA: solicitado_por e FK de profissionais.id; o nome/CRM sao resolvidos
+    // em lote na pagina (useQuery) e injetados como requested_by_name/_crm.
+    solicitado_por: row.solicitado_por ?? null,
+    requested_by_name: "",                     // resolvido na pagina a partir de solicitado_por
+    requested_by_crm: null,                    // idem (profissionais.numero_conselho)
     document_payload: null,                    // MIGRAÇÃO: sem coluna → reimpressão de snapshot indisponível
     patient_registry_id: null,                 // MIGRAÇÃO: sem coluna no schema novo
   };
@@ -565,21 +579,55 @@ const RequisicaoUnificadaPage = () => {
     setLoadingAllProcedures(false);
   };
 
+  // ── AUTORIA: resolve o solicitante (nome + CRM) a partir de solicitado_por ──
+  // Coleta os ids presentes nas requisicoes carregadas, dedup/sem nulos, e
+  // resolve em lote em profissionais(id, nome, numero_conselho). So leitura.
+  const solicitanteIds = useMemo(() => {
+    const s = new Set<string>();
+    requests.forEach((r) => { if (r.solicitado_por) s.add(r.solicitado_por as string); });
+    return [...s];
+  }, [requests]);
+
+  const { data: solicitantesMap = new Map<string, ProfissionalLite>() } = useQuery({
+    queryKey: ["requisicao-solicitantes", solicitanteIds],
+    enabled: solicitanteIds.length > 0,
+    queryFn: async (): Promise<Map<string, ProfissionalLite>> => {
+      const { data } = await supabase
+        .from("profissionais")
+        .select("id, nome, crm:numero_conselho")
+        .in("id", solicitanteIds);
+      const m = new Map<string, ProfissionalLite>();
+      ((data ?? []) as unknown as ProfissionalLite[]).forEach((r) => m.set(r.id, r));
+      return m;
+    },
+  });
+
+  // Injeta requested_by_name/_crm resolvidos (so quando houver nome) sem mudar o
+  // restante do shape que RequestCard/impressao consomem.
+  const requestsWithAuthor = useMemo(() => {
+    if (solicitantesMap.size === 0) return requests;
+    return requests.map((r) => {
+      const prof = r.solicitado_por ? solicitantesMap.get(r.solicitado_por as string) : undefined;
+      if (!prof) return r;
+      return { ...r, requested_by_name: prof.nome ?? "", requested_by_crm: prof.crm ?? null };
+    });
+  }, [requests, solicitantesMap]);
+
   // ── Filtered lists ──
   // Defesa em profundidade: mesmo após o filtro server-side, garante que
   // só apareçam itens do paciente atualmente aberto quando há contexto.
   const validPatientIdMemo = useMemo(() => asUuidOrNull(formPatientId), [formPatientId]);
   const scopedRequests = useMemo(() => {
     if (validPatientIdMemo) {
-      return requests.filter(r => r.patient_id === validPatientIdMemo);
+      return requestsWithAuthor.filter(r => r.patient_id === validPatientIdMemo);
     }
     if (formPatientName) {
-      return requests.filter(r => (r.patient_name || "").trim().toLowerCase() === formPatientName.trim().toLowerCase());
+      return requestsWithAuthor.filter(r => (r.patient_name || "").trim().toLowerCase() === formPatientName.trim().toLowerCase());
     }
     // Sem contexto de paciente: parecer não exibe nada (evita vazar entre pacientes)
     if (activeCategory === "parecer") return [];
-    return requests;
-  }, [requests, validPatientIdMemo, formPatientName, activeCategory]);
+    return requestsWithAuthor;
+  }, [requestsWithAuthor, validPatientIdMemo, formPatientName, activeCategory]);
 
   const pendingRequests = useMemo(() =>
     scopedRequests.filter(r => (r.status === "pending" || r.status === "in_progress") &&
@@ -3569,7 +3617,13 @@ function RequestCard({ request, category, onViewResult, onCancel, showResult }: 
             <div className="flex items-center gap-3 text-xs text-muted-foreground mb-2">
               {request.patient_bed && <span>{getSectorLabel(request.patient_sector)} · L{request.patient_bed}</span>}
               <span>{format(new Date(request.created_at), "dd/MM HH:mm", { locale: ptBR })}</span>
-              <span>por {request.requested_by_name}</span>
+              {request.requested_by_name ? (
+                <span className="inline-flex items-center gap-1">
+                  <UserIcon className="h-3 w-3" />
+                  por {request.requested_by_name}
+                  {request.requested_by_crm ? ` · CRM ${request.requested_by_crm}` : ""}
+                </span>
+              ) : null}
             </div>
             <div className="flex flex-wrap gap-1">
               {items.slice(0, 6).map((item: any, i: number) => (

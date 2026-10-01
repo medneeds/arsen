@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Activity, Clock, Droplet, FileCheck, FileSignature, FileText, Microscope, NotebookPen, Plus, Printer,
-  ScanLine, ScrollText, Stethoscope, Syringe, TestTubes,
+  ScanLine, ScrollText, Stethoscope, Syringe, TestTubes, User as UserIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -248,9 +248,14 @@ function TimelineRow({
         <p className="text-xs text-muted-foreground mt-1">
           {compact ? meta.shortLabel + " · " : ""}
           {formatDate(doc.createdAt)}
-          {doc.authorName ? ` · ${doc.authorName}` : ""}
           {doc.patientBed ? ` · ${doc.patientBed}` : ""}
         </p>
+        {doc.authorName ? (
+          <p className="mt-0.5 inline-flex items-center gap-1 text-xs text-muted-foreground">
+            <UserIcon className="h-3 w-3" />
+            assinado por {doc.authorName}{doc.authorCrm ? ` · CRM ${doc.authorCrm}` : ""}
+          </p>
+        ) : null}
       </button>
       <Badge variant="outline" className={cn("text-xs h-4 px-2 shrink-0", status.cls)}>
         <span className={cn("h-1 w-1 rounded-full mr-1", status.dot)} />

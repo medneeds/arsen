@@ -40,8 +40,10 @@ export interface PatientDocument {
   /** Status original retornado da fonte (p/ debug / badge customizada) */
   rawStatus: string;
   createdAt: string;
-  /** Autor / solicitante (quando disponível) */
+  /** Autor / solicitante / assinante (quando disponível) */
   authorName?: string | null;
+  /** CRM do assinante (quando disponível) — embutido no doc ou resolvido via profissionais. */
+  authorCrm?: string | null;
   /** Setor do paciente quando o doc foi criado */
   patientSector?: string | null;
   patientBed?: string | null;
@@ -265,6 +267,7 @@ export function usePatientDocuments({
           rawStatus: r.tipo,
           createdAt: r.criado_em,
           authorName: r.assinado_por_nome, // MIGRAÇÃO: signed_by_name→assinado_por_nome
+          authorCrm: r.assinado_por_crm ?? null, // CRM embutido do assinante
           patientSector: null, // MIGRAÇÃO: sem coluna
           patientBed: null, // MIGRAÇÃO: sem coluna
           source: "receituarios",
@@ -292,6 +295,9 @@ export function usePatientDocuments({
           rawStatus: r.tipo,
           createdAt: r.criado_em ?? r.data_hora,
           authorName: c.signed_by_name ?? null,
+          // CRM embutido do assinante (conteudo ou coluna crm_assinatura); o nome
+          // nao-embutido e resolvido via profissionais(assinado_por) na pagina.
+          authorCrm: c.signed_by_crm ?? r.crm_assinatura ?? null,
           patientSector: c.patient_sector ?? null,
           patientBed: c.patient_bed ?? null,
           source: "documentos_medicos",

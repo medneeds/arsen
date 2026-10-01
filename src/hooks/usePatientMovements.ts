@@ -17,6 +17,9 @@ export interface PatientMovement {
   // liberacao de leito — reverte uma saida sinalizada. Consumidores usam esta
   // flag para nao rotular como "pendente liberacao".
   isSuspension: boolean;
+  // AUTORIA: quem registrou a movimentacao (logs_auditoria.profissional_id, FK
+  // profissionais.id). Resolvido para nome/CRM na UI (SignalingFlowRecord).
+  profissionalId: string | null;
 }
 
 // MIGRAÇÃO: patient_movements (morta) → logs_auditoria.
@@ -76,6 +79,7 @@ export function usePatientMovements(
           createdAt: r.criado_em,
           notes: dn.notes ?? r.motivo ?? null,
           isSuspension: String(r.tipo_evento ?? "").startsWith("suspensao_"),
+          profissionalId: r.profissional_id ?? null,
         };
       }));
     }

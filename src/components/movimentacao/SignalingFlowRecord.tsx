@@ -1,8 +1,10 @@
 import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { History, FileText, ArrowRightLeft, LogOut, Printer, Ban } from "lucide-react";
+import { History, FileText, ArrowRightLeft, LogOut, Printer, Ban, User as UserIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 import { usePatientMovements } from "@/hooks/usePatientMovements";
 import { usePatientDischargeDocs, type DischargeDocRow } from "@/hooks/usePatientDischargeDocs";
 import { printDischargeDocument, DISCHARGE_DOC_SHORT } from "@/lib/dischargeDocuments";
@@ -34,6 +36,15 @@ const MOVEMENT_LABELS: Record<string, string> = {
   suspensao_obito: "Suspensao de obito",
 };
 
+// AUTORIA: linha minima de profissionais (id -> nome/CRM), sem `any`. CRM vive
+// em numero_conselho; o alias PostgREST (crm:numero_conselho) mantem o campo
+// `crm` no view-model.
+interface ProfissionalLite {
+  id: string;
+  nome: string | null;
+  crm: string | null;
+}
+
 function movementLabel(raw: string): string {
   if (MOVEMENT_LABELS[raw]) return MOVEMENT_LABELS[raw];
   const cleaned = raw
@@ -64,6 +75,29 @@ export function SignalingFlowRecord({ patient }: Props) {
   const { movements, loading } = usePatientMovements(patientId, patient.name, null);
   const { data: docs = [] } = usePatientDischargeDocs(patientId, patient.name);
   const [suspendDoc, setSuspendDoc] = useState<DischargeDocRow | null>(null);
+
+  // ── AUTORIA: resolve quem registrou cada movimentacao (nome + CRM) ──
+  // Coleta os profissionalId presentes na timeline, dedup/sem nulos, e resolve
+  // em lote em profissionais(id, nome, numero_conselho). So leitura.
+  const autorIds = useMemo(() => {
+    const s = new Set<string>();
+    movements.forEach((m) => { if (m.profissionalId) s.add(m.profissionalId); });
+    return [...s];
+  }, [movements]);
+
+  const { data: autoresMap = new Map<string, ProfissionalLite>() } = useQuery({
+    queryKey: ["movimentacao-autores", autorIds],
+    enabled: autorIds.length > 0,
+    queryFn: async (): Promise<Map<string, ProfissionalLite>> => {
+      const { data } = await supabase
+        .from("profissionais")
+        .select("id, nome, crm:numero_conselho")
+        .in("id", autorIds);
+      const m = new Map<string, ProfissionalLite>();
+      ((data ?? []) as unknown as ProfissionalLite[]).forEach((r) => m.set(r.id, r));
+      return m;
+    },
+  });
 
   const hasMovements = movements.length > 0;
   const hasDocs = docs.length > 0;
@@ -142,6 +176,7 @@ export function SignalingFlowRecord({ patient }: Props) {
                 // Suspensao reverte uma saida — icone proprio (Ban), nao LogOut.
                 const isExit = /alta|obito|evasao|externa/.test(m.movementType);
                 const Icon = m.isSuspension ? Ban : isExit ? LogOut : ArrowRightLeft;
+                const autor = m.profissionalId ? autoresMap.get(m.profissionalId) : undefined;
                 return (
                   <li key={m.id} className="flex items-start gap-2.5">
                     <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border bg-muted/40">
@@ -161,6 +196,12 @@ export function SignalingFlowRecord({ patient }: Props) {
                         {fmt(m.createdAt)}
                         {m.notes ? ` · ${m.notes}` : ""}
                       </p>
+                      {autor?.nome ? (
+                        <p className="mt-0.5 inline-flex items-center gap-1 text-xs text-muted-foreground">
+                          <UserIcon className="h-3 w-3" />
+                          por {autor.nome}{autor.crm ? ` · CRM ${autor.crm}` : ""}
+                        </p>
+                      ) : null}
                     </div>
                   </li>
                 );

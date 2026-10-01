@@ -1,5 +1,7 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
 import { PatientIdentityBar } from "@/components/PatientIdentityBar";
 import { PatientCockpit } from "@/components/PatientCockpit";
@@ -28,6 +30,15 @@ import { printReceituario, type ReceituarioData } from "@/lib/receituario";
 import { printDocumentoMedico } from "@/lib/documentoMedico";
 import type { DocumentoMedicoData } from "@/hooks/useDocumentoMedico";
 
+// AUTORIA: linha minima de profissionais (id -> nome/CRM), sem `any`. CRM vive
+// em numero_conselho; o alias PostgREST (crm:numero_conselho) mantem o campo
+// `crm` no view-model.
+interface ProfissionalLite {
+  id: string;
+  nome: string | null;
+  crm: string | null;
+}
+
 const DocumentosPacientePage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -47,6 +58,47 @@ const DocumentosPacientePage = () => {
     stateId: currentState?.id,
     realtime: true,
   });
+
+  // ── AUTORIA: resolve o assinante dos documentos sem nome embutido ──
+  // Documentos medicos (altas) guardam o assinante em assinado_por (FK
+  // profissionais). Quando o nome nao vem embutido no conteudo (signed_by_name),
+  // resolvemos id -> nome/CRM em lote. Receituarios ja trazem nome/CRM embutidos.
+  const assinanteIds = useMemo(() => {
+    const s = new Set<string>();
+    docs.forEach((d) => {
+      if (d.authorName) return; // ja tem nome embutido — nao precisa resolver
+      const assinadoPor = (d.raw as { assinado_por?: string | null } | null)?.assinado_por;
+      if (assinadoPor) s.add(assinadoPor);
+    });
+    return [...s];
+  }, [docs]);
+
+  const { data: assinantesMap = new Map<string, ProfissionalLite>() } = useQuery({
+    queryKey: ["documentos-assinantes", assinanteIds],
+    enabled: assinanteIds.length > 0,
+    queryFn: async (): Promise<Map<string, ProfissionalLite>> => {
+      const { data } = await supabase
+        .from("profissionais")
+        .select("id, nome, crm:numero_conselho")
+        .in("id", assinanteIds);
+      const m = new Map<string, ProfissionalLite>();
+      ((data ?? []) as unknown as ProfissionalLite[]).forEach((r) => m.set(r.id, r));
+      return m;
+    },
+  });
+
+  // Injeta authorName/authorCrm resolvidos nos documentos sem nome embutido,
+  // preservando o nome/CRM embutido quando houver. So apresentacao.
+  const docsComAssinante = useMemo(() => {
+    if (assinantesMap.size === 0) return docs;
+    return docs.map((d) => {
+      if (d.authorName) return d;
+      const assinadoPor = (d.raw as { assinado_por?: string | null } | null)?.assinado_por;
+      const prof = assinadoPor ? assinantesMap.get(assinadoPor) : undefined;
+      if (!prof) return d;
+      return { ...d, authorName: prof.nome ?? null, authorCrm: d.authorCrm ?? prof.crm ?? null };
+    });
+  }, [docs, assinantesMap]);
 
   const [hemoOpen, setHemoOpen] = useState(false);
   const [satOpen, setSatOpen] = useState(false);
@@ -223,7 +275,7 @@ const DocumentosPacientePage = () => {
 
           {/* Painel unificado: timeline + acordeões */}
           <PatientDocumentsPanel
-            docs={docs}
+            docs={docsComAssinante}
             loading={loading}
             onNewByType={handleNewByType}
             onOpenDoc={handleOpenDoc}
