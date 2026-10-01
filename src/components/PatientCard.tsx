@@ -22,7 +22,6 @@ import { DietReleaseDialog } from "./DietReleaseDialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { useDepartment } from "@/contexts/DepartmentContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBedAllocationRequests } from "@/hooks/useBedAllocationRequests";
 import { formatAgeDisplay } from "@/utils/ageDisplay";
@@ -651,7 +650,6 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
   const movementTriggerRef = useRef<HTMLButtonElement>(null);
   const config = sectorConfig[patient.sector as keyof typeof sectorConfig] ?? sectorConfig.outside;
   const { toast: toastHook } = useToast();
-  const { currentDepartment } = useDepartment();
   const navigate = useNavigate();
   const [medicalResponsibilityDialogOpen, setMedicalResponsibilityDialogOpen] = useState(false);
   const [localMedicalResponsibility, setLocalMedicalResponsibility] = useState(patient.medicalResponsibility);
@@ -1493,27 +1491,35 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                 <div className="flex flex-col flex-1 min-w-0 md:col-span-3">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-xs md:text-xs font-medium text-muted-foreground">Paciente</span>
-                  {/* DIH (dias de internacao hospitalar) — total desde a admissao,
-                      distinto do TPS. Sempre visivel quando ha data de admissao. */}
-                  {dih != null && (
-                    <span
-                      className="inline-flex items-center gap-0.5 px-1.5 py-px rounded-full text-[11px] font-medium leading-none border bg-muted/60 text-muted-foreground border-border print:hidden"
-                      title={`DIH — Dias de Internacao Hospitalar: ${formatDIHLabel(dih)} (desde a admissao, nao reinicia na transferencia)`}
-                    >
-                      DIH {formatDIHLabel(dih)}
-                    </span>
-                  )}
-                  {stayTimer && currentDepartment !== "UTI" && (
-                    <div
-                      className={cn(
-                        "inline-flex items-center gap-0.5 px-1.5 py-px rounded-full text-[11px] font-medium leading-none border print:hidden",
-                        stayTimer.colorClasses
+                  {/* DIH (dias de internacao hospitalar, desde a admissao, nao
+                      reinicia na transferencia) e TPS (tempo de permanencia no
+                      setor atual) empilhados: dois mini-cards harmonizados — mesma
+                      pill compacta — um sobre o outro, sem alargar o card. O TPS
+                      agora aparece em TODOS os setores (inclusive UTI), onde antes
+                      ficava oculto. */}
+                  {(dih != null || stayTimer) && (
+                    <span className="inline-flex flex-col items-start gap-0.5 print:hidden">
+                      {dih != null && (
+                        <span
+                          className="inline-flex items-center gap-0.5 px-1.5 py-px rounded-full text-[11px] font-medium leading-none border bg-muted/60 text-muted-foreground border-border"
+                          title={`DIH — Dias de Internacao Hospitalar: ${formatDIHLabel(dih)} (desde a admissao, nao reinicia na transferencia)`}
+                        >
+                          DIH {formatDIHLabel(dih)}
+                        </span>
                       )}
-                      title={`Permanência no setor (TPS): ${stayTimer.display}${stayTimer.level === "warning" ? " >24h" : stayTimer.level === "orange" ? " >48h" : stayTimer.level === "critical" || stayTimer.level === "pulsing" ? " >72h" : ""}`}
-                    >
-                      <Clock className="h-2.5 w-2.5" />
-                      <span>{stayTimer.displayShort}</span>
-                    </div>
+                      {stayTimer && (
+                        <span
+                          className={cn(
+                            "inline-flex items-center gap-0.5 px-1.5 py-px rounded-full text-[11px] font-medium leading-none border",
+                            stayTimer.colorClasses
+                          )}
+                          title={`Permanência no setor (TPS): ${stayTimer.display}${stayTimer.level === "warning" ? " >24h" : stayTimer.level === "orange" ? " >48h" : stayTimer.level === "critical" || stayTimer.level === "pulsing" ? " >72h" : ""}`}
+                        >
+                          <Clock className="h-2.5 w-2.5" />
+                          <span>TPS {stayTimer.displayShort}</span>
+                        </span>
+                      )}
+                    </span>
                   )}
                 </div>
                 <div className="group/name relative">
