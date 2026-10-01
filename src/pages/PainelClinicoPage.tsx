@@ -390,7 +390,7 @@ export default function PainelClinicoPage() {
                         <p className="text-xs text-muted-foreground mt-1">
                           {patient.age ? `${String(patient.age).replace(/\s*a$/i, "")} anos` : "—"}
                           {days !== null && <span className={cn("ml-2", days > 7 && "text-destructive font-medium")}>{days}d int.</span>}
-                          {saps && saps.status !== 'pending' && <span className="ml-2">SAPS {saps.score}</span>}
+                          {saps && saps.status !== 'pendente' && <span className="ml-2">SAPS {saps.score}</span>}
                         </p>
                         {parseTextArray(patient.diagnoses)[0] && (
                           <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{parseTextArray(patient.diagnoses)[0]}</p>
@@ -807,7 +807,7 @@ function SapsPendingGlobalBanner({
   onComplete: (p: Patient) => void;
 }) {
   const pendingPatients = useMemo(
-    () => patients.filter((p) => sapsScores[p.name]?.status === "pending"),
+    () => patients.filter((p) => sapsScores[p.id]?.status === "pendente"),
     [patients, sapsScores],
   );
 
