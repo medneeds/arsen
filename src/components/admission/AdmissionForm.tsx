@@ -15,10 +15,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CidSearchInput } from "@/components/CidSearchInput";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { WizardItemQueue } from "@/components/shared/WizardItemQueue";
+import { useWizardItemQueue } from "@/hooks/useWizardItemQueue";
+import { calcularQSofa } from "@/lib/qsofa";
+import { calculateNEWS2, news2RiskLabels, parseVitalNumber } from "@/lib/news2";
 import {
   Stethoscope, Loader2, AlertTriangle, ClipboardCheck,
   HeartPulse, Activity, FileText, Pill, CalendarDays, Hash,
-  Printer, ShieldCheck, Save, Trash2,
+  Printer, ShieldCheck, Save, Trash2, Brain, Gauge, ClipboardList,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { printAdmissionNormaZero } from "@/lib/printAdmission";
@@ -183,6 +188,45 @@ const Section = ({
   );
 };
 
+/* ───────── Glasgow (ECG) — opções reaproveitadas de RiskClassificationDialog ───────── */
+
+const GLASGOW_EYE = [
+  { v: 4, l: "Espontânea" }, { v: 3, l: "Ao comando" }, { v: 2, l: "À dor" }, { v: 1, l: "Nenhuma" },
+];
+const GLASGOW_VERBAL = [
+  { v: 5, l: "Orientada" }, { v: 4, l: "Confusa" }, { v: 3, l: "Inapropriada" },
+  { v: 2, l: "Incompreensível" }, { v: 1, l: "Nenhuma" },
+];
+const GLASGOW_MOTOR = [
+  { v: 6, l: "Obedece" }, { v: 5, l: "Localiza dor" }, { v: 4, l: "Flexão normal" },
+  { v: 3, l: "Flexão anormal" }, { v: 2, l: "Extensão" }, { v: 1, l: "Nenhuma" },
+];
+
+const GlasgowRow = ({
+  label, options, value, onSelect,
+}: {
+  label: string; options: { v: number; l: string }[]; value: number | null; onSelect: (v: number) => void;
+}) => (
+  <div>
+    <Label className="text-xs text-muted-foreground">{label}</Label>
+    <div className="mt-1 flex flex-wrap gap-1.5">
+      {options.map(o => (
+        <button
+          type="button" key={o.v} onClick={() => onSelect(o.v)}
+          className={cn(
+            "rounded-full border px-2.5 py-1 text-xs transition-colors",
+            value === o.v
+              ? "border-released bg-released text-white"
+              : "border-border bg-background text-foreground hover:bg-muted"
+          )}
+        >
+          <span className="font-semibold">{o.v}</span> <span className="opacity-80">{o.l}</span>
+        </button>
+      ))}
+    </div>
+  </div>
+);
+
 /* ───────── Component ───────── */
 
 export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }: AdmissionFormProps) {
@@ -199,12 +243,15 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
 
   // Common fields
   const [hda, setHda] = useState("");
-  const [amp, setAmp] = useState("");
   const [muc, setMuc] = useState("");
   const [allergies, setAllergies] = useState("");
+  // Alergias: UI por toggle Sim/Nao — "nao" grava "Nega" em `allergies`, "sim" abre input.
+  const [allergyMode, setAllergyMode] = useState<"nao" | "sim" | null>(null);
   const [weight, setWeight] = useState("");
   const [height, setHeight] = useState("");
-  const [pa, setPa] = useState("");
+  // PA separada em sistolica/diastolica (antes era um unico campo `pa`).
+  const [paSys, setPaSys] = useState("");
+  const [paDia, setPaDia] = useState("");
   const [fc, setFc] = useState("");
   const [fr, setFr] = useState("");
   const [spo2, setSpo2] = useState("");
@@ -220,6 +267,15 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
   const [cidPrimary, setCidPrimary] = useState("");
   const [cidSecondary, setCidSecondary] = useState("");
   const [diagnosticHypotheses, setDiagnosticHypotheses] = useState("");
+
+  // Glasgow (ECG) — Ocular/Verbal/Motora; null = ainda nao avaliado.
+  const [glasgowEye, setGlasgowEye] = useState<number | null>(null);
+  const [glasgowVerbal, setGlasgowVerbal] = useState<number | null>(null);
+  const [glasgowMotor, setGlasgowMotor] = useState<number | null>(null);
+
+  // Antecedentes morbidos pessoais — lista incremental (padrao WizardItemQueue).
+  const antQueue = useWizardItemQueue<string>();
+  const [antInput, setAntInput] = useState("");
 
   // Discharge prediction — sincronização dias <-> data
   const [noPrediction, setNoPrediction] = useState(false);
@@ -253,9 +309,69 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
 
   const imc = useMemo(() => computeImc(weight, height), [weight, height]);
 
+  // ── Derivados (mantem compat com o esquema de persistencia atual) ──────────
+  // `amp` continua sendo a string que vai pro soap; agora vem da lista.
+  const amp = antQueue.items.map(i => i.snapshot).join("\n");
+  // `pa` continua sendo a string "sys/dia" que o print e o soap consomem.
+  const pa = [paSys.trim(), paDia.trim()].filter(Boolean).join("/");
+  const glasgowTotal =
+    glasgowEye != null && glasgowVerbal != null && glasgowMotor != null
+      ? glasgowEye + glasgowVerbal + glasgowMotor
+      : null;
+
+  // Escores ao vivo — recalculados a cada mudanca de vitais/Glasgow.
+  const qsofa = useMemo(
+    () => calcularQSofa({
+      pasSistolica: parseVitalNumber(paSys),
+      freqRespiratoria: parseVitalNumber(fr),
+      glasgowTotal: glasgowTotal ?? undefined,
+    }),
+    [paSys, fr, glasgowTotal]
+  );
+  const news2 = useMemo(() => {
+    const anyVital = [paSys, paDia, fc, fr, tax, spo2].some(v => v.trim());
+    if (!anyVital) return null;
+    return calculateNEWS2({
+      respiratoryRate: parseVitalNumber(fr),
+      spo2: parseVitalNumber(spo2),
+      temperature: parseVitalNumber(tax),
+      systolicBp: parseVitalNumber(paSys),
+      heartRate: parseVitalNumber(fc),
+    });
+  }, [paSys, paDia, fc, fr, tax, spo2]);
+
+  // Alergias — toggle Sim/Nao controla o estado `allergies` (persistencia inalterada).
+  const handleAllergyMode = (mode: "nao" | "sim") => {
+    setAllergyMode(mode);
+    if (mode === "nao") setAllergies("Nega");
+    else if (allergies.trim().toLowerCase() === "nega") setAllergies("");
+  };
+
+  // Antecedentes — acrescentar/salvar e editar itens da fila.
+  const commitAntecedente = () => {
+    const v = antInput.trim();
+    if (!v) return;
+    if (antQueue.editingUid) {
+      antQueue.update(antQueue.editingUid, v, v);
+      antQueue.stopEditing();
+    } else {
+      antQueue.push(v, v);
+    }
+    setAntInput("");
+  };
+  const editAntecedente = (uid: string) => {
+    const it = antQueue.items.find(i => i.uid === uid);
+    if (!it) return;
+    setAntInput(it.snapshot);
+    antQueue.startEditing(uid);
+  };
+
   const resetForm = () => {
-    setHda(""); setAmp(""); setMuc(""); setAllergies(""); setWeight(""); setHeight("");
-    setPa(""); setFc(""); setFr(""); setSpo2(""); setTax(""); setDx("");
+    setHda(""); setMuc(""); setAllergies(""); setAllergyMode(null);
+    antQueue.clear(); setAntInput("");
+    setWeight(""); setHeight("");
+    setPaSys(""); setPaDia(""); setFc(""); setFr(""); setSpo2(""); setTax(""); setDx("");
+    setGlasgowEye(null); setGlasgowVerbal(null); setGlasgowMotor(null);
     setPhysGeneral(""); setPhysCv(""); setPhysResp(""); setPhysAbd(""); setPhysExt(""); setPhysNeuro("");
     setPlan(""); setCidPrimary(""); setCidSecondary(""); setDiagnosticHypotheses("");
     setAdmissionReason(""); setOriginSector(""); setDevices(""); setCulturesAtb(""); setSpecialties("");
@@ -279,10 +395,37 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
       const raw = localStorage.getItem(draftKey);
       if (raw) {
         const d = JSON.parse(raw);
-        setHda(d.hda ?? ""); setAmp(d.amp ?? ""); setMuc(d.muc ?? "");
-        setAllergies(d.allergies ?? ""); setWeight(d.weight ?? ""); setHeight(d.height ?? "");
-        setPa(d.pa ?? ""); setFc(d.fc ?? ""); setFr(d.fr ?? ""); setSpo2(d.spo2 ?? "");
+        setHda(d.hda ?? ""); setMuc(d.muc ?? "");
+        // Antecedentes: formato novo (array) ou legado (`amp` string multilinha).
+        antQueue.clear();
+        const antList: string[] = Array.isArray(d.antecedentes)
+          ? d.antecedentes
+          : (typeof d.amp === "string" && d.amp.trim()
+              ? d.amp.split("\n").map((s: string) => s.trim()).filter(Boolean)
+              : []);
+        antList.forEach(a => antQueue.push(a, a));
+        setAntInput("");
+        setAllergies(d.allergies ?? "");
+        // Modo da alergia derivado do valor salvo (compat com rascunho antigo).
+        {
+          const alg = (d.allergies ?? "").trim();
+          setAllergyMode(alg === "" ? null : (alg.toLowerCase() === "nega" ? "nao" : "sim"));
+        }
+        setWeight(d.weight ?? ""); setHeight(d.height ?? "");
+        // PA: formato novo (paSys/paDia) ou legado (`pa` "120/80").
+        if (d.paSys != null || d.paDia != null) {
+          setPaSys(d.paSys ?? ""); setPaDia(d.paDia ?? "");
+        } else if (typeof d.pa === "string" && d.pa) {
+          const [s, di] = d.pa.split("/");
+          setPaSys((s ?? "").trim()); setPaDia((di ?? "").trim());
+        } else {
+          setPaSys(""); setPaDia("");
+        }
+        setFc(d.fc ?? ""); setFr(d.fr ?? ""); setSpo2(d.spo2 ?? "");
         setTax(d.tax ?? ""); setDx(d.dx ?? "");
+        setGlasgowEye(typeof d.glasgowEye === "number" ? d.glasgowEye : null);
+        setGlasgowVerbal(typeof d.glasgowVerbal === "number" ? d.glasgowVerbal : null);
+        setGlasgowMotor(typeof d.glasgowMotor === "number" ? d.glasgowMotor : null);
         setPhysGeneral(d.physGeneral ?? ""); setPhysCv(d.physCv ?? "");
         setPhysResp(d.physResp ?? ""); setPhysAbd(d.physAbd ?? ""); setPhysExt(d.physExt ?? ""); setPhysNeuro(d.physNeuro ?? "");
         setPlan(d.plan ?? ""); setCidPrimary(d.cidPrimary ?? ""); setCidSecondary(d.cidSecondary ?? "");
@@ -310,7 +453,9 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
     const t = setTimeout(() => {
       try {
         const payload = {
-          hda, amp, muc, allergies, weight, height, pa, fc, fr, spo2, tax, dx,
+          hda, amp, antecedentes: amp ? amp.split("\n") : [], muc, allergies,
+          weight, height, paSys, paDia, pa, fc, fr, spo2, tax, dx,
+          glasgowEye, glasgowVerbal, glasgowMotor,
           physGeneral, physCv, physResp, physAbd, physExt, physNeuro,
           plan, cidPrimary, cidSecondary, diagnosticHypotheses,
           noPrediction, predictionDate, predictionDays,
@@ -328,7 +473,8 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
     return () => clearTimeout(t);
   }, [
     draftHydrated, draftKey,
-    hda, amp, muc, allergies, weight, height, pa, fc, fr, spo2, tax, dx,
+    hda, amp, muc, allergies, weight, height, paSys, paDia, pa, fc, fr, spo2, tax, dx,
+    glasgowEye, glasgowVerbal, glasgowMotor,
     physGeneral, physCv, physResp, physAbd, physExt, physNeuro,
     plan, cidPrimary, cidSecondary, diagnosticHypotheses,
     noPrediction, predictionDate, predictionDays,
@@ -341,7 +487,8 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
     if (isSaved) setIsSaved(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    hda, amp, muc, allergies, weight, height, pa, fc, fr, spo2, tax, dx,
+    hda, amp, muc, allergies, weight, height, paSys, paDia, pa, fc, fr, spo2, tax, dx,
+    glasgowEye, glasgowVerbal, glasgowMotor,
     physGeneral, physCv, physResp, physAbd, physExt, physNeuro,
     plan, cidPrimary, cidSecondary, diagnosticHypotheses,
     noPrediction, predictionDate, predictionDays,
@@ -361,7 +508,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
     physGeneral, physCv, physResp, physAbd, physExt, physNeuro,
     plan, cidPrimary, cidSecondary, diagnosticHypotheses,
     admissionReason, originSector, devices, culturesAtb, specialties,
-  ].some(v => typeof v === "string" && v.trim().length > 0);
+  ].some(v => typeof v === "string" && v.trim().length > 0) || glasgowTotal != null;
 
   // Sincronização dias -> data
   const handleDaysChange = (v: string) => {
@@ -416,9 +563,11 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
         return;
       }
       const payload = {
-        hda, amp, muc, allergies, weight, height, pa, fc, fr, spo2, tax, dx,
+        hda, amp, antecedentes: amp ? amp.split("\n") : [], muc, allergies,
+        weight, height, paSys, paDia, pa, fc, fr, spo2, tax, dx,
+        glasgowEye, glasgowVerbal, glasgowMotor,
         physGeneral, physCv, physResp, physAbd, physExt, physNeuro,
-        plan, cidPrimary, cidSecondary,
+        plan, cidPrimary, cidSecondary, diagnosticHypotheses,
         noPrediction, predictionDate, predictionDays,
         admissionReason, originSector, devices, culturesAtb, specialties,
         savedAt: new Date().toISOString(),
@@ -544,10 +693,14 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
       }
 
       const imcLine = imc ? ` | IMC ${imc.value} (${imc.label})` : "";
+      const glasgowLine = glasgowTotal != null
+        ? `\nGlasgow: ${glasgowTotal} (O${glasgowEye} V${glasgowVerbal} M${glasgowMotor})`
+        : "";
+      const antecedentesList = amp ? amp.split("\n") : [];
       const soapAdmission = {
         subjective: `HDA:\n${hda}\n\nAMP: ${amp || "—"}\nMUC: ${muc || "—"}\nAlergias: ${allergies || "Nega"}`,
         objective: `Antropometria: peso ${weight || "—"} kg, altura ${height || "—"} m${imcLine}\n` +
-                   `SSVV admissionais: PA ${pa || "—"} | FC ${fc || "—"} | FR ${fr || "—"} | SpO₂ ${spo2 || "—"} | Tax ${tax || "—"} | Dx ${dx || "—"}`,
+                   `SSVV admissionais: PA ${pa || "—"} | FC ${fc || "—"} | FR ${fr || "—"} | SpO₂ ${spo2 || "—"} | Tax ${tax || "—"} | Dx ${dx || "—"}${glasgowLine}`,
         assessment: `CID primário: ${cidPrimary}${cidSecondary ? `\nCID secundário: ${cidSecondary}` : ""}` +
                     (diagnosticHypotheses.trim() ? `\n\nHipóteses diagnósticas:\n${diagnosticHypotheses.trim()}` : "") +
                     (isUti ? `\n\nMotivo internação UTI: ${admissionReason || "—"}\nOrigem: ${originSector || "—"}\nDispositivos: ${devices || "—"}\nCulturas/ATB: ${culturesAtb || "—"}\nEspecialidades em conjunto: ${specialties || "—"}` : ""),
@@ -568,10 +721,16 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
       if (profissionalId) {
         const soapPayload = {
           ...soapAdmission,
+          antecedentes: antecedentesList,
           __patient_name: patient.name,
           __patient_bed: patient.bed,
           __patient_sector: patient.sector,
-          __vital_signs: { pa, fc, fr, temp: tax, spo2, glasgow: "", diurese: "", dor: "" },
+          __vital_signs: {
+            pa, fc, fr, temp: tax, spo2,
+            glasgow: glasgowTotal != null ? String(glasgowTotal) : "",
+            glasgow_ovm: { ocular: glasgowEye, verbal: glasgowVerbal, motora: glasgowMotor, total: glasgowTotal },
+            diurese: "", dor: "",
+          },
           __diagnostic_hypotheses: diagnosticHypotheses.trim() || null,
           __cid_primary: cidPrimary || null,
           __cid_secondary: cidSecondary || null,
@@ -713,101 +872,9 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
       <div className="px-4 sm:px-6 py-4 min-w-0 overflow-x-hidden">
         <div className="w-full min-w-0 space-y-6">
 
-          {/* ───── Anamnese ───── */}
-          <GroupHeader step={1} title="Anamnese" />
+          {/* ───── Diagnóstico e previsão ───── */}
+          <GroupHeader step={1} title="Diagnóstico e previsão" />
           <div className="space-y-4">
-            <Section icon={FileText} title="História clínica" tone="slate">
-              <div>
-                <ReqLabel missing={attempted && missing.hda}>HDA — História da Doença Atual</ReqLabel>
-                <Textarea value={hda} onChange={e => setHda(e.target.value)} rows={4}
-                  placeholder="Paciente admitido com..." className={cn("mt-1", reqRing(attempted && missing.hda))} />
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-xs">AMP — Antecedentes</Label>
-                  <Textarea value={amp} onChange={e => setAmp(e.target.value)} rows={2} className="mt-1" />
-                </div>
-                <div>
-                  <Label className="text-xs">MUC — Medicações de Uso Contínuo</Label>
-                  <Textarea value={muc} onChange={e => setMuc(e.target.value)} rows={2} className="mt-1" />
-                </div>
-              </div>
-              <div>
-                <Label className="text-xs">Alergias medicamentosas</Label>
-                <Input value={allergies} onChange={e => setAllergies(e.target.value)}
-                  placeholder="Nega / Especificar" className="mt-1" />
-              </div>
-            </Section>
-
-            <Section icon={Activity} title="Antropometria" hint="IMC calculado automaticamente" tone="blue">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <Label className="text-xs">Peso (kg)</Label>
-                  <Input value={weight} onChange={e => setWeight(e.target.value)} placeholder="Ex.: 72" className="mt-1" inputMode="decimal" />
-                </div>
-                <div>
-                  <Label className="text-xs">Altura (m ou cm)</Label>
-                  <Input value={height} onChange={e => setHeight(e.target.value)} placeholder="1,70 ou 170" className="mt-1" inputMode="decimal" />
-                </div>
-                <div>
-                  <Label className="text-xs">IMC</Label>
-                  <div className={cn(
-                    "mt-1 h-10 rounded-md border bg-background px-3 flex items-center justify-between text-sm",
-                    imc ? "border-border/40" : "border-border text-muted-foreground/60"
-                  )}>
-                    {imc ? (
-                      <>
-                        <span className="font-medium text-foreground">{imc.value}</span>
-                        <span className={cn("text-xs uppercase tracking-wide", imc.color)}>{imc.label}</span>
-                      </>
-                    ) : (
-                      <span className="text-xs">Preencha peso e altura</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </Section>
-
-            <Section icon={HeartPulse} title="Sinais vitais admissionais" tone="emerald">
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                <Input placeholder="PA mmHg" value={pa} onChange={e => setPa(e.target.value)} />
-                <Input placeholder="FC bpm" value={fc} onChange={e => setFc(e.target.value)} />
-                <Input placeholder="FR irpm" value={fr} onChange={e => setFr(e.target.value)} />
-                <Input placeholder="SpO₂ %" value={spo2} onChange={e => setSpo2(e.target.value)} />
-                <Input placeholder="Tax °C" value={tax} onChange={e => setTax(e.target.value)} />
-                <Input placeholder="Dx mg/dL" value={dx} onChange={e => setDx(e.target.value)} />
-              </div>
-            </Section>
-          </div>
-
-          {/* ───── Exame Físico ───── */}
-          <GroupHeader step={2} title="Exame Físico" />
-          <div className="space-y-4">
-            <Section icon={Stethoscope} title="Exame físico segmentar" tone="slate">
-              <div>
-                <ReqLabel missing={attempted && missing.examGeneral}>Estado geral</ReqLabel>
-                <Textarea value={physGeneral} onChange={e => setPhysGeneral(e.target.value)} rows={2} className={cn("mt-1", reqRing(attempted && missing.examGeneral))} />
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div><Label className="text-xs">Cardiovascular</Label><Textarea value={physCv} onChange={e => setPhysCv(e.target.value)} rows={2} className="mt-1" /></div>
-                <div><Label className="text-xs">Respiratório</Label><Textarea value={physResp} onChange={e => setPhysResp(e.target.value)} rows={2} className="mt-1" /></div>
-                <div><Label className="text-xs">Abdome</Label><Textarea value={physAbd} onChange={e => setPhysAbd(e.target.value)} rows={2} className="mt-1" /></div>
-                <div><Label className="text-xs">Extremidades</Label><Textarea value={physExt} onChange={e => setPhysExt(e.target.value)} rows={2} className="mt-1" /></div>
-                <div className="sm:col-span-2"><Label className="text-xs">Neurológico</Label><Textarea value={physNeuro} onChange={e => setPhysNeuro(e.target.value)} rows={2} className="mt-1" placeholder="Glasgow, pupilas, força, sensibilidade, reflexos, sinais focais..." /></div>
-              </div>
-            </Section>
-          </div>
-
-          {/* ───── Plano / CID ───── */}
-          <GroupHeader step={3} title="Plano / CID" />
-          <div className="space-y-4">
-            <Section icon={Pill} title="Plano terapêutico" tone="slate">
-              <ReqLabel missing={attempted && missing.plan}>Conduta inicial</ReqLabel>
-              <Textarea value={plan} onChange={e => setPlan(e.target.value)} rows={5}
-                placeholder={"• Monitorização\n• Suporte clínico\n• Antibioticoterapia\n• ..."}
-                className={cn("mt-1", reqRing(attempted && missing.plan))} />
-            </Section>
-
             <Section icon={FileText} title="Diagnóstico (CID-10)" hint="Busca por código ou descrição" tone="blue">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
@@ -821,19 +888,6 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
                     placeholder="Opcional" className="mt-1" />
                 </div>
               </div>
-            </Section>
-
-            <Section icon={Stethoscope} title="Hipóteses Diagnósticas (texto livre)" hint="Uma hipótese por linha — sincroniza automaticamente com o painel clínico" tone="blue">
-              <Textarea
-                value={diagnosticHypotheses}
-                onChange={(e) => setDiagnosticHypotheses(e.target.value)}
-                rows={4}
-                placeholder={"Ex.:\nSepse de foco pulmonar\nSuspeita de TEP associado\nDM2 descompensado"}
-                className="mt-1 font-mono text-xs"
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Cada linha vira uma hipótese no card do paciente. Esse campo passa a ser <strong>somente leitura no painel</strong> e só é atualizado por nova evolução clínica.
-              </p>
             </Section>
 
             <Section icon={CalendarDays} title="Previsão de alta" hint="Dias e data sincronizados" tone="amber">
@@ -867,10 +921,215 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
             </Section>
           </div>
 
+          {/* ───── Anamnese ───── */}
+          <GroupHeader step={2} title="Anamnese" />
+          <div className="space-y-4">
+            <Section icon={FileText} title="História admissional (HDA)" tone="slate">
+              <ReqLabel missing={attempted && missing.hda}>HDA — História da Doença Atual</ReqLabel>
+              <Textarea value={hda} onChange={e => setHda(e.target.value)} rows={4}
+                placeholder="Paciente admitido com..." className={cn("mt-1", reqRing(attempted && missing.hda))} />
+            </Section>
+
+            <Section icon={ClipboardList} title="Antecedentes mórbidos pessoais" hint="Acrescente um a um" tone="blue">
+              <div className="flex gap-2">
+                <Input
+                  value={antInput}
+                  onChange={e => setAntInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); commitAntecedente(); } }}
+                  placeholder="Ex.: HAS, DM2, tabagismo, ex-etilista..."
+                  className="flex-1"
+                />
+              </div>
+              <WizardItemQueue
+                items={antQueue.items}
+                editingUid={antQueue.editingUid}
+                onEdit={editAntecedente}
+                onRemove={antQueue.remove}
+                onAddCurrent={commitAntecedente}
+                onSaveCurrent={commitAntecedente}
+                addLabel="Acrescentar antecedente"
+                accentClassName="border-border bg-muted/40 text-foreground"
+                hint="Digite um antecedente e clique em Acrescentar (ou Enter). Repita para adicionar vários."
+                disableAdd={!antInput.trim()}
+              />
+            </Section>
+
+            <Section icon={Pill} title="MUC — Medicações de Uso Contínuo" tone="slate">
+              <Textarea value={muc} onChange={e => setMuc(e.target.value)} rows={3} className="mt-1"
+                placeholder="Uma medicação por linha..." />
+            </Section>
+
+            <Section icon={AlertTriangle} title="Alergias medicamentosas" tone="amber">
+              <div className="flex flex-wrap items-center gap-3">
+                <ToggleGroup
+                  type="single"
+                  value={allergyMode ?? ""}
+                  onValueChange={v => { if (v === "nao" || v === "sim") handleAllergyMode(v); }}
+                >
+                  <ToggleGroupItem value="nao" className="data-[state=on]:bg-released data-[state=on]:text-white">Nega</ToggleGroupItem>
+                  <ToggleGroupItem value="sim" className="data-[state=on]:bg-critical data-[state=on]:text-white">Sim</ToggleGroupItem>
+                </ToggleGroup>
+                {allergyMode === "sim" && (
+                  <Input
+                    value={allergies === "Nega" ? "" : allergies}
+                    onChange={e => setAllergies(e.target.value)}
+                    placeholder="Especificar alergia(s)..."
+                    className="flex-1 min-w-[12rem]"
+                  />
+                )}
+              </div>
+            </Section>
+          </div>
+
+          {/* ───── Avaliação à beira do leito ───── */}
+          <GroupHeader step={3} title="Avaliação à beira do leito" />
+          <div className="space-y-4">
+            <Section
+              icon={Brain}
+              title="Escala de Coma de Glasgow"
+              hint={glasgowTotal != null ? `Total ${glasgowTotal} / 15` : "Selecione O / V / M"}
+              tone="slate"
+            >
+              <div className="space-y-3">
+                <GlasgowRow label="Abertura ocular (1-4)" options={GLASGOW_EYE} value={glasgowEye} onSelect={setGlasgowEye} />
+                <GlasgowRow label="Resposta verbal (1-5)" options={GLASGOW_VERBAL} value={glasgowVerbal} onSelect={setGlasgowVerbal} />
+                <GlasgowRow label="Resposta motora (1-6)" options={GLASGOW_MOTOR} value={glasgowMotor} onSelect={setGlasgowMotor} />
+                <div className="flex items-center justify-between rounded-md border border-border bg-background px-3 py-2">
+                  <span className="text-xs uppercase tracking-wide text-muted-foreground">Total de Glasgow</span>
+                  <span className={cn(
+                    "text-lg font-semibold",
+                    glasgowTotal == null ? "text-muted-foreground"
+                      : glasgowTotal <= 8 ? "text-critical-on-soft"
+                      : glasgowTotal <= 12 ? "text-warning-on-soft"
+                      : "text-released-on-soft"
+                  )}>
+                    {glasgowTotal != null ? `${glasgowTotal} / 15` : "— / 15"}
+                  </span>
+                </div>
+              </div>
+            </Section>
+
+            <Section icon={HeartPulse} title="Sinais vitais admissionais" tone="emerald">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div><Label className="text-xs">FC (bpm)</Label><Input value={fc} onChange={e => setFc(e.target.value)} placeholder="bpm" className="mt-1" inputMode="numeric" /></div>
+                <div><Label className="text-xs">PA sistólica</Label><Input value={paSys} onChange={e => setPaSys(e.target.value)} placeholder="120" className="mt-1" inputMode="numeric" /></div>
+                <div><Label className="text-xs">PA diastólica</Label><Input value={paDia} onChange={e => setPaDia(e.target.value)} placeholder="80" className="mt-1" inputMode="numeric" /></div>
+                <div><Label className="text-xs">FR (irpm)</Label><Input value={fr} onChange={e => setFr(e.target.value)} placeholder="irpm" className="mt-1" inputMode="numeric" /></div>
+                <div><Label className="text-xs">Temperatura (°C)</Label><Input value={tax} onChange={e => setTax(e.target.value)} placeholder="°C" className="mt-1" inputMode="decimal" /></div>
+                <div><Label className="text-xs">SpO₂ (%)</Label><Input value={spo2} onChange={e => setSpo2(e.target.value)} placeholder="%" className="mt-1" inputMode="numeric" /></div>
+                <div><Label className="text-xs">Peso (kg)</Label><Input value={weight} onChange={e => setWeight(e.target.value)} placeholder="kg" className="mt-1" inputMode="decimal" /></div>
+                <div><Label className="text-xs">Dextro (mg/dL)</Label><Input value={dx} onChange={e => setDx(e.target.value)} placeholder="mg/dL" className="mt-1" inputMode="numeric" /></div>
+              </div>
+            </Section>
+
+            <Section icon={Activity} title="Antropometria" hint="IMC calculado automaticamente" tone="blue">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Altura (m ou cm)</Label>
+                  <Input value={height} onChange={e => setHeight(e.target.value)} placeholder="1,70 ou 170" className="mt-1" inputMode="decimal" />
+                </div>
+                <div>
+                  <Label className="text-xs">IMC</Label>
+                  <div className={cn(
+                    "mt-1 h-10 rounded-md border bg-background px-3 flex items-center justify-between text-sm",
+                    imc ? "border-border/40" : "border-border text-muted-foreground/60"
+                  )}>
+                    {imc ? (
+                      <>
+                        <span className="font-medium text-foreground">{imc.value}</span>
+                        <span className={cn("text-xs uppercase tracking-wide", imc.color)}>{imc.label}</span>
+                      </>
+                    ) : (
+                      <span className="text-xs">Preencha peso e altura</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </Section>
+
+            {/* Painel de escores ao vivo — qSOFA + NEWS2 */}
+            <Section icon={Gauge} title="Escores ao vivo" hint="Recalculados a cada mudança" tone="slate">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="rounded-md border border-border bg-background p-3">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">qSOFA</p>
+                  <p className="mt-1 flex items-baseline gap-2">
+                    <span className={cn("text-2xl font-semibold", qsofa.alto ? "text-critical-on-soft" : "text-foreground")}>{qsofa.score}</span>
+                    <span className="text-xs text-muted-foreground">
+                      / 3 {qsofa.alto && <strong className="text-critical-on-soft">— alto risco</strong>}
+                    </span>
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    PAS ≤100, FR ≥22, Glasgow &lt;15 ({qsofa.avaliados}/3 avaliados)
+                  </p>
+                </div>
+                <div className="rounded-md border border-border bg-background p-3">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">NEWS2</p>
+                  {news2 ? (
+                    <>
+                      <p className="mt-1 flex items-baseline gap-2">
+                        <span className="text-2xl font-semibold text-foreground">{news2.score}</span>
+                        <span className={cn("text-xs rounded px-1.5 py-0.5", news2RiskLabels[news2.risk].className)}>
+                          {news2RiskLabels[news2.risk].label}
+                        </span>
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        FR, SpO₂, Temp, PAS e FC. Glasgow não compõe o escore.
+                      </p>
+                    </>
+                  ) : (
+                    <p className="mt-1 text-xs text-muted-foreground">Preencha os sinais vitais.</p>
+                  )}
+                </div>
+              </div>
+            </Section>
+          </div>
+
+          {/* ───── Exame Físico ───── */}
+          <GroupHeader step={4} title="Exame Físico" />
+          <div className="space-y-4">
+            <Section icon={Stethoscope} title="Exame físico segmentar" tone="slate">
+              <div>
+                <ReqLabel missing={attempted && missing.examGeneral}>Estado geral</ReqLabel>
+                <Textarea value={physGeneral} onChange={e => setPhysGeneral(e.target.value)} rows={2} className={cn("mt-1", reqRing(attempted && missing.examGeneral))} />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div><Label className="text-xs">Cardiovascular</Label><Textarea value={physCv} onChange={e => setPhysCv(e.target.value)} rows={2} className="mt-1" /></div>
+                <div><Label className="text-xs">Respiratório</Label><Textarea value={physResp} onChange={e => setPhysResp(e.target.value)} rows={2} className="mt-1" /></div>
+                <div><Label className="text-xs">Abdome</Label><Textarea value={physAbd} onChange={e => setPhysAbd(e.target.value)} rows={2} className="mt-1" /></div>
+                <div><Label className="text-xs">Extremidades</Label><Textarea value={physExt} onChange={e => setPhysExt(e.target.value)} rows={2} className="mt-1" /></div>
+                <div className="sm:col-span-2"><Label className="text-xs">Neurológico</Label><Textarea value={physNeuro} onChange={e => setPhysNeuro(e.target.value)} rows={2} className="mt-1" placeholder="Glasgow, pupilas, força, sensibilidade, reflexos, sinais focais..." /></div>
+              </div>
+            </Section>
+          </div>
+
+          {/* ───── Conduta e hipóteses ───── */}
+          <GroupHeader step={5} title="Conduta e hipóteses" />
+          <div className="space-y-4">
+            <Section icon={Pill} title="Plano terapêutico" tone="slate">
+              <ReqLabel missing={attempted && missing.plan}>Conduta inicial</ReqLabel>
+              <Textarea value={plan} onChange={e => setPlan(e.target.value)} rows={5}
+                placeholder={"• Monitorização\n• Suporte clínico\n• Antibioticoterapia\n• ..."}
+                className={cn("mt-1", reqRing(attempted && missing.plan))} />
+            </Section>
+
+            <Section icon={Stethoscope} title="Hipóteses Diagnósticas (texto livre)" hint="Uma hipótese por linha — sincroniza automaticamente com o painel clínico" tone="blue">
+              <Textarea
+                value={diagnosticHypotheses}
+                onChange={(e) => setDiagnosticHypotheses(e.target.value)}
+                rows={4}
+                placeholder={"Ex.:\nSepse de foco pulmonar\nSuspeita de TEP associado\nDM2 descompensado"}
+                className="mt-1 font-mono text-xs"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Cada linha vira uma hipótese no card do paciente. Esse campo passa a ser <strong>somente leitura no painel</strong> e só é atualizado por nova evolução clínica.
+              </p>
+            </Section>
+          </div>
+
           {/* ───── UTI ───── */}
           {isUti && (
             <>
-            <GroupHeader step={4} title="UTI / UCI" />
+            <GroupHeader step={6} title="UTI / UCI" />
             <div className="space-y-4">
               <Section icon={AlertTriangle} title="Dados específicos da UTI" tone="amber">
                 <div><Label className="text-xs">Motivo de internação UTI</Label><Textarea value={admissionReason} onChange={e => setAdmissionReason(e.target.value)} rows={2} className="mt-1" /></div>
