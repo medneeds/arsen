@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { useUnsavedClinical } from "@/contexts/UnsavedPrescriptionContext";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
 import { SapsPendingAlert } from "@/components/SapsPendingAlert";
+import { PatientIdentityBar } from "@/components/PatientIdentityBar";
 import { SectionLoader } from "@/components/SectionLoader";
 
 
@@ -577,45 +578,17 @@ const EvolucaoPage = () => {
         {/* SAPS pending alert removed */}
         {/* Page Header — title + patient identity inline */}
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          <div className="hidden sm:flex items-center justify-between gap-4 min-w-0 flex-1">
-            {/* ESQUERDA: identidade do paciente */}
-            <div className="flex items-center gap-3 min-w-0 flex-1">
-              {patient.bed && (
-                <div className="flex flex-col items-center justify-center h-12 w-12 rounded-lg bg-primary/15 border border-primary/20 shrink-0">
-                  <span className="text-[9px] font-normal uppercase tracking-wide text-primary/60 leading-none">Leito</span>
-                  <span className="text-xl font-bold text-primary leading-none mt-0.5">{patient.bed}</span>
-                </div>
-              )}
-              <div className="min-w-0">
-                <p className="text-base font-semibold text-foreground uppercase tracking-wide leading-tight truncate">
-                  {patient.name || "—"}
-                </p>
-                <div className="flex items-center gap-2 flex-wrap mt-1">
-                  {patient.unit && <span className="px-2 py-1 rounded-md bg-muted text-muted-foreground text-xs font-medium uppercase tracking-wide">{patient.unit}</span>}
-                  {(ids.registry?.age || livePatient?.age) && <span className="px-2 py-1 rounded-md bg-muted text-muted-foreground text-xs font-medium">{ids.registry?.age || livePatient?.age}</span>}
-                  {patient.birthDate && (
-                    <>
-                      <span className="text-muted-foreground/40 text-xs">·</span>
-                      <span className="text-xs text-muted-foreground">
-                        {(() => { try { const d = new Date(patient.birthDate + 'T12:00:00'); return isNaN(d.getTime()) ? patient.birthDate : d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }); } catch { return patient.birthDate; } })()}
-                      </span>
-                    </>
-                  )}
-                  {prontuarioReal && (
-                    <>
-                      <span className="text-muted-foreground/40 text-xs">·</span>
-                      <span className="text-xs text-muted-foreground font-mono">Pront. {prontuarioReal}</span>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-            {/* DIREITA: título do módulo */}
-            <div className="text-right shrink-0">
-              <p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground leading-tight">EVOLUÇÃO CLÍNICA</p>
-              <p className="text-xs text-muted-foreground mt-1">Timeline de evoluções do paciente</p>
-            </div>
-          </div>
+          {/* Sub-cabecalho padrao de identidade (componente compartilhado). */}
+          <PatientIdentityBar
+            patientId={initialPatientId || null}
+            className="flex-1"
+            rightSlot={
+              <>
+                <p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground leading-tight">EVOLUÇÃO CLÍNICA</p>
+                <p className="text-xs text-muted-foreground mt-1">Timeline de evoluções do paciente</p>
+              </>
+            }
+          />
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

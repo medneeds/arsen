@@ -5,6 +5,7 @@ import { useSearchParams } from "react-router-dom";
 import { useUnsavedPrescription } from "@/contexts/UnsavedPrescriptionContext";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
 import { SapsPendingAlert } from "@/components/SapsPendingAlert";
+import { PatientIdentityBar } from "@/components/PatientIdentityBar";
 import ReactMarkdown from "react-markdown";
 import { format, addDays, isAfter, setHours, setMinutes, setSeconds, startOfDay } from "date-fns";
 import { ArsenMark } from "@/components/brand/ArsenMark";
@@ -8692,70 +8693,31 @@ const PrescricaoPage = () => {
       {/* ===== UNIFIED HEADER — title + context (peso/alergias/data/templates) + actions ===== */}
       <div className="print:hidden rounded-lg border border-border bg-card/60 shadow-[0_4px_18px_-8px_hsl(var(--primary)/0.18),0_1px_2px_-1px_hsl(var(--foreground)/0.06)] hover:shadow-[0_6px_24px_-8px_hsl(var(--primary)/0.22),0_1px_2px_-1px_hsl(var(--foreground)/0.08)] transition-shadow-sm duration-300">
         {/* Row 0 — Paciente em destaque (esq) · Título do módulo (dir) */}
-        <div className="hidden sm:flex items-center justify-between gap-4 px-3 pt-3 pb-2">
-          {/* ESQUERDA: identidade do paciente */}
-          <div className="flex items-center gap-3 min-w-0 flex-1">
-            <div className="flex flex-col items-center justify-center h-12 w-12 rounded-lg bg-primary/15 border border-primary/20 shrink-0">
-              <span className="text-[9px] font-normal uppercase tracking-wide text-primary/60 leading-none">Leito</span>
-              <span className="text-xl font-bold text-primary leading-none mt-0.5">
-                {patient.bed || "—"}
-              </span>
-            </div>
-            <div className="min-w-0">
-              <p className="text-base font-semibold text-foreground uppercase tracking-wide leading-tight truncate">
-                {patient.name || "Paciente não identificado"}
+        {/* Sub-cabecalho padrao de identidade (componente compartilhado). */}
+        <PatientIdentityBar
+          patientId={urlPatientIdForRecord}
+          className="px-3 pt-3 pb-2"
+          rightSlot={
+            <>
+              <p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground leading-tight">
+                Prescrição Médica Diária
               </p>
-              <div className="flex items-center gap-2 flex-wrap mt-1">
-                {patient.unit && (
-                  <span className="px-2 py-1 rounded-md bg-muted text-muted-foreground text-xs font-medium uppercase tracking-wide">
-                    {patient.unit}
+              <div className="flex items-center justify-end gap-2 mt-1 flex-wrap">
+                {currentPrescriptionId && (
+                  <Badge variant="outline" className="text-xs h-4 px-2 text-primary border-primary/30">
+                    Salva
+                  </Badge>
+                )}
+                {patient.encounterCode && (
+                  <span className="font-mono text-xs bg-muted text-muted-foreground px-2 py-1 rounded-md">
+                    <Hash className="inline h-2.5 w-2.5 mr-1" />{patient.encounterCode}
                   </span>
                 )}
-                {patient.age && (
-                  <span className="px-2 py-1 rounded-md bg-muted text-muted-foreground text-xs font-medium">
-                    {patient.age}
-                  </span>
-                )}
-                {patient.birthDate && (
-                  <>
-                    <span className="text-muted-foreground/40 text-xs">·</span>
-                    <span className="text-xs text-muted-foreground">
-                      {(() => { try { const d = new Date(patient.birthDate + 'T12:00:00'); return isNaN(d.getTime()) ? patient.birthDate : d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }); } catch { return patient.birthDate; } })()}
-                    </span>
-                  </>
-                )}
-                {registryProntuario && (
-                  <>
-                    <span className="text-muted-foreground/40 text-xs">·</span>
-                    <span className="text-xs text-muted-foreground font-mono">
-                      Pront. {registryProntuario}
-                    </span>
-                  </>
-                )}
+                <span className="text-xs text-muted-foreground font-mono">{prescriptionDate}</span>
               </div>
-            </div>
-          </div>
-
-          {/* DIREITA: título do módulo + número + data */}
-          <div className="text-right shrink-0">
-            <p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground leading-tight">
-              Prescrição Médica Diária
-            </p>
-            <div className="flex items-center justify-end gap-2 mt-1 flex-wrap">
-              {currentPrescriptionId && (
-                <Badge variant="outline" className="text-xs h-4 px-2 text-primary border-primary/30">
-                  Salva
-                </Badge>
-              )}
-              {patient.encounterCode && (
-                <span className="font-mono text-xs bg-muted text-muted-foreground px-2 py-1 rounded-md">
-                  <Hash className="inline h-2.5 w-2.5 mr-1" />{patient.encounterCode}
-                </span>
-              )}
-              <span className="text-xs text-muted-foreground font-mono">{prescriptionDate}</span>
-            </div>
-          </div>
-        </div>
+            </>
+          }
+        />
 
         {/* Row 1 — Clinical context (peso, alergias, calendário, dose/kg, templates, atalhos) */}
         <div className="flex items-center gap-2 flex-wrap px-2 sm:px-3 py-2 sm:border-t sm:border-border/40">

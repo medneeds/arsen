@@ -22,6 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { getSectorDisplayLabel } from "@/utils/bedNaming";
+import { PatientIdentityBar } from "@/components/PatientIdentityBar";
 import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
@@ -581,6 +582,17 @@ export default function HistoricoPacientePage() {
 
       {/* Conteúdo */}
       <div className="container mx-auto px-4 py-6">
+        {/* Sub-cabecalho padrao de identidade (abaixo do header sticky, que mantem
+            Voltar/Imprimir/filtros + titulo). Adiciona idade/nascimento/prontuario. */}
+        <PatientIdentityBar
+          patientId={patientId}
+          className="print:hidden rounded-lg border border-border bg-card/60 px-3 py-3 mb-4"
+          rightSlot={
+            <p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground leading-tight">
+              HISTÓRICO DO PACIENTE
+            </p>
+          }
+        />
         {isLoading ? (
           <SectionLoader
             message="Carregando histórico"
