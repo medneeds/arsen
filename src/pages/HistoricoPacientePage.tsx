@@ -433,7 +433,9 @@ export default function HistoricoPacientePage() {
     queryFn: async (): Promise<Map<string, ProfissionalRow>> => {
       const { data } = await supabase
         .from("profissionais")
-        .select("id, nome, crm")
+        // CRM vive em numero_conselho (nao ha coluna `crm` em profissionais) —
+        // alias no PostgREST mantem o campo `crm` no view-model.
+        .select("id, nome, crm:numero_conselho")
         .in("id", autorIds);
       const m = new Map<string, ProfissionalRow>();
       ((data ?? []) as unknown as ProfissionalRow[]).forEach((r) => m.set(r.id, r));
