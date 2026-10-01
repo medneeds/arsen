@@ -13,6 +13,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { detectUnidentified } from "@/lib/unidentifiedDetector";
 import { formatAge } from "@/lib/patientAge";
+import { fetchInternacaoComPaciente } from "@/lib/internacaoComPaciente";
 
 export interface ResolvedPatientHeader {
   /** Nome canônico (pacientes.nome_completo → fallback) */
@@ -20,7 +21,7 @@ export interface ResolvedPatientHeader {
   socialName: string | null;
   /** Número de Prontuário (pacientes.prontuario) */
   prontuario: string | null;
-  /** Código de Atendimento — MIGRAÇÃO: sem coluna no schema novo (sempre null) */
+  /** Código de Atendimento (internacoes.numero_atendimento) */
   atendimento: string | null;
   cpf: string | null;
   cns: string | null;
@@ -99,16 +100,14 @@ export async function resolvePatientHeader(
   if (!patientId && !fallbackName) return empty;
 
   let paciente: any = null;
+  let numeroAtendimento: string | null = null;
 
   // Identidade a partir da internação (patientId == internacoes.id) → pacientes.
   if (patientId) {
     try {
-      const { data } = await supabase
-        .from("internacoes")
-        .select("paciente:pacientes(*)")
-        .eq("id", patientId)
-        .maybeSingle();
-      paciente = (data as any)?.paciente ?? null;
+      const internacao = await fetchInternacaoComPaciente(patientId);
+      paciente = internacao.paciente;
+      numeroAtendimento = internacao.numeroAtendimento;
     } catch {
       paciente = null;
     }
@@ -135,7 +134,7 @@ export async function resolvePatientHeader(
     name: canonicalName,
     socialName: paciente.nome_social || null,
     prontuario: paciente.prontuario || null,
-    atendimento: null, // MIGRAÇÃO: sem encounter_code/atendimento no schema novo
+    atendimento: numeroAtendimento, // internacoes.numero_atendimento
     cpf: paciente.cpf || null,
     cns: paciente.cns || null,
     birthDate: paciente.data_nascimento || null,

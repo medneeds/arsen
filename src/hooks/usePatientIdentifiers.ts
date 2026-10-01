@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { detectUnidentified } from "@/lib/unidentifiedDetector";
 import { formatAge } from "@/lib/patientAge";
+import { fetchInternacaoComPaciente } from "@/lib/internacaoComPaciente";
 
 export interface PatientIdentifiers {
   /** Número de Prontuário (ex: 26-001-000123-4) */
@@ -44,8 +45,7 @@ export interface PatientIdentifiers {
  * MIGRAÇÃO: `patientId` agora é `internacoes.id`. As tabelas patient_registry,
  * medical_records e patient_encounters não existem mais — o registro permanente
  * é `pacientes` (resolvido via internacoes.paciente_id), o prontuário é
- * `pacientes.prontuario`, e "atendimento"/encounter_code não tem coluna nova
- * (degradado para null).
+ * `pacientes.prontuario`, e o atendimento é `internacoes.numero_atendimento`.
  */
 export type PatientIdentifiersData = Omit<PatientIdentifiers, "loading">;
 
@@ -60,15 +60,13 @@ export async function fetchPatientIdentifiers(
   patientName: string | null,
 ): Promise<PatientIdentifiersData> {
   let pacienteRow: any = null;
+  let numeroAtendimento: string | null = null;
 
   // 1a) Via internação (patientId = internacoes.id) → pacientes
   if (patientId) {
-    const { data: internacao } = await supabase
-      .from("internacoes")
-      .select("paciente:pacientes(*)")
-      .eq("id", patientId)
-      .maybeSingle();
-    if ((internacao as any)?.paciente) pacienteRow = (internacao as any).paciente;
+    const internacao = await fetchInternacaoComPaciente(patientId);
+    if (internacao.paciente) pacienteRow = internacao.paciente;
+    numeroAtendimento = internacao.numeroAtendimento;
   }
 
   // 1b) Fallback por nome SOMENTE quando não temos patientId.
@@ -91,8 +89,10 @@ export async function fetchPatientIdentifiers(
   }
 
   const prontuario: string | null = pacienteRow?.prontuario || null;
-  // Atendimento / encounter_code: sem coluna no schema novo (degradado para null).
-  const atendimento: string | null = null;
+  // Atendimento: internacoes.numero_atendimento (gerado por trigger no INSERT).
+  // Só vem da internação (patientId) — nunca do fallback por nome, para não
+  // trazer o atendimento de outro paciente (NI com nomes iguais).
+  const atendimento: string | null = numeroAtendimento;
 
   return {
     prontuario,

@@ -918,6 +918,7 @@ export type Database = {
           historia_clinica: string | null
           id: string
           leito_id: string
+          numero_atendimento: string | null
           paciente_id: string
           pendencias: string | null
           peso_kg: number | null
@@ -938,6 +939,7 @@ export type Database = {
           historia_clinica?: string | null
           id?: string
           leito_id: string
+          numero_atendimento?: string | null
           paciente_id: string
           pendencias?: string | null
           peso_kg?: number | null
@@ -958,6 +960,7 @@ export type Database = {
           historia_clinica?: string | null
           id?: string
           leito_id?: string
+          numero_atendimento?: string | null
           paciente_id?: string
           pendencias?: string | null
           peso_kg?: number | null
