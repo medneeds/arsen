@@ -47,6 +47,83 @@ export interface PatientIdentifiers {
  * `pacientes.prontuario`, e "atendimento"/encounter_code não tem coluna nova
  * (degradado para null).
  */
+export type PatientIdentifiersData = Omit<PatientIdentifiers, "loading">;
+
+// queryKey canonica — compartilhada pelo hook e pelo prefetch (lib/prefetchPatient).
+export const patientIdentifiersQueryKey = (patientId: string | null, patientName: string | null) =>
+  ["patient-identifiers", patientId, patientName] as const;
+
+// Busca prontuario + registro permanente do paciente. Extraida para o prefetch
+// reutilizar (aquece o MESMO cache do hook). Nao depende de refs do hook.
+export async function fetchPatientIdentifiers(
+  patientId: string | null,
+  patientName: string | null,
+): Promise<PatientIdentifiersData> {
+  let pacienteRow: any = null;
+
+  // 1a) Via internação (patientId = internacoes.id) → pacientes
+  if (patientId) {
+    const { data: internacao } = await supabase
+      .from("internacoes")
+      .select("paciente:pacientes(*)")
+      .eq("id", patientId)
+      .maybeSingle();
+    if ((internacao as any)?.paciente) pacienteRow = (internacao as any).paciente;
+  }
+
+  // 1b) Fallback por nome SOMENTE quando não temos patientId.
+  if (!pacienteRow && !patientId && patientName) {
+    const { data } = await supabase
+      .from("pacientes")
+      .select("*")
+      .ilike("nome_completo", patientName.trim())
+      .order("criado_em", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (data) pacienteRow = data;
+  }
+
+  // 1c) GUARDA CRÍTICA: nome NI + registro com nome real -> vínculo errado.
+  const niDetection = detectUnidentified(patientName || "");
+  if (pacienteRow && niDetection.isUnidentified) {
+    const rowNi = detectUnidentified(pacienteRow.nome_completo || "");
+    if (!rowNi.isUnidentified) pacienteRow = null;
+  }
+
+  const prontuario: string | null = pacienteRow?.prontuario || null;
+  // Atendimento / encounter_code: sem coluna no schema novo (degradado para null).
+  const atendimento: string | null = null;
+
+  return {
+    prontuario,
+    atendimento,
+    registry: pacienteRow
+      ? {
+          id: pacienteRow.id,
+          fullName: pacienteRow.nome_completo,
+          socialName: pacienteRow.nome_social,
+          cpf: pacienteRow.cpf,
+          cns: pacienteRow.cns,
+          birthDate: pacienteRow.data_nascimento,
+          age: formatAge(pacienteRow.data_nascimento),
+          sex: pacienteRow.sexo,
+          motherName: pacienteRow.nome_mae,
+          phone: pacienteRow.telefone,
+          address: pacienteRow.endereco,
+          neighborhood: null,
+          city: null,
+          state: null,
+          bloodType: pacienteRow.tipo_sanguineo,
+          allergies: pacienteRow.alergias,
+          comorbidities: pacienteRow.comorbidades,
+          medicalRecord: pacienteRow.prontuario,
+          isUnidentified: detectUnidentified(pacienteRow.nome_completo || "").isUnidentified,
+          unidentifiedCode: null,
+        }
+      : null,
+  };
+}
+
 export function usePatientIdentifiers(
   patientId: string | null,
   patientName: string | null,
@@ -55,95 +132,16 @@ export function usePatientIdentifiers(
   const queryClient = useQueryClient();
   const pacienteIdRef = useRef<string | null>(null);
 
-  // PERFORMANCE: migrado para react-query. A identidade do paciente (prontuario +
-  // registro permanente) fica no cache compartilhado (queryKey por internacao_id +
-  // nome), entao alternar entre modulos reaproveita o load. O realtime abaixo
-  // invalida a query quando a internacao/paciente muda.
-  type IdsData = Omit<PatientIdentifiers, "loading">;
+  // PERFORMANCE: react-query. Cache compartilhado por internacao_id + nome, aquecido
+  // tambem pelo prefetch (lib/prefetchPatient). O realtime abaixo invalida a query.
   const query = useQuery({
-    queryKey: ["patient-identifiers", patientId, patientName],
+    queryKey: patientIdentifiersQueryKey(patientId, patientName),
     enabled: !!(patientId || patientName),
-    queryFn: async (): Promise<IdsData> => {
-      let pacienteRow: any = null;
-
-      // 1a) Via internação (patientId = internacoes.id) → pacientes
-      if (patientId) {
-        const { data: internacao } = await supabase
-          .from("internacoes")
-          .select("paciente:pacientes(*)")
-          .eq("id", patientId)
-          .maybeSingle();
-        if ((internacao as any)?.paciente) pacienteRow = (internacao as any).paciente;
-      }
-
-      // 1b) Fallback por nome SOMENTE quando não temos patientId.
-      // ⚠️  Crítico: pacientes "Não Identificados" frequentemente compartilham
-      // o mesmo nome ("NÃO IDENTIFICADO", etc). Buscar por nome quando temos
-      // patientId poderia trazer OUTRO paciente NI.
-      // MIGRAÇÃO: pacientes não tem hospital_unit_id nem is_unidentified —
-      // filtro por unidade/NI removido; busca só por nome_completo.
-      if (!pacienteRow && !patientId && patientName) {
-        const { data } = await supabase
-          .from("pacientes")
-          .select("*")
-          .ilike("nome_completo", patientName.trim())
-          .order("criado_em", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        if (data) pacienteRow = data;
-      }
-
-      // 1c) GUARDA CRÍTICA: se o nome é NI (heurística) e o paciente encontrado
-      // tem nome real, o vínculo está errado/obsoleto — não usa esse registro,
-      // evitando cabeçalho de PDF com dados de outro paciente.
-      // MIGRAÇÃO: sem coluna is_unidentified — NI é derivado da heurística do nome.
-      const niDetection = detectUnidentified(patientName || "");
-      if (pacienteRow && niDetection.isUnidentified) {
-        const rowNi = detectUnidentified(pacienteRow.nome_completo || "");
-        if (!rowNi.isUnidentified) pacienteRow = null;
-      }
-
-      // 2) Prontuário: pacientes.prontuario
-      const prontuario: string | null = pacienteRow?.prontuario || null;
-
-      // 3) Atendimento / encounter_code: sem coluna no schema novo.
-      // MIGRAÇÃO: patient_encounters não existe; degradado para null.
-      const atendimento: string | null = null;
-
-      pacienteIdRef.current = pacienteRow?.id || null;
-
-      return {
-        prontuario,
-        atendimento,
-        registry: pacienteRow
-          ? {
-              id: pacienteRow.id,
-              fullName: pacienteRow.nome_completo,
-              socialName: pacienteRow.nome_social,
-              cpf: pacienteRow.cpf,
-              cns: pacienteRow.cns,
-              birthDate: pacienteRow.data_nascimento,
-              age: formatAge(pacienteRow.data_nascimento),
-              sex: pacienteRow.sexo,
-              motherName: pacienteRow.nome_mae,
-              phone: pacienteRow.telefone,
-              address: pacienteRow.endereco,
-              // MIGRAÇÃO: pacientes.endereco é campo único — sem bairro/cidade/UF separados.
-              neighborhood: null,
-              city: null,
-              state: null,
-              bloodType: pacienteRow.tipo_sanguineo,
-              allergies: pacienteRow.alergias,
-              comorbidities: pacienteRow.comorbidades,
-              medicalRecord: pacienteRow.prontuario,
-              // MIGRAÇÃO: sem coluna is_unidentified/unidentified_code — NI derivado por heurística.
-              isUnidentified: detectUnidentified(pacienteRow.nome_completo || "").isUnidentified,
-              unidentifiedCode: null,
-            }
-          : null,
-      };
-    },
+    queryFn: () => fetchPatientIdentifiers(patientId, patientName),
   });
+
+  // pacienteIdRef acompanha o id do paciente vinculado (filtro do realtime abaixo).
+  useEffect(() => { pacienteIdRef.current = query.data?.registry?.id ?? null; }, [query.data]);
 
   // Realtime: invalida a query quando muda a internação ou o paciente vinculado.
   // MIGRAÇÃO: canais de patients/medical_records/patient_encounters removidos

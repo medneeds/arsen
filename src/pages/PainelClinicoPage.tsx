@@ -1,4 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { prefetchPatient, prefetchPatients } from "@/lib/prefetchPatient";
 import { usePatients } from "@/hooks/usePatients";
 import { useSectorNavigation } from "@/hooks/useSectorNavigation";
 import { useTodaysPrescriptions, type TodaysPrescriptionStatus } from "@/hooks/useTodaysPrescriptions";
@@ -210,6 +212,10 @@ export default function PainelClinicoPage() {
   const patients = dbPatients;
 
   // Filter out vacant beds and apply search/sector filter
+  // PERFORMANCE: prefetch. qc aquece o cache dos pacientes do setor (abaixo) e
+  // no hover de cada linha, para abrir o modulo do paciente instantaneamente.
+  const qc = useQueryClient();
+
   const filteredPatients = useMemo(() => {
     return patients
       .filter(p => !p.isVacant && p.name && p.name.trim() !== "")
@@ -231,6 +237,14 @@ export default function PainelClinicoPage() {
     // Update local selectedPatient state
     setSelectedPatient(prev => prev ? { ...prev, [field]: items } : prev);
   }, [updatePatient]);
+
+  // PERFORMANCE: ao carregar/mudar a lista do setor (ex.: abrir a UTI-2), aquece o
+  // cache de TODOS os pacientes do setor -> selecionar qualquer um abre instantaneo.
+  // react-query deduplica e respeita o staleTime, entao nao refaz o que ja esta fresco.
+  useEffect(() => {
+    if (filteredPatients.length === 0) return;
+    prefetchPatients(qc, filteredPatients.map((p) => ({ id: p.id, name: p.name })));
+  }, [filteredPatients, qc]);
 
   const openPatient = (patient: Patient) => {
     setSelectedPatient(patient);
@@ -368,6 +382,7 @@ export default function PainelClinicoPage() {
                     role="button"
                     tabIndex={0}
                     onClick={() => goToPatientPanel(patient)}
+                    onMouseEnter={() => prefetchPatient(qc, patient.id, patient.name)}
                     onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); goToPatientPanel(patient); } }}
                     className="text-left rounded-xl border border-border bg-card p-3 active:scale-[0.99] transition-transform shadow-sm cursor-pointer"
                   >
@@ -441,6 +456,7 @@ export default function PainelClinicoPage() {
                       // da linha cheia padrao do TableRow — leitura mais limpa.
                       className="cursor-pointer group hover:bg-accent/50 transition-colors border-border/40"
                       onClick={() => goToPatientPanel(patient)}
+                      onMouseEnter={() => prefetchPatient(qc, patient.id, patient.name)}
                       title="Clique para abrir o atendimento • Use o olho para pré-visualizar"
                     >
                       <TableCell>

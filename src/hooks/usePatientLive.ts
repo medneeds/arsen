@@ -94,53 +94,58 @@ function rowToPatient(row: any): Patient {
   } as Patient;
 }
 
+// queryKey canonica — compartilhada pelo hook e pelo prefetch (lib/prefetchPatient).
+export const patientLiveQueryKey = (patientId: string | null) => ["patient-live", patientId] as const;
+
+// Busca o view-model vivo do paciente (internacao + leito/setor + status + TPS).
+// Extraida para ser reutilizada pelo prefetch (aquece o MESMO cache do hook).
+export async function fetchPatientLive(patientId: string): Promise<Patient | null> {
+  // Em paralelo: a internacao (dados do paciente), a fila de transferencia
+  // interna pendente (MESMA fonte do usePatients, para a tarja) e a entrada no
+  // setor atual (ultimo conclusao_transferencia_interna, para o TPS).
+  const [{ data, error }, pendingIds, sectorEntry] = await Promise.all([
+    supabase.from("internacoes").select(INTERNACAO_SELECT).eq("id", patientId).maybeSingle(),
+    fetchPendingInternalTransferInternacaoIds().catch(() => new Set<string>()),
+    (async (): Promise<string | null> => {
+      try {
+        const { data } = await supabase
+          .from("logs_auditoria")
+          .select("criado_em")
+          .eq("internacao_id", patientId)
+          .eq("tipo_evento", "conclusao_transferencia_interna")
+          .order("criado_em", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        return (data as { criado_em: string | null } | null)?.criado_em ?? null;
+      } catch {
+        return null;
+      }
+    })(),
+  ]);
+  if (error || !data) return null;
+  const p = rowToPatient(data);
+  p.admissionStatus = deriveAdmissionStatus(
+    // internmentStatus carrega, em runtime, o internacoes.status cru.
+    p.internmentStatus as unknown as string | null,
+    pendingIds.has(patientId),
+  );
+  // TPS: entrada no setor atual; fallback data_entrada (=admissionDate).
+  p.sectorSince = sectorEntry ?? p.admissionDate ?? null;
+  return p;
+}
+
 export function usePatientLive(patientId: string | null) {
   const queryClient = useQueryClient();
 
-  // PERFORMANCE: migrado de useState/useEffect para react-query. Agora os dados
-  // do paciente (identidade/leito/setor/status) ficam no cache compartilhado
-  // (queryKey por internacao_id), entao alternar entre modulos (Admissao ->
-  // Prescricao -> Evolucao...) REAPROVEITA o load em vez de buscar do zero a cada
-  // montagem. staleTime/gcTime vem do QueryClient (5min/30min). O realtime abaixo
-  // invalida a query quando a internacao/logs mudam, mantendo os dados frescos.
+  // PERFORMANCE: react-query. Os dados do paciente (identidade/leito/setor/status)
+  // ficam no cache compartilhado (queryKey por internacao_id), entao alternar entre
+  // modulos REAPROVEITA o load. staleTime/gcTime vem do QueryClient (5min/30min).
+  // O prefetch (lib/prefetchPatient) aquece essa MESMA query ao passar o mouse/
+  // selecionar o paciente no Painel/Mapa. O realtime abaixo invalida a query.
   const query = useQuery({
-    queryKey: ["patient-live", patientId],
+    queryKey: patientLiveQueryKey(patientId),
     enabled: !!patientId,
-    queryFn: async (): Promise<Patient | null> => {
-      if (!patientId) return null;
-      // Em paralelo: a internacao (dados do paciente), a fila de transferencia
-      // interna pendente (MESMA fonte do usePatients, para a tarja) e a entrada no
-      // setor atual (ultimo conclusao_transferencia_interna, para o TPS).
-      const [{ data, error }, pendingIds, sectorEntry] = await Promise.all([
-        supabase.from("internacoes").select(INTERNACAO_SELECT).eq("id", patientId).maybeSingle(),
-        fetchPendingInternalTransferInternacaoIds().catch(() => new Set<string>()),
-        (async (): Promise<string | null> => {
-          try {
-            const { data } = await supabase
-              .from("logs_auditoria")
-              .select("criado_em")
-              .eq("internacao_id", patientId)
-              .eq("tipo_evento", "conclusao_transferencia_interna")
-              .order("criado_em", { ascending: false })
-              .limit(1)
-              .maybeSingle();
-            return (data as { criado_em: string | null } | null)?.criado_em ?? null;
-          } catch {
-            return null;
-          }
-        })(),
-      ]);
-      if (error || !data) return null;
-      const p = rowToPatient(data);
-      p.admissionStatus = deriveAdmissionStatus(
-        // internmentStatus carrega, em runtime, o internacoes.status cru.
-        p.internmentStatus as unknown as string | null,
-        pendingIds.has(patientId),
-      );
-      // TPS: entrada no setor atual; fallback data_entrada (=admissionDate).
-      p.sectorSince = sectorEntry ?? p.admissionDate ?? null;
-      return p;
-    },
+    queryFn: () => (patientId ? fetchPatientLive(patientId) : Promise.resolve(null)),
   });
 
   useEffect(() => {
