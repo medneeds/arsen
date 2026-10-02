@@ -13,6 +13,9 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CidSearchInput } from "@/components/CidSearchInput";
@@ -33,7 +36,7 @@ import {
 import { cn } from "@/lib/utils";
 import { printAdmissionNormaZero } from "@/lib/printAdmission";
 import { resolveCurrentBedSector } from "@/lib/resolvePatientHeader";
-import { admissionModeForSector } from "@/lib/sectorComplexity";
+import { admissionModeForSector, isSurgicalSector } from "@/lib/sectorComplexity";
 import { parseDiagnosesText } from "@/lib/diagnosesText";
 import { toEvolucaoStatusDb } from "@/lib/evolucaoStatus";
 import { PatientIdentityHeader } from "@/components/PatientIdentityHeader";
@@ -404,6 +407,9 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
   const admissionMode = useMemo(() => admissionModeForSector(patient.sector), [patient.sector]);
   const isUti = admissionMode === "uti";
   const isEmergencia = admissionMode === "emergencia";
+  // Setor cirurgico (Centro Cirurgico / Clinica Cirurgica) — habilita a secao
+  // aditiva "Dados cirurgicos", INDEPENDENTE do modo de admissao.
+  const isCirurgica = useMemo(() => isSurgicalSector(patient.sector), [patient.sector]);
   const identifiers = usePatientIdentifiers(patient.id, patient.name, currentHospital?.id || null);
   const registryId = identifiers.registry?.id ?? patient.patient_registry_id ?? null;
   const draftKey = useMemo(() => registryId ? draftKeyFor(registryId) : null, [registryId]);
@@ -471,6 +477,14 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
   const [utiComDispositivos, setUtiComDispositivos] = useState<boolean | null>(null);
   const [sofaRespostas, setSofaRespostas] = useState<SofaRespostas>({});
 
+  // Dados cirurgicos (setores cirurgicos) — campos aditivos, nenhum obrigatorio.
+  const [surgProcedimento, setSurgProcedimento] = useState("");
+  const [surgEspecialidade, setSurgEspecialidade] = useState("");
+  const [surgCirurgiao, setSurgCirurgiao] = useState("");
+  const [surgDataHora, setSurgDataHora] = useState("");   // datetime-local
+  const [surgAnestesia, setSurgAnestesia] = useState("");
+  const [surgCarater, setSurgCarater] = useState("");      // eletivo/urgencia/emergencia
+
   const [submitting, setSubmitting] = useState(false);
   const [passwordConfirmOpen, setPasswordConfirmOpen] = useState(false);
   const [attempted, setAttempted] = useState(false);
@@ -523,6 +537,13 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
       : rotuloJustificativa(utiJustificativa);
   const simNao = (v: boolean | null) => (v == null ? "—" : v ? "Sim" : "Não");
 
+  // Rotulo legivel do carater cirurgico para o SOAP.
+  const surgCaraterLabel =
+    surgCarater === "eletivo" ? "Eletivo"
+      : surgCarater === "urgencia" ? "Urgência"
+      : surgCarater === "emergencia" ? "Emergência"
+      : "";
+
   // Escores ao vivo — recalculados a cada mudanca de vitais/Glasgow.
   const qsofa = useMemo(
     () => calcularQSofa({
@@ -562,6 +583,8 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
     setAdmissionReason(""); setOriginSector(""); setDevices(""); setCulturesAtb(""); setSpecialties("");
     setUtiJustificativa(""); setUtiJustificativaOutro(""); setUtiVasoativo(null);
     setUtiComDispositivos(null); setSofaRespostas({});
+    setSurgProcedimento(""); setSurgEspecialidade(""); setSurgCirurgiao("");
+    setSurgDataHora(""); setSurgAnestesia(""); setSurgCarater("");
     setNoPrediction(false);
     setPredictionDate(toIsoDate(daysFromToday(5))); setPredictionDays("5");
     setIsSaved(false);
@@ -659,6 +682,13 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
           setUtiComDispositivos((d.devices ?? "").trim() ? true : null);
         }
         setSofaRespostas(d.sofaRespostas && typeof d.sofaRespostas === "object" ? d.sofaRespostas : {});
+        // Dados cirurgicos — retrocompat: rascunho antigo nao tem a chave -> vazio.
+        setSurgProcedimento(d.surgProcedimento ?? "");
+        setSurgEspecialidade(d.surgEspecialidade ?? "");
+        setSurgCirurgiao(d.surgCirurgiao ?? "");
+        setSurgDataHora(d.surgDataHora ?? "");
+        setSurgAnestesia(d.surgAnestesia ?? "");
+        setSurgCarater(d.surgCarater ?? "");
         if (d.savedAt) setDraftSavedAt(new Date(d.savedAt));
       } else {
         resetForm();
@@ -734,6 +764,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
           noPrediction, predictionDate, predictionDays,
           admissionReason, originSector, devices, culturesAtb, specialties,
           utiJustificativa, utiJustificativaOutro, utiVasoativo, utiComDispositivos, sofaRespostas,
+          surgProcedimento, surgEspecialidade, surgCirurgiao, surgDataHora, surgAnestesia, surgCarater,
           savedAt: new Date().toISOString(),
         };
         // só persiste se houver algum conteúdo
@@ -754,6 +785,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
     noPrediction, predictionDate, predictionDays,
     admissionReason, originSector, devices, culturesAtb, specialties,
     utiJustificativa, utiJustificativaOutro, utiVasoativo, utiComDispositivos, sofaRespostas,
+    surgProcedimento, surgEspecialidade, surgCirurgiao, surgDataHora, surgAnestesia, surgCarater,
   ]);
 
   // Qualquer edição depois de salvo invalida o "isSaved" (o que está impresso
@@ -769,6 +801,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
     noPrediction, predictionDate, predictionDays,
     admissionReason, originSector, devices, culturesAtb, specialties,
     utiJustificativa, utiJustificativaOutro, utiVasoativo, utiComDispositivos, sofaRespostas,
+    surgProcedimento, surgEspecialidade, surgCirurgiao, surgDataHora, surgAnestesia, surgCarater,
   ]);
 
   const discardDraft = () => {
@@ -785,6 +818,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
     plan, cidPrimary, cidSecondary, diagnosticHypotheses,
     admissionReason, originSector, devices, culturesAtb, specialties,
     utiJustificativaOutro,
+    surgProcedimento, surgEspecialidade, surgCirurgiao, surgDataHora, surgAnestesia, surgCarater,
   ].some(v => typeof v === "string" && v.trim().length > 0)
     || glasgowTotal != null
     || !!utiJustificativa || utiVasoativo != null || utiComDispositivos != null
@@ -869,6 +903,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
         noPrediction, predictionDate, predictionDays,
         admissionReason, originSector, devices, culturesAtb, specialties,
         utiJustificativa, utiJustificativaOutro, utiVasoativo, utiComDispositivos, sofaRespostas,
+        surgProcedimento, surgEspecialidade, surgCirurgiao, surgDataHora, surgAnestesia, surgCarater,
         savedAt: new Date().toISOString(),
       };
       localStorage.setItem(draftKey, JSON.stringify(payload));
@@ -1017,7 +1052,15 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
                       `\nDroga vasoativa: ${simNao(utiVasoativo)}` +
                       `\nVeio com dispositivos: ${simNao(utiComDispositivos)}${utiComDispositivos && devices.trim() ? ` — ${devices.trim()}` : ""}` +
                       `\nOrigem: ${originSector || "—"}\nCulturas/ATB: ${culturesAtb || "—"}\nEspecialidades em conjunto: ${specialties || "—"}` +
-                      `\nSOFA: ${sofaTotal} (${sofaPreenchidos}/${SOFA_COMPONENTES.length} componentes)` : ""),
+                      `\nSOFA: ${sofaTotal} (${sofaPreenchidos}/${SOFA_COMPONENTES.length} componentes)` : "") +
+                    (isCirurgica
+                      ? `\n\nDados cirúrgicos: procedimento ${surgProcedimento.trim() || "—"}` +
+                        ` | especialidade ${surgEspecialidade.trim() || "—"}` +
+                        ` | cirurgião ${surgCirurgiao.trim() || "—"}` +
+                        ` | data/hora ${surgDataHora.trim() || "—"}` +
+                        ` | anestesia ${surgAnestesia.trim() || "—"}` +
+                        ` | caráter ${surgCaraterLabel || "—"}`
+                      : ""),
         plan: `${plan}\n\nPrevisão de alta: ${dischargePredictionLabel}`,
       };
 
@@ -1062,6 +1105,17 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
             __uti_vasoativo: utiVasoativo,
             __uti_dispositivos: { veioCom: utiComDispositivos, detalhe: devices },
             __uti_sofa: { respostas: sofaRespostas, total: sofaTotal },
+          } : {}),
+          // Dados cirurgicos — chave ADITIVA, so em setores cirurgicos.
+          ...(isCirurgica ? {
+            __surgical: {
+              procedimento: surgProcedimento,
+              especialidade: surgEspecialidade,
+              cirurgiao: surgCirurgiao,
+              dataHora: surgDataHora,
+              anestesia: surgAnestesia,
+              carater: surgCarater,
+            },
           } : {}),
         };
         const { error: evError } = await supabase
@@ -1745,6 +1799,51 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
             </>
           )}
         </div>
+        )}
+
+        {/* ───── Dados cirúrgicos (setores cirúrgicos) — aditivo, independe do modo ───── */}
+        {isCirurgica && (
+          <div className="w-full min-w-0 space-y-4 mt-6">
+            <Section icon={ClipboardList} title="Dados cirúrgicos" hint="Centro Cirúrgico / Clínica Cirúrgica — opcional" tone="blue">
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-xs">Procedimento realizado / proposto</Label>
+                  <Textarea value={surgProcedimento} onChange={e => setSurgProcedimento(e.target.value)} rows={2} className="mt-1" placeholder="Ex.: Colecistectomia videolaparoscópica" />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs">Especialidade cirúrgica</Label>
+                    <Input value={surgEspecialidade} onChange={e => setSurgEspecialidade(e.target.value)} className="mt-1" placeholder="Ex.: Cirurgia geral" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Cirurgião principal</Label>
+                    <Input value={surgCirurgiao} onChange={e => setSurgCirurgiao(e.target.value)} className="mt-1" placeholder="Nome do cirurgião" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Data/hora da cirurgia</Label>
+                    <Input type="datetime-local" value={surgDataHora} onChange={e => setSurgDataHora(e.target.value)} className="mt-1" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Tipo de anestesia</Label>
+                    <Input value={surgAnestesia} onChange={e => setSurgAnestesia(e.target.value)} className="mt-1" placeholder="Ex.: Geral, raquianestesia..." />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Caráter</Label>
+                    <Select value={surgCarater || undefined} onValueChange={setSurgCarater}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="eletivo">Eletivo</SelectItem>
+                        <SelectItem value="urgencia">Urgência</SelectItem>
+                        <SelectItem value="emergencia">Emergência</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            </Section>
+          </div>
         )}
       </div>
 

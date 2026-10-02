@@ -111,6 +111,21 @@ export function admissionModeForSector(sector: string): AdmissionMode {
   return "enfermaria";
 }
 
+/**
+ * Setores cirurgicos — Centro Cirurgico (cc_preparo/cc_bloco/cc_rpa) e Clinica
+ * Cirurgica. Lista explicita espelhando o grupo centro_cirurgico de
+ * sectorCoverage mais a clinica_cirurgica (grupo enfermaria, mas de perfil
+ * cirurgico). Serve APENAS para habilitar a secao aditiva "Dados cirurgicos" na
+ * admissao — NAO altera o modo de admissao (uti/enfermaria/emergencia).
+ */
+export const SURGICAL_SECTORS = ["cc_preparo", "cc_bloco", "cc_rpa", "clinica_cirurgica"] as const;
+
+/** Retorna true se o setor for cirurgico (Centro Cirurgico ou Clinica Cirurgica). */
+export function isSurgicalSector(sector?: string | null): boolean {
+  if (!sector) return false;
+  return (SURGICAL_SECTORS as readonly string[]).includes(sector);
+}
+
 // ─── Tipos de transferência ────────────────────────────────────
 
 export type TransferClassification =
