@@ -166,30 +166,79 @@ export function usePatients(department?: Department, sector?: string) {
       // Bed map = leitos do hospital (via setores → alas → hospitais), cada um
       // com sua internação ativa (data_alta IS NULL), se houver.
       // (cast por causa do filtro em caminho aninhado — padrão do projeto.)
-      const { data, error } = await (supabase
-        .from('leitos')
-        .select(`
-          id, numero, status, tipo, setor_id, motivo_bloqueio,
-          setor:setores!inner (
-            id, nome, tipo, ala_id,
-            ala:alas!inner ( id, hospital_id )
-          ),
-          internacoes (
-            id, status, data_entrada, data_alta, queixa_principal, historia_clinica,
-            hipotese_diagnostica, conduta_inicial, exames_relevantes, pendencias, agenda, previsao_alta, data_admissao_uti,
-            setor_classificacao_id, leito_id, paciente_id, registrado_por,
-            paciente:pacientes (
-              id, nome_completo, nome_social, data_nascimento, prontuario
-            )
-          )
-        `) as any)
-        // PERF: filtra a internacao ATIVA (data_alta IS NULL) no recurso aninhado —
-        // corta as encerradas do payload sem derrubar os leitos vagos (o embed nao e
-        // !inner, entao o filtro atua so no array de internacoes; a selecao em JS
-        // permanece como rede de seguranca). Colunas de paciente enxugadas para as 4
-        // usadas por mapLeitoToPatient.
-        .is('internacoes.data_alta', null)
-        .eq('setor.ala.hospital_id', currentHospital.id);
+      // WATCHDOG + AUTO-RETRY da query-portao (a que destrava isLoading). No cold
+      // load (abrir /painel-clinico direto, sem aquecer o mapa antes), o fan-out de
+      // requisicoes contra o gateway HTTP/1.1 (~6 conexoes, ~1s/req) podia starvar
+      // ESTA query; como isLoading so vira false no finally e nasce true, a resposta
+      // que nao chegava deixava o PageLoader eterno (so o F5 resolvia). Agora cada
+      // tentativa tem timeout via AbortController; se estourar (ou falhar por rede),
+      // re-tenta com backoff curto — nesse intervalo as conexoes liberam e a
+      // tentativa seguinte passa. Erro do PostgREST (RLS/query, tem `code`) NAO e
+      // retentavel: falha rapido para o catch. So apos esgotar as tentativas o erro
+      // sobe; o finally sempre destrava o loader.
+      const LEITOS_TIMEOUT_MS = 8000;
+      const LEITOS_MAX_TENTATIVAS = 3;
+      const runLeitosQuery = async (): Promise<{ data: unknown; error: unknown; timedOut: boolean }> => {
+        const controller = new AbortController();
+        let timedOut = false;
+        const timer = setTimeout(() => {
+          timedOut = true;
+          controller.abort();
+        }, LEITOS_TIMEOUT_MS);
+        try {
+          const res = await (supabase
+            .from('leitos')
+            .select(`
+              id, numero, status, tipo, setor_id, motivo_bloqueio,
+              setor:setores!inner (
+                id, nome, tipo, ala_id,
+                ala:alas!inner ( id, hospital_id )
+              ),
+              internacoes (
+                id, status, data_entrada, data_alta, queixa_principal, historia_clinica,
+                hipotese_diagnostica, conduta_inicial, exames_relevantes, pendencias, agenda, previsao_alta, data_admissao_uti,
+                setor_classificacao_id, leito_id, paciente_id, registrado_por,
+                paciente:pacientes (
+                  id, nome_completo, nome_social, data_nascimento, prontuario
+                )
+              )
+            `) as any)
+            // PERF: filtra a internacao ATIVA (data_alta IS NULL) no recurso aninhado —
+            // corta as encerradas do payload sem derrubar os leitos vagos (o embed nao e
+            // !inner, entao o filtro atua so no array de internacoes; a selecao em JS
+            // permanece como rede de seguranca). Colunas de paciente enxugadas para as 4
+            // usadas por mapLeitoToPatient.
+            .is('internacoes.data_alta', null)
+            .eq('setor.ala.hospital_id', currentHospital.id)
+            .abortSignal(controller.signal);
+          return { data: res.data, error: res.error, timedOut };
+        } catch (e) {
+          // Abort lanca; demais erros de rede tambem caem aqui.
+          return { data: null, error: e, timedOut };
+        } finally {
+          clearTimeout(timer);
+        }
+      };
+
+      let data: unknown = null;
+      let error: unknown = null;
+      for (let tentativa = 1; tentativa <= LEITOS_MAX_TENTATIVAS; tentativa++) {
+        const res = await runLeitosQuery();
+        if (!res.error) {
+          data = res.data;
+          error = null;
+          break;
+        }
+        error = res.error;
+        // Retentavel = timeout/abort (starvation) ou falha de rede sem `code` do
+        // servidor. Erro do PostgREST tem `code` -> re-tentar nao adianta.
+        const temCodigo =
+          !!res.error && typeof res.error === "object" && "code" in res.error &&
+          !!(res.error as { code?: string }).code;
+        const retentavel = res.timedOut || !temCodigo;
+        if (!retentavel || tentativa === LEITOS_MAX_TENTATIVAS) break;
+        await new Promise((r) => setTimeout(r, 400 * tentativa)); // backoff 400ms, 800ms
+      }
 
       if (error) throw error;
 
