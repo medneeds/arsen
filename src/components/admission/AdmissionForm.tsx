@@ -41,7 +41,7 @@ import {
 import { cn } from "@/lib/utils";
 import { printAdmissionNormaZero } from "@/lib/printAdmission";
 import { resolveCurrentBedSector } from "@/lib/resolvePatientHeader";
-import { admissionModeForSector, isSurgicalSector } from "@/lib/sectorComplexity";
+import { admissionModeForSector, isSurgicalSector, type AdmissionMode } from "@/lib/sectorComplexity";
 import { parseDiagnosesText } from "@/lib/diagnosesText";
 import { toEvolucaoStatusDb } from "@/lib/evolucaoStatus";
 import { PatientIdentityHeader } from "@/components/PatientIdentityHeader";
@@ -341,6 +341,60 @@ const ItemListField = ({
   );
 };
 
+/* ───────── Pathway de admissao (toggle "Tipo de admissao", 4 vias) ─────────
+   A via deixa de ser DERIVADA do setor e passa a ser ESCOLHA DO MEDICO, sempre
+   disponivel. O modo efetivo do form (uti/enfermaria/emergencia) e a secao de
+   dados cirurgicos DERIVAM da via escolhida — nao mais do setor. O setor apenas
+   define a escolha INICIAL (coerente), que o medico pode trocar livremente. */
+type AdmissionPathway = "emergencia" | "enfermaria_clinica" | "enfermaria_cirurgica" | "uti";
+
+/** Modo de admissao efetivo de cada via (dirige obrigatorios, layout e persistencia). */
+const PATHWAY_MODE: Record<AdmissionPathway, AdmissionMode> = {
+  emergencia: "emergencia",
+  enfermaria_clinica: "enfermaria",
+  enfermaria_cirurgica: "enfermaria",
+  uti: "uti",
+};
+
+const PATHWAY_OPTIONS: { value: AdmissionPathway; label: string }[] = [
+  { value: "emergencia", label: "Urgência e Emergência" },
+  { value: "enfermaria_clinica", label: "Enfermaria Clínica" },
+  { value: "enfermaria_cirurgica", label: "Enfermaria Cirúrgica" },
+  { value: "uti", label: "Cuidados Intensivos" },
+];
+
+/** Rotulo curto para a faixa/badge do cabecalho (reflete a via escolhida). */
+const PATHWAY_BADGE: Record<AdmissionPathway, string> = {
+  emergencia: "URGÊNCIA E EMERGÊNCIA",
+  enfermaria_clinica: "ENFERMARIA CLÍNICA",
+  enfermaria_cirurgica: "ENFERMARIA CIRÚRGICA",
+  uti: "CUIDADOS INTENSIVOS",
+};
+
+const isAdmissionPathway = (v: unknown): v is AdmissionPathway =>
+  typeof v === "string" && Object.prototype.hasOwnProperty.call(PATHWAY_MODE, v);
+
+/** Escolha inicial da via a partir do setor: UTI/UCI -> Cuidados Intensivos,
+ *  Sala Vermelha -> Urgencia e Emergencia, setor cirurgico -> Enfermaria
+ *  Cirurgica, demais -> Enfermaria Clinica. Combina admissionModeForSector com
+ *  isSurgicalSector (ambos ja existentes). */
+function pathwayFromSector(sector: string): AdmissionPathway {
+  const mode = admissionModeForSector(sector);
+  if (mode === "uti") return "uti";
+  if (mode === "emergencia") return "emergencia";
+  return isSurgicalSector(sector) ? "enfermaria_cirurgica" : "enfermaria_clinica";
+}
+
+/* ───────── Acordeao — secoes abertas por padrao, por modo efetivo ───────── */
+const EMERGENCIA_OPEN_SECTIONS = ["em-hda", "em-cid", "em-conduta", "em-vitais", "em-glasgow"];
+const NORMAL_OPEN_SECTIONS = [
+  "nm-diagnostico", "nm-hda", "nm-glasgow", "nm-vitais",
+  "nm-exame", "nm-plano", "nm-hipoteses",
+  "nm-uti-justif", "nm-uti-disp",
+];
+const openSectionsForMode = (mode: AdmissionMode): string[] =>
+  mode === "emergencia" ? EMERGENCIA_OPEN_SECTIONS : NORMAL_OPEN_SECTIONS;
+
 /* ───────── Component ───────── */
 
 export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }: AdmissionFormProps) {
@@ -353,27 +407,34 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
   // tornar `sectors` dependencia do effect (evita re-hidratar quando a lista chega).
   const sectorsRef = useRef(sectors);
   sectorsRef.current = sectors;
-  // Modo de admissao derivado do setor. isUti preserva byte-a-byte o antigo
-  // UTI_SECTORS.includes(patient.sector) (mesma lista, correspondencia exata).
-  const admissionMode = useMemo(() => admissionModeForSector(patient.sector), [patient.sector]);
-  const isUti = admissionMode === "uti";
-  const isEmergencia = admissionMode === "emergencia";
-  // Setor cirurgico (Centro Cirurgico / Clinica Cirurgica) — habilita a secao
-  // aditiva "Dados cirurgicos", INDEPENDENTE do modo de admissao.
-  const isCirurgica = useMemo(() => isSurgicalSector(patient.sector), [patient.sector]);
+  // Via de admissao — ESCOLHA DO MEDICO (toggle "Tipo de admissao"), sempre
+  // disponivel. O setor so define a escolha INICIAL; o medico troca livremente.
+  const initialPathway = useMemo<AdmissionPathway>(() => pathwayFromSector(patient.sector), [patient.sector]);
+  const [selectedPathway, setSelectedPathway] = useState<AdmissionPathway>(initialPathway);
+  // Modo efetivo do form DERIVA da via escolhida (nao mais do setor). isUti/
+  // isEmergencia dirigem layout, obrigatorios e persistencia; isCirurgica habilita
+  // a secao aditiva "Dados cirurgicos" (agora a via "Enfermaria Cirurgica").
+  const admissionMode: AdmissionMode = PATHWAY_MODE[selectedPathway];
+  const isUti = selectedPathway === "uti";
+  const isEmergencia = selectedPathway === "emergencia";
+  const isCirurgica = selectedPathway === "enfermaria_cirurgica";
   // Secoes abertas do acordeao (mesma identidade visual da evolucao). Essenciais
   // abertas por padrao; complementares recolhidas. No modo emergencia o essencial
   // de estabilizacao fica aberto e os complementos, recolhidos — preservando o
   // comportamento anterior (complementos recolhidos por padrao).
-  const [openSections, setOpenSections] = useState<string[]>(() =>
-    admissionModeForSector(patient.sector) === "emergencia"
-      ? ["em-hda", "em-cid", "em-conduta", "em-vitais", "em-glasgow"]
-      : [
-          "nm-diagnostico", "nm-hda", "nm-glasgow", "nm-vitais",
-          "nm-exame", "nm-plano", "nm-hipoteses",
-          "nm-uti-justif", "nm-uti-disp",
-        ]
+  const [openSections, setOpenSections] = useState<string[]>(
+    () => openSectionsForMode(PATHWAY_MODE[initialPathway]),
   );
+  // Ao trocar de via entre emergencia <-> demais, o conjunto de secoes do acordeao
+  // muda (ids em-* vs nm-*). Reabre as secoes essenciais do modo destino. Nao roda
+  // na montagem (ref inicia igual); so em troca real — preserva abrir/fechar manual
+  // dentro do mesmo modo.
+  const prevModeEmergRef = useRef(isEmergencia);
+  useEffect(() => {
+    if (prevModeEmergRef.current === isEmergencia) return;
+    prevModeEmergRef.current = isEmergencia;
+    setOpenSections(openSectionsForMode(admissionMode));
+  }, [isEmergencia, admissionMode]);
   const identifiers = usePatientIdentifiers(patient.id, patient.name, currentHospital?.id || null);
   const registryId = identifiers.registry?.id ?? patient.patient_registry_id ?? null;
   const draftKey = useMemo(() => registryId ? draftKeyFor(registryId) : null, [registryId]);
@@ -577,6 +638,8 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
     setSurgDataHora(""); setSurgAnestesia(""); setSurgCarater("");
     setNoPrediction(false);
     setPredictionDate(toIsoDate(daysFromToday(5))); setPredictionDays("5");
+    // Via volta ao default coerente do setor (editavel pelo medico).
+    setSelectedPathway(initialPathway);
     setIsSaved(false);
   };
 
@@ -595,6 +658,10 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
       const raw = localStorage.getItem(draftKey);
       if (raw) {
         const d = JSON.parse(raw);
+        // Via escolhida no rascunho (quando ausente/invalida, mantem o default do
+        // setor). Preserva a escolha do medico e os campos so visiveis naquela via
+        // (UTI/cirurgicos) no round-trip do rascunho.
+        if (isAdmissionPathway(d.selectedPathway)) setSelectedPathway(d.selectedPathway);
         setHda(d.hda ?? ""); setMuc(d.muc ?? "");
         // Antecedentes: formato novo (array) ou legado (`amp` string multilinha).
         setAntecedentesItems(
@@ -702,6 +769,9 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
     } catch {}
     setDraftHydrated(true);
     return () => { setDraftHydrated(false); setAttempted(false); };
+    // Hidrata apenas quando muda o prontuario/rascunho (draftKey); resetForm e
+    // estaveis o suficiente — nao e dep intencional (evita re-hidratar a cada render).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draftKey]);
 
   /* ───────── SEED a partir da historia (prioridade rascunho > seed > vazio) ─────────
@@ -761,6 +831,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
     const t = setTimeout(() => {
       try {
         const payload = {
+          selectedPathway,
           hda, amp, antecedentes: antecedentesItems, muc, allergies,
           weight, height, paSys, paDia, pa, fc, fr, spo2, tax, dx,
           glasgowEye, glasgowVerbal, glasgowMotor,
@@ -786,7 +857,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
     }, 600);
     return () => clearTimeout(t);
   }, [
-    draftHydrated, draftKey,
+    draftHydrated, draftKey, selectedPathway,
     hda, amp, antecedentesItems, muc, allergies, weight, height, paSys, paDia, pa, fc, fr, spo2, tax, dx,
     glasgowEye, glasgowVerbal, glasgowMotor,
     physGeneral, physCv, physResp, physAbd, physExt, physNeuro,
@@ -804,6 +875,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
     if (isSaved) setIsSaved(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
+    selectedPathway,
     hda, amp, muc, allergies, weight, height, paSys, paDia, pa, fc, fr, spo2, tax, dx,
     glasgowEye, glasgowVerbal, glasgowMotor,
     physGeneral, physCv, physResp, physAbd, physExt, physNeuro,
@@ -907,6 +979,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
         return;
       }
       const payload = {
+        selectedPathway,
         hda, amp, antecedentes: amp ? amp.split("\n") : [], muc, allergies,
         weight, height, paSys, paDia, pa, fc, fr, spo2, tax, dx,
         glasgowEye, glasgowVerbal, glasgowMotor,
@@ -1132,8 +1205,10 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
           __created_by: user.id,
           __created_by_name: doctorName,
           __evolution_type: "admission",
-          // Modo de admissao (uti/enfermaria/emergencia) — chave ADITIVA, sempre presente.
-          __admission_mode: admissionMode,
+          // Via de admissao escolhida no toggle — chave ADITIVA, sempre presente.
+          // Passa a refletir a VIA (emergencia/enfermaria_clinica/
+          // enfermaria_cirurgica/uti), nao mais o modo derivado do setor.
+          __admission_mode: selectedPathway,
           // UTI estruturado — chaves ADITIVAS (não substituem nada do schema).
           ...(isUti ? {
             __uti_justificativa: { codigo: utiJustificativa || null, outro: utiJustificativaOutro.trim() || admissionReason.trim() || null },
@@ -1231,7 +1306,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
               </span>
               Admissão Hospitalar
               <Badge variant="outline" className="ml-2 border-released/40 bg-released/10 text-released-on-soft">
-                {isUti ? "UTI / UCI" : isEmergencia ? "EMERGÊNCIA — SALA VERMELHA" : "ENFERMARIA"}
+                {PATHWAY_BADGE[selectedPathway]}
               </Badge>
             </h2>
             <p className="text-sm text-muted-foreground text-xs">
@@ -1289,6 +1364,32 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
       </header>
 
       <div className="px-4 sm:px-6 py-4 min-w-0 overflow-x-hidden">
+        {/* ───── Toggle "Tipo de admissao" — ESCOLHA DO MEDICO, 4 vias, SEMPRE
+            visivel (inclusive quando ja houve admissao). Dirige o modo efetivo do
+            form (layout, obrigatorios, persistencia). ───── */}
+        <div className="mb-4">
+          <Label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Tipo de admissão
+          </Label>
+          <ToggleGroup
+            type="single"
+            value={selectedPathway}
+            onValueChange={v => { if (isAdmissionPathway(v)) setSelectedPathway(v); }}
+            className="flex w-full flex-wrap justify-start gap-1 rounded-lg border border-border bg-muted/40 p-1"
+          >
+            {PATHWAY_OPTIONS.map(opt => (
+              <ToggleGroupItem
+                key={opt.value}
+                value={opt.value}
+                aria-label={opt.label}
+                className="flex-1 min-w-[8.5rem] rounded-md px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground data-[state=on]:bg-card data-[state=on]:text-foreground data-[state=on]:shadow-sm"
+              >
+                {opt.label}
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
+        </div>
+
         {isEmergencia ? (
         /* ═══════════ MODO EMERGENCIA (Sala Vermelha) — layout enxuto ═══════════
            Nada e removido: o essencial fica aberto no topo; o resto vai para
