@@ -163,16 +163,21 @@ export async function alocarPreAdmissaoNoLeito({
   }
 
   // 1) Leito: localiza a linha do leito pelo (setor_id, numero); cria se não existir
-  //    (ex.: leitos EXTRA dinâmicos). Bloqueia se já estiver ocupado.
+  //    (ex.: leitos EXTRA dinâmicos). Bloqueia pela MESMA fonte do mapa/seletor:
+  //    internação ATIVA (data_alta null) ou leito explicitamente BLOQUEADO — NÃO
+  //    por leitos.status='ocupado' (que pode estar órfão/dessincronizado). O
+  //    índice único de internação ativa por leito é a rede de segurança final.
   const { data: existingLeito } = await supabase
     .from("leitos")
-    .select("id, status")
+    .select("id, status, internacoes(data_alta)")
     .eq("setor_id", setorId)
     .eq("numero", finalBed)
     .maybeSingle();
 
-  if (existingLeito && existingLeito.status === "ocupado") {
-    throw new Error(`Leito ${finalBed} já está ocupado. Atualize o mapa e selecione outro leito.`);
+  const internRows = (existingLeito as { internacoes?: { data_alta: string | null }[] } | null)?.internacoes ?? [];
+  const leitoTemInternacaoAtiva = internRows.some((i) => !i?.data_alta);
+  if (existingLeito && (leitoTemInternacaoAtiva || existingLeito.status === "bloqueado")) {
+    throw new Error(`Leito ${finalBed} indisponível (ocupado ou bloqueado). Atualize o mapa e selecione outro leito.`);
   }
 
   let leitoId = (existingLeito as any)?.id ?? null;

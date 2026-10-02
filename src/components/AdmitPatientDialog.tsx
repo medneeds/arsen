@@ -77,9 +77,14 @@ async function loadSectorBeds(
       .eq("setor_id", setorId);
     rows = ((data as any[]) || []).filter((r) => !!r?.numero);
   }
-  // Ocupado = status indisponível OU tem internação ativa (data_alta null).
+  // Ocupado = tem internação ATIVA (data_alta null) — mesma fonte da verdade do
+  // mapa — OU o leito está explicitamente BLOQUEADO (decisão de gestão). Estados
+  // transitorios de fluxo (higienizacao/reservado) e "ocupado" orfao SEM
+  // internacao ativa voltam a ser OFERTAVEIS, para o seletor nao divergir do mapa
+  // (era a causa do "setor lotado" indevido). O indice unico de internacao ativa
+  // por leito e a rede de seguranca real contra dupla alocacao.
   const hasActive = (r: any) => (r.internacoes || []).some((i: any) => !i.data_alta);
-  const occupied = rows.filter((r) => r.status !== "livre" || hasActive(r)).map((r) => r.numero);
+  const occupied = rows.filter((r) => hasActive(r) || r.status === "bloqueado").map((r) => r.numero);
 
   if (rows.length > 0) {
     const beds = rows.map((r) => r.numero).sort((a, b) => bedSortNumber(a) - bedSortNumber(b));
