@@ -17,8 +17,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { CidSearchInput } from "@/components/CidSearchInput";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { WizardItemQueue } from "@/components/shared/WizardItemQueue";
-import { useWizardItemQueue } from "@/hooks/useWizardItemQueue";
 import { calcularQSofa } from "@/lib/qsofa";
 import { calculateNEWS2, news2RiskLabels, parseVitalNumber } from "@/lib/news2";
 import {
@@ -29,6 +27,7 @@ import {
   Stethoscope, Loader2, AlertTriangle, ClipboardCheck,
   HeartPulse, Activity, FileText, Pill, CalendarDays, Hash,
   Printer, ShieldCheck, Save, Trash2, Brain, Gauge, ClipboardList, ChevronDown,
+  Plus, X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { printAdmissionNormaZero } from "@/lib/printAdmission";
@@ -300,6 +299,99 @@ const SofaRow = ({
   );
 };
 
+/* ───────── Lista numerada simples (substitui o staging "Itens preparados") ─────────
+   Componente controlado: estado de itens vive no pai (string[]); aqui só o
+   rascunho do input e o índice em edição. Input + "Adicionar" (ou Enter);
+   abaixo, lista NUMERADA com remover (x) e clique no item para editar. */
+
+const ItemListField = ({
+  items, onChange, placeholder, inputClassName, inputAriaLabel,
+}: {
+  items: string[];
+  onChange: (next: string[]) => void;
+  placeholder?: string;
+  inputClassName?: string;
+  inputAriaLabel?: string;
+}) => {
+  const [draft, setDraft] = useState("");
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+
+  const commit = () => {
+    const v = draft.trim();
+    if (!v) return;
+    if (editingIndex != null) {
+      onChange(items.map((it, i) => (i === editingIndex ? v : it)));
+      setEditingIndex(null);
+    } else {
+      onChange([...items, v]);
+    }
+    setDraft("");
+  };
+
+  const startEdit = (i: number) => {
+    setDraft(items[i] ?? "");
+    setEditingIndex(i);
+  };
+
+  const removeItem = (i: number) => {
+    onChange(items.filter((_, idx) => idx !== i));
+    if (editingIndex === i) { setEditingIndex(null); setDraft(""); }
+    else if (editingIndex != null && i < editingIndex) setEditingIndex(editingIndex - 1);
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="flex gap-2">
+        <Input
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); commit(); } }}
+          placeholder={placeholder}
+          aria-label={inputAriaLabel}
+          className={cn("flex-1", inputClassName)}
+        />
+        <Button
+          type="button" variant="outline" size="sm"
+          onClick={commit} disabled={!draft.trim()}
+          className="shrink-0 gap-1"
+        >
+          <Plus className="h-3 w-3" /> {editingIndex != null ? "Salvar" : "Adicionar"}
+        </Button>
+      </div>
+      {items.length > 0 && (
+        <ol className="space-y-1">
+          {items.map((it, i) => (
+            <li
+              key={i}
+              className={cn(
+                "flex items-start gap-2 rounded-md border bg-background/70 px-2 py-1.5 text-xs",
+                editingIndex === i ? "border-warning ring-1 ring-warning/40" : "border-border/60"
+              )}
+            >
+              <span className="mt-0.5 w-5 shrink-0 text-right font-semibold text-muted-foreground">{i + 1}.</span>
+              <button
+                type="button" onClick={() => startEdit(i)}
+                className="min-w-0 flex-1 break-words text-left hover:underline"
+                title="Clique para editar"
+              >
+                {it}
+              </button>
+              <Button
+                type="button" variant="ghost" size="sm"
+                onClick={() => removeItem(i)}
+                className="h-5 w-5 shrink-0 p-0 text-critical-on-soft hover:text-critical-on-soft"
+                aria-label="Remover item"
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </li>
+          ))}
+        </ol>
+      )}
+    </div>
+  );
+};
+
 /* ───────── Component ───────── */
 
 export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }: AdmissionFormProps) {
@@ -340,19 +432,22 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
   const [physAbd, setPhysAbd] = useState("");
   const [physExt, setPhysExt] = useState("");
   const [physNeuro, setPhysNeuro] = useState("");
-  const [plan, setPlan] = useState("");
+  // Conduta e hipoteses como ITENS (arrays). As strings `plan` e
+  // `diagnosticHypotheses` que o banco/impresso consomem sao DERIVADAS (join "\n")
+  // mais abaixo — nada muda no shape persistido. Arrays facilitam o futuro
+  // copiar-para-evolucao (planItems[]/diagnosticHypotheses[]).
+  const [planItems, setPlanItems] = useState<string[]>([]);
   const [cidPrimary, setCidPrimary] = useState("");
   const [cidSecondary, setCidSecondary] = useState("");
-  const [diagnosticHypotheses, setDiagnosticHypotheses] = useState("");
+  const [hypothesesItems, setHypothesesItems] = useState<string[]>([]);
 
   // Glasgow (ECG) — Ocular/Verbal/Motora; null = ainda nao avaliado.
   const [glasgowEye, setGlasgowEye] = useState<number | null>(null);
   const [glasgowVerbal, setGlasgowVerbal] = useState<number | null>(null);
   const [glasgowMotor, setGlasgowMotor] = useState<number | null>(null);
 
-  // Antecedentes morbidos pessoais — lista incremental (padrao WizardItemQueue).
-  const antQueue = useWizardItemQueue<string>();
-  const [antInput, setAntInput] = useState("");
+  // Antecedentes morbidos pessoais — lista incremental simples (string[]).
+  const [antecedentesItems, setAntecedentesItems] = useState<string[]>([]);
 
   // Discharge prediction — sincronização dias <-> data
   const [noPrediction, setNoPrediction] = useState(false);
@@ -396,8 +491,11 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
   const imc = useMemo(() => computeImc(weight, height), [weight, height]);
 
   // ── Derivados (mantem compat com o esquema de persistencia atual) ──────────
-  // `amp` continua sendo a string que vai pro soap; agora vem da lista.
-  const amp = antQueue.items.map(i => i.snapshot).join("\n");
+  // `amp`/`plan`/`diagnosticHypotheses` continuam sendo as strings que vao pro
+  // soap/internacoes/impresso; agora derivam das listas (itens unidos por "\n").
+  const amp = antecedentesItems.join("\n");
+  const plan = planItems.join("\n");
+  const diagnosticHypotheses = hypothesesItems.join("\n");
   // `pa` continua sendo a string "sys/dia" que o print e o soap consomem.
   const pa = [paSys.trim(), paDia.trim()].filter(Boolean).join("/");
   const glasgowTotal =
@@ -447,33 +545,14 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
     else if (allergies.trim().toLowerCase() === "nega") setAllergies("");
   };
 
-  // Antecedentes — acrescentar/salvar e editar itens da fila.
-  const commitAntecedente = () => {
-    const v = antInput.trim();
-    if (!v) return;
-    if (antQueue.editingUid) {
-      antQueue.update(antQueue.editingUid, v, v);
-      antQueue.stopEditing();
-    } else {
-      antQueue.push(v, v);
-    }
-    setAntInput("");
-  };
-  const editAntecedente = (uid: string) => {
-    const it = antQueue.items.find(i => i.uid === uid);
-    if (!it) return;
-    setAntInput(it.snapshot);
-    antQueue.startEditing(uid);
-  };
-
   const resetForm = () => {
     setHda(""); setMuc(""); setAllergies(""); setAllergyMode(null);
-    antQueue.clear(); setAntInput("");
+    setAntecedentesItems([]);
     setWeight(""); setHeight("");
     setPaSys(""); setPaDia(""); setFc(""); setFr(""); setSpo2(""); setTax(""); setDx("");
     setGlasgowEye(null); setGlasgowVerbal(null); setGlasgowMotor(null);
     setPhysGeneral(""); setPhysCv(""); setPhysResp(""); setPhysAbd(""); setPhysExt(""); setPhysNeuro("");
-    setPlan(""); setCidPrimary(""); setCidSecondary(""); setDiagnosticHypotheses("");
+    setPlanItems([]); setCidPrimary(""); setCidSecondary(""); setHypothesesItems([]);
     setAdmissionReason(""); setOriginSector(""); setDevices(""); setCulturesAtb(""); setSpecialties("");
     setUtiJustificativa(""); setUtiJustificativaOutro(""); setUtiVasoativo(null);
     setUtiComDispositivos(null); setSofaRespostas({});
@@ -499,14 +578,13 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
         const d = JSON.parse(raw);
         setHda(d.hda ?? ""); setMuc(d.muc ?? "");
         // Antecedentes: formato novo (array) ou legado (`amp` string multilinha).
-        antQueue.clear();
-        const antList: string[] = Array.isArray(d.antecedentes)
-          ? d.antecedentes
-          : (typeof d.amp === "string" && d.amp.trim()
-              ? d.amp.split("\n").map((s: string) => s.trim()).filter(Boolean)
-              : []);
-        antList.forEach(a => antQueue.push(a, a));
-        setAntInput("");
+        setAntecedentesItems(
+          Array.isArray(d.antecedentes)
+            ? d.antecedentes
+            : (typeof d.amp === "string" && d.amp.trim()
+                ? d.amp.split("\n").map((s: string) => s.trim()).filter(Boolean)
+                : [])
+        );
         setAllergies(d.allergies ?? "");
         // Modo da alergia derivado do valor salvo (compat com rascunho antigo).
         {
@@ -530,8 +608,23 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
         setGlasgowMotor(typeof d.glasgowMotor === "number" ? d.glasgowMotor : null);
         setPhysGeneral(d.physGeneral ?? ""); setPhysCv(d.physCv ?? "");
         setPhysResp(d.physResp ?? ""); setPhysAbd(d.physAbd ?? ""); setPhysExt(d.physExt ?? ""); setPhysNeuro(d.physNeuro ?? "");
-        setPlan(d.plan ?? ""); setCidPrimary(d.cidPrimary ?? ""); setCidSecondary(d.cidSecondary ?? "");
-        setDiagnosticHypotheses(d.diagnosticHypotheses ?? "");
+        // Conduta: formato novo (array planItems) ou legado (`plan` string multilinha).
+        setPlanItems(
+          Array.isArray(d.planItems)
+            ? d.planItems
+            : (typeof d.plan === "string" && d.plan.trim()
+                ? d.plan.split("\n").map((s: string) => s.trim()).filter(Boolean)
+                : [])
+        );
+        setCidPrimary(d.cidPrimary ?? ""); setCidSecondary(d.cidSecondary ?? "");
+        // Hipoteses: formato novo (array) ou legado (string multilinha).
+        setHypothesesItems(
+          Array.isArray(d.diagnosticHypothesesItems)
+            ? d.diagnosticHypothesesItems
+            : (typeof d.diagnosticHypotheses === "string" && d.diagnosticHypotheses.trim()
+                ? d.diagnosticHypotheses.split("\n").map((s: string) => s.trim()).filter(Boolean)
+                : [])
+        );
         setNoPrediction(!!d.noPrediction);
         if (d.predictionDate) setPredictionDate(d.predictionDate);
         if (d.predictionDays) setPredictionDays(d.predictionDays);
@@ -568,7 +661,6 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
     } catch {}
     setDraftHydrated(true);
     return () => { setDraftHydrated(false); setAttempted(false); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draftKey]);
 
   // Salva (debounced) a cada mudança
@@ -577,11 +669,12 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
     const t = setTimeout(() => {
       try {
         const payload = {
-          hda, amp, antecedentes: amp ? amp.split("\n") : [], muc, allergies,
+          hda, amp, antecedentes: antecedentesItems, muc, allergies,
           weight, height, paSys, paDia, pa, fc, fr, spo2, tax, dx,
           glasgowEye, glasgowVerbal, glasgowMotor,
           physGeneral, physCv, physResp, physAbd, physExt, physNeuro,
-          plan, cidPrimary, cidSecondary, diagnosticHypotheses,
+          plan, planItems, cidPrimary, cidSecondary,
+          diagnosticHypotheses, diagnosticHypothesesItems: hypothesesItems,
           noPrediction, predictionDate, predictionDays,
           admissionReason, originSector, devices, culturesAtb, specialties,
           utiJustificativa, utiJustificativaOutro, utiVasoativo, utiComDispositivos, sofaRespostas,
@@ -598,10 +691,10 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
     return () => clearTimeout(t);
   }, [
     draftHydrated, draftKey,
-    hda, amp, muc, allergies, weight, height, paSys, paDia, pa, fc, fr, spo2, tax, dx,
+    hda, amp, antecedentesItems, muc, allergies, weight, height, paSys, paDia, pa, fc, fr, spo2, tax, dx,
     glasgowEye, glasgowVerbal, glasgowMotor,
     physGeneral, physCv, physResp, physAbd, physExt, physNeuro,
-    plan, cidPrimary, cidSecondary, diagnosticHypotheses,
+    plan, planItems, cidPrimary, cidSecondary, diagnosticHypotheses, hypothesesItems,
     noPrediction, predictionDate, predictionDays,
     admissionReason, originSector, devices, culturesAtb, specialties,
     utiJustificativa, utiJustificativaOutro, utiVasoativo, utiComDispositivos, sofaRespostas,
@@ -666,7 +759,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
     hda: !hda.trim(),
     exam: !physGeneral.trim() && !physCv.trim() && !physResp.trim(),
     examGeneral: !physGeneral.trim(),
-    plan: !plan.trim(),
+    plan: planItems.length === 0,
     cidPrimary: !cidPrimary.trim(),
     prediction: !noPrediction && !predictionDate,
   };
@@ -1071,8 +1164,15 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
 
           <Section icon={Pill} title="Conduta inicial" tone="slate">
             <ReqLabel missing={attempted && missing.plan}>Conduta inicial</ReqLabel>
-            <Textarea value={plan} onChange={e => setPlan(e.target.value)} rows={4}
-              placeholder={"• Monitorização\n• Suporte clínico\n• ..."} className={cn("mt-1", reqRing(attempted && missing.plan))} />
+            <div className="mt-1">
+              <ItemListField
+                items={planItems}
+                onChange={setPlanItems}
+                placeholder="Ex.: Monitorização contínua"
+                inputAriaLabel="Adicionar item de conduta"
+                inputClassName={reqRing(attempted && missing.plan)}
+              />
+            </div>
           </Section>
 
           <Section icon={HeartPulse} title="Sinais vitais" tone="emerald">
@@ -1147,26 +1247,11 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
           </EmergenciaCollapsible>
 
           <EmergenciaCollapsible icon={ClipboardList} title="Antecedentes mórbidos pessoais">
-            <div className="flex gap-2">
-              <Input
-                value={antInput}
-                onChange={e => setAntInput(e.target.value)}
-                onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); commitAntecedente(); } }}
-                placeholder="Ex.: HAS, DM2, tabagismo, ex-etilista..."
-                className="flex-1"
-              />
-            </div>
-            <WizardItemQueue
-              items={antQueue.items}
-              editingUid={antQueue.editingUid}
-              onEdit={editAntecedente}
-              onRemove={antQueue.remove}
-              onAddCurrent={commitAntecedente}
-              onSaveCurrent={commitAntecedente}
-              addLabel="Acrescentar antecedente"
-              accentClassName="border-border bg-muted/40 text-foreground"
-              hint="Digite um antecedente e clique em Acrescentar (ou Enter). Repita para adicionar vários."
-              disableAdd={!antInput.trim()}
+            <ItemListField
+              items={antecedentesItems}
+              onChange={setAntecedentesItems}
+              placeholder="Ex.: HAS, DM2, tabagismo, ex-etilista..."
+              inputAriaLabel="Adicionar antecedente mórbido"
             />
           </EmergenciaCollapsible>
 
@@ -1200,29 +1285,28 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
             </div>
           </EmergenciaCollapsible>
 
-          <EmergenciaCollapsible icon={Stethoscope} title="Exame físico segmentar">
+          <EmergenciaCollapsible icon={Stethoscope} title="Exame físico">
             <div>
               <Label className="text-xs">Estado geral</Label>
-              <Textarea value={physGeneral} onChange={e => setPhysGeneral(e.target.value)} rows={2} className="mt-1" />
+              <Textarea value={physGeneral} onChange={e => setPhysGeneral(e.target.value)} rows={1} className="mt-1" />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div><Label className="text-xs">Cardiovascular</Label><Textarea value={physCv} onChange={e => setPhysCv(e.target.value)} rows={2} className="mt-1" /></div>
-              <div><Label className="text-xs">Respiratório</Label><Textarea value={physResp} onChange={e => setPhysResp(e.target.value)} rows={2} className="mt-1" /></div>
-              <div><Label className="text-xs">Abdome</Label><Textarea value={physAbd} onChange={e => setPhysAbd(e.target.value)} rows={2} className="mt-1" /></div>
-              <div><Label className="text-xs">Extremidades</Label><Textarea value={physExt} onChange={e => setPhysExt(e.target.value)} rows={2} className="mt-1" /></div>
-              <div className="sm:col-span-2"><Label className="text-xs">Neurológico</Label><Textarea value={physNeuro} onChange={e => setPhysNeuro(e.target.value)} rows={2} className="mt-1" placeholder="Glasgow, pupilas, força, sensibilidade, reflexos, sinais focais..." /></div>
+              <div><Label className="text-xs">Cardiovascular</Label><Textarea value={physCv} onChange={e => setPhysCv(e.target.value)} rows={1} className="mt-1" /></div>
+              <div><Label className="text-xs">Respiratório</Label><Textarea value={physResp} onChange={e => setPhysResp(e.target.value)} rows={1} className="mt-1" /></div>
+              <div><Label className="text-xs">Abdome</Label><Textarea value={physAbd} onChange={e => setPhysAbd(e.target.value)} rows={1} className="mt-1" /></div>
+              <div><Label className="text-xs">Extremidades</Label><Textarea value={physExt} onChange={e => setPhysExt(e.target.value)} rows={1} className="mt-1" /></div>
+              <div className="sm:col-span-2"><Label className="text-xs">Neurológico</Label><Textarea value={physNeuro} onChange={e => setPhysNeuro(e.target.value)} rows={1} className="mt-1" placeholder="Glasgow, pupilas, força, sensibilidade, reflexos, sinais focais..." /></div>
             </div>
           </EmergenciaCollapsible>
 
-          <EmergenciaCollapsible icon={Stethoscope} title="Hipóteses diagnósticas (texto livre)">
-            <Textarea
-              value={diagnosticHypotheses}
-              onChange={(e) => setDiagnosticHypotheses(e.target.value)}
-              rows={4}
-              placeholder={"Ex.:\nSepse de foco pulmonar\nSuspeita de TEP associado\nDM2 descompensado"}
-              className="mt-1 font-mono text-xs"
+          <EmergenciaCollapsible icon={Stethoscope} title="Hipóteses diagnósticas">
+            <ItemListField
+              items={hypothesesItems}
+              onChange={setHypothesesItems}
+              placeholder="Ex.: Sepse de foco pulmonar"
+              inputAriaLabel="Adicionar hipótese diagnóstica"
             />
-            <p className="text-xs text-muted-foreground mt-1">Cada linha vira uma hipótese no card do paciente.</p>
+            <p className="text-xs text-muted-foreground mt-1">Cada item vira uma hipótese no card do paciente.</p>
           </EmergenciaCollapsible>
 
           <EmergenciaCollapsible icon={FileText} title="CID secundário">
@@ -1291,26 +1375,11 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
             </Section>
 
             <Section icon={ClipboardList} title="Antecedentes mórbidos pessoais" hint="Acrescente um a um" tone="blue">
-              <div className="flex gap-2">
-                <Input
-                  value={antInput}
-                  onChange={e => setAntInput(e.target.value)}
-                  onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); commitAntecedente(); } }}
-                  placeholder="Ex.: HAS, DM2, tabagismo, ex-etilista..."
-                  className="flex-1"
-                />
-              </div>
-              <WizardItemQueue
-                items={antQueue.items}
-                editingUid={antQueue.editingUid}
-                onEdit={editAntecedente}
-                onRemove={antQueue.remove}
-                onAddCurrent={commitAntecedente}
-                onSaveCurrent={commitAntecedente}
-                addLabel="Acrescentar antecedente"
-                accentClassName="border-border bg-muted/40 text-foreground"
-                hint="Digite um antecedente e clique em Acrescentar (ou Enter). Repita para adicionar vários."
-                disableAdd={!antInput.trim()}
+              <ItemListField
+                items={antecedentesItems}
+                onChange={setAntecedentesItems}
+                placeholder="Ex.: HAS, DM2, tabagismo, ex-etilista..."
+                inputAriaLabel="Adicionar antecedente mórbido"
               />
             </Section>
 
@@ -1447,17 +1516,17 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
           {/* ───── Exame Físico ───── */}
           <GroupHeader step={4} title="Exame Físico" />
           <div className="space-y-4">
-            <Section icon={Stethoscope} title="Exame físico segmentar" tone="slate">
+            <Section icon={Stethoscope} title="Exame físico" tone="slate">
               <div>
                 <ReqLabel missing={attempted && missing.examGeneral}>Estado geral</ReqLabel>
-                <Textarea value={physGeneral} onChange={e => setPhysGeneral(e.target.value)} rows={2} className={cn("mt-1", reqRing(attempted && missing.examGeneral))} />
+                <Textarea value={physGeneral} onChange={e => setPhysGeneral(e.target.value)} rows={1} className={cn("mt-1", reqRing(attempted && missing.examGeneral))} />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div><Label className="text-xs">Cardiovascular</Label><Textarea value={physCv} onChange={e => setPhysCv(e.target.value)} rows={2} className="mt-1" /></div>
-                <div><Label className="text-xs">Respiratório</Label><Textarea value={physResp} onChange={e => setPhysResp(e.target.value)} rows={2} className="mt-1" /></div>
-                <div><Label className="text-xs">Abdome</Label><Textarea value={physAbd} onChange={e => setPhysAbd(e.target.value)} rows={2} className="mt-1" /></div>
-                <div><Label className="text-xs">Extremidades</Label><Textarea value={physExt} onChange={e => setPhysExt(e.target.value)} rows={2} className="mt-1" /></div>
-                <div className="sm:col-span-2"><Label className="text-xs">Neurológico</Label><Textarea value={physNeuro} onChange={e => setPhysNeuro(e.target.value)} rows={2} className="mt-1" placeholder="Glasgow, pupilas, força, sensibilidade, reflexos, sinais focais..." /></div>
+                <div><Label className="text-xs">Cardiovascular</Label><Textarea value={physCv} onChange={e => setPhysCv(e.target.value)} rows={1} className="mt-1" /></div>
+                <div><Label className="text-xs">Respiratório</Label><Textarea value={physResp} onChange={e => setPhysResp(e.target.value)} rows={1} className="mt-1" /></div>
+                <div><Label className="text-xs">Abdome</Label><Textarea value={physAbd} onChange={e => setPhysAbd(e.target.value)} rows={1} className="mt-1" /></div>
+                <div><Label className="text-xs">Extremidades</Label><Textarea value={physExt} onChange={e => setPhysExt(e.target.value)} rows={1} className="mt-1" /></div>
+                <div className="sm:col-span-2"><Label className="text-xs">Neurológico</Label><Textarea value={physNeuro} onChange={e => setPhysNeuro(e.target.value)} rows={1} className="mt-1" placeholder="Glasgow, pupilas, força, sensibilidade, reflexos, sinais focais..." /></div>
               </div>
             </Section>
           </div>
@@ -1467,21 +1536,26 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
           <div className="space-y-4">
             <Section icon={Pill} title="Plano terapêutico" tone="slate">
               <ReqLabel missing={attempted && missing.plan}>Conduta inicial</ReqLabel>
-              <Textarea value={plan} onChange={e => setPlan(e.target.value)} rows={5}
-                placeholder={"• Monitorização\n• Suporte clínico\n• Antibioticoterapia\n• ..."}
-                className={cn("mt-1", reqRing(attempted && missing.plan))} />
+              <div className="mt-1">
+                <ItemListField
+                  items={planItems}
+                  onChange={setPlanItems}
+                  placeholder="Ex.: Monitorização contínua"
+                  inputAriaLabel="Adicionar item de conduta"
+                  inputClassName={reqRing(attempted && missing.plan)}
+                />
+              </div>
             </Section>
 
-            <Section icon={Stethoscope} title="Hipóteses Diagnósticas (texto livre)" hint="Uma hipótese por linha — sincroniza automaticamente com o painel clínico" tone="blue">
-              <Textarea
-                value={diagnosticHypotheses}
-                onChange={(e) => setDiagnosticHypotheses(e.target.value)}
-                rows={4}
-                placeholder={"Ex.:\nSepse de foco pulmonar\nSuspeita de TEP associado\nDM2 descompensado"}
-                className="mt-1 font-mono text-xs"
+            <Section icon={Stethoscope} title="Hipóteses Diagnósticas" hint="Um item por hipótese — sincroniza automaticamente com o painel clínico" tone="blue">
+              <ItemListField
+                items={hypothesesItems}
+                onChange={setHypothesesItems}
+                placeholder="Ex.: Sepse de foco pulmonar"
+                inputAriaLabel="Adicionar hipótese diagnóstica"
               />
               <p className="text-xs text-muted-foreground mt-1">
-                Cada linha vira uma hipótese no card do paciente. Esse campo passa a ser <strong>somente leitura no painel</strong> e só é atualizado por nova evolução clínica.
+                Cada item vira uma hipótese no card do paciente. Esse campo passa a ser <strong>somente leitura no painel</strong> e só é atualizado por nova evolução clínica.
               </p>
             </Section>
           </div>
