@@ -26,6 +26,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { formatAge } from "@/lib/patientAge";
 import { useHospital } from "@/contexts/HospitalContext";
+import { useNavigate } from "react-router-dom";
 import { useDepartment } from "@/contexts/DepartmentContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -130,7 +131,7 @@ function EmergencyHeader({ activeSector, onSectorChange, onRefresh, isRefreshing
 }
 
 // ── Simplified Patient Card (Sala Vermelha, UE Vertical, UE Horizontal) ──
-function SimplifiedPatientCard({ patient, onView }: { patient: EmergencyPatient; onView: () => void }) {
+function SimplifiedPatientCard({ patient, onView, onAdmit, onEvolve }: { patient: EmergencyPatient; onView: () => void; onAdmit?: () => void; onEvolve?: () => void }) {
   const diagnoses = patient.diagnoses?.split("\n").filter(Boolean) || [];
   const pendencies = patient.pendencies?.split("\n").filter(Boolean) || [];
 
@@ -153,6 +154,12 @@ function SimplifiedPatientCard({ patient, onView }: { patient: EmergencyPatient;
           {!patient.is_vacant && (
             <div className="flex items-center gap-1">
               {patient.age && <span className="text-xs text-muted-foreground">{patient.age}a</span>}
+              {onAdmit && (
+                <Button variant="outline" size="sm" className="h-6 px-2 text-[11px]" onClick={onAdmit}>Admitir</Button>
+              )}
+              {onEvolve && (
+                <Button variant="outline" size="sm" className="h-6 px-2 text-[11px]" onClick={onEvolve}>Evoluir</Button>
+              )}
               <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onView}>
                 <Eye className="h-3 w-3" />
               </Button>
@@ -219,7 +226,7 @@ function SimplifiedPatientCard({ patient, onView }: { patient: EmergencyPatient;
 }
 
 // ── Full Patient Card (Obs. Laranja — same detail level as UTI/UCI) ──
-function FullPatientCard({ patient, onView }: { patient: EmergencyPatient; onView: () => void }) {
+function FullPatientCard({ patient, onView, onAdmit, onEvolve }: { patient: EmergencyPatient; onView: () => void; onAdmit?: () => void; onEvolve?: () => void }) {
   const diagnoses = patient.diagnoses?.split("\n").filter(Boolean) || [];
   const history = patient.medical_history?.split("\n").filter(Boolean) || [];
   const exams = patient.relevant_exams?.split("\n").filter(Boolean) || [];
@@ -271,6 +278,12 @@ function FullPatientCard({ patient, onView }: { patient: EmergencyPatient; onVie
               )}
             </div>
             <div className="flex items-center gap-1">
+              {onAdmit && (
+                <Button variant="outline" size="sm" className="h-6 px-2 text-[11px]" onClick={(e) => { e.stopPropagation(); onAdmit(); }}>Admitir</Button>
+              )}
+              {onEvolve && (
+                <Button variant="outline" size="sm" className="h-6 px-2 text-[11px]" onClick={(e) => { e.stopPropagation(); onEvolve(); }}>Evoluir</Button>
+              )}
               <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); onView(); }}>
                 <Eye className="h-3 w-3" />
               </Button>
@@ -427,6 +440,7 @@ function PatientDetailDialog({ patient, open, onClose }: { patient: EmergencyPat
 export default function EmergenciaSectorPage() {
   const { currentHospital, currentState } = useHospital();
   const { currentDepartment } = useDepartment();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const isMobile = useIsMobile();
 
@@ -523,6 +537,32 @@ export default function EmergenciaSectorPage() {
   const handleViewPatient = (patient: EmergencyPatient) => {
     setSelectedPatient(patient);
     setDetailOpen(true);
+  };
+
+  // Atalhos "Admitir"/"Evoluir" a partir do card da emergencia — mesmo contrato
+  // de navegacao das demais telas (searchParams com patientSector = CODIGO do
+  // setor + state{patient}). patient.id = internacao_id quando ocupado.
+  const openModule = (modulo: "admissao" | "evolucao", patient: EmergencyPatient) => {
+    if (patient.is_vacant) return;
+    const params = new URLSearchParams({
+      patientId: patient.id,
+      patientName: patient.name,
+      patientBed: patient.bed_number,
+      patientSector: patient.sector,
+    });
+    if (patient.age) params.set("patientAge", String(patient.age));
+    navigate(`/${modulo}?${params.toString()}`, {
+      state: {
+        patient: {
+          id: patient.id,
+          name: patient.name,
+          bed: patient.bed_number,
+          sector: patient.sector,
+          age: patient.age,
+          department: currentDepartment || undefined,
+        },
+      },
+    });
   };
 
   const filteredPatients = search
@@ -630,14 +670,14 @@ export default function EmergenciaSectorPage() {
                 // Full clinical cards for Obs. Laranja
                 <div className="space-y-3">
                   {filteredPatients.map(patient => (
-                    <FullPatientCard key={patient.id} patient={patient} onView={() => handleViewPatient(patient)} />
+                    <FullPatientCard key={patient.id} patient={patient} onView={() => handleViewPatient(patient)} onAdmit={() => openModule("admissao", patient)} onEvolve={() => openModule("evolucao", patient)} />
                   ))}
                 </div>
               ) : (
                 // Simplified grid for Sala Vermelha, UE Vertical/Horizontal
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                   {filteredPatients.map(patient => (
-                    <SimplifiedPatientCard key={patient.id} patient={patient} onView={() => handleViewPatient(patient)} />
+                    <SimplifiedPatientCard key={patient.id} patient={patient} onView={() => handleViewPatient(patient)} onAdmit={() => openModule("admissao", patient)} onEvolve={() => openModule("evolucao", patient)} />
                   ))}
                 </div>
               )}
