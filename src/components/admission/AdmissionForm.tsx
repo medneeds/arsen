@@ -1,5 +1,6 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { seedAdmissionFromHistory } from "@/lib/seedAdmission";
 import { useHospital } from "@/contexts/HospitalContext";
 import { useDepartment } from "@/contexts/DepartmentContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -475,6 +476,11 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
   const [attempted, setAttempted] = useState(false);
   const [draftSavedAt, setDraftSavedAt] = useState<Date | null>(null);
   const [draftHydrated, setDraftHydrated] = useState(false);
+  // SEED a partir da historia ja persistida na internacao (transferencia em
+  // cadeia): preenchido APENAS quando nao ha rascunho. `seededFromHistory` e so
+  // UX; `seededKeyRef` garante que o seed roda uma unica vez por prontuario.
+  const [seededFromHistory, setSeededFromHistory] = useState(false);
+  const seededKeyRef = useRef<string | null>(null);
 
   // ── D0 persistido no banco nesta sessão? ──────────────────────────────
   // CRÍTICO (correção de segurança de prontuário): a impressão NÃO pode gerar
@@ -662,6 +668,56 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
     setDraftHydrated(true);
     return () => { setDraftHydrated(false); setAttempted(false); };
   }, [draftKey]);
+
+  /* ───────── SEED a partir da historia (prioridade rascunho > seed > vazio) ─────────
+     Roda UMA vez por prontuario, depois que a decisao de rascunho ja aconteceu
+     (draftHydrated). Regras:
+       - Exige draftKey (prontuario identificado) e patient.id (internacao_id).
+       - Se EXISTE rascunho no localStorage, NAO semeia (rascunho vence).
+       - Caso contrario, le a historia e preenche SOMENTE campos ainda vazios,
+         via setState funcional — nunca sobrescreve o que o usuario ja digitou
+         (o seed e assincrono; o medico pode comecar a digitar antes de resolver).
+       - O helper e tolerante: qualquer erro -> objeto vazio, nunca lanca. */
+  useEffect(() => {
+    if (!draftHydrated || !draftKey || !patient.id) return;
+    if (seededKeyRef.current === draftKey) return; // ja tentou para este prontuario
+    seededKeyRef.current = draftKey;
+
+    // PRIORIDADE rascunho > seed: havendo rascunho, nao semeia.
+    let hasDraft = false;
+    try { hasDraft = !!localStorage.getItem(draftKey); } catch { /* localStorage indisponivel */ }
+    if (hasDraft) return;
+
+    let cancelled = false;
+    (async () => {
+      const seed = await seedAdmissionFromHistory(patient.id);
+      if (cancelled || Object.keys(seed).length === 0) return;
+      // Preenche so o que veio e so se o campo ainda estiver vazio.
+      if (seed.hda) setHda(prev => (prev.trim() ? prev : seed.hda!));
+      if (seed.planItems?.length) setPlanItems(prev => (prev.length ? prev : seed.planItems!));
+      if (seed.hypothesesItems?.length) setHypothesesItems(prev => (prev.length ? prev : seed.hypothesesItems!));
+      if (seed.antecedentesItems?.length) setAntecedentesItems(prev => (prev.length ? prev : seed.antecedentesItems!));
+      if (seed.cidPrimary) setCidPrimary(prev => (prev.trim() ? prev : seed.cidPrimary!));
+      if (seed.cidSecondary) setCidSecondary(prev => (prev.trim() ? prev : seed.cidSecondary!));
+      if (seed.paSys) setPaSys(prev => (prev.trim() ? prev : seed.paSys!));
+      if (seed.paDia) setPaDia(prev => (prev.trim() ? prev : seed.paDia!));
+      if (seed.fc) setFc(prev => (prev.trim() ? prev : seed.fc!));
+      if (seed.fr) setFr(prev => (prev.trim() ? prev : seed.fr!));
+      if (seed.tax) setTax(prev => (prev.trim() ? prev : seed.tax!));
+      if (seed.spo2) setSpo2(prev => (prev.trim() ? prev : seed.spo2!));
+      if (seed.glasgowEye != null) setGlasgowEye(prev => (prev != null ? prev : seed.glasgowEye!));
+      if (seed.glasgowVerbal != null) setGlasgowVerbal(prev => (prev != null ? prev : seed.glasgowVerbal!));
+      if (seed.glasgowMotor != null) setGlasgowMotor(prev => (prev != null ? prev : seed.glasgowMotor!));
+      if (seed.devices) {
+        setDevices(prev => (prev.trim() ? prev : seed.devices!));
+        // Dispositivos presentes -> infere o toggle "veio com dispositivos" (so se nao decidido).
+        setUtiComDispositivos(prev => (prev == null ? true : prev));
+      }
+      setSeededFromHistory(true);
+    })();
+
+    return () => { cancelled = true; };
+  }, [draftHydrated, draftKey, patient.id]);
 
   // Salva (debounced) a cada mudança
   useEffect(() => {
@@ -1119,6 +1175,12 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
               className="inline-flex items-center gap-1 text-xs text-critical-on-soft hover:text-critical-on-soft hover:underline">
               <Trash2 className="h-3 w-3" /> Descartar rascunho
             </button>
+          )}
+          {seededFromHistory && (
+            <span className="inline-flex items-center gap-2 rounded-full bg-released-soft border border-released/30 px-3 py-1 text-xs text-released-on-soft">
+              <ClipboardCheck className="h-3 w-3" />
+              Pré-preenchido a partir do atendimento anterior — revise antes de validar
+            </span>
           )}
           {attempted && missingList.length > 0 && (
             <span className="inline-flex items-center gap-2 rounded-full bg-critical-soft border border-critical-border px-3 py-1 text-xs text-critical-on-soft">
