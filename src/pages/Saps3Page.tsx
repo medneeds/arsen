@@ -941,6 +941,17 @@ export default function Saps3Page({
     return (data as { id: string } | null)?.id ?? null;
   };
 
+  // Paciente JÁ internado (tem internação no contexto): a SAPS apenas pendura na
+  // internação existente (buildSapsPayload só usa internacao_id; a alocação física
+  // foi removida/degradada). Logo, setor + leito de UTI (fluxo de alocação de
+  // PRÉ-ADMISSÃO) NÃO se aplicam e não devem ser exigidos — senão a ficha só
+  // "funciona" nos 4 setores críticos de UTI_SECTORS (resolveSectorValue devolve
+  // "" para UCC/enfermarias e a validação/UI travam). Só o fluxo de alocação de
+  // pré-admissão (sem internação) precisa de setor+leito.
+  const hasInternacaoContext = !!(
+    asUuidOrNull(selectedRequest?.patient_id) || asUuidOrNull(searchParams.get("patientId"))
+  );
+
   // ─── Checklist de validação (tempo real) ───
   type MissingItem = { id: string; label: string; anchor: string; hint?: string; chave?: string };
   const missingFields = useMemo<MissingItem[]>(() => {
@@ -948,8 +959,9 @@ export default function Saps3Page({
     if (!patientName.trim()) out.push({ id: "name", label: "Nome do paciente", anchor: "saps-banner" });
     if (!hospitalId || !stateId) out.push({ id: "hosp", label: "Hospital / Estado", anchor: "saps-banner", hint: "Selecione no topo da página" });
     // No embute o paciente JA esta alocado (leito/setor vem da internacao); nao
-    // exige selecao de leito.
-    if (!completingSapsId && !embedded) {
+    // exige selecao de leito. Idem quando ha internacao no contexto (paciente ja
+    // internado, ficha aberta pela /saps3): a SAPS so pendura na internacao.
+    if (!completingSapsId && !embedded && !hasInternacaoContext) {
       if (!selectedSector) out.push({ id: "sector", label: "Setor da UTI", anchor: "saps-bed" });
       if (!selectedBed) out.push({ id: "bed", label: "Leito de destino", anchor: "saps-bed" });
     }
@@ -983,7 +995,7 @@ export default function Saps3Page({
     exigir(respostas.ph, "ph", "pH", "saps-box3", "ph");
     exigir(respostas.oxigenacao, "oxi", "Oxigenação / ventilação", "saps-box3", "oxigenacao");
     return out;
-  }, [patientName, hospitalId, stateId, completingSapsId, embedded, selectedSector, selectedBed, sedationStatus, gcsO, gcsV, gcsM, respostas]);
+  }, [patientName, hospitalId, stateId, completingSapsId, embedded, hasInternacaoContext, selectedSector, selectedBed, sedationStatus, gcsO, gcsV, gcsM, respostas]);
 
   const focusAnchor = (anchor: string) => {
     if (typeof document === "undefined") return;
@@ -1001,7 +1013,7 @@ export default function Saps3Page({
     // Validação unificada — pendente exige apenas identidade + leito; finalização exige checklist completa.
     if (!patientName.trim()) { toast.error("Nome do paciente é obrigatório"); focusAnchor("saps-banner"); return; }
     if (!hospitalId || !stateId) { toast.error("Hospital / Estado não selecionado"); focusAnchor("saps-banner"); return; }
-    if (!completingSapsId && !embedded) {
+    if (!completingSapsId && !embedded && !hasInternacaoContext) {
       if (!selectedSector) { toast.error("Selecione o setor da UTI"); focusAnchor("saps-bed"); return; }
       if (!selectedBed) { toast.error("Selecione o leito"); focusAnchor("saps-bed"); return; }
     }
@@ -1279,10 +1291,11 @@ export default function Saps3Page({
         });
         return;
       }
-      const sectorLabel = UTI_SECTORS.find(s => s.value === selectedSector)?.label || selectedSector;
+      const sectorLabel = UTI_SECTORS.find(s => s.value === selectedSector)?.label
+        || selectedSector || selectedRequest?.destination_sector || searchParams.get("patientSector") || "—";
       setConfirmationData({
         patientName,
-        bedNumber: selectedBed,
+        bedNumber: selectedBed || searchParams.get("patientBed") || "—",
         sectorLabel,
         totalScore: scores.total,
         predictedMortality: scores.mortality,
@@ -1506,7 +1519,11 @@ export default function Saps3Page({
               <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                 <div className="min-w-0 flex-1">
                   <p className="text-xs text-muted-foreground uppercase tracking-wider">
-                    {completingSapsId ? "Validando ficha SAPS — paciente já alocado" : "Admitindo paciente"}
+                    {completingSapsId
+                      ? "Validando ficha SAPS — paciente já alocado"
+                      : hasInternacaoContext
+                        ? "Ficha SAPS — paciente internado"
+                        : "Admitindo paciente"}
                   </p>
                   <p className="patient-id text-lg font-semibold text-foreground truncate">{patientName}</p>
                   {!completingSapsId && selectedRequest?.destination_sector && (
@@ -1520,11 +1537,11 @@ export default function Saps3Page({
                     title={completingSapsId ? "Setor atual do paciente" : "Setor definido pela origem do pedido"}
                   >
                     <Bed className="h-4 w-4 text-primary" />
-                    {currentSectorLabel || "Setor —"}
+                    {currentSectorLabel || selectedRequest?.destination_sector || searchParams.get("patientSector") || "Setor —"}
                   </span>
-                  {completingSapsId ? (
+                  {(completingSapsId || hasInternacaoContext) ? (
                     <span className="inline-flex h-9 items-center gap-2 rounded-md border border-released-border bg-released-soft px-3 text-sm font-medium text-released-on-soft">
-                      Leito {selectedBed || "—"}
+                      Leito {selectedBed || searchParams.get("patientBed") || "—"}
                       <span className="text-xs uppercase tracking-wider">ocupado</span>
                     </span>
                   ) : (
