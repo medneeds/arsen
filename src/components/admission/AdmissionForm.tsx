@@ -41,6 +41,7 @@ import { parseDiagnosesText } from "@/lib/diagnosesText";
 import { toEvolucaoStatusDb } from "@/lib/evolucaoStatus";
 import { PatientIdentityHeader } from "@/components/PatientIdentityHeader";
 import { usePatientIdentifiers } from "@/hooks/usePatientIdentifiers";
+import { useSectorNavigation } from "@/hooks/useSectorNavigation";
 import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
 
 /** MIGRAÇÃO: profissionais.id ≠ auth.uid → resolve via profissionais.user_id. */
@@ -402,6 +403,12 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
   const { currentHospital, currentState } = useHospital();
   const { currentDepartment } = useDepartment();
   const { user } = useAuth();
+  // Setores disponiveis do hospital (alas -> setores) para o SELECT de origem UTI.
+  const { sectors } = useSectorNavigation();
+  // Espelho em ref para a inferencia de originOutros na carga do rascunho sem
+  // tornar `sectors` dependencia do effect (evita re-hidratar quando a lista chega).
+  const sectorsRef = useRef(sectors);
+  sectorsRef.current = sectors;
   // Modo de admissao derivado do setor. isUti preserva byte-a-byte o antigo
   // UTI_SECTORS.includes(patient.sector) (mesma lista, correspondencia exata).
   const admissionMode = useMemo(() => admissionModeForSector(patient.sector), [patient.sector]);
@@ -468,7 +475,9 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
   const [originSector, setOriginSector] = useState("");
   const [devices, setDevices] = useState("");
   const [culturesAtb, setCulturesAtb] = useState("");
-  const [specialties, setSpecialties] = useState("");
+  // originOutros: estado só de UI. Controla se o setor de origem foi informado
+  // como texto livre ("Outros"); originSector continua sendo a string persistida.
+  const [originOutros, setOriginOutros] = useState(false);
 
   // UTI estruturado (novos widgets)
   const [utiJustificativa, setUtiJustificativa] = useState("");        // código do vocabulário
@@ -580,7 +589,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
     setGlasgowEye(null); setGlasgowVerbal(null); setGlasgowMotor(null);
     setPhysGeneral(""); setPhysCv(""); setPhysResp(""); setPhysAbd(""); setPhysExt(""); setPhysNeuro("");
     setPlanItems([]); setCidPrimary(""); setCidSecondary(""); setHypothesesItems([]);
-    setAdmissionReason(""); setOriginSector(""); setDevices(""); setCulturesAtb(""); setSpecialties("");
+    setAdmissionReason(""); setOriginSector(""); setOriginOutros(false); setDevices(""); setCulturesAtb("");
     setUtiJustificativa(""); setUtiJustificativaOutro(""); setUtiVasoativo(null);
     setUtiComDispositivos(null); setSofaRespostas({});
     setSurgProcedimento(""); setSurgEspecialidade(""); setSurgCirurgiao("");
@@ -657,9 +666,22 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
         setNoPrediction(!!d.noPrediction);
         if (d.predictionDate) setPredictionDate(d.predictionDate);
         if (d.predictionDays) setPredictionDays(d.predictionDays);
-        setAdmissionReason(d.admissionReason ?? ""); setOriginSector(d.originSector ?? "");
+        setAdmissionReason(d.admissionReason ?? "");
+        const loadedOrigin = d.originSector ?? "";
+        setOriginSector(loadedOrigin);
+        // originOutros: usa o booleano salvo quando presente; senao infere
+        // (best-effort). Origem nao vazia, != "Externo" e (quando os setores ja
+        // carregaram) ausente da lista -> texto livre "Outros". Tolerante a lista
+        // ainda nao carregada (sectors vazio -> mantem false).
+        if (typeof d.originOutros === "boolean") {
+          setOriginOutros(d.originOutros);
+        } else {
+          const t = loadedOrigin.trim();
+          const loadedSectors = sectorsRef.current;
+          const known = t === "Externo" || loadedSectors.some(s => s.nome === t);
+          setOriginOutros(!!t && !known && loadedSectors.length > 0);
+        }
         setDevices(d.devices ?? ""); setCulturesAtb(d.culturesAtb ?? "");
-        setSpecialties(d.specialties ?? "");
         // UTI estruturado — retrocompat: rascunho antigo só tem admissionReason
         // (texto) e devices (texto). admissionReason -> campo "outro" da
         // justificativa; devices preenchido -> utiComDispositivos inferido = true.
@@ -762,7 +784,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
           plan, planItems, cidPrimary, cidSecondary,
           diagnosticHypotheses, diagnosticHypothesesItems: hypothesesItems,
           noPrediction, predictionDate, predictionDays,
-          admissionReason, originSector, devices, culturesAtb, specialties,
+          admissionReason, originSector, originOutros, devices, culturesAtb,
           utiJustificativa, utiJustificativaOutro, utiVasoativo, utiComDispositivos, sofaRespostas,
           surgProcedimento, surgEspecialidade, surgCirurgiao, surgDataHora, surgAnestesia, surgCarater,
           savedAt: new Date().toISOString(),
@@ -783,7 +805,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
     physGeneral, physCv, physResp, physAbd, physExt, physNeuro,
     plan, planItems, cidPrimary, cidSecondary, diagnosticHypotheses, hypothesesItems,
     noPrediction, predictionDate, predictionDays,
-    admissionReason, originSector, devices, culturesAtb, specialties,
+    admissionReason, originSector, originOutros, devices, culturesAtb,
     utiJustificativa, utiJustificativaOutro, utiVasoativo, utiComDispositivos, sofaRespostas,
     surgProcedimento, surgEspecialidade, surgCirurgiao, surgDataHora, surgAnestesia, surgCarater,
   ]);
@@ -799,7 +821,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
     physGeneral, physCv, physResp, physAbd, physExt, physNeuro,
     plan, cidPrimary, cidSecondary, diagnosticHypotheses,
     noPrediction, predictionDate, predictionDays,
-    admissionReason, originSector, devices, culturesAtb, specialties,
+    admissionReason, originSector, devices, culturesAtb,
     utiJustificativa, utiJustificativaOutro, utiVasoativo, utiComDispositivos, sofaRespostas,
     surgProcedimento, surgEspecialidade, surgCirurgiao, surgDataHora, surgAnestesia, surgCarater,
   ]);
@@ -816,7 +838,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
     hda, amp, muc, allergies, weight, height, pa, fc, fr, spo2, tax, dx,
     physGeneral, physCv, physResp, physAbd, physExt, physNeuro,
     plan, cidPrimary, cidSecondary, diagnosticHypotheses,
-    admissionReason, originSector, devices, culturesAtb, specialties,
+    admissionReason, originSector, devices, culturesAtb,
     utiJustificativaOutro,
     surgProcedimento, surgEspecialidade, surgCirurgiao, surgDataHora, surgAnestesia, surgCarater,
   ].some(v => typeof v === "string" && v.trim().length > 0)
@@ -901,7 +923,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
         physGeneral, physCv, physResp, physAbd, physExt, physNeuro,
         plan, cidPrimary, cidSecondary, diagnosticHypotheses,
         noPrediction, predictionDate, predictionDays,
-        admissionReason, originSector, devices, culturesAtb, specialties,
+        admissionReason, originSector, originOutros, devices, culturesAtb,
         utiJustificativa, utiJustificativaOutro, utiVasoativo, utiComDispositivos, sofaRespostas,
         surgProcedimento, surgEspecialidade, surgCirurgiao, surgDataHora, surgAnestesia, surgCarater,
         savedAt: new Date().toISOString(),
@@ -964,7 +986,6 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
           ? (devices.trim() || "Sim (sem detalhamento)")
           : (utiComDispositivos === false ? "Nega dispositivos" : ""),
         culturesAtb,
-        specialties,
       } : undefined,
       sapsPending: isUti, // SAPS 3 sempre pendente em UTI/UCI até finalizar na página /saps3
     };
@@ -1051,7 +1072,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
                     (isUti ? `\n\nJustificativa de admissão UTI: ${utiJustificativaLabel}` +
                       `\nDroga vasoativa: ${simNao(utiVasoativo)}` +
                       `\nVeio com dispositivos: ${simNao(utiComDispositivos)}${utiComDispositivos && devices.trim() ? ` — ${devices.trim()}` : ""}` +
-                      `\nOrigem: ${originSector || "—"}\nCulturas/ATB: ${culturesAtb || "—"}\nEspecialidades em conjunto: ${specialties || "—"}` +
+                      `\nOrigem: ${originSector || "—"}\nCulturas/ATB: ${culturesAtb || "—"}` +
                       `\nSOFA: ${sofaTotal} (${sofaPreenchidos}/${SOFA_COMPONENTES.length} componentes)` : "") +
                     (isCirurgica
                       ? `\n\nDados cirúrgicos: procedimento ${surgProcedimento.trim() || "—"}` +
@@ -1775,9 +1796,47 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
               </Section>
 
               <Section icon={ClipboardList} title="Dados complementares UTI" tone="amber">
-                <div><Label className="text-xs">Origem (setor anterior)</Label><Input value={originSector} onChange={e => setOriginSector(e.target.value)} className="mt-1" /></div>
+                <div>
+                  <Label className="text-xs">Origem (setor anterior)</Label>
+                  <Select
+                    value={
+                      originOutros
+                        ? "Outros"
+                        : (originSector === "Externo" || sectors.some(s => s.nome === originSector))
+                          ? originSector
+                          : ""
+                    }
+                    onValueChange={v => {
+                      if (v === "Outros") {
+                        setOriginOutros(true);
+                        setOriginSector("");
+                      } else {
+                        setOriginOutros(false);
+                        setOriginSector(v);
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Selecione o setor de origem" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {sectors.map(s => (
+                        <SelectItem key={s.id} value={s.nome}>{s.nome}</SelectItem>
+                      ))}
+                      <SelectItem value="Externo">Externo</SelectItem>
+                      <SelectItem value="Outros">Outros</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {originOutros && (
+                    <Input
+                      value={originSector}
+                      onChange={e => setOriginSector(e.target.value)}
+                      placeholder="Especifique a origem"
+                      className="mt-2"
+                    />
+                  )}
+                </div>
                 <div><Label className="text-xs">Culturas pendentes / ATB em curso</Label><Textarea value={culturesAtb} onChange={e => setCulturesAtb(e.target.value)} rows={2} className="mt-1" /></div>
-                <div><Label className="text-xs">Especialidades em conjunto</Label><Input value={specialties} onChange={e => setSpecialties(e.target.value)} className="mt-1" /></div>
               </Section>
 
               <Section icon={ShieldCheck} title="Ficha SAPS 3 — Aviso" tone="amber">

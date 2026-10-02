@@ -37,7 +37,6 @@ export interface AdmissionPrintInput {
     originSector?: string;
     devices?: string;
     culturesAtb?: string;
-    specialties?: string;
   };
   sapsPending?: boolean;
 }
@@ -132,7 +131,6 @@ export async function printAdmissionNormaZero(d: AdmissionPrintInput) {
         ${row("Origem", d.uti?.originSector)}
         ${row("Dispositivos invasivos", d.uti?.devices)}
         ${row("Culturas / ATB", d.uti?.culturesAtb)}
-        ${row("Especialidades em conjunto", d.uti?.specialties)}
         ${row("Ficha SAPS 3", d.sapsPending ? "PENDENTE — prazo de 24 h declarado em ciência" : "Concluída")}
       </table>
     ` : ""}
