@@ -215,7 +215,7 @@ const DocumentosPacientePage = () => {
     <div>
       <ClinicalHeader moduleLabel="Documentos" />
       <div className="flex print:block">
-        <div className="flex-1 min-w-0 p-4 md:p-6 space-y-4 max-w-5xl mx-auto">
+        <div className="flex-1 min-w-0 p-4 md:p-6 space-y-4">
           {/* Title — sub-cabecalho padrao de identidade (setor resolvido via
               usePatientLive) + acoes do modulo a direita. */}
           <div className="flex items-center justify-between gap-3">
