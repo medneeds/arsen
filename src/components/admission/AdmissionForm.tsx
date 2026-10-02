@@ -43,6 +43,7 @@ import { printAdmissionNormaZero } from "@/lib/printAdmission";
 import { resolveCurrentBedSector } from "@/lib/resolvePatientHeader";
 import { admissionModeForSector, isSurgicalSector, type AdmissionMode } from "@/lib/sectorComplexity";
 import { parseDiagnosesText } from "@/lib/diagnosesText";
+import { calcDIH } from "@/lib/dihCalc";
 import { toEvolucaoStatusDb } from "@/lib/evolucaoStatus";
 import { PatientIdentityHeader } from "@/components/PatientIdentityHeader";
 import { usePatientIdentifiers } from "@/hooks/usePatientIdentifiers";
@@ -441,6 +442,36 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
 
   // SAPS 3 acknowledgement (apenas UTI/UCI)
   const [sapsAck, setSapsAck] = useState(false);
+
+  // Rotulo do dia da admissao (D0/Dn): DERIVADO da data de admissao HOSPITALAR
+  // (internacoes.data_entrada), igual a timeline de evolucoes. So e D0 quando a
+  // admissao e registrada no mesmo dia de calendario da entrada hospitalar; uma
+  // admissao de setor novo (ex: transferencia para a UTI no 10o dia) sai como
+  // D10 e NAO reseta — o fluxo temporal e unico, ancorado na internacao. Leitura
+  // tolerante: qualquer falha mantem o fallback "D0".
+  const [admissionDayLabel, setAdmissionDayLabel] = useState("D0");
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!patient.id) return;
+      try {
+        const { data } = await supabase
+          .from("internacoes")
+          .select("data_entrada")
+          .eq("id", patient.id)
+          .maybeSingle();
+        const entrada = data?.data_entrada;
+        if (cancelled || !entrada) return;
+        const dih = calcDIH(entrada);
+        if (dih != null) setAdmissionDayLabel(`D${dih}`);
+      } catch {
+        /* best-effort — mantem o fallback D0 */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [patient.id]);
 
   // Common fields
   const [hda, setHda] = useState("");
@@ -1266,10 +1297,10 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
       // reimprimir pela consulta da admissão (AdmissionConsultDialog).
       try {
         await doPrint();
-        toast.success("ADMISSÃO REGISTRADA (D0) — documento enviado para impressão");
+        toast.success(`ADMISSÃO REGISTRADA (${admissionDayLabel}) — documento enviado para impressão`);
       } catch (printErr) {
         console.error("Falha ao imprimir após salvar:", printErr);
-        toast.success("ADMISSÃO REGISTRADA (D0)", {
+        toast.success(`ADMISSÃO REGISTRADA (${admissionDayLabel})`, {
           description: "A admissão foi salva. Reimprima pela consulta da admissão, se necessário.",
         });
       }
@@ -2072,7 +2103,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
             className="w-full sm:w-auto gap-2 bg-released hover:bg-released text-white uppercase tracking-wider"
           >
             {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <ClipboardCheck className="h-4 w-4" />}
-            Validar admissão (D0)
+            Validar admissão ({admissionDayLabel})
           </Button>
         </div>
       </div>
