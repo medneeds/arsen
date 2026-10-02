@@ -470,19 +470,34 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
       ]}
       finalNote={
         <div className="space-y-3">
-          <div>
-            <Label className="text-xs font-medium mb-2 block">Motivo da liberação</Label>
-            <RadioGroup value={reason} onValueChange={setReason} className="space-y-2">
-              {REASON_OPTIONS.map((opt) => (
-                <div key={opt.value} className="flex items-start gap-2">
-                  <RadioGroupItem value={opt.value} id={`release-reason-${opt.value}`} className="mt-1" />
-                  <Label htmlFor={`release-reason-${opt.value}`} className="text-xs font-normal cursor-pointer leading-snug">
-                    {opt.label}
-                  </Label>
-                </div>
-              ))}
-            </RadioGroup>
-          </div>
+          {/* Caso SINALIZADO (alta/obito/transferencia ja registrada): o motivo e
+              redundante — a sinalizacao no painel ja o determinou. Mostramos o
+              motivo DERIVADO (read-only), sem rádio e sem "Outro" (que poderia
+              divergir da sinalizacao). O rádio de motivo fica só nos casos
+              excepcional (admitido sem sinalizacao) e pré-admissao. */}
+          {!isPostDischarge ? (
+            <div>
+              <Label className="text-xs font-medium mb-2 block">Motivo da liberação</Label>
+              <RadioGroup value={reason} onValueChange={setReason} className="space-y-2">
+                {REASON_OPTIONS.map((opt) => (
+                  <div key={opt.value} className="flex items-start gap-2">
+                    <RadioGroupItem value={opt.value} id={`release-reason-${opt.value}`} className="mt-1" />
+                    <Label htmlFor={`release-reason-${opt.value}`} className="text-xs font-normal cursor-pointer leading-snug">
+                      {opt.label}
+                    </Label>
+                  </div>
+                ))}
+              </RadioGroup>
+            </div>
+          ) : (
+            <div className="rounded-md border border-border/60 bg-muted/30 px-3 py-2">
+              <Label className="text-xs font-medium mb-1 block text-muted-foreground">Motivo da liberação</Label>
+              <p className="text-xs text-foreground">{reasonLabel}</p>
+              <p className="text-[11px] text-muted-foreground mt-1">
+                Derivado da sinalização já registrada no painel — não é necessário selecionar.
+              </p>
+            </div>
+          )}
           <div>
             <Label className="text-xs font-medium mb-1 block">
               Observação {reason === "outro" ? <span className="text-destructive">(obrigatória)</span> : <span className="text-muted-foreground font-normal">(opcional)</span>}
