@@ -156,6 +156,7 @@ const EvolucaoPage = () => {
   const [newExam, setNewExam] = useState({ general: "", cardiovascular: "", respiratory: "", abdomen: "", neurological: "", extremities: "", skin: "", other: "" });
   const [newDevices, setNewDevices] = useState<import("@/lib/devicesCatalog").EvolutionDevice[]>([]);
   const [newCulturesHtml, setNewCulturesHtml] = useState("");
+  const [newAntibioticos, setNewAntibioticos] = useState("");
   const [creating, setCreating] = useState(false);
   const [diagnosticsReplicated, setDiagnosticsReplicated] = useState(false);
   const [diagnosticHypotheses, setDiagnosticHypotheses] = useState<string[]>([]);
@@ -172,7 +173,7 @@ const EvolucaoPage = () => {
 
   const serializeForm = () => JSON.stringify({
     soap: newSoap, vitals: newVitals, exam: newExam,
-    devices: newDevices, culturesHtml: newCulturesHtml,
+    devices: newDevices, culturesHtml: newCulturesHtml, antibioticos: newAntibioticos,
     diagnosticHypotheses, antecedentes, planItems, pendenciasItems,
   });
 
@@ -198,7 +199,7 @@ const EvolucaoPage = () => {
     isDirtyRef.current = dirty;
     setDirty(dirty);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [newSoap, newVitals, newExam, newDevices, newCulturesHtml,
+  }, [newSoap, newVitals, newExam, newDevices, newCulturesHtml, newAntibioticos,
       diagnosticHypotheses, antecedentes, planItems, pendenciasItems, showNewForm]);
 
   // Registra callback de salvar rascunho para o sidebar usar
@@ -277,6 +278,7 @@ const EvolucaoPage = () => {
     setNewExam({ general: "", cardiovascular: "", respiratory: "", abdomen: "", neurological: "", extremities: "", skin: "", other: "" });
     setNewDevices([]);
     setNewCulturesHtml("");
+    setNewAntibioticos("");
     setDiagnosticsReplicated(false);
     setDiagnosticHypotheses([]);
     // Resetar campos por item — sem isso persistem entre evoluções
@@ -316,7 +318,7 @@ const EvolucaoPage = () => {
    *  Chamado pelo callback do sidebar ao sair com alterações. */
   const handleSaveDraftEvolution = async () => {
     const soapWithExtras = {
-      ...newSoap, devices: newDevices, culturesHtml: newCulturesHtml,
+      ...newSoap, devices: newDevices, culturesHtml: newCulturesHtml, antibioticos: newAntibioticos,
     } as any;
     const hypoStr = Array.isArray(diagnosticHypotheses)
       ? diagnosticHypotheses.filter(Boolean).join("\n")
@@ -344,6 +346,7 @@ const EvolucaoPage = () => {
       ...newSoap,
       devices: newDevices,
       culturesHtml: newCulturesHtml,
+      antibioticos: newAntibioticos,
     } as any;
     const hypoStr = Array.isArray(diagnosticHypotheses)
       ? diagnosticHypotheses.filter(Boolean).join("\n")
@@ -406,7 +409,7 @@ const EvolucaoPage = () => {
       updateCidSecondary(srcCidSecondary);
     }
     const srcSoap: any = source.soap_data || {};
-    const { devices: srcDevices, culturesHtml: srcCulturesHtml,
+    const { devices: srcDevices, culturesHtml: srcCulturesHtml, antibioticos: srcAntibioticos,
             planItems: srcPlanItems, pendenciasItems: srcPendencias,
             antecedentes: srcAntecSoap,
             diagnosticHypotheses: srcSoapHypo,
@@ -416,6 +419,7 @@ const EvolucaoPage = () => {
     setNewExam({ ...source.physical_exam });
     setNewDevices(Array.isArray(srcDevices) ? srcDevices : []);
     setNewCulturesHtml(typeof srcCulturesHtml === "string" ? srcCulturesHtml : "");
+    setNewAntibioticos(typeof srcAntibioticos === "string" ? srcAntibioticos : "");
     setPlanItems(Array.isArray(srcPlanItems) ? srcPlanItems : []);
     setPendenciasItems(Array.isArray(srcPendencias) ? srcPendencias : []);
 
@@ -722,6 +726,8 @@ const EvolucaoPage = () => {
               onDevicesChange={setNewDevices}
               culturesHtml={newCulturesHtml}
               onCulturesChange={setNewCulturesHtml}
+              antibioticosHtml={newAntibioticos}
+              onAntibioticosChange={setNewAntibioticos}
               admissionDate={
                 getEffectiveAdmissionDate({
                   utiAdmissionDate: livePatient?.utiAdmissionDate,

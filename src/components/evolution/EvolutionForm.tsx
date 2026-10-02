@@ -22,6 +22,7 @@ import { FieldTemplates } from "@/components/FieldTemplates";
 import { useHospital } from "@/contexts/HospitalContext";
 import { DevicesCulturesSection } from "@/components/evolution/DevicesCulturesSection";
 import { deviceAlertTone, formatDeviceLabel, type EvolutionDevice } from "@/lib/devicesCatalog";
+import { EXAM_FIELDS, type PhysicalExam } from "@/lib/examFields";
 import { printEvolution } from "@/lib/printEvolution";
 import { resolvePatientHeader, resolveCurrentBedSector } from "@/lib/resolvePatientHeader";
 import { supabase } from "@/integrations/supabase/client";
@@ -40,12 +41,6 @@ interface SOAPData {
 interface VitalSigns {
   pa: string; fc: string; fr: string; temp: string;
   spo2: string; glasgow: string; diurese: string; dor: string;
-}
-
-interface PhysicalExam {
-  general: string; cardiovascular: string; respiratory: string;
-  abdomen: string; neurological: string; extremities: string;
-  skin: string; other: string;
 }
 
 interface EvolutionFormProps {
@@ -77,6 +72,9 @@ interface EvolutionFormProps {
   /** Resultado de culturas (HTML rico). */
   culturesHtml?: string;
   onCulturesChange?: (html: string) => void;
+  /** Antibioticos em curso (HTML rico) — chave propria do soap (soap.antibioticos). */
+  antibioticosHtml?: string;
+  onAntibioticosChange?: (html: string) => void;
   /** Data de admissão no setor — base p/ presets do date picker dos dispositivos. */
   admissionDate?: string | null;
   /** Registro da evolução (usado para impressão unificada via printEvolution). */
@@ -115,17 +113,6 @@ const VITAL_FIELDS = [
   { key: 'dor' as const, label: 'Dor', placeholder: '0', unit: 'EVA' },
 ];
 
-const EXAM_FIELDS = [
-  { key: 'general' as const, label: 'Estado Geral' },
-  { key: 'cardiovascular' as const, label: 'Cardiovascular' },
-  { key: 'respiratory' as const, label: 'Respiratório' },
-  { key: 'abdomen' as const, label: 'Abdome' },
-  { key: 'neurological' as const, label: 'Neurológico' },
-  { key: 'extremities' as const, label: 'Extremidades' },
-  { key: 'skin' as const, label: 'Pele / Feridas' },
-  { key: 'other' as const, label: 'Outros' },
-];
-
 export const EvolutionForm: React.FC<EvolutionFormProps> = ({
   soap, vitals, physicalExam,
   onSOAPChange, onVitalsChange, onPhysicalExamChange,
@@ -135,6 +122,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
   diagnosticsReviewSlot,
   devices, onDevicesChange,
   culturesHtml, onCulturesChange,
+  antibioticosHtml, onAntibioticosChange,
   admissionDate,
   evo,
   patientId,
@@ -227,6 +215,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
           physicalExam={physicalExam}
           devices={devices}
           culturesHtml={culturesHtml}
+          antibioticosHtml={antibioticosHtml}
           planItems={planItems}
           pendenciasItems={pendenciasItems}
           diagnosticHypotheses={(soap as any).diagnosticHypotheses ?? null}
@@ -500,8 +489,8 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
             id="devices"
             icon={Activity}
             iconColor="text-critical"
-            label="Dispositivos & Culturas"
-            hint="Dispositivos invasivos com data de inserção (D{n} automático) + resultado de culturas — opcional"
+            label="Dispositivos, Culturas e Antibióticos"
+            hint="Dispositivos invasivos com data de inserção (D{n} automático), resultado de culturas e antibióticos em curso — opcional"
             complete={(devices?.length ?? 0) > 0}
             required={false}
             customStatus={
@@ -517,6 +506,8 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
               onDevicesChange={onDevicesChange}
               culturesHtml={culturesHtml || ""}
               onCulturesChange={onCulturesChange}
+              antibioticosHtml={antibioticosHtml || ""}
+              onAntibioticosChange={onAntibioticosChange}
               admissionDate={admissionDate || undefined}
               patientId={patientId}
             />
@@ -713,6 +704,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
               physicalExam={physicalExam}
               devices={devices}
               culturesHtml={culturesHtml}
+              antibioticosHtml={antibioticosHtml}
               planItems={planItems}
               pendenciasItems={pendenciasItems}
               diagnosticHypotheses={(soap as any).diagnosticHypotheses ?? null}
@@ -833,15 +825,17 @@ const ReadOnlyView: React.FC<{
   physicalExam: PhysicalExam;
   devices?: EvolutionDevice[];
   culturesHtml?: string;
+  antibioticosHtml?: string;
   planItems?: string[];
   pendenciasItems?: string[];
   diagnosticHypotheses?: string | string[] | null;
   antecedentes?: string[];
-}> = ({ soap, vitals, physicalExam, devices, culturesHtml, planItems, pendenciasItems, diagnosticHypotheses, antecedentes }) => {
+}> = ({ soap, vitals, physicalExam, devices, culturesHtml, antibioticosHtml, planItems, pendenciasItems, diagnosticHypotheses, antecedentes }) => {
   const hasVitals = Object.values(vitals).some(v => v.trim());
   const hasExam = Object.values(physicalExam).some(v => v.trim());
   const hasDevices = Array.isArray(devices) && devices.length > 0;
   const hasCultures = !!culturesHtml && richHtmlToPlainText(culturesHtml).trim().length > 0;
+  const hasAntibioticos = !!antibioticosHtml && richHtmlToPlainText(antibioticosHtml).trim().length > 0;
 
   const parseInserted = (s: string): Date | null => {
     if (!s) return null;
@@ -936,6 +930,15 @@ const ReadOnlyView: React.FC<{
           <div
             className="prose prose-sm max-w-none mt-1 text-foreground [&_p]:my-1 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0"
             dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(toRichHtml(culturesHtml!)) }}
+          />
+        </div>
+      )}
+      {hasAntibioticos && (
+        <div>
+          <strong className="text-critical-on-soft">Antibióticos em curso:</strong>
+          <div
+            className="prose prose-sm max-w-none mt-1 text-foreground [&_p]:my-1 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0"
+            dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(toRichHtml(antibioticosHtml!)) }}
           />
         </div>
       )}

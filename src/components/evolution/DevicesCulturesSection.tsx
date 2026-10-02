@@ -26,6 +26,10 @@ interface DevicesCulturesSectionProps {
   onDevicesChange: (next: EvolutionDevice[]) => void;
   culturesHtml: string;
   onCulturesChange: (html: string) => void;
+  /** Antibioticos em curso (HTML rico). Chave propria do soap (soap.antibioticos),
+   *  compartilhada entre evolucao e admissao. */
+  antibioticosHtml?: string;
+  onAntibioticosChange?: (html: string) => void;
   /** Data base p/ presets do date picker (admissão no setor). Aceita ISO ou BR. */
   admissionDate?: string | null;
   /** Identificação do paciente — necessária para o Checklist/Bundle de CVC. */
@@ -49,6 +53,8 @@ export const DevicesCulturesSection: React.FC<DevicesCulturesSectionProps> = ({
   onDevicesChange,
   culturesHtml,
   onCulturesChange,
+  antibioticosHtml = "",
+  onAntibioticosChange,
   admissionDate,
   patientId,
   patientName,
@@ -489,20 +495,34 @@ export const DevicesCulturesSection: React.FC<DevicesCulturesSectionProps> = ({
         </div>
       </section>
 
-      {/* === Culturas === */}
-      <section>
-        <div className="flex items-center gap-2 mb-2">
+      {/* === Culturas | Antibioticos em curso === */}
+      <section className="space-y-3">
+        <div className="flex items-center gap-2">
           <FlaskConical className="h-3.5 w-3.5 text-muted-foreground" />
           <Label className="text-xs font-medium tracking-wider text-muted-foreground">
-            RESULTADO DE CULTURAS
+            CULTURAS | ANTIBIOTICOS EM CURSO
           </Label>
         </div>
-        <RichTextEditor
-          value={culturesHtml}
-          onChange={onCulturesChange}
-          placeholder="Ex.: Hemocultura 2 amostras (12/05) — pendente | Urocultura (10/05) — E. coli sensível a ceftriaxona | Ponta de cateter (11/05) — negativa…"
-          minHeight={110}
-        />
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">Resultado de culturas</Label>
+          <RichTextEditor
+            value={culturesHtml}
+            onChange={onCulturesChange}
+            placeholder="Ex.: Hemocultura 2 amostras (12/05) — pendente | Urocultura (10/05) — E. coli sensível a ceftriaxona | Ponta de cateter (11/05) — negativa…"
+            minHeight={110}
+          />
+        </div>
+        {onAntibioticosChange && (
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">Antibióticos em curso</Label>
+            <RichTextEditor
+              value={antibioticosHtml}
+              onChange={onAntibioticosChange}
+              placeholder="Ex.: Meropeném 1g 8/8h EV (D3) | Vancomicina 1g 12/12h EV (D3) — nível pendente…"
+              minHeight={90}
+            />
+          </div>
+        )}
       </section>
       <CVCChecklistDialog
         open={cvcChecklistOpen}

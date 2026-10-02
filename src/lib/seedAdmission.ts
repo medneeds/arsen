@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { formatDeviceLabel } from "@/lib/devicesCatalog";
+import { formatDeviceLabel, type EvolutionDevice } from "@/lib/devicesCatalog";
 
 /**
  * SEED do formulario de admissao a partir da historia JA persistida na propria
@@ -34,6 +34,12 @@ export interface AdmissionSeed {
   glasgowVerbal?: number;
   glasgowMotor?: number;
   devices?: string;
+  /** Dispositivos estruturados (soap.devices) — fonte compartilhada com a evolucao. */
+  devicesStructured?: EvolutionDevice[];
+  /** Resultado de culturas (soap.culturesHtml) — HTML rico. */
+  culturesHtml?: string;
+  /** Antibioticos em curso (soap.antibioticos) — HTML rico. */
+  antibioticos?: string;
 }
 
 /** Texto limpo, ou "" se nao for string util. */
@@ -154,12 +160,17 @@ export async function seedAdmissionFromHistory(internacaoId: string): Promise<Ad
         // fallback (admissao anterior), le soap.__uti_dispositivos.detalhe.
         const devs = soap.devices;
         if (Array.isArray(devs)) {
-          const labels = devs
+          // Estruturado: preserva o array inteiro (fonte compartilhada com a
+          // DevicesCulturesSection da admissao) e, por compatibilidade, tambem
+          // devolve os rotulos como texto no campo legado `devices`.
+          const structured = devs.filter(
+            (d): d is EvolutionDevice => !!d && typeof d === "object",
+          );
+          if (structured.length) seed.devicesStructured = structured;
+          const labels = structured
             .map((d) => {
-              if (!d || typeof d !== "object") return "";
-              const rec = d as { label?: unknown; detail?: unknown };
-              const label = typeof rec.label === "string" ? rec.label : "";
-              const detail = typeof rec.detail === "string" ? rec.detail : undefined;
+              const label = typeof d.label === "string" ? d.label : "";
+              const detail = typeof d.detail === "string" ? d.detail : undefined;
               return label ? formatDeviceLabel({ label, detail }).trim() : "";
             })
             .filter(Boolean);
@@ -171,6 +182,12 @@ export async function seedAdmissionFromHistory(internacaoId: string): Promise<Ad
             if (det) seed.devices = det;
           }
         }
+
+        // Culturas e antibioticos em curso — chaves compartilhadas com a evolucao.
+        const cultures = asText(soap.culturesHtml);
+        if (cultures) seed.culturesHtml = cultures;
+        const atb = asText(soap.antibioticos);
+        if (atb) seed.antibioticos = atb;
       }
     } catch {
       /* leitura best-effort — ignora */

@@ -18,6 +18,10 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { RichTextEditor, richHtmlToPlainText } from "@/components/ui/rich-text-editor";
+import { DevicesCulturesSection } from "@/components/evolution/DevicesCulturesSection";
+import { formatDeviceLabel, type EvolutionDevice } from "@/lib/devicesCatalog";
+import { EXAM_FIELDS } from "@/lib/examFields";
 import { CidSearchInput } from "@/components/CidSearchInput";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -446,6 +450,11 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
   const [physAbd, setPhysAbd] = useState("");
   const [physExt, setPhysExt] = useState("");
   const [physNeuro, setPhysNeuro] = useState("");
+  // Exame fisico — campos alinhados com a evolucao (EXAM_FIELDS): pele e outros.
+  const [physSkin, setPhysSkin] = useState("");
+  const [physOther, setPhysOther] = useState("");
+  // Exames complementares (RichText) — persistido em internacoes.exames_relevantes.
+  const [complementares, setComplementares] = useState("");
   // Conduta e hipoteses como ITENS (arrays). As strings `plan` e
   // `diagnosticHypotheses` que o banco/impresso consomem sao DERIVADAS (join "\n")
   // mais abaixo — nada muda no shape persistido. Arrays facilitam o futuro
@@ -473,8 +482,12 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
   // campo "outro" ao hidratar rascunho antigo; não tem mais UI própria.
   const [admissionReason, setAdmissionReason] = useState("");
   const [originSector, setOriginSector] = useState("");
-  const [devices, setDevices] = useState("");
-  const [culturesAtb, setCulturesAtb] = useState("");
+  // Dispositivos, Culturas e Antibioticos — componente compartilhado com a
+  // evolucao. Persistidos nas MESMAS chaves do soap (devices / culturesHtml /
+  // antibioticos), ancorados em internacao_id — sincronizam admissao<->evolucao.
+  const [admDevices, setAdmDevices] = useState<EvolutionDevice[]>([]);
+  const [culturesHtml, setCulturesHtml] = useState("");
+  const [antibioticosHtml, setAntibioticosHtml] = useState("");
   // originOutros: estado só de UI. Controla se o setor de origem foi informado
   // como texto livre ("Outros"); originSector continua sendo a string persistida.
   const [originOutros, setOriginOutros] = useState(false);
@@ -483,7 +496,6 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
   const [utiJustificativa, setUtiJustificativa] = useState("");        // código do vocabulário
   const [utiJustificativaOutro, setUtiJustificativaOutro] = useState(""); // texto quando "outro"
   const [utiVasoativo, setUtiVasoativo] = useState<boolean | null>(null);
-  const [utiComDispositivos, setUtiComDispositivos] = useState<boolean | null>(null);
   const [sofaRespostas, setSofaRespostas] = useState<SofaRespostas>({});
 
   // Dados cirurgicos (setores cirurgicos) — campos aditivos, nenhum obrigatorio.
@@ -531,6 +543,20 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
     glasgowEye != null && glasgowVerbal != null && glasgowMotor != null
       ? glasgowEye + glasgowVerbal + glasgowMotor
       : null;
+
+  // Exame fisico — mapeia cada campo compartilhado (EXAM_FIELDS, identico ao da
+  // evolucao) ao seu estado local. Permite renderizar a lista por .map, com
+  // campos/rotulos/ordem iguais aos da evolucao, sem trocar a persistencia.
+  const examFieldState: Record<string, { value: string; set: (v: string) => void }> = {
+    general: { value: physGeneral, set: setPhysGeneral },
+    cardiovascular: { value: physCv, set: setPhysCv },
+    respiratory: { value: physResp, set: setPhysResp },
+    abdomen: { value: physAbd, set: setPhysAbd },
+    neurological: { value: physNeuro, set: setPhysNeuro },
+    extremities: { value: physExt, set: setPhysExt },
+    skin: { value: physSkin, set: setPhysSkin },
+    other: { value: physOther, set: setPhysOther },
+  };
 
   // ── SOFA (admissão UTI) — total e preenchidos derivados das respostas ──────
   const sofaTotal = useMemo(() => calcularSofaTotal(sofaRespostas), [sofaRespostas]);
@@ -588,10 +614,12 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
     setPaSys(""); setPaDia(""); setFc(""); setFr(""); setSpo2(""); setTax(""); setDx("");
     setGlasgowEye(null); setGlasgowVerbal(null); setGlasgowMotor(null);
     setPhysGeneral(""); setPhysCv(""); setPhysResp(""); setPhysAbd(""); setPhysExt(""); setPhysNeuro("");
+    setPhysSkin(""); setPhysOther(""); setComplementares("");
     setPlanItems([]); setCidPrimary(""); setCidSecondary(""); setHypothesesItems([]);
-    setAdmissionReason(""); setOriginSector(""); setOriginOutros(false); setDevices(""); setCulturesAtb("");
+    setAdmissionReason(""); setOriginSector(""); setOriginOutros(false);
+    setAdmDevices([]); setCulturesHtml(""); setAntibioticosHtml("");
     setUtiJustificativa(""); setUtiJustificativaOutro(""); setUtiVasoativo(null);
-    setUtiComDispositivos(null); setSofaRespostas({});
+    setSofaRespostas({});
     setSurgProcedimento(""); setSurgEspecialidade(""); setSurgCirurgiao("");
     setSurgDataHora(""); setSurgAnestesia(""); setSurgCarater("");
     setNoPrediction(false);
@@ -646,6 +674,8 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
         setGlasgowMotor(typeof d.glasgowMotor === "number" ? d.glasgowMotor : null);
         setPhysGeneral(d.physGeneral ?? ""); setPhysCv(d.physCv ?? "");
         setPhysResp(d.physResp ?? ""); setPhysAbd(d.physAbd ?? ""); setPhysExt(d.physExt ?? ""); setPhysNeuro(d.physNeuro ?? "");
+        setPhysSkin(d.physSkin ?? ""); setPhysOther(d.physOther ?? "");
+        setComplementares(d.complementares ?? "");
         // Conduta: formato novo (array planItems) ou legado (`plan` string multilinha).
         setPlanItems(
           Array.isArray(d.planItems)
@@ -681,10 +711,15 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
           const known = t === "Externo" || loadedSectors.some(s => s.nome === t);
           setOriginOutros(!!t && !known && loadedSectors.length > 0);
         }
-        setDevices(d.devices ?? ""); setCulturesAtb(d.culturesAtb ?? "");
+        // Dispositivos/Culturas/Antibioticos — formato novo (compartilhado com a
+        // evolucao). Retrocompat: rascunho antigo tinha `devices` (texto) e
+        // `culturesAtb` (texto); o texto de culturas migra para o editor; os
+        // dispositivos em texto livre nao sao convertidos para estruturado.
+        setAdmDevices(Array.isArray(d.admDevices) ? d.admDevices : []);
+        setCulturesHtml(typeof d.culturesHtml === "string" ? d.culturesHtml : (d.culturesAtb ?? ""));
+        setAntibioticosHtml(typeof d.antibioticosHtml === "string" ? d.antibioticosHtml : "");
         // UTI estruturado — retrocompat: rascunho antigo só tem admissionReason
-        // (texto) e devices (texto). admissionReason -> campo "outro" da
-        // justificativa; devices preenchido -> utiComDispositivos inferido = true.
+        // (texto). admissionReason -> campo "outro" da justificativa.
         {
           const legacyReason = (d.admissionReason ?? "").trim();
           if (d.utiJustificativa) {
@@ -698,11 +733,6 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
           }
         }
         setUtiVasoativo(typeof d.utiVasoativo === "boolean" ? d.utiVasoativo : null);
-        if (typeof d.utiComDispositivos === "boolean") {
-          setUtiComDispositivos(d.utiComDispositivos);
-        } else {
-          setUtiComDispositivos((d.devices ?? "").trim() ? true : null);
-        }
         setSofaRespostas(d.sofaRespostas && typeof d.sofaRespostas === "object" ? d.sofaRespostas : {});
         // Dados cirurgicos — retrocompat: rascunho antigo nao tem a chave -> vazio.
         setSurgProcedimento(d.surgProcedimento ?? "");
@@ -760,11 +790,12 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
       if (seed.glasgowEye != null) setGlasgowEye(prev => (prev != null ? prev : seed.glasgowEye!));
       if (seed.glasgowVerbal != null) setGlasgowVerbal(prev => (prev != null ? prev : seed.glasgowVerbal!));
       if (seed.glasgowMotor != null) setGlasgowMotor(prev => (prev != null ? prev : seed.glasgowMotor!));
-      if (seed.devices) {
-        setDevices(prev => (prev.trim() ? prev : seed.devices!));
-        // Dispositivos presentes -> infere o toggle "veio com dispositivos" (so se nao decidido).
-        setUtiComDispositivos(prev => (prev == null ? true : prev));
-      }
+      // Dispositivos/Culturas/Antibioticos — chaves compartilhadas com a
+      // evolucao (soap.devices / culturesHtml / antibioticos). So preenche o
+      // que ainda estiver vazio, para nao sobrescrever o que o medico digitou.
+      if (seed.devicesStructured?.length) setAdmDevices(prev => (prev.length ? prev : seed.devicesStructured!));
+      if (seed.culturesHtml) setCulturesHtml(prev => (prev.trim() ? prev : seed.culturesHtml!));
+      if (seed.antibioticos) setAntibioticosHtml(prev => (prev.trim() ? prev : seed.antibioticos!));
       setSeededFromHistory(true);
     })();
 
@@ -781,16 +812,19 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
           weight, height, paSys, paDia, pa, fc, fr, spo2, tax, dx,
           glasgowEye, glasgowVerbal, glasgowMotor,
           physGeneral, physCv, physResp, physAbd, physExt, physNeuro,
+          physSkin, physOther, complementares,
           plan, planItems, cidPrimary, cidSecondary,
           diagnosticHypotheses, diagnosticHypothesesItems: hypothesesItems,
           noPrediction, predictionDate, predictionDays,
-          admissionReason, originSector, originOutros, devices, culturesAtb,
-          utiJustificativa, utiJustificativaOutro, utiVasoativo, utiComDispositivos, sofaRespostas,
+          admissionReason, originSector, originOutros,
+          admDevices, culturesHtml, antibioticosHtml,
+          utiJustificativa, utiJustificativaOutro, utiVasoativo, sofaRespostas,
           surgProcedimento, surgEspecialidade, surgCirurgiao, surgDataHora, surgAnestesia, surgCarater,
           savedAt: new Date().toISOString(),
         };
         // só persiste se houver algum conteúdo
-        const hasContent = Object.values(payload).some(v => typeof v === "string" && v.trim().length > 0);
+        const hasContent = Object.values(payload).some(v => typeof v === "string" && v.trim().length > 0)
+          || admDevices.length > 0;
         if (hasContent) {
           localStorage.setItem(draftKey, JSON.stringify(payload));
           setDraftSavedAt(new Date());
@@ -803,10 +837,11 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
     hda, amp, antecedentesItems, muc, allergies, weight, height, paSys, paDia, pa, fc, fr, spo2, tax, dx,
     glasgowEye, glasgowVerbal, glasgowMotor,
     physGeneral, physCv, physResp, physAbd, physExt, physNeuro,
+    physSkin, physOther, complementares,
     plan, planItems, cidPrimary, cidSecondary, diagnosticHypotheses, hypothesesItems,
     noPrediction, predictionDate, predictionDays,
-    admissionReason, originSector, originOutros, devices, culturesAtb,
-    utiJustificativa, utiJustificativaOutro, utiVasoativo, utiComDispositivos, sofaRespostas,
+    admissionReason, originSector, originOutros, admDevices, culturesHtml, antibioticosHtml,
+    utiJustificativa, utiJustificativaOutro, utiVasoativo, sofaRespostas,
     surgProcedimento, surgEspecialidade, surgCirurgiao, surgDataHora, surgAnestesia, surgCarater,
   ]);
 
@@ -819,10 +854,11 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
     hda, amp, muc, allergies, weight, height, paSys, paDia, pa, fc, fr, spo2, tax, dx,
     glasgowEye, glasgowVerbal, glasgowMotor,
     physGeneral, physCv, physResp, physAbd, physExt, physNeuro,
+    physSkin, physOther, complementares,
     plan, cidPrimary, cidSecondary, diagnosticHypotheses,
     noPrediction, predictionDate, predictionDays,
-    admissionReason, originSector, devices, culturesAtb,
-    utiJustificativa, utiJustificativaOutro, utiVasoativo, utiComDispositivos, sofaRespostas,
+    admissionReason, originSector, admDevices, culturesHtml, antibioticosHtml,
+    utiJustificativa, utiJustificativaOutro, utiVasoativo, sofaRespostas,
     surgProcedimento, surgEspecialidade, surgCirurgiao, surgDataHora, surgAnestesia, surgCarater,
   ]);
 
@@ -836,14 +872,15 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
   // Há conteúdo clínico preenchido? (usado para decidir se avisamos ao sair)
   const hasAnyContent = [
     hda, amp, muc, allergies, weight, height, pa, fc, fr, spo2, tax, dx,
-    physGeneral, physCv, physResp, physAbd, physExt, physNeuro,
+    physGeneral, physCv, physResp, physAbd, physExt, physNeuro, physSkin, physOther, complementares,
     plan, cidPrimary, cidSecondary, diagnosticHypotheses,
-    admissionReason, originSector, devices, culturesAtb,
+    admissionReason, originSector, culturesHtml, antibioticosHtml,
     utiJustificativaOutro,
     surgProcedimento, surgEspecialidade, surgCirurgiao, surgDataHora, surgAnestesia, surgCarater,
   ].some(v => typeof v === "string" && v.trim().length > 0)
+    || admDevices.length > 0
     || glasgowTotal != null
-    || !!utiJustificativa || utiVasoativo != null || utiComDispositivos != null
+    || !!utiJustificativa || utiVasoativo != null
     || sofaPreenchidos > 0;
 
   // Sincronização dias -> data
@@ -921,10 +958,11 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
         weight, height, paSys, paDia, pa, fc, fr, spo2, tax, dx,
         glasgowEye, glasgowVerbal, glasgowMotor,
         physGeneral, physCv, physResp, physAbd, physExt, physNeuro,
+        physSkin, physOther, complementares,
         plan, cidPrimary, cidSecondary, diagnosticHypotheses,
         noPrediction, predictionDate, predictionDays,
-        admissionReason, originSector, originOutros, devices, culturesAtb,
-        utiJustificativa, utiJustificativaOutro, utiVasoativo, utiComDispositivos, sofaRespostas,
+        admissionReason, originSector, originOutros, admDevices, culturesHtml, antibioticosHtml,
+        utiJustificativa, utiJustificativaOutro, utiVasoativo, sofaRespostas,
         surgProcedimento, surgEspecialidade, surgCirurgiao, surgDataHora, surgAnestesia, surgCarater,
         savedAt: new Date().toISOString(),
       };
@@ -976,16 +1014,21 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
       exam: { general: physGeneral, cv: physCv, resp: physResp, abd: physAbd, ext: physExt, neuro: physNeuro },
       plan, cidPrimary, cidSecondary,
       dischargePredictionLabel,
-      // Mapeia os widgets novos para os 5 campos que o template do impresso ja
-      // consome (admissionReason/devices), sem alterar o template. Vasoativo e
-      // SOFA ficam no SOAP/JSON (sem linha propria no impresso por ora).
+      // Mapeia os widgets novos para os campos que o template do impresso ja
+      // consome (admissionReason/devices/culturesAtb), sem alterar o template.
+      // Dispositivos: rotulos estruturados em texto. Culturas/ATB: texto limpo
+      // do editor (culturas + antibioticos em curso). Vasoativo e SOFA ficam no
+      // SOAP/JSON (sem linha propria no impresso por ora).
       uti: isUti ? {
         admissionReason: utiJustificativa ? utiJustificativaLabel : "",
         originSector,
-        devices: utiComDispositivos
-          ? (devices.trim() || "Sim (sem detalhamento)")
-          : (utiComDispositivos === false ? "Nega dispositivos" : ""),
-        culturesAtb,
+        devices: admDevices.map(d => formatDeviceLabel(d)).filter(Boolean).join("; "),
+        culturesAtb: [
+          richHtmlToPlainText(culturesHtml).trim(),
+          richHtmlToPlainText(antibioticosHtml).trim()
+            ? `ATB em curso: ${richHtmlToPlainText(antibioticosHtml).trim()}`
+            : "",
+        ].filter(Boolean).join("\n"),
       } : undefined,
       sapsPending: isUti, // SAPS 3 sempre pendente em UTI/UCI até finalizar na página /saps3
     };
@@ -1050,6 +1093,10 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
               ? parsedDiagnoses.join("\n")
               : (diagnosticHypotheses.trim() || cidPrimary || null),
           conduta_inicial: plan || null,
+          // Exames complementares -> internacoes.exames_relevantes (coluna
+          // existente, lida como relevantExams pelo mapa/painel). Texto limpo
+          // do editor, line-based como o restante de exames_relevantes.
+          exames_relevantes: richHtmlToPlainText(complementares).trim() || null,
           status: "ativa",
         } as any)
         .eq("id", patient.id);
@@ -1063,6 +1110,11 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
         ? `\nGlasgow: ${glasgowTotal} (O${glasgowEye} V${glasgowVerbal} M${glasgowMotor})`
         : "";
       const antecedentesList = amp ? amp.split("\n") : [];
+      // Resumos em texto dos campos compartilhados (dispositivos/culturas/ATB)
+      // para o texto corrido do SOAP. A fonte estruturada vai no soap.devices.
+      const devicesText = admDevices.map(d => formatDeviceLabel(d)).filter(Boolean).join("; ");
+      const culturesText = richHtmlToPlainText(culturesHtml).trim();
+      const antibioticosText = richHtmlToPlainText(antibioticosHtml).trim();
       const soapAdmission = {
         subjective: `HDA:\n${hda}\n\nAMP: ${amp || "—"}\nMUC: ${muc || "—"}\nAlergias: ${allergies || "Nega"}`,
         objective: `Antropometria: peso ${weight || "—"} kg, altura ${height || "—"} m${imcLine}\n` +
@@ -1071,8 +1123,9 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
                     (diagnosticHypotheses.trim() ? `\n\nHipóteses diagnósticas:\n${diagnosticHypotheses.trim()}` : "") +
                     (isUti ? `\n\nJustificativa de admissão UTI: ${utiJustificativaLabel}` +
                       `\nDroga vasoativa: ${simNao(utiVasoativo)}` +
-                      `\nVeio com dispositivos: ${simNao(utiComDispositivos)}${utiComDispositivos && devices.trim() ? ` — ${devices.trim()}` : ""}` +
-                      `\nOrigem: ${originSector || "—"}\nCulturas/ATB: ${culturesAtb || "—"}` +
+                      `\nDispositivos invasivos: ${devicesText || "—"}` +
+                      `\nOrigem: ${originSector || "—"}\nCulturas: ${culturesText || "—"}` +
+                      `\nAntibióticos em curso: ${antibioticosText || "—"}` +
                       `\nSOFA: ${sofaTotal} (${sofaPreenchidos}/${SOFA_COMPONENTES.length} componentes)` : "") +
                     (isCirurgica
                       ? `\n\nDados cirúrgicos: procedimento ${surgProcedimento.trim() || "—"}` +
@@ -1087,7 +1140,8 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
 
       const physicalExam = {
         general: physGeneral, cardiovascular: physCv, respiratory: physResp,
-        abdomen: physAbd, neurological: physNeuro, extremities: physExt, skin: "", other: "",
+        abdomen: physAbd, neurological: physNeuro, extremities: physExt,
+        skin: physSkin, other: physOther,
       };
 
       // MIGRAÇÃO: clinical_evolutions → evolucoes. Colunas dedicadas do modelo
@@ -1100,6 +1154,13 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
         const soapPayload = {
           ...soapAdmission,
           antecedentes: antecedentesList,
+          // Dispositivos / Culturas / Antibioticos — MESMAS chaves da evolucao
+          // (soap.devices / soap.culturesHtml / soap.antibioticos). Ancoradas em
+          // internacao_id, sincronizam admissao<->evolucao (lidas por
+          // useLatestEvolution, timeline e impressos).
+          devices: admDevices,
+          culturesHtml,
+          antibioticos: antibioticosHtml,
           __patient_name: patient.name,
           __patient_bed: patient.bed,
           __patient_sector: patient.sector,
@@ -1124,7 +1185,8 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
           ...(isUti ? {
             __uti_justificativa: { codigo: utiJustificativa || null, outro: utiJustificativaOutro.trim() || admissionReason.trim() || null },
             __uti_vasoativo: utiVasoativo,
-            __uti_dispositivos: { veioCom: utiComDispositivos, detalhe: devices },
+            // __uti_dispositivos DESCONTINUADO em favor de soap.devices (fonte
+            // unica estruturada, compartilhada com a evolucao).
             __uti_sofa: { respostas: sofaRespostas, total: sofaTotal },
           } : {}),
           // Dados cirurgicos — chave ADITIVA, so em setores cirurgicos.
@@ -1653,18 +1715,45 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
           {/* ───── Exame Físico ───── */}
           <GroupHeader step={4} title="Exame Físico" />
           <div className="space-y-4">
-            <Section icon={Stethoscope} title="Exame físico" tone="slate">
+            <Section icon={Stethoscope} title="Exame físico" hint="Mesmos campos da evolução" tone="slate">
+              {/* Estado geral — obrigatorio (fora da grade, com ReqLabel). */}
               <div>
                 <ReqLabel missing={attempted && missing.examGeneral}>Estado geral</ReqLabel>
-                <Textarea value={physGeneral} onChange={e => setPhysGeneral(e.target.value)} rows={1} className={cn("mt-1", reqRing(attempted && missing.examGeneral))} />
+                <Textarea
+                  value={examFieldState.general.value}
+                  onChange={e => examFieldState.general.set(e.target.value)}
+                  rows={1}
+                  className={cn("mt-1", reqRing(attempted && missing.examGeneral))}
+                />
               </div>
+              {/* Demais aparelhos — campos/rotulos/ordem IDENTICOS a evolucao. */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div><Label className="text-xs">Cardiovascular</Label><Textarea value={physCv} onChange={e => setPhysCv(e.target.value)} rows={1} className="mt-1" /></div>
-                <div><Label className="text-xs">Respiratório</Label><Textarea value={physResp} onChange={e => setPhysResp(e.target.value)} rows={1} className="mt-1" /></div>
-                <div><Label className="text-xs">Abdome</Label><Textarea value={physAbd} onChange={e => setPhysAbd(e.target.value)} rows={1} className="mt-1" /></div>
-                <div><Label className="text-xs">Extremidades</Label><Textarea value={physExt} onChange={e => setPhysExt(e.target.value)} rows={1} className="mt-1" /></div>
-                <div className="sm:col-span-2"><Label className="text-xs">Neurológico</Label><Textarea value={physNeuro} onChange={e => setPhysNeuro(e.target.value)} rows={1} className="mt-1" placeholder="Glasgow, pupilas, força, sensibilidade, reflexos, sinais focais..." /></div>
+                {EXAM_FIELDS.filter(f => f.key !== "general").map(f => (
+                  <div key={f.key} className={f.key === "neurological" ? "sm:col-span-2" : undefined}>
+                    <Label className="text-xs">{f.label}</Label>
+                    <Textarea
+                      value={examFieldState[f.key].value}
+                      onChange={e => examFieldState[f.key].set(e.target.value)}
+                      rows={1}
+                      className="mt-1"
+                      placeholder={f.key === "neurological"
+                        ? "Glasgow, pupilas, força, sensibilidade, reflexos, sinais focais..."
+                        : undefined}
+                    />
+                  </div>
+                ))}
               </div>
+            </Section>
+
+            {/* Exames complementares — mesmo widget da evolucao (RichTextEditor).
+                Persistido em internacoes.exames_relevantes no handleSubmit. */}
+            <Section icon={FileText} title="Exames Complementares" hint="Laboratoriais e de imagem — opcional" tone="slate">
+              <RichTextEditor
+                value={complementares}
+                onChange={setComplementares}
+                placeholder="Cole resultados laboratoriais ou de imagem..."
+                minHeight={120}
+              />
             </Section>
           </div>
 
@@ -1743,24 +1832,21 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
                 </div>
               </Section>
 
-              <Section icon={Activity} title="Dispositivos na admissão" tone="slate">
-                <div className="flex flex-wrap items-center gap-3">
-                  <ToggleGroup
-                    type="single"
-                    value={utiComDispositivos == null ? "" : utiComDispositivos ? "sim" : "nao"}
-                    onValueChange={v => { if (v === "sim") setUtiComDispositivos(true); else if (v === "nao") setUtiComDispositivos(false); }}
-                  >
-                    <ToggleGroupItem value="nao" className="data-[state=on]:bg-released data-[state=on]:text-white">Não</ToggleGroupItem>
-                    <ToggleGroupItem value="sim" className="data-[state=on]:bg-critical data-[state=on]:text-white">Sim</ToggleGroupItem>
-                  </ToggleGroup>
-                  <span className="text-xs text-muted-foreground">Veio com dispositivos?</span>
-                </div>
-                {utiComDispositivos && (
-                  <div className="mt-2">
-                    <Label className="text-xs">Detalhar dispositivos</Label>
-                    <Textarea value={devices} onChange={e => setDevices(e.target.value)} rows={2} placeholder="IOT, CVC, SVD, ..." className="mt-1" />
-                  </div>
-                )}
+              {/* Dispositivos, Culturas e Antibioticos — componente compartilhado
+                  com a evolucao. Persiste nas MESMAS chaves do soap (devices /
+                  culturesHtml / antibioticos), ancorado em internacao_id: o que
+                  for preenchido aqui aparece na evolucao e vice-versa. */}
+              <Section icon={Activity} title="Dispositivos, Culturas e Antibióticos" tone="slate">
+                <DevicesCulturesSection
+                  devices={admDevices}
+                  onDevicesChange={setAdmDevices}
+                  culturesHtml={culturesHtml}
+                  onCulturesChange={setCulturesHtml}
+                  antibioticosHtml={antibioticosHtml}
+                  onAntibioticosChange={setAntibioticosHtml}
+                  patientId={patient.id}
+                  patientName={patient.name}
+                />
               </Section>
 
               <Section
@@ -1836,7 +1922,6 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
                     />
                   )}
                 </div>
-                <div><Label className="text-xs">Culturas pendentes / ATB em curso</Label><Textarea value={culturesAtb} onChange={e => setCulturesAtb(e.target.value)} rows={2} className="mt-1" /></div>
               </Section>
 
               <Section icon={ShieldCheck} title="Ficha SAPS 3 — Aviso" tone="amber">

@@ -787,6 +787,8 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                           onDevicesChange={(next) => updateLocal(evo.id, "soap", "devices", next)}
                           culturesHtml={typeof (data.soap as any).culturesHtml === "string" ? (data.soap as any).culturesHtml : ""}
                           onCulturesChange={(html) => updateLocal(evo.id, "soap", "culturesHtml", html)}
+                          antibioticosHtml={typeof (data.soap as Record<string, unknown>).antibioticos === "string" ? (data.soap as Record<string, unknown>).antibioticos as string : ""}
+                          onAntibioticosChange={(html) => updateLocal(evo.id, "soap", "antibioticos", html)}
                           admissionDate={admissionDate || null}
                           evo={evo}
                           patientId={patientId || null}
