@@ -10,6 +10,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { formatAge } from "@/lib/patientAge";
+import { fetchNumerosAtendimento } from "@/lib/internacaoComPaciente";
 import { getNormaZeroMissingFields, NormaZeroBlockedDocument } from "@/components/NormaZeroPrintHeader";
 import { useHospital } from "@/contexts/HospitalContext";
 import { toast } from "sonner";
@@ -93,7 +94,7 @@ const FichaAtendimentoPage = () => {
           cpf: "",
           race: "",         // MIGRAÇÃO: sem coluna raça/cor em pacientes
           phone: "",
-          fichaNumber: "",  // MIGRAÇÃO: encounter_code (patient_encounters) morto → sem nº de ficha
+          fichaNumber: "",  // preenchido abaixo com internacoes.numero_atendimento
           fichaDate: format(new Date(), "dd/MM/yyyy HH:mm:ss"),
         };
 
@@ -127,6 +128,10 @@ const FichaAtendimentoPage = () => {
         if (inter?.data_entrada) {
           pd.fichaDate = format(new Date(inter.data_entrada), "dd/MM/yyyy HH:mm:ss");
         }
+
+        // Nº da ficha = nº de atendimento da internação (consulta isolada e tolerante).
+        const numeros = await fetchNumerosAtendimento([patientId]);
+        pd.fichaNumber = numeros[patientId] || "";
 
         // Admissão sintetizada a partir de internacoes (substitui admission_histories, morta)
         if (inter) {

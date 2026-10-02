@@ -36,3 +36,28 @@ export async function fetchInternacaoComPaciente(
 
   return { paciente: (fallback?.paciente as PacienteRow | null) ?? null, numeroAtendimento: null };
 }
+
+/**
+ * Nº de atendimento de várias internações de uma vez ({ internacaoId: nº }).
+ * Consulta própria e isolada — de propósito fora das queries grandes (mapa de
+ * leitos, ficha): se a coluna ainda não existir no banco, só o nº some (mapa
+ * vazio), sem derrubar a tela.
+ */
+export async function fetchNumerosAtendimento(
+  internacaoIds: string[],
+): Promise<Record<string, string>> {
+  const ids = Array.from(new Set(internacaoIds.filter(Boolean)));
+  if (ids.length === 0) return {};
+
+  const { data, error } = await supabase
+    .from("internacoes")
+    .select("id, numero_atendimento")
+    .in("id", ids);
+  if (error || !data) return {};
+
+  const map: Record<string, string> = {};
+  for (const row of data) {
+    if (row.numero_atendimento) map[row.id] = row.numero_atendimento;
+  }
+  return map;
+}
