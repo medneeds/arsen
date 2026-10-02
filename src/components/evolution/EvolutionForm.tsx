@@ -3,7 +3,7 @@ import {
   Heart, NotebookPen, Stethoscope, FileText,
   Save, Loader2, CheckCircle2,
   ShieldCheck, Printer,
-  AlertCircle, Eye, ChevronDown, Stethoscope as DiagnosisIcon,
+  AlertCircle, Eye, Stethoscope as DiagnosisIcon,
   Activity, ClipboardCopy,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { RichTextEditor, richHtmlToPlainText, sanitizeRichHtml, toRichHtml } from "@/components/ui/rich-text-editor";
 import { Badge } from "@/components/ui/badge";
 
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Accordion } from "@/components/ui/accordion";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
@@ -30,6 +30,7 @@ import { toast } from "sonner";
 import type { EvolutionRecord } from "@/hooks/useEvolutions";
 import { calculateNEWS2, news2RiskLabels, parseVitalNumber } from "@/lib/news2";
 import { ItemListEditor } from "@/components/ItemListEditor";
+import { AccordionSectionItem as SectionItem } from "@/components/shared/AccordionSectionItem";
 
 interface SOAPData {
   subjective: string;
@@ -777,47 +778,6 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
 };
 
 // ---- Sub-components ----
-
-const SectionItem: React.FC<{
-  id: string;
-  icon: any;
-  iconColor: string;
-  label: string;
-  hint?: string;
-  complete: boolean;
-  required: boolean;
-  customStatus?: React.ReactNode;
-  children: React.ReactNode;
-}> = ({ id, icon: Icon, iconColor, label, hint, complete, required, customStatus, children }) => {
-  return (
-    <AccordionItem value={id} className="border-0">
-      <AccordionTrigger className="px-3 py-3 hover:no-underline hover:bg-muted/30 [&>svg]:hidden group">
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <span className={cn(
-            "flex items-center justify-center h-6 w-6 rounded-full shrink-0",
-            complete ? "bg-released text-white" : "bg-muted text-muted-foreground"
-          )}>
-            {complete ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Icon className={cn("h-3.5 w-3.5", !complete && iconColor)} />}
-          </span>
-          <span className="text-xs font-medium text-foreground">{label}</span>
-          {required && !complete && (
-            <span className="text-warning text-xs font-semibold">*</span>
-          )}
-          {hint && (
-            <span className="text-xs text-muted-foreground hidden md:inline">— {hint}</span>
-          )}
-          <div className="ml-auto flex items-center gap-2">
-            {customStatus}
-            <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
-          </div>
-        </div>
-      </AccordionTrigger>
-      <AccordionContent className="px-3 pb-3 pt-0">
-        {children}
-      </AccordionContent>
-    </AccordionItem>
-  );
-};
 
 const ReadOnlyView: React.FC<{
   soap: SOAPData;
