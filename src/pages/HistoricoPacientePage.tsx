@@ -294,17 +294,6 @@ export default function HistoricoPacientePage() {
       if (next.has(id)) next.delete(id); else next.add(id);
       return next;
     });
-  // Impressao do historico: o conteudo colapsado e desmontado pelo Collapsible,
-  // entao ao imprimir forcamos a expansao de TODOS os atendimentos (o documento
-  // clinico precisa sair completo), imprimimos no efeito (ja com o DOM montado) e
-  // voltamos ao estado colapsado.
-  const [printingAll, setPrintingAll] = useState(false);
-  useEffect(() => {
-    if (!printingAll) return;
-    window.print();
-    setPrintingAll(false);
-  }, [printingAll]);
-
   // ── Resolucao da PESSOA (registry) ──
   // A timeline multi-atendimento precisa de patientRegistryId (= pacientes.id).
   // Prioriza o da URL; se ausente, resolve a partir do patientId (internacoes.id
@@ -532,8 +521,6 @@ export default function HistoricoPacientePage() {
       prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]
     );
   };
-
-  const handlePrint = () => setPrintingAll(true);
 
   // Imprime um subconjunto de eventos (card individual ou grupo de dia)
   const printEvents = (eventsToprint: TimelineEvent[], title: string) => {
@@ -1067,7 +1054,7 @@ export default function HistoricoPacientePage() {
       <>{encMovItems.map(renderMovItem)}</>
     ) : null;
 
-    const expanded = printingAll || expandedEncounters.has(enc.id);
+    const expanded = expandedEncounters.has(enc.id);
     const totalRegistros = encEvents.length + encMovItems.length;
 
     return (
@@ -1169,16 +1156,10 @@ export default function HistoricoPacientePage() {
     <div>
       {/* Cabecalho PADRAO do fluxo clinico (ClinicalHeader): integra o Historico
           ao guarda-chuva do painel (navegacao de modulos + voltar + contexto do
-          paciente), no lugar do header proprio com "Voltar". O Imprimir vai no
-          slot de acoes. */}
-      <ClinicalHeader
-        moduleLabel="Histórico"
-        actions={
-          <Button variant="outline" size="sm" onClick={handlePrint}>
-            <Printer className="h-4 w-4 mr-1" /> Imprimir
-          </Button>
-        }
-      />
+          paciente), no lugar do header proprio com "Voltar". A impressao do
+          historico inteiro foi removida: imprime-se por item/bloco no proprio
+          banco de eventos (vai acumular muitos atendimentos com o tempo). */}
+      <ClinicalHeader moduleLabel="Histórico" />
 
       {/* Conteúdo — largura total (igual aos demais modulos), sem container
           centralizado, para aproveitar o espaco. */}
