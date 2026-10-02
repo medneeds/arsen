@@ -19,9 +19,14 @@ import { classificationLabel } from "@/lib/sectorComplexity";
 
 interface Props {
   sectorCode: string;
+  /** Chamado apos concluir/cancelar uma transferencia, para o MAPA do pai
+   *  (Index) refazer na hora — este componente tem usePatients proprio (so para
+   *  listar leitos vagos), que nao e o do mapa. Sem isto, o paciente so aparece
+   *  no destino via realtime (intermitente) ou apos F5. */
+  onTransferComplete?: () => void;
 }
 
-export function InternalTransferQueueSection({ sectorCode }: Props) {
+export function InternalTransferQueueSection({ sectorCode, onTransferComplete }: Props) {
   const { toast } = useToast();
   const { currentHospital, currentState } = useHospital();
   const { currentDepartment } = useDepartment();
@@ -103,6 +108,10 @@ export function InternalTransferQueueSection({ sectorCode }: Props) {
       // Re-busca o mapa: o leito recém-ocupado sai da lista de vagos e a origem
       // liberada entra, sem depender do realtime (intermitente na VPS) nem de F5.
       refetch();
+      // Avisa o MAPA do pai (Index) para refazer — o refetch acima e so da
+      // instancia local (lista de vagos). Sem isto, o paciente transferido so
+      // aparecia no destino via realtime ou reload.
+      onTransferComplete?.();
     } catch (err: any) {
       toast({ title: "Erro ao alocar", description: err?.message ?? "Tente novamente.", variant: "destructive" });
     } finally {
@@ -121,6 +130,7 @@ export function InternalTransferQueueSection({ sectorCode }: Props) {
     }
     toast({ title: "Sinalização cancelada", description: "O paciente foi removido da fila virtual. Realoque manualmente se necessário." });
     refresh();
+    onTransferComplete?.();
   };
 
   // Não renderiza nada se não há transferências pendentes —

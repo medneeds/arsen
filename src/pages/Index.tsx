@@ -1166,7 +1166,10 @@ const Index = ({ embedded = false }: IndexProps = {}) => {
                       : (SECTOR_VISUAL[activeSector]?.title ?? activeSector)
                   }
                 />
-                <InternalTransferQueueSection sectorCode={activeSector} />
+                <InternalTransferQueueSection
+                  sectorCode={activeSector}
+                  onTransferComplete={() => { refetch(); preAdmissionRef.current?.refresh(); }}
+                />
               </div>
 
               {/*
