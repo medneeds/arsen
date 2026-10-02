@@ -9,7 +9,7 @@ import { useCockpitPatient } from "@/hooks/useCockpitPatient";
 import { useHospital } from "@/contexts/HospitalContext";
 import {
   FolderOpen, Droplet, FileCheck, Syringe, FileText,
-  Microscope, Plus, FileSignature,
+  Microscope, Plus, FileSignature, Scissors,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +18,7 @@ import { HemocomponentRequestDialog } from "@/components/HemocomponentRequestDia
 import { SatRequestDialog } from "@/components/SatRequestDialog";
 import { CultureRequestDialog } from "@/components/CultureRequestDialog";
 import { MedicalDocumentDialog } from "@/components/MedicalDocumentDialog";
+import { BoletimCirurgicoDialog } from "@/components/BoletimCirurgicoDialog";
 import {
   PatientDocumentsPanel,
 } from "@/components/PatientDocumentsPanel";
@@ -29,6 +30,7 @@ import {
 import { printReceituario, type ReceituarioData } from "@/lib/receituario";
 import { printDocumentoMedico } from "@/lib/documentoMedico";
 import type { DocumentoMedicoData } from "@/hooks/useDocumentoMedico";
+import { printBoletimCirurgico } from "@/lib/boletimCirurgico";
 
 // AUTORIA: linha minima de profissionais (id -> nome/CRM), sem `any`. CRM vive
 // em numero_conselho; o alias PostgREST (crm:numero_conselho) mantem o campo
@@ -104,6 +106,7 @@ const DocumentosPacientePage = () => {
   const [satOpen, setSatOpen] = useState(false);
   const [cultureOpen, setCultureOpen] = useState(false);
   const [medDocOpen, setMedDocOpen] = useState(false);
+  const [boletimOpen, setBoletimOpen] = useState(false);
 
   const handleNewByType = useCallback(
     (type: DocumentType) => {
@@ -142,6 +145,9 @@ const DocumentosPacientePage = () => {
         case "documento_medico":
           setMedDocOpen(true);
           break;
+        case "boletim_cirurgico":
+          setBoletimOpen(true);
+          break;
       }
     },
     [navigate, searchParams]
@@ -152,6 +158,9 @@ const DocumentosPacientePage = () => {
       await printReceituario(doc.raw as ReceituarioData, currentHospital?.name);
     } else if (doc.source === "documentos_medicos") {
       await printDocumentoMedico(doc.raw as DocumentoMedicoData, { hospitalName: currentHospital?.name });
+    } else if (doc.source === "boletim_cirurgico") {
+      // raw e a linha crua de altas — printBoletimCirurgico mapeia internamente.
+      await printBoletimCirurgico(doc.raw, { hospitalName: currentHospital?.name });
     }
   }, [currentHospital]);
 
@@ -172,6 +181,9 @@ const DocumentosPacientePage = () => {
       printReceituario(doc.raw as ReceituarioData, currentHospital?.name);
     } else if (doc.source === "documentos_medicos") {
       printDocumentoMedico(doc.raw as DocumentoMedicoData, { hospitalName: currentHospital?.name });
+    } else if (doc.source === "boletim_cirurgico") {
+      // Boletim nao tem tela de detalhe propria — abrir = reimprimir.
+      printBoletimCirurgico(doc.raw, { hospitalName: currentHospital?.name });
     }
   }, [navigate, searchParams, currentHospital]);
 
@@ -271,6 +283,13 @@ const DocumentosPacientePage = () => {
               badge="via internação"
               onClick={() => handleNewByType("aih")}
             />
+            <QuickCta
+              icon={Scissors}
+              label="Boletim cirúrgico"
+              tone="text-fuchsia-600 dark:text-fuchsia-400"
+              bg="bg-fuchsia-500/10"
+              onClick={() => setBoletimOpen(true)}
+            />
           </div>
 
           {/* Painel unificado: timeline + acordeões */}
@@ -321,6 +340,17 @@ const DocumentosPacientePage = () => {
       <MedicalDocumentDialog
         open={medDocOpen}
         onOpenChange={setMedDocOpen}
+        patientId={patientId || null}
+        patientName={patientName}
+        patientBed={patientBed}
+        patientSector={patientSector}
+        hospitalName={currentHospital?.name}
+      />
+
+      {/* Dialog: Boletim Cirúrgico (documento médico em altas, tipo boletim_cirurgico) */}
+      <BoletimCirurgicoDialog
+        open={boletimOpen}
+        onOpenChange={setBoletimOpen}
         patientId={patientId || null}
         patientName={patientName}
         patientBed={patientBed}

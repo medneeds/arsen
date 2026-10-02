@@ -28,7 +28,8 @@ export type DocumentType =
   | "evolucao"
   | "round"
   | "receituario"
-  | "documento_medico";
+  | "documento_medico"
+  | "boletim_cirurgico";
 
 export interface PatientDocument {
   id: string;
@@ -48,7 +49,7 @@ export interface PatientDocument {
   patientSector?: string | null;
   patientBed?: string | null;
   /** Tabela de origem — útil p/ navegação e ações (reimprimir, ver detalhe). */
-  source: "exam_requests" | "culture_results" | "clinical_evolutions" | "hemocomponent_requests" | "sat_requests" | "aih_requests" | "receituarios" | "documentos_medicos";
+  source: "exam_requests" | "culture_results" | "clinical_evolutions" | "hemocomponent_requests" | "sat_requests" | "aih_requests" | "receituarios" | "documentos_medicos" | "boletim_cirurgico";
   /** Payload bruto p/ ações específicas (reimprimir, abrir dialog, etc). */
   raw: any;
 }
@@ -180,7 +181,19 @@ export function usePatientDocuments({
         .order("criado_em", { ascending: false })
         .limit(100);
 
-      const [examRes, cultureRes, evolRes, receituarioRes, docMedicoRes] = await Promise.all([examQuery, cultureQuery, evolQuery, receituarioQuery, docMedicoQuery]);
+      // ── boletim cirurgico ──
+      // REUSO DE INFRA: o boletim e mais um documento medico em `altas`
+      // (tipo:"boletim_cirurgico"), conteudo(Json). Query separada para nao
+      // alterar a de atestado/relatorio/termo.
+      const boletimQuery = supabase
+        .from("altas")
+        .select("*")
+        .eq("internacao_id", validId)
+        .eq("tipo", "boletim_cirurgico")
+        .order("criado_em", { ascending: false })
+        .limit(100);
+
+      const [examRes, cultureRes, evolRes, receituarioRes, docMedicoRes, boletimRes] = await Promise.all([examQuery, cultureQuery, evolQuery, receituarioQuery, docMedicoQuery, boletimQuery]);
 
       const list: PatientDocument[] = [];
 
@@ -305,6 +318,30 @@ export function usePatientDocuments({
         });
       });
 
+      // altas (boletim cirurgico) → "boletim_cirurgico"
+      // Documento emitido, sem workflow de status (igual receituario/documento).
+      // `r` e tipado pela linha gerada de `altas` (Tables<"altas">), sem `any`.
+      (boletimRes.data || []).forEach((r) => {
+        const c = (r.conteudo ?? {}) as Record<string, unknown>;
+        const proc = typeof c.procedimento_realizado === "string" ? c.procedimento_realizado.trim() : "";
+        list.push({
+          id: r.id,
+          type: "boletim_cirurgico",
+          label: proc ? `Boletim: ${proc}` : "Boletim Cirurgico",
+          status: "concluido",
+          rawStatus: r.tipo,
+          createdAt: r.criado_em ?? r.data_hora,
+          authorName: (c.signed_by_name as string | null | undefined) ?? null,
+          // CRM embutido ou coluna crm_assinatura; nome nao-embutido e resolvido
+          // via profissionais(assinado_por) na pagina.
+          authorCrm: (c.signed_by_crm as string | null | undefined) ?? r.crm_assinatura ?? null,
+          patientSector: (c.patient_sector as string | null | undefined) ?? null,
+          patientBed: (c.patient_bed as string | null | undefined) ?? null,
+          source: "boletim_cirurgico",
+          raw: r,
+        });
+      });
+
       list.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
       setDocs(list);
     } catch (e: any) {
@@ -382,6 +419,7 @@ export const DOCUMENT_TYPE_META: Record<
   round: { label: "Round multiprofissional", shortLabel: "Round", tone: "text-teal-600 dark:text-teal-400", bg: "bg-teal-500/10", ring: "ring-teal-500/30" },
   receituario: { label: "Receituários", shortLabel: "Receituário", tone: "text-lime-600 dark:text-lime-400", bg: "bg-lime-500/10", ring: "ring-lime-500/30" },
   documento_medico: { label: "Atestados, Relatórios e Termos", shortLabel: "Documento", tone: "text-sky-600 dark:text-sky-400", bg: "bg-sky-500/10", ring: "ring-sky-500/30" },
+  boletim_cirurgico: { label: "Boletins Cirúrgicos", shortLabel: "Boletim", tone: "text-fuchsia-600 dark:text-fuchsia-400", bg: "bg-fuchsia-500/10", ring: "ring-fuchsia-500/30" },
 };
 
 export const STATUS_BADGE: Record<
