@@ -45,10 +45,9 @@ interface Props {
  *  - Nome / CPF / CNS / nº prontuário (pacientes)
  *
  * MIGRAÇÃO: patient_registry→pacientes; sem hospital_unit_id em pacientes (o
- * escopo por hospital foi removido do filtro). O grupo "Atendimentos" dependia de
- * `patient_encounters.encounter_code`, que não existe em `internacoes` — a busca
- * por código de atendimento foi degradada (retorna sempre vazio). O shape
- * EncounterHit e o callback onPickEncounter são mantidos estáveis.
+ * escopo por hospital foi removido do filtro). O grupo "Atendimentos" busca por
+ * `internacoes.numero_atendimento` (antes `patient_encounters.encounter_code`);
+ * registry_id = pacientes.id. Shape EncounterHit e onPickEncounter estáveis.
  */
 export function ReceptionGlobalSearch({ open, onOpenChange, onPickRegistry, onPickEncounter }: Props) {
   const { currentHospital } = useHospital();
@@ -98,9 +97,18 @@ export function ReceptionGlobalSearch({ open, onOpenChange, onPickRegistry, onPi
           regQuery = regQuery.ilike("nome_completo", `%${q}%`);
         }
 
-        // MIGRAÇÃO: internacoes não tem encounter_code — busca de atendimento por
-        // código degradada para vazio (grupo "Atendimentos" nunca aparece).
-        const regRes = await regQuery;
+        // Atendimentos por nº (internacoes.numero_atendimento). Consulta própria:
+        // se a coluna ainda não existir no banco, só este grupo fica vazio.
+        const encQuery = isNumeric
+          ? supabase
+              .from("internacoes")
+              .select("id, numero_atendimento, status, data_entrada, paciente:pacientes(id, nome_completo), leito:leitos(setor:setores(nome))")
+              .ilike("numero_atendimento", `%${cleaned}%`)
+              .order("data_entrada", { ascending: false })
+              .limit(6)
+          : null;
+
+        const [regRes, encRes] = await Promise.all([regQuery, encQuery]);
 
         if (!regRes.error) {
           setRegistries(
@@ -114,7 +122,21 @@ export function ReceptionGlobalSearch({ open, onOpenChange, onPickRegistry, onPi
             })),
           );
         }
-        setEncounters([]);
+        setEncounters(
+          encRes && !encRes.error
+            ? ((encRes.data as any[]) || [])
+                .filter((r) => r.numero_atendimento)
+                .map((r) => ({
+                  id: r.id,
+                  encounter_code: r.numero_atendimento,
+                  patient_name: r.paciente?.nome_completo || "—",
+                  registry_id: r.paciente?.id ?? null, // pacientes.id
+                  destination_sector: r.leito?.setor?.nome ?? null,
+                  status: r.status,
+                  created_at: r.data_entrada,
+                }))
+            : [],
+        );
       } catch (err) {
         console.warn("Busca global:", err);
       } finally {

@@ -14,6 +14,7 @@ import DOMPurify from "dompurify";
 import { supabase } from "@/integrations/supabase/client";
 import { whitelabel } from "@/config/whitelabel";
 import { getSectorDisplayLabel } from "@/utils/bedNaming";
+import { fetchNumerosAtendimento } from "@/lib/internacaoComPaciente";
 
 const PARECER_ALLOWED_TAGS = ["p", "br", "strong", "b", "em", "i", "u", "ul", "ol", "li", "span", "div"];
 function sanitizeRichHtmlPrint(html: string): string {
@@ -49,8 +50,9 @@ function fmtBirthDate(iso?: string | null): string {
  * internacoes(+pacientes). O `patient_id` passado pelas telas agora é o
  * `internacao_id` (a solicitação pendura na internação). Identidade resolvida
  * via internacoes.id → pacientes. DEGRADADOS:
- *   - encounter_code (nº de atendimento) → patient_encounters não existe → null.
  *   - patient_registry_id → param mantido por compatibilidade, sem uso.
+ * O nº de atendimento vem de internacoes.numero_atendimento (consulta isolada e
+ * tolerante — se a coluna não existir, só ele fica "—").
  */
 async function fetchPatientIdentifiers(req: {
   patient_registry_id?: string | null;
@@ -58,7 +60,11 @@ async function fetchPatientIdentifiers(req: {
 }): Promise<{ birth_date: string | null; medical_record: string | null; encounter_code: string | null }> {
   let birth_date: string | null = null;
   let medical_record: string | null = null;
-  const encounter_code: string | null = null; // MIGRAÇÃO: sem coluna de atendimento no schema novo
+  let encounter_code: string | null = null;
+  if (req.patient_id) {
+    const numeros = await fetchNumerosAtendimento([req.patient_id]);
+    encounter_code = numeros[req.patient_id] || null;
+  }
   try {
     const internacaoId = req.patient_id || null;
     if (internacaoId) {

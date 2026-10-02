@@ -49,15 +49,24 @@ export async function fetchNumerosAtendimento(
   const ids = Array.from(new Set(internacaoIds.filter(Boolean)));
   if (ids.length === 0) return {};
 
-  const { data, error } = await supabase
-    .from("internacoes")
-    .select("id, numero_atendimento")
-    .in("id", ids);
-  if (error || !data) return {};
+  // Lotes: `.in()` vai na URL (GET) — milhares de UUIDs (relatórios) estourariam
+  // o limite de tamanho. 150 ids ≈ 5.5 KB por requisição.
+  const CHUNK = 150;
+  const chunks: string[][] = [];
+  for (let i = 0; i < ids.length; i += CHUNK) chunks.push(ids.slice(i, i + CHUNK));
+
+  const results = await Promise.all(
+    chunks.map((chunk) =>
+      supabase.from("internacoes").select("id, numero_atendimento").in("id", chunk),
+    ),
+  );
 
   const map: Record<string, string> = {};
-  for (const row of data) {
-    if (row.numero_atendimento) map[row.id] = row.numero_atendimento;
+  for (const { data, error } of results) {
+    if (error || !data) continue;
+    for (const row of data) {
+      if (row.numero_atendimento) map[row.id] = row.numero_atendimento;
+    }
   }
   return map;
 }

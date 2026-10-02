@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useHospital } from "@/contexts/HospitalContext";
 import { MARANHAO_MACRO_REGIONS } from "@/data/reportDefinitions";
 import { calcularSaps3, respostasDoBanco, ressalvasDaLinha, type LinhaSaps3Banco } from "@/lib/saps3";
+import { fetchNumerosAtendimento } from "@/lib/internacaoComPaciente";
 
 export interface ReportResult {
   columns: string[];
@@ -59,6 +60,10 @@ const pacNome = (r: any) => r?.paciente?.nome_social || r?.paciente?.nome_comple
 const setorNome = (r: any) => r?.leito?.setor?.nome || '-';
 const leitoNum = (r: any) => r?.leito?.numero || '-';
 
+// Nº de atendimento (internacoes.numero_atendimento) das linhas do relatório, em
+// consulta isolada e tolerante — se a coluna faltar no banco, o código sai '-'.
+const numerosDe = (rows: any[]) => fetchNumerosAtendimento(rows.map((r) => r?.id));
+
 async function executeQuery(
   queryType: string, start: string, end: string, hospitalId: string, stateId: string
 ): Promise<ReportResult> {
@@ -73,11 +78,11 @@ async function executeQuery(
         .gte('data_entrada', startFull).lte('data_entrada', endFull)
         .order('data_entrada', { ascending: false });
       const rows: any[] = (data as any) || [];
+      const numeros = await numerosDe(rows);
       return {
         columns: ['Código', 'Paciente', 'Status', 'Setor Destino', 'Entrada', 'Triagem'],
         rows: rows.map(r => ({
-          // MIGRAÇÃO: encounter_code não existe no schema novo → '-'.
-          'Código': '-',
+          'Código': numeros[r.id] || '-',
           'Paciente': pacNome(r),
           'Status': r.status,
           'Setor Destino': setorNome(r),
@@ -95,10 +100,11 @@ async function executeQuery(
         .gte('data_entrada', startFull).lte('data_entrada', endFull)
         .order('data_entrada', { ascending: false });
       const rows: any[] = (data as any) || [];
+      const numeros = await numerosDe(rows);
       return {
         columns: ['Código', 'Paciente', 'Entrada', 'Chamado', 'Status Triagem', 'Setor Destino', 'Desfecho'],
         rows: rows.map(r => ({
-          'Código': '-', // MIGRAÇÃO: encounter_code inexistente.
+          'Código': numeros[r.id] || '-',
           'Paciente': pacNome(r),
           'Entrada': formatDate(r.data_entrada),
           'Chamado': '-', // MIGRAÇÃO: called_at inexistente.
@@ -272,19 +278,20 @@ async function executeQuery(
     case 'total_stay': {
       // MIGRAÇÃO: patient_encounters.outcome_date → internacoes.data_alta (permanência real).
       const { data } = await supabase.from('internacoes')
-        .select('data_entrada, data_alta, status, paciente:pacientes(nome_completo, nome_social)')
+        .select('id, data_entrada, data_alta, status, paciente:pacientes(nome_completo, nome_social)')
         .gte('data_entrada', startFull).lte('data_entrada', endFull);
       const rows: any[] = ((data as any) || []).filter((r: any) => r.data_alta);
       if (rows.length === 0) {
         return { columns: ['Info'], rows: [{ Info: 'Nenhuma internação com alta registrada no período.' }] };
       }
+      const numeros = await numerosDe(rows);
       return {
         columns: ['Paciente', 'Código', 'Permanência (min)', 'Desfecho'],
         rows: rows.map(r => {
           const diff = (new Date(r.data_alta).getTime() - new Date(r.data_entrada).getTime()) / 60000;
           return {
             'Paciente': pacNome(r),
-            'Código': '-', // MIGRAÇÃO: encounter_code inexistente.
+            'Código': numeros[r.id] || '-',
             'Permanência (min)': diff.toFixed(1),
             'Desfecho': r.status || '-', // MIGRAÇÃO: outcome inexistente → usa internacoes.status.
           };
@@ -303,12 +310,13 @@ async function executeQuery(
     case 'los_with_admission_detailed': {
       // MIGRAÇÃO: no schema novo toda internacao É uma admissão. LOS = data_alta - data_entrada.
       const { data } = await supabase.from('internacoes')
-        .select('data_entrada, data_alta, status, paciente:pacientes(nome_completo, nome_social)')
+        .select('id, data_entrada, data_alta, status, paciente:pacientes(nome_completo, nome_social)')
         .gte('data_entrada', startFull).lte('data_entrada', endFull);
       const filtered: any[] = ((data as any) || []).filter((r: any) => r.data_alta);
+      const numeros = queryType.includes('detailed') ? await numerosDe(filtered) : {};
       const times = filtered.map((r: any) => ({
         name: pacNome(r),
-        code: '-', // MIGRAÇÃO: encounter_code inexistente.
+        code: numeros[r.id] || '-',
         los: (new Date(r.data_alta).getTime() - new Date(r.data_entrada).getTime()) / 60000,
         outcome: r.status,
       }));
@@ -539,24 +547,26 @@ async function executeQuery(
       return migracaoIndisponivel('Tipo de entrada indisponível: internacoes não possui campo entry_type (espontâneo/SAMU/bombeiro/...) no schema novo.');
 
     case 'readmissions': {
-      // MIGRAÇÃO: patient_encounters → internacoes. Agrupa por paciente_id; encounter_code → '-'.
+      // MIGRAÇÃO: patient_encounters → internacoes. Agrupa por paciente_id; códigos = numero_atendimento.
       const { data } = await supabase.from('internacoes')
-        .select('paciente_id, data_entrada, paciente:pacientes(nome_completo, nome_social)')
+        .select('id, paciente_id, data_entrada, paciente:pacientes(nome_completo, nome_social)')
         .gte('data_entrada', startFull).lte('data_entrada', endFull)
         .order('paciente_id');
       const rows: any[] = (data as any) || [];
-      const byPatient: Record<string, { name: string; dates: string[] }> = {};
+      const numeros = await numerosDe(rows);
+      const byPatient: Record<string, { name: string; dates: string[]; codes: string[] }> = {};
       rows.forEach(r => {
         const key = r.paciente_id || pacNome(r);
-        if (!byPatient[key]) byPatient[key] = { name: pacNome(r), dates: [] };
+        if (!byPatient[key]) byPatient[key] = { name: pacNome(r), dates: [], codes: [] };
         byPatient[key].dates.push(formatDate(r.data_entrada));
+        if (numeros[r.id]) byPatient[key].codes.push(numeros[r.id]);
       });
       const repeaters = Object.values(byPatient).filter(v => v.dates.length > 1);
       return {
         columns: ['Paciente', 'Nº Atendimentos', 'Códigos', 'Datas'],
         rows: repeaters.map(v => ({
           'Paciente': v.name, 'Nº Atendimentos': v.dates.length,
-          'Códigos': '-', // MIGRAÇÃO: encounter_code inexistente.
+          'Códigos': v.codes.length ? v.codes.join(', ') : '-',
           'Datas': v.dates.join(', '),
         })),
         summary: { 'Pacientes reincidentes': repeaters.length },
@@ -710,10 +720,11 @@ async function executeQuery(
       const startDate = new Date(startFull);
       const lookback = new Date(startDate.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
       const { data } = await supabase.from('internacoes')
-        .select('paciente_id, data_entrada, data_alta, paciente:pacientes(nome_completo, nome_social)')
+        .select('id, paciente_id, data_entrada, data_alta, paciente:pacientes(nome_completo, nome_social)')
         .gte('data_entrada', lookback).lte('data_entrada', endFull)
         .order('data_entrada', { ascending: true });
       const rows: any[] = (data as any) || [];
+      const numeros = await numerosDe(rows);
       const byPatient: Record<string, any[]> = {};
       rows.forEach(r => {
         const key = r.paciente_id || pacNome(r);
@@ -730,10 +741,10 @@ async function executeQuery(
           if (gapDays >= 0 && gapDays <= 30 && new Date(curr.data_entrada) >= startDate) {
             readmissions.push({
               'Paciente': pacNome(curr),
-              'Atendimento Anterior': '-', // MIGRAÇÃO: encounter_code inexistente.
+              'Atendimento Anterior': numeros[prev.id] || '-',
               'Desfecho Anterior': '-', // MIGRAÇÃO: outcome inexistente.
               'Reentrada': formatDate(curr.data_entrada),
-              'Novo Atendimento': '-', // MIGRAÇÃO: encounter_code inexistente.
+              'Novo Atendimento': numeros[curr.id] || '-',
               'Intervalo (dias)': gapDays.toFixed(1),
             });
           }

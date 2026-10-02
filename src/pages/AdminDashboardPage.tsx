@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchNumerosAtendimento } from "@/lib/internacaoComPaciente";
 import { toSexoDb } from "@/lib/sexo";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
@@ -305,9 +306,9 @@ const AdminDashboardPage = () => {
     if (!selectedHospitalId) return;
     setIsLoadingEncounters(true);
     try {
-      // MIGRAÇÃO: patient_encounters→internacoes. Sem encounter_code/registry_id/
-      // triage_status/hospital_unit_id no schema novo → degradados. encounter_code
-      // usa um id curto; destino via setores.tipo (setor_classificacao_id).
+      // MIGRAÇÃO: patient_encounters→internacoes. Sem registry_id/triage_status/
+      // hospital_unit_id no schema novo → degradados. encounter_code =
+      // internacoes.numero_atendimento; destino via setores.tipo (setor_classificacao_id).
       const { data, error } = await supabase
         .from("internacoes")
         .select(`id, status, criado_em, paciente_id,
@@ -317,10 +318,13 @@ const AdminDashboardPage = () => {
         .limit(20);
 
       if (error) throw error;
+      // Nº de atendimento real (internacoes.numero_atendimento), em consulta
+      // isolada; sem ele (coluna ainda não aplicada) mantém o id curto de antes.
+      const numeros = await fetchNumerosAtendimento(((data as any[]) || []).map((r: any) => r.id));
       setRecentEncounters(
         (data as any[] || []).map((r: any) => ({
           id: r.id,
-          encounter_code: String(r.id).slice(0, 8),
+          encounter_code: numeros[r.id] || String(r.id).slice(0, 8),
           patient_name: r.paciente?.nome_social || r.paciente?.nome_completo || "",
           registry_id: r.paciente_id,
           destination_sector: resolveSectorCode(r.setor?.nome) || undefined,
