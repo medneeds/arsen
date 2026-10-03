@@ -36,7 +36,7 @@ import {
   Stethoscope, Loader2, AlertTriangle, ClipboardCheck,
   HeartPulse, Activity, FileText, Pill, CalendarDays, Hash,
   Printer, ShieldCheck, Save, Trash2, Brain, Gauge, ClipboardList,
-  Plus, X,
+  Plus, X, ChevronUp, ChevronDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { printAdmissionNormaZero } from "@/lib/printAdmission";
@@ -284,6 +284,17 @@ const ItemListField = ({
     else if (editingIndex != null && i < editingIndex) setEditingIndex(editingIndex - 1);
   };
 
+  // Reordenacao entre itens (padrao universal da plataforma): troca com o vizinho.
+  const move = (i: number, dir: -1 | 1) => {
+    const j = i + dir;
+    if (j < 0 || j >= items.length) return;
+    const next = [...items];
+    [next[i], next[j]] = [next[j], next[i]];
+    onChange(next);
+    if (editingIndex === i) setEditingIndex(j);
+    else if (editingIndex === j) setEditingIndex(i);
+  };
+
   return (
     <div className="space-y-2">
       <div className="flex gap-2">
@@ -321,6 +332,22 @@ const ItemListField = ({
               >
                 {it}
               </button>
+              <div className="flex shrink-0 flex-col -my-0.5">
+                <button
+                  type="button" onClick={() => move(i, -1)} disabled={i === 0}
+                  aria-label="Mover para cima"
+                  className="text-muted-foreground hover:text-foreground disabled:opacity-25 disabled:cursor-default"
+                >
+                  <ChevronUp className="h-3 w-3" />
+                </button>
+                <button
+                  type="button" onClick={() => move(i, 1)} disabled={i === items.length - 1}
+                  aria-label="Mover para baixo"
+                  className="text-muted-foreground hover:text-foreground disabled:opacity-25 disabled:cursor-default"
+                >
+                  <ChevronDown className="h-3 w-3" />
+                </button>
+              </div>
               <Button
                 type="button" variant="ghost" size="sm"
                 onClick={() => removeItem(i)}
