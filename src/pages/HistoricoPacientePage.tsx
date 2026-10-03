@@ -116,6 +116,7 @@ const BLOCK_OF: Record<TimelineEventType, BlockKey> = {
 
 interface EncounterRow {
   id: string;
+  numero_atendimento: string | null;
   data_entrada: string;
   data_alta: string | null;
   status: string;
@@ -348,7 +349,7 @@ export default function HistoricoPacientePage() {
     queryFn: async (): Promise<EncounterRow[]> => {
       const { data } = await supabase
         .from("internacoes")
-        .select("id, data_entrada, data_alta, status, leito_id, setor_classificacao_id, setor:setores!internacoes_setor_classificacao_id_fkey(nome)")
+        .select("id, numero_atendimento, data_entrada, data_alta, status, leito_id, setor_classificacao_id, setor:setores!internacoes_setor_classificacao_id_fkey(nome)")
         .eq("paciente_id", resolvedRegistryId as string)
         .order("data_entrada", { ascending: false });
       return (data ?? []) as unknown as EncounterRow[];
@@ -1075,7 +1076,9 @@ export default function HistoricoPacientePage() {
               <div className="flex items-center gap-2 flex-wrap">
                 <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
                 <ClipboardList className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-semibold">Atendimento {n}</span>
+                {/* Numero de atendimento REAL (mesmo do mapa/cockpit/painel), com
+                    fallback para o ordinal (internacoes antigas sem numero_atendimento). */}
+                <span className="text-sm font-semibold">Atendimento {enc.numero_atendimento ?? n}</span>
                 <Badge variant={outcome.active ? "default" : "secondary"} className="h-5 text-xs">
                   {outcome.active ? "Ativo" : `→ ${outcome.label}`}
                 </Badge>
