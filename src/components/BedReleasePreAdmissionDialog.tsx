@@ -64,6 +64,11 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
     || patient?.admissionStatus === "transferencia_externa_pendente"
     || patient?.admissionStatus === "transferencia_interna_pendente";
   const isExceptional = patient?.admissionStatus === "admitido";
+  // Transferencia interna NAO encerra o atendimento (o paciente segue sob cuidados
+  // em outro setor, mesmo numero de atendimento). Alta/obito/transf. externa SIM —
+  // encerram o atendimento no momento da validacao por senha.
+  const isInternalTransfer = patient?.admissionStatus === "transferencia_interna_pendente";
+  const isClosingOutcome = isPostDischarge && !isInternalTransfer;
   const REASON_OPTIONS = isExceptional
     ? EXCEPTIONAL_REASONS
     : isPostDischarge ? POST_DISCHARGE_REASONS : PRE_ADMISSION_REASONS;
@@ -365,12 +370,18 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
                       </>
                     )}
                   </>
-                ) : isPostDischarge ? (
+                ) : isInternalTransfer ? (
                   <ul className="list-disc pl-4 space-y-1 text-muted-foreground">
-                    <li>O documento de <strong>{patient.admissionStatus === "obito" ? "óbito" : "alta"}</strong> já foi <strong>assinado e gravado</strong> no prontuário.</li>
-                    <li>Esta ação <strong>libera fisicamente o leito</strong> no mapa para limpeza/nova alocação.</li>
+                    <li>Esta é uma <strong>transferência interna</strong>: o paciente segue sob cuidados em outro setor.</li>
+                    <li>O <strong>atendimento NÃO é encerrado</strong> — o <strong>mesmo número de atendimento é preservado</strong> no destino.</li>
+                    <li>Esta ação <strong>libera o leito atual</strong>; a alocação no setor destino é concluída na fila de transferência.</li>
+                    <li>Você precisará <strong>confirmar com sua senha</strong> antes de efetivar.</li>
+                  </ul>
+                ) : isClosingOutcome ? (
+                  <ul className="list-disc pl-4 space-y-1 text-muted-foreground">
+                    <li>O documento de <strong>{patient.admissionStatus === "obito" ? "óbito" : patient.admissionStatus === "transferencia_externa_pendente" ? "transferência externa" : "alta"}</strong> já foi <strong>assinado e gravado</strong> no prontuário.</li>
+                    <li>Ao <strong>confirmar com a senha</strong>, o <strong>atendimento é ENCERRADO</strong> (saída registrada neste momento) e o leito é liberado.</li>
                     <li>O <strong>prontuário do paciente é preservado</strong> e segue consultável no histórico.</li>
-                    <li>Você precisará <strong>confirmar com sua senha</strong> antes da liberação efetiva.</li>
                   </ul>
                 ) : (
                   <ul className="list-disc pl-4 space-y-1 text-muted-foreground">

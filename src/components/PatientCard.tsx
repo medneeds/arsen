@@ -2204,13 +2204,14 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                               direcionando ao Painel Clínico (sem atalho excepcional). */}
                         {onReleasePreAdmissionBed && (role === 'admin' || role === 'medico') && (() => {
                           const isPostOutcome = patient.admissionStatus === 'alta_dada' || patient.admissionStatus === 'obito';
-                          const isSignaled = patient.admissionStatus === 'transferencia_interna_pendente' || patient.admissionStatus === 'transferencia_externa_pendente';
+                          const isInternal = patient.admissionStatus === 'transferencia_interna_pendente';
+                          const isSignaled = isInternal || patient.admissionStatus === 'transferencia_externa_pendente';
                           const sub = isPostOutcome
-                            ? 'Pós-alta/óbito — confirmação por senha, preserva prontuário'
-                            : isSignaled
-                              ? 'Conclui a sinalização feita no Painel Clínico'
-                              : patient.admissionStatus === 'admitido'
-                                ? 'Bloqueado — sinalize a movimentação no Painel Clínico'
+                            ? 'Pós-alta/óbito — confirmação por senha, encerra o atendimento'
+                            : isInternal
+                              ? 'Transferência interna — preserva o atendimento (mesmo nº)'
+                              : isSignaled
+                                ? 'Conclui a sinalização feita no Painel Clínico'
                                 : 'Bloqueado — sinalize a movimentação no Painel Clínico';
                           const tone = isSignaled ? 'emerald' : 'amber';
                           const isDisabled = !isSignaled && !isPostOutcome;
@@ -2251,7 +2252,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                                   "leading-tight",
                                   tone === 'emerald' ? "text-released-on-soft" : "text-warning-on-soft"
                                 )}>
-                                  Desalocar leito
+                                  {isInternal ? 'Transferir leito' : 'Desalocar leito'}
                                 </span>
                                 <span className="text-xs font-normal text-muted-foreground leading-tight">
                                   {sub}

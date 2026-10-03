@@ -17,7 +17,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useState, useRef, useEffect, useMemo, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
-import { Edit, ChevronDown, ChevronRight, Check, X, Plus, GripVertical, Trash2, Stethoscope, ClipboardList, FileText, Activity, Star, ArrowLeftRight, DoorOpen, Shuffle, UserMinus } from "lucide-react";
+import { Edit, ChevronDown, ChevronRight, Check, X, Plus, GripVertical, Trash2, Stethoscope, ClipboardList, FileText, Star, ArrowLeftRight, DoorOpen, Shuffle, UserMinus } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { BedReleasePreAdmissionDialog } from "./BedReleasePreAdmissionDialog";
 
@@ -1011,24 +1011,6 @@ export function UtiPatientCard({
                         </span>
                       </div>
 
-                      {/* MONITORAMENTO DE SINAIS (acesso direto — antes indisponivel na UTI) */}
-                      <DropdownMenuItem
-                        onClick={() => navigate(`/monitoramento?patientId=${patient.id}`)}
-                        className="group/item flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium cursor-pointer border border-transparent hover:border-released-border/60 hover:bg-gradient-to-r hover:from-released-soft hover:to-transparent transition-all duration-200 hover:translate-x-0.5 hover:shadow-sm"
-                      >
-                        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-released-soft group-hover/item:bg-released transition-colors">
-                          <Activity className="h-3.5 w-3.5 text-released-on-soft" />
-                        </div>
-                        <div className="flex flex-col items-start min-w-0">
-                          <span className="text-released-on-soft leading-tight">
-                            Monitoramento de sinais
-                          </span>
-                          <span className="text-xs font-normal text-muted-foreground leading-tight">
-                            Registrar e acompanhar sinais vitais
-                          </span>
-                        </div>
-                      </DropdownMenuItem>
-
                       {/* REMANEJAR LEITO (mesmo setor) */}
                       <DropdownMenuItem
                         onClick={() => setIsReallocationDialogOpen(true)}
@@ -1052,12 +1034,15 @@ export function UtiPatientCard({
                           duro com orientação para sinalizar no Painel Clínico (sem atalho excepcional). */}
                       {onReleasePreAdmissionBed && (role === 'admin' || role === 'medico') && (() => {
                         const isPostOutcome = patient.admissionStatus === 'alta_dada' || patient.admissionStatus === 'obito';
-                        const isSignaled = patient.admissionStatus === 'transferencia_interna_pendente' || patient.admissionStatus === 'transferencia_externa_pendente';
+                        const isInternal = patient.admissionStatus === 'transferencia_interna_pendente';
+                        const isSignaled = isInternal || patient.admissionStatus === 'transferencia_externa_pendente';
                         const sub = isPostOutcome
-                          ? 'Pós-alta/óbito — confirmação por senha, preserva prontuário'
-                          : isSignaled
-                            ? 'Conclui a sinalização feita no Painel Clínico'
-                            : 'Bloqueado — sinalize a movimentação no Painel Clínico';
+                          ? 'Pós-alta/óbito — confirmação por senha, encerra o atendimento'
+                          : isInternal
+                            ? 'Transferência interna — preserva o atendimento (mesmo nº)'
+                            : isSignaled
+                              ? 'Conclui a sinalização feita no Painel Clínico'
+                              : 'Bloqueado — sinalize a movimentação no Painel Clínico';
                         const tone = isSignaled ? 'emerald' : 'amber';
                         const isDisabled = !isSignaled && !isPostOutcome;
                         return (
@@ -1091,7 +1076,7 @@ export function UtiPatientCard({
                                 "leading-tight",
                                 tone === 'emerald' ? "text-released-on-soft" : "text-warning-on-soft"
                               )}>
-                                Desalocar leito
+                                {isInternal ? 'Transferir leito' : 'Desalocar leito'}
                               </span>
                               <span className="text-xs font-normal text-muted-foreground leading-tight">
                                 {sub}
