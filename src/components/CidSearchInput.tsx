@@ -18,7 +18,15 @@ interface CidCode {
   code: string;
   description: string;
   category: string;
+  /* campos normalizados uma unica vez no carregamento (filtro barato, sem NFD por tecla) */
+  ncode: string;
+  ndesc: string;
+  ncat: string;
 }
+
+/* Teto de itens renderizados no dropdown. O catalogo tem ~14 mil CIDs;
+   renderizar tudo trava o navegador, entao mostramos no maximo este tanto. */
+const MAX_RESULTS = 60;
 
 /* Catálogo carregado uma única vez e compartilhado entre instâncias */
 let CATALOG_CACHE: CidCode[] | null = null;
@@ -44,11 +52,19 @@ function loadCatalog(): Promise<CidCode[]> {
         .order("codigo")
         .range(from, from + PAGE - 1);
       if (error || !data || data.length === 0) break;
-      all.push(...data.map((r: any) => ({
-        code: r.codigo,
-        description: r.descricao,
-        category: r.capitulo ?? r.categoria ?? "",
-      })) as CidCode[]);
+      all.push(...data.map((r: { codigo: string | null; descricao: string | null; categoria: string | null; capitulo: string | null }) => {
+        const code = r.codigo ?? "";
+        const description = r.descricao ?? "";
+        const category = r.capitulo ?? r.categoria ?? "";
+        return {
+          code,
+          description,
+          category,
+          ncode: normalize(code),
+          ndesc: normalize(description),
+          ncat: normalize(category),
+        };
+      }) as CidCode[]);
       if (data.length < PAGE) break;
       from += PAGE;
     }
@@ -95,28 +111,30 @@ export function CidSearchInput({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  /* Filtra (NFD + case-insensitive em código, descrição e categoria) */
-  const filtered = useMemo(() => {
+  /* Filtra sobre campos pre-normalizados (includes barato, sem NFD por tecla) */
+  const matches = useMemo(() => {
     if (!catalog.length) return [];
     const q = normalize(search.trim());
     if (!q) return catalog;
     return catalog.filter(c =>
-      normalize(c.code).includes(q) ||
-      normalize(c.description).includes(q) ||
-      normalize(c.category).includes(q)
+      c.ncode.includes(q) || c.ndesc.includes(q) || c.ncat.includes(q)
     );
   }, [catalog, search]);
 
-  /* Agrupa por categoria preservando ordem */
+  /* Teto de render: nunca despejar os ~14 mil no DOM (trava o navegador) */
+  const visible = useMemo(() => matches.slice(0, MAX_RESULTS), [matches]);
+  const hiddenCount = matches.length - visible.length;
+
+  /* Agrupa por categoria preservando ordem (sobre o conjunto ja limitado) */
   const grouped = useMemo(() => {
     const map = new Map<string, CidCode[]>();
-    for (const item of filtered) {
+    for (const item of visible) {
       const key = item.category || "Outros";
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(item);
     }
     return Array.from(map.entries());
-  }, [filtered]);
+  }, [visible]);
 
   const handleSelect = (item: CidCode) => {
     onChange(`${item.code} - ${item.description}`);
@@ -154,12 +172,13 @@ export function CidSearchInput({
             onClick={() => setIsOpen(true)}
             onKeyDown={e => {
               if (e.key === "Enter" && search.trim()) {
-                const exact = catalog.find(c => normalize(c.code) === normalize(search.trim()));
+                const nq = normalize(search.trim());
+                const exact = catalog.find(c => c.ncode === nq);
                 if (exact) {
                   handleSelect(exact);
                 } else {
                   // Tenta buscar pelo início do código (ex: "I10" → "I10 - Hipertensão...")
-                  const partial = catalog.find(c => normalize(c.code).startsWith(normalize(search.trim())));
+                  const partial = catalog.find(c => c.ncode.startsWith(nq));
                   if (partial) {
                     handleSelect(partial);
                   }
@@ -173,7 +192,8 @@ export function CidSearchInput({
               // Ao sair do campo: tenta encontrar no catálogo antes de salvar
               setTimeout(() => {
                 if (search.trim() && !value) {
-                  const exact = catalog.find(c => normalize(c.code) === normalize(search.trim()));
+                  const nq = normalize(search.trim());
+                  const exact = catalog.find(c => c.ncode === nq);
                   if (exact) {
                     handleSelect(exact);
                   } else {
@@ -202,8 +222,8 @@ export function CidSearchInput({
       {isOpen && !value && (
         <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-md overflow-hidden">
           <div className="px-3 py-2 text-xs uppercase tracking-wide text-muted-foreground bg-muted/40 border-b flex items-center justify-between">
-            <span>{search ? `${filtered.length} ${(filtered.length) === 1 ? 'resultado' : 'resultados'}` : `${catalog.length} CIDs disponíveis`}</span>
-            <span className="font-normal">Role ou digite</span>
+            <span>{search ? `${matches.length} ${matches.length === 1 ? 'resultado' : 'resultados'}` : `${catalog.length} CIDs disponíveis`}</span>
+            <span className="font-normal">{hiddenCount > 0 ? `mostrando ${MAX_RESULTS} — refine a busca` : 'Role ou digite'}</span>
           </div>
           <div ref={listRef} className="max-h-72 overflow-y-auto">
             {isLoading && (
