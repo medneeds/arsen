@@ -934,14 +934,17 @@ export function UtiPatientCard({
                     );
                   })()}
 
-                  {/* UTI Admission Date — somente leitura (edite via Edição Avançada) */}
+                  {/* Admissao no setor — somente leitura (edite via Edição Avançada).
+                      Fora da UTI nao existe data_admissao_uti; cai para a data de
+                      entrada no setor (sectorSince) e, por fim, a admissao hospitalar
+                      (data_entrada), para o chip nunca ficar vazio (ex.: Sala Vermelha). */}
                   <div
                     className="hidden md:flex shrink-0 items-center gap-1 text-muted-foreground bg-muted/50 px-2 py-1 rounded-md cursor-not-allowed"
                     title="Edite em Edição Avançada"
                   >
                     <span className="text-xs">{admissionLabel}:</span>
                     <span className="text-xs font-medium w-20 truncate">
-                      {formatDateBR(patient.utiAdmissionDate?.[0])}
+                      {formatDateBR(patient.utiAdmissionDate?.[0] || patient.sectorSince || patient.admissionDate || "")}
                     </span>
                   </div>
 
