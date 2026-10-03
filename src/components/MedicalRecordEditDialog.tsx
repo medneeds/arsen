@@ -13,6 +13,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AddressFields } from "@/components/shared/AddressFields";
+import { buildEnderecoLine, parseEnderecoLine, type AddressValue } from "@/lib/address";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { toSexoDb } from "@/lib/sexo";
@@ -202,6 +204,9 @@ export function MedicalRecordEditDialog({
   const [regReason, setRegReason] = useState("");
   const [importing, setImporting] = useState(false);
   const [cadastroEditMode, setCadastroEditMode] = useState(false);
+  // Endereco estruturado (CEP/UF/cidade) — deriva da linha unica pacientes.endereco.
+  // A gravacao reconcatena tudo em reg.address (coluna `endereco`) via buildEnderecoLine.
+  const [addr, setAddr] = useState<AddressValue>(() => parseEnderecoLine(null));
   const [pasteText, setPasteText] = useState("");
   const [isDragging, setIsDragging] = useState(false);
 
@@ -353,6 +358,7 @@ export function MedicalRecordEditDialog({
 
       setRegistry(regRow);
       setReg(regRow ? { ...regRow } : {});
+      setAddr(parseEnderecoLine(regRow?.address ?? null));
       setMrReason("");
       setRegReason("");
       setCadastroEditMode(false);
@@ -866,6 +872,7 @@ export function MedicalRecordEditDialog({
                           <Button size="sm" variant="outline" onClick={() => {
                             setCadastroEditMode(false);
                             setReg(registry ? { ...registry } : {});
+                            setAddr(parseEnderecoLine(registry?.address ?? null));
                             setRegReason("");
                             setPasteText("");
                             setPisFromFieldsApplied(new Set());
@@ -953,12 +960,17 @@ export function MedicalRecordEditDialog({
                         <FieldInput label="Nome da mãe" value={reg.mother_name || ""} onChange={(v) => setRegField("mother_name", v)} fullWidth disabled={!cadastroEditMode} highlight={pisFromFieldsApplied.has("mother_name")} />
                       </FieldGrid>
 
-                      <FieldGrid title="Endereço">
-                        <FieldInput label="Logradouro" value={reg.address || ""} onChange={(v) => setRegField("address", v)} fullWidth disabled={!cadastroEditMode} highlight={pisFromFieldsApplied.has("address")} />
-                        <FieldInput label="Bairro" value={reg.neighborhood || ""} onChange={(v) => setRegField("neighborhood", v)} disabled={!cadastroEditMode} highlight={pisFromFieldsApplied.has("neighborhood")} />
-                        <FieldInput label="Cidade" value={reg.city || ""} onChange={(v) => setRegField("city", v)} disabled={!cadastroEditMode} highlight={pisFromFieldsApplied.has("city")} />
-                        <FieldInput label="UF" value={reg.state || ""} onChange={(v) => setRegField("state", v)} disabled={!cadastroEditMode} highlight={pisFromFieldsApplied.has("state")} />
-                      </FieldGrid>
+                      {/* Endereco com CEP (autofill ViaCEP), UF selecionavel e cidade por UF
+                          (IBGE) — mesmo componente do cadastro novo. Grava concatenado na
+                          coluna unica pacientes.endereco via buildEnderecoLine. */}
+                      <section className="space-y-2 p-3 rounded-lg border bg-card">
+                        <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Endereço</div>
+                        <AddressFields
+                          value={addr}
+                          disabled={!cadastroEditMode}
+                          onChange={(v) => { setAddr(v); setRegField("address", buildEnderecoLine(v)); }}
+                        />
+                      </section>
 
                       {/* Campos clinicos (alergias/comorbidades) e "Origem PIS" removidos
                           da Identificacao: a identificacao e cadastral; alergias/comorbidades
