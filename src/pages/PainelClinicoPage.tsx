@@ -459,7 +459,7 @@ export default function PainelClinicoPage() {
                           </p>
                         )}
                         {diagnoses.length > 0 && (
-                          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{diagnoses.join("  /  ")}</p>
+                          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{diagnoses.join("  |  ")}</p>
                         )}
                         {pendencies.length > 0 && (
                           <p className="text-xs text-warning-on-soft mt-1 line-clamp-1">{pendencies[0]}{pendencies.length > 1 && ` +${pendencies.length - 1}`}</p>
@@ -535,7 +535,7 @@ export default function PainelClinicoPage() {
                           )}
                           {diagnoses.length > 0 && (
                             <p className="text-xs text-muted-foreground mt-1 line-clamp-1 max-w-[260px]">
-                              {diagnoses.join("  /  ")}
+                              {diagnoses.join("  |  ")}
                             </p>
                           )}
                           <LastActionLine action={lastActionByPatient.get(patient.id)} />
