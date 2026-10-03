@@ -22,6 +22,12 @@ interface AdmissionDateEditorProps {
   /** ISO string OR raw "DD/MM/AAAA HH:MM" string already stored */
   value: string;
   onChange: (newValue: string) => void;
+  /** Coluna de `internacoes` que este editor grava/audita. Default data_entrada
+   *  (= Data de internacao hospitalar, ancora do DIH). data_admissao_uti = Data
+   *  de admissao no setor (ancora do TPS). */
+  field?: "data_entrada" | "data_admissao_uti";
+  /** Rotulo exibido do campo. */
+  label?: string;
 }
 
 interface HistoryRow {
@@ -63,7 +69,7 @@ function splitBR(value: string): { date: string; time: string } {
   return { date, time };
 }
 
-export function AdmissionDateEditor({ patientId, value, onChange }: AdmissionDateEditorProps) {
+export function AdmissionDateEditor({ patientId, value, onChange, field = "data_entrada", label = "Data de internação hospitalar" }: AdmissionDateEditorProps) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -144,7 +150,7 @@ export function AdmissionDateEditor({ patientId, value, onChange }: AdmissionDat
           nome_tabela: "internacoes",
           internacao_id: patientId,
           registro_id: patientId,
-          campo_alterado: "data_entrada",
+          campo_alterado: field,
           valor_antigo: oldISO,
           valor_novo: newValueISO,
           // changed_by_name não tem coluna própria → preservado em dados_novos.
@@ -156,7 +162,7 @@ export function AdmissionDateEditor({ patientId, value, onChange }: AdmissionDat
 
         const { error: updateErr } = await supabase
           .from("internacoes")
-          .update({ data_entrada: newValueISO } as any)
+          .update({ [field]: newValueISO } as any)
           .eq("id", patientId);
         if (updateErr) {
           console.error("[AdmissionDateEditor] internacao update failed", updateErr);
@@ -212,7 +218,7 @@ export function AdmissionDateEditor({ patientId, value, onChange }: AdmissionDat
       <div className="space-y-2">
         <Label className="text-xs font-medium flex items-center gap-2">
           <CalendarClock className="h-3.5 w-3.5 text-muted-foreground" />
-          Data de admissão no setor
+          {label}
         </Label>
         <div className="flex items-center gap-2">
           <div className="flex-1 h-9 px-3 rounded-md border bg-muted/40 flex items-center text-xs font-medium uppercase tracking-wider">

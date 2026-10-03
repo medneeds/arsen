@@ -227,18 +227,24 @@ export function EditPatientDialog({
                   </Select>
                 </div>
 
-                {/* Datas administrativas — unificado para todos os setores */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {/* Datas hospitalares — DIH (internacao hospitalar) + admissao no
+                    setor + previsao de alta, como FONTES SEPARADAS. data_entrada
+                    dirige o DIH; data_admissao_uti dirige o TPS/chip do setor. Assim
+                    o mapa de leitos sincroniza sem ambiguidade. */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <AdmissionDateEditor
                     patientId={patient.id}
-                    value={isUti ? utiAdmissionDate : (formData.admissionDate || "")}
-                    onChange={(newValue) =>
-                      setFormData(
-                        isUti
-                          ? { ...formData, utiAdmissionDate: [newValue] }
-                          : { ...formData, admissionDate: newValue }
-                      )
-                    }
+                    field="data_entrada"
+                    label="Data de internação hospitalar"
+                    value={formData.admissionDate || ""}
+                    onChange={(newValue) => setFormData({ ...formData, admissionDate: newValue })}
+                  />
+                  <AdmissionDateEditor
+                    patientId={patient.id}
+                    field="data_admissao_uti"
+                    label="Data de admissão no setor"
+                    value={utiAdmissionDate}
+                    onChange={(newValue) => setFormData({ ...formData, utiAdmissionDate: [newValue] })}
                   />
                   <div className="space-y-2">
                     <Label className="text-xs font-medium flex items-center gap-2">
