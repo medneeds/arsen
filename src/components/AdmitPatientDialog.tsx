@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { BedSelectorGrid, type BedOption } from "@/components/shared/BedSelectorGrid";
 import {
   alocarPreAdmissaoNoLeito,
   mapPreAdmissao,
@@ -607,55 +608,15 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
                   </Badge>
                 )}
               </div>
-              <div className="rounded-md border bg-muted/30 p-2 max-h-[180px] overflow-y-auto">
-                <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-                  {availableBeds.map(bed => {
-                    if (bed === "EXTRA") {
-                      const isSel = selectedBed === "EXTRA";
-                      return (
-                        <button
-                          key="EXTRA"
-                          type="button"
-                          onClick={() => setSelectedBed("EXTRA")}
-                          className={cn(
-                            "rounded-md border px-2 py-2 text-xs font-medium transition-all flex flex-col items-center gap-1",
-                            isSel
-                              ? "border-warning bg-warning/15 text-warning-on-soft ring-2 ring-warning/30"
-                              : "border-dashed border-warning/40 text-warning-on-soft hover:bg-warning/10"
-                          )}
-                        >
-                          <BedDouble className="h-3 w-3" />
-                          EXTRA
-                        </button>
-                      );
-                    }
-                    const isOccupied = occupiedBeds.includes(bed);
-                    const isSel = selectedBed === bed;
-                    return (
-                      <button
-                        key={bed}
-                        type="button"
-                        disabled={isOccupied}
-                        onClick={() => setSelectedBed(bed)}
-                        className={cn(
-                          "rounded-md border px-2 py-2 text-xs font-medium transition-all flex flex-col items-center gap-1 leading-tight",
-                          isOccupied
-                            ? "border-destructive/30 bg-destructive/10 text-destructive/70 cursor-not-allowed"
-                            : isSel
-                              ? "border-released bg-released/15 text-released-on-soft ring-2 ring-released/30"
-                              : "border-released/30 bg-released/5 text-released-on-soft hover:bg-released/15"
-                        )}
-                      >
-                        <BedDouble className="h-3 w-3" />
-                        {bed}
-                        <span className="text-xs font-normal opacity-80">
-                          {isOccupied ? "Ocupado" : "Livre"}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+              <BedSelectorGrid
+                beds={availableBeds.map((b): BedOption => ({
+                  id: b,
+                  label: b,
+                  status: b === "EXTRA" ? "extra" : (occupiedBeds.includes(b) ? "ocupado" : "livre"),
+                }))}
+                value={selectedBed || null}
+                onChange={setSelectedBed}
+              />
               {isUtiAdmission && (
                 <p className="text-xs text-muted-foreground">
                   Ao confirmar, o leito é ocupado imediatamente e você escolhe preencher o SAPS 3 agora ou mantê-lo pendente (24h).
