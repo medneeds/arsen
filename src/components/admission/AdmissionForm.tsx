@@ -437,6 +437,10 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
 
   // SAPS 3 acknowledgement (apenas UTI/UCI)
   const [sapsAck, setSapsAck] = useState(false);
+  // Sub-modo da via Urgencia e Emergencia: "padrao" (completo) ou "express"
+  // (objetivo, otimizado para a Sala Vermelha). Analogo ao SAPS que so aparece
+  // na via UTI — fica sob o guarda-chuva da propria via de emergencia.
+  const [emergMode, setEmergMode] = useState<"padrao" | "express">("padrao");
 
   // Rotulo do dia da admissao (D0/Dn): DERIVADO da data de admissao HOSPITALAR
   // (internacoes.data_entrada), igual a timeline de evolucoes. So e D0 quando a
@@ -1430,41 +1434,146 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
           <div className="rounded-lg border border-critical-border bg-critical-soft/40 px-4 py-2.5 flex flex-wrap items-center gap-2">
             <AlertTriangle className="h-4 w-4 text-critical-on-soft" />
             <span className="text-xs font-semibold uppercase tracking-wide text-critical-on-soft">Modo emergência — Sala Vermelha</span>
-            <span className="ml-auto text-xs text-muted-foreground">Estabilização: essencial aberto, complementos recolhidos</span>
+            <span className="ml-auto text-xs text-muted-foreground">
+              {emergMode === "express" ? "Express — admissão objetiva" : "Padrão — estabilização completa"}
+            </span>
           </div>
 
+          {/* Sub-toggle Padrao / Express — sob o guarda-chuva da via de emergencia */}
+          <ToggleGroup
+            type="single"
+            value={emergMode}
+            onValueChange={v => { if (v === "padrao" || v === "express") setEmergMode(v); }}
+            className="grid grid-cols-2 gap-2"
+          >
+            <ToggleGroupItem value="padrao" className="border border-border data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
+              Padrão
+            </ToggleGroupItem>
+            <ToggleGroupItem value="express" className="border border-border data-[state=on]:bg-critical data-[state=on]:text-white">
+              Express
+            </ToggleGroupItem>
+          </ToggleGroup>
+
+          {emergMode === "express" ? (
+          /* ═══════════ EXPRESS — objetivo (CID, descricao, plano, previsao) ═══════════ */
+          <div className="rounded-lg border border-border bg-card p-4 space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <ReqLabel missing={attempted && missing.cidPrimary}>CID primário</ReqLabel>
+                <CidSearchInput value={cidPrimary} onChange={setCidPrimary}
+                  placeholder="Ex.: J18, pneumonia..." className={cn("mt-1", reqRing(attempted && missing.cidPrimary))} />
+              </div>
+              <div>
+                <Label className="text-xs">CID secundário <span className="font-normal text-muted-foreground">(opcional)</span></Label>
+                <CidSearchInput value={cidSecondary} onChange={setCidSecondary} placeholder="Opcional" className="mt-1" />
+              </div>
+            </div>
+            <div>
+              <ReqLabel missing={attempted && missing.hda}>Descrição clínica</ReqLabel>
+              <Textarea value={hda} onChange={e => setHda(e.target.value)} rows={3}
+                placeholder="Descrição objetiva do quadro na admissão..." className={cn("mt-1", reqRing(attempted && missing.hda))} />
+            </div>
+            <div>
+              <ReqLabel missing={attempted && missing.plan}>Plano terapêutico</ReqLabel>
+              <div className="mt-1">
+                <ItemListField
+                  items={planItems}
+                  onChange={setPlanItems}
+                  placeholder="Ex.: Monitorização contínua"
+                  inputAriaLabel="Adicionar item de conduta"
+                  inputClassName={reqRing(attempted && missing.plan)}
+                />
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs flex items-center gap-1"><CalendarDays className="h-3 w-3" /> Previsão de alta</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-3 items-end mt-1">
+                <div>
+                  <Label className="text-xs flex items-center gap-1"><Hash className="h-3 w-3" /> Dias previstos</Label>
+                  <Input type="number" min={0} value={predictionDays} onChange={e => handleDaysChange(e.target.value)} disabled={noPrediction} className="mt-1" />
+                </div>
+                <div>
+                  <Label className="text-xs flex items-center gap-1"><CalendarDays className="h-3 w-3" /> Data prevista</Label>
+                  <Input type="date" value={predictionDate} onChange={e => handleDateChange(e.target.value)} disabled={noPrediction} className="mt-1" />
+                </div>
+                <label className="flex items-center gap-2 text-xs text-foreground pb-2 select-none">
+                  <Checkbox checked={noPrediction} onCheckedChange={v => setNoPrediction(v === true)} />
+                  Sem previsão
+                </label>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">Resultado: <strong className="text-foreground">{dischargePredictionLabel}</strong></p>
+            </div>
+          </div>
+          ) : (
+          /* ═══════════ PADRAO — estabilizacao completa (ordem definida) ═══════════ */
           <Accordion
             type="multiple"
             value={openSections}
             onValueChange={setOpenSections}
             className="rounded-lg border border-border bg-card divide-y divide-border"
           >
-          {/* ───── ESSENCIAL (aberto por padrão) ───── */}
+          {/* 1. Diagnostico CID — primario (obrigatorio) + secundario ao lado (opcional) */}
+          <AccordionSectionItem id="em-cid" icon={FileText} iconColor="text-foreground" label="Diagnóstico (CID-10)" hint="Primário obrigatório; secundário opcional" required>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <ReqLabel missing={attempted && missing.cidPrimary}>CID primário</ReqLabel>
+                <CidSearchInput value={cidPrimary} onChange={setCidPrimary}
+                  placeholder="Ex.: J18, pneumonia..." className={cn("mt-1", reqRing(attempted && missing.cidPrimary))} />
+              </div>
+              <div>
+                <Label className="text-xs">CID secundário <span className="font-normal text-muted-foreground">(opcional)</span></Label>
+                <CidSearchInput value={cidSecondary} onChange={setCidSecondary} placeholder="Opcional" className="mt-1" />
+              </div>
+            </div>
+          </AccordionSectionItem>
+
+          {/* 2. Hipoteses diagnosticas */}
+          <AccordionSectionItem id="em-hipoteses" icon={Stethoscope} iconColor="text-muted-foreground" label="Hipóteses diagnósticas">
+            <ItemListField
+              items={hypothesesItems}
+              onChange={setHypothesesItems}
+              placeholder="Ex.: Sepse de foco pulmonar"
+              inputAriaLabel="Adicionar hipótese diagnóstica"
+            />
+            <p className="text-xs text-muted-foreground mt-1">Cada item vira uma hipótese no card do paciente.</p>
+          </AccordionSectionItem>
+
+          {/* 3. HDA */}
           <AccordionSectionItem id="em-hda" icon={FileText} iconColor="text-muted-foreground" label="História admissional (HDA)" required>
-            <ReqLabel missing={attempted && missing.hda}>HDA — História da Doença Atual (curta)</ReqLabel>
+            <ReqLabel missing={attempted && missing.hda}>HDA — História da Doença Atual</ReqLabel>
             <Textarea value={hda} onChange={e => setHda(e.target.value)} rows={3}
               placeholder="Paciente admitido com..." className={cn("mt-1", reqRing(attempted && missing.hda))} />
           </AccordionSectionItem>
 
-          <AccordionSectionItem id="em-cid" icon={FileText} iconColor="text-foreground" label="Diagnóstico (CID-10)" hint="Busca por código ou descrição" required>
-            <ReqLabel missing={attempted && missing.cidPrimary}>CID primário</ReqLabel>
-            <CidSearchInput value={cidPrimary} onChange={setCidPrimary}
-              placeholder="Ex.: J18, pneumonia..." className={cn("mt-1", reqRing(attempted && missing.cidPrimary))} />
+          {/* 4. Antecedentes morbidos pessoais */}
+          <AccordionSectionItem id="em-antecedentes" icon={ClipboardList} iconColor="text-muted-foreground" label="Antecedentes mórbidos pessoais">
+            <ItemListField
+              items={antecedentesItems}
+              onChange={setAntecedentesItems}
+              placeholder="Ex.: HAS, DM2, tabagismo, ex-etilista..."
+              inputAriaLabel="Adicionar antecedente mórbido"
+            />
           </AccordionSectionItem>
 
-          <AccordionSectionItem id="em-conduta" icon={Pill} iconColor="text-muted-foreground" label="Conduta inicial" required>
-            <ReqLabel missing={attempted && missing.plan}>Conduta inicial</ReqLabel>
-            <div className="mt-1">
-              <ItemListField
-                items={planItems}
-                onChange={setPlanItems}
-                placeholder="Ex.: Monitorização contínua"
-                inputAriaLabel="Adicionar item de conduta"
-                inputClassName={reqRing(attempted && missing.plan)}
-              />
+          {/* 5. MUC — medicacoes de uso continuo */}
+          <AccordionSectionItem id="em-muc" icon={Pill} iconColor="text-muted-foreground" label="MUC — Medicações de uso contínuo">
+            <Textarea value={muc} onChange={e => setMuc(e.target.value)} rows={3} className="mt-1" placeholder="Uma medicação por linha..." />
+          </AccordionSectionItem>
+
+          {/* 6. Alergias */}
+          <AccordionSectionItem id="em-alergias" icon={AlertTriangle} iconColor="text-warning-on-soft" label="Alergias medicamentosas">
+            <div className="flex flex-wrap items-center gap-3">
+              <ToggleGroup type="single" value={allergyMode ?? ""} onValueChange={v => { if (v === "nao" || v === "sim") handleAllergyMode(v); }}>
+                <ToggleGroupItem value="nao" className="data-[state=on]:bg-released data-[state=on]:text-white">Nega</ToggleGroupItem>
+                <ToggleGroupItem value="sim" className="data-[state=on]:bg-critical data-[state=on]:text-white">Sim</ToggleGroupItem>
+              </ToggleGroup>
+              {allergyMode === "sim" && (
+                <Input value={allergies === "Nega" ? "" : allergies} onChange={e => setAllergies(e.target.value)} placeholder="Especificar alergia(s)..." className="flex-1 min-w-[12rem]" />
+              )}
             </div>
           </AccordionSectionItem>
 
+          {/* 7. Sinais vitais */}
           <AccordionSectionItem id="em-vitais" icon={HeartPulse} iconColor="text-released-on-soft" label="Sinais vitais">
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               <div><Label className="text-xs">PA sistólica</Label><Input value={paSys} onChange={e => setPaSys(e.target.value)} placeholder="120" className="mt-1" inputMode="numeric" /></div>
@@ -1476,6 +1585,46 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
             </div>
           </AccordionSectionItem>
 
+          {/* 8. Antropometria e dextro */}
+          <AccordionSectionItem id="em-antropometria" icon={Activity} iconColor="text-muted-foreground" label="Antropometria e dextro">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <div><Label className="text-xs">Peso (kg)</Label><Input value={weight} onChange={e => setWeight(e.target.value)} placeholder="kg" className="mt-1" inputMode="decimal" /></div>
+              <div><Label className="text-xs">Altura (m ou cm)</Label><Input value={height} onChange={e => setHeight(e.target.value)} placeholder="1,70 ou 170" className="mt-1" inputMode="decimal" /></div>
+              <div>
+                <Label className="text-xs">IMC</Label>
+                <div className={cn("mt-1 h-10 rounded-md border bg-background px-3 flex items-center justify-between text-sm", imc ? "border-border/40" : "border-border text-muted-foreground/60")}>
+                  {imc ? (<><span className="font-medium text-foreground">{imc.value}</span><span className={cn("text-xs uppercase tracking-wide", imc.color)}>{imc.label}</span></>) : (<span className="text-xs">Peso + altura</span>)}
+                </div>
+              </div>
+              <div><Label className="text-xs">Dextro (mg/dL)</Label><Input value={dx} onChange={e => setDx(e.target.value)} placeholder="mg/dL" className="mt-1" inputMode="numeric" /></div>
+            </div>
+          </AccordionSectionItem>
+
+          {/* 9. Exame fisico — mesmos campos da evolucao (EXAM_FIELDS, inclui pele/outros) */}
+          <AccordionSectionItem id="em-exame" icon={Stethoscope} iconColor="text-muted-foreground" label="Exame físico" hint="Mesmos campos da evolução">
+            <div>
+              <Label className="text-xs">Estado geral</Label>
+              <Textarea value={examFieldState.general.value} onChange={e => examFieldState.general.set(e.target.value)} rows={1} className="mt-1" />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {EXAM_FIELDS.filter(f => f.key !== "general").map(f => (
+                <div key={f.key} className={f.key === "neurological" ? "sm:col-span-2" : undefined}>
+                  <Label className="text-xs">{f.label}</Label>
+                  <Textarea
+                    value={examFieldState[f.key].value}
+                    onChange={e => examFieldState[f.key].set(e.target.value)}
+                    rows={1}
+                    className="mt-1"
+                    placeholder={f.key === "neurological"
+                      ? "Glasgow, pupilas, força, sensibilidade, reflexos, sinais focais..."
+                      : undefined}
+                  />
+                </div>
+              ))}
+            </div>
+          </AccordionSectionItem>
+
+          {/* 10. Glasgow + escores ao vivo */}
           <AccordionSectionItem id="em-glasgow" icon={Brain} iconColor="text-muted-foreground" label="Glasgow + escores ao vivo"
             hint={glasgowTotal != null ? `Glasgow ${glasgowTotal} / 15` : "Selecione O / V / M"}>
             <div className="space-y-3">
@@ -1517,7 +1666,31 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
             </div>
           </AccordionSectionItem>
 
-          {/* ───── COMPLEMENTOS (recolhidos por padrão) ───── */}
+          {/* 11. Exames complementares — mesmo widget da evolucao (RichTextEditor) */}
+          <AccordionSectionItem id="em-exames-comp" icon={FileText} iconColor="text-muted-foreground" label="Exames Complementares" hint="Laboratoriais e de imagem — opcional">
+            <RichTextEditor
+              value={complementares}
+              onChange={setComplementares}
+              placeholder="Cole resultados laboratoriais ou de imagem..."
+              minHeight={120}
+            />
+          </AccordionSectionItem>
+
+          {/* 12. Plano terapeutico */}
+          <AccordionSectionItem id="em-conduta" icon={Pill} iconColor="text-muted-foreground" label="Plano terapêutico" required>
+            <ReqLabel missing={attempted && missing.plan}>Conduta inicial</ReqLabel>
+            <div className="mt-1">
+              <ItemListField
+                items={planItems}
+                onChange={setPlanItems}
+                placeholder="Ex.: Monitorização contínua"
+                inputAriaLabel="Adicionar item de conduta"
+                inputClassName={reqRing(attempted && missing.plan)}
+              />
+            </div>
+          </AccordionSectionItem>
+
+          {/* 13. Previsao de alta */}
           <AccordionSectionItem id="em-previsao" icon={CalendarDays} iconColor="text-muted-foreground" label="Previsão de alta">
             <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-3 items-end">
               <div>
@@ -1535,74 +1708,8 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
             </div>
             <p className="text-xs text-muted-foreground">Resultado: <strong className="text-foreground">{dischargePredictionLabel}</strong></p>
           </AccordionSectionItem>
-
-          <AccordionSectionItem id="em-antecedentes" icon={ClipboardList} iconColor="text-muted-foreground" label="Antecedentes mórbidos pessoais">
-            <ItemListField
-              items={antecedentesItems}
-              onChange={setAntecedentesItems}
-              placeholder="Ex.: HAS, DM2, tabagismo, ex-etilista..."
-              inputAriaLabel="Adicionar antecedente mórbido"
-            />
-          </AccordionSectionItem>
-
-          <AccordionSectionItem id="em-muc" icon={Pill} iconColor="text-muted-foreground" label="MUC — Medicações de uso contínuo">
-            <Textarea value={muc} onChange={e => setMuc(e.target.value)} rows={3} className="mt-1" placeholder="Uma medicação por linha..." />
-          </AccordionSectionItem>
-
-          <AccordionSectionItem id="em-alergias" icon={AlertTriangle} iconColor="text-warning-on-soft" label="Alergias medicamentosas">
-            <div className="flex flex-wrap items-center gap-3">
-              <ToggleGroup type="single" value={allergyMode ?? ""} onValueChange={v => { if (v === "nao" || v === "sim") handleAllergyMode(v); }}>
-                <ToggleGroupItem value="nao" className="data-[state=on]:bg-released data-[state=on]:text-white">Nega</ToggleGroupItem>
-                <ToggleGroupItem value="sim" className="data-[state=on]:bg-critical data-[state=on]:text-white">Sim</ToggleGroupItem>
-              </ToggleGroup>
-              {allergyMode === "sim" && (
-                <Input value={allergies === "Nega" ? "" : allergies} onChange={e => setAllergies(e.target.value)} placeholder="Especificar alergia(s)..." className="flex-1 min-w-[12rem]" />
-              )}
-            </div>
-          </AccordionSectionItem>
-
-          <AccordionSectionItem id="em-antropometria" icon={Activity} iconColor="text-muted-foreground" label="Antropometria e dextro">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              <div><Label className="text-xs">Peso (kg)</Label><Input value={weight} onChange={e => setWeight(e.target.value)} placeholder="kg" className="mt-1" inputMode="decimal" /></div>
-              <div><Label className="text-xs">Altura (m ou cm)</Label><Input value={height} onChange={e => setHeight(e.target.value)} placeholder="1,70 ou 170" className="mt-1" inputMode="decimal" /></div>
-              <div>
-                <Label className="text-xs">IMC</Label>
-                <div className={cn("mt-1 h-10 rounded-md border bg-background px-3 flex items-center justify-between text-sm", imc ? "border-border/40" : "border-border text-muted-foreground/60")}>
-                  {imc ? (<><span className="font-medium text-foreground">{imc.value}</span><span className={cn("text-xs uppercase tracking-wide", imc.color)}>{imc.label}</span></>) : (<span className="text-xs">Peso + altura</span>)}
-                </div>
-              </div>
-              <div><Label className="text-xs">Dextro (mg/dL)</Label><Input value={dx} onChange={e => setDx(e.target.value)} placeholder="mg/dL" className="mt-1" inputMode="numeric" /></div>
-            </div>
-          </AccordionSectionItem>
-
-          <AccordionSectionItem id="em-exame" icon={Stethoscope} iconColor="text-muted-foreground" label="Exame físico">
-            <div>
-              <Label className="text-xs">Estado geral</Label>
-              <Textarea value={physGeneral} onChange={e => setPhysGeneral(e.target.value)} rows={1} className="mt-1" />
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div><Label className="text-xs">Cardiovascular</Label><Textarea value={physCv} onChange={e => setPhysCv(e.target.value)} rows={1} className="mt-1" /></div>
-              <div><Label className="text-xs">Respiratório</Label><Textarea value={physResp} onChange={e => setPhysResp(e.target.value)} rows={1} className="mt-1" /></div>
-              <div><Label className="text-xs">Abdome</Label><Textarea value={physAbd} onChange={e => setPhysAbd(e.target.value)} rows={1} className="mt-1" /></div>
-              <div><Label className="text-xs">Extremidades</Label><Textarea value={physExt} onChange={e => setPhysExt(e.target.value)} rows={1} className="mt-1" /></div>
-              <div className="sm:col-span-2"><Label className="text-xs">Neurológico</Label><Textarea value={physNeuro} onChange={e => setPhysNeuro(e.target.value)} rows={1} className="mt-1" placeholder="Glasgow, pupilas, força, sensibilidade, reflexos, sinais focais..." /></div>
-            </div>
-          </AccordionSectionItem>
-
-          <AccordionSectionItem id="em-hipoteses" icon={Stethoscope} iconColor="text-muted-foreground" label="Hipóteses diagnósticas">
-            <ItemListField
-              items={hypothesesItems}
-              onChange={setHypothesesItems}
-              placeholder="Ex.: Sepse de foco pulmonar"
-              inputAriaLabel="Adicionar hipótese diagnóstica"
-            />
-            <p className="text-xs text-muted-foreground mt-1">Cada item vira uma hipótese no card do paciente.</p>
-          </AccordionSectionItem>
-
-          <AccordionSectionItem id="em-cidsec" icon={FileText} iconColor="text-muted-foreground" label="CID secundário">
-            <CidSearchInput value={cidSecondary} onChange={setCidSecondary} placeholder="Opcional" className="mt-1" />
-          </AccordionSectionItem>
           </Accordion>
+          )}
         </div>
         ) : (
         <div className="w-full min-w-0">
