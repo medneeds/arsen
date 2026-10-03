@@ -625,7 +625,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
               <div className="rounded-md border border-border/70 bg-muted/30 px-2 py-2">
                 <div className="flex items-center gap-2 mb-1">
                   <Activity className="h-3 w-3 text-muted-foreground" />
-                  <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  <span className="text-xs font-medium text-foreground">
                     Dispositivos invasivos
                   </span>
                   <span className="text-xs text-muted-foreground">({total})</span>
@@ -855,7 +855,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
                       <span className="text-xs font-medium text-foreground">Solicitação NIR</span>
                       <NirStatusBadge status={nirRequest.status} />
                       {isPending && (
-                        <span className={cn("inline-flex items-center gap-1 px-2 py-1 rounded-md border text-xs font-semibold uppercase tracking-wide", trackingTone)}>
+                        <span className={cn("inline-flex items-center gap-1 px-2 py-1 rounded-md border text-xs font-semibold", trackingTone)}>
                           <ClockIcon className="h-2.5 w-2.5" />
                           {fmtElapsed} aguardando
                         </span>
@@ -885,7 +885,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
               {/* Autonomia médica — aparece em pending após 30min ou imediatamente se >60min */}
               {isPending && (
                 <div className="border-t border-border/60 px-3 py-2 flex items-center justify-between gap-2">
-                  <span className="text-xs text-muted-foreground uppercase tracking-wide">
+                  <span className="text-xs text-muted-foreground">
                     Autonomia médica
                   </span>
                   <Button
@@ -927,7 +927,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
                       Requisições especiais
                     </span>
                     {specialSummary.pending > 0 && (
-                      <span className="inline-flex items-center rounded-md px-2 py-0 text-xs font-medium uppercase tracking-wide bg-warning/15 text-warning">
+                      <span className="inline-flex items-center rounded-md px-2 py-0 text-xs font-medium bg-warning/15 text-warning">
                         {specialSummary.pending} pendente{specialSummary.pending > 1 ? "s" : ""}
                       </span>
                     )}
@@ -993,7 +993,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-xs font-medium text-foreground">Round multiprofissional</span>
-                    <span className="inline-flex items-center gap-1 rounded-md px-2 py-0 text-xs font-medium uppercase tracking-wide bg-primary/10 text-primary">
+                    <span className="inline-flex items-center gap-1 rounded-md px-2 py-0 text-xs font-medium bg-primary/10 text-primary">
                       {formatDate(round.roundDate)}
                     </span>
                   </div>
@@ -1241,7 +1241,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
               que já tinha sido preenchido. */}
           {receituarios.length > 0 && (
             <div className="rounded-lg border border-border/60 bg-muted/20 p-3 space-y-2">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground px-1">
+              <p className="text-xs font-medium text-muted-foreground px-1">
                 Histórico ({receituarios.length})
               </p>
               <div className="max-h-32 overflow-y-auto space-y-1">
@@ -1456,7 +1456,7 @@ function PrescriptionStatusBadge({ status, signed }: { status: string; signed: b
   };
   const cfg = map[status] || map.draft;
   return (
-    <span className={cn("inline-flex items-center gap-1 rounded-md px-2 py-0 text-xs font-medium uppercase tracking-wide", cfg.className)}>
+    <span className={cn("inline-flex items-center gap-1 rounded-md px-2 py-0 text-xs font-medium", cfg.className)}>
       {cfg.label}
       {signed && <span className="opacity-80">• assinada</span>}
     </span>
@@ -1472,7 +1472,7 @@ function EvolutionStatusBadge({ status, validatedAt }: { status: string; validat
       ? { label: "Validada", className: "bg-released/10 text-released-on-soft" }
       : { label: "Em andamento", className: "bg-warning/15 text-warning" };
   return (
-    <span className={cn("inline-flex items-center gap-1 rounded-md px-2 py-0 text-xs font-medium uppercase tracking-wide", cfg.className)}>
+    <span className={cn("inline-flex items-center gap-1 rounded-md px-2 py-0 text-xs font-medium", cfg.className)}>
       {cfg.label}
     </span>
   );
@@ -1486,7 +1486,7 @@ function News2Badge({ risk, score }: { risk: string; score: number | null }) {
         ? { label: `NEWS2 ${score ?? "?"}`, className: "bg-warning/15 text-warning" }
         : { label: `NEWS2 ${score ?? "?"}`, className: "bg-released/10 text-released-on-soft" };
   return (
-    <span className={cn("inline-flex items-center gap-1 rounded-md px-2 py-0 text-xs font-medium uppercase tracking-wide", cfg.className)}>
+    <span className={cn("inline-flex items-center gap-1 rounded-md px-2 py-0 text-xs font-medium", cfg.className)}>
       {cfg.label}
     </span>
   );
@@ -1501,7 +1501,7 @@ function NirStatusBadge({ status }: { status: string }) {
   };
   const cfg = map[status] || map.pending;
   return (
-    <span className={cn("inline-flex items-center gap-1 rounded-md px-2 py-0 text-xs font-medium uppercase tracking-wide", cfg.className)}>
+    <span className={cn("inline-flex items-center gap-1 rounded-md px-2 py-0 text-xs font-medium", cfg.className)}>
       {cfg.label}
     </span>
   );

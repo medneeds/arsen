@@ -146,7 +146,7 @@ export function PatientIdentityHeader({
           <button
             type="button"
             onClick={onViewFullData ? onViewFullData : () => setShowFullId((v) => !v)}
-            className="mt-2 w-full inline-flex items-center justify-between gap-1 text-xs uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-md border border-border/50 hover:bg-muted/40"
+            className="mt-2 w-full inline-flex items-center justify-between gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-md border border-border/50 hover:bg-muted/40"
           >
             <span className="inline-flex items-center gap-2">
               <IdCard className="h-3 w-3" />
