@@ -355,7 +355,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
       <>
         {rail}
         <Sheet open={mobileSheetOpen} onOpenChange={setMobileSheetOpen}>
-          <SheetContent side="right" className="w-full sm:max-w-md p-0 flex flex-col gap-0 h-[100dvh]">
+          <SheetContent side="right" className="w-full sm:max-w-md p-0 flex flex-col gap-0 h-[100dvh] overflow-hidden">
             <div className="flex-1 min-h-0 overflow-hidden">
               <PatientCockpit patient={patient} variant="inline" className="h-full border-0 rounded-none" />
             </div>
@@ -378,8 +378,8 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
             "top-[4.5rem]",
             // Altura máxima = viewport menos o header — scroll interno quando expandido
             isExpanded
-              ? "max-h-[calc(100vh-5rem)] overflow-y-auto"
-              : "max-h-[calc(100vh-5rem)] overflow-hidden",
+              ? "max-h-[calc(100dvh-5rem)]"
+              : "max-h-[calc(100dvh-5rem)]",
             // Cantos arredondados + overflow-hidden para clipar o conteúdo interno
             "rounded-lg overflow-hidden",
             // Sombra de profundidade multicamadas
@@ -388,7 +388,9 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
             "transition-[width] duration-300 ease-out",
             isExpanded ? "w-[min(24rem,85vw)]" : "w-14",
           ],
-          variant === "inline" && "w-full h-full bg-card border border-primary/20 rounded-lg overflow-hidden",
+          // inline precisa de "flex" explicito: so tinha flex-col (sem efeito em display:block),
+          // entao o corpo nunca recebia altura limitada e o aside apenas cortava o conteudo.
+          variant === "inline" && "flex w-full h-full min-h-0 bg-card border border-primary/20 rounded-lg overflow-hidden",
           "flex-col print:hidden",
           className
         )}
@@ -470,14 +472,14 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
             </span>
           </button>
         )}
-        {/* Expanded content — scrollável para ver todas as informações */}
+        {/* Conteudo expandido: coluna com altura limitada pelo aside. A identidade fica
+            FORA da area rolavel (estavel); o corpo abaixo e o UNICO elemento que rola. */}
         <div className={cn(
-          "flex flex-col flex-1",
-          "overflow-y-auto overscroll-contain",
+          "flex flex-col flex-1 min-h-0",
           variant === "fixed" && !isExpanded && "hidden"
         )}>
-        {/* ===== ZONA 1: IDENTIDADE (sticky) ===== */}
-        <div className="px-3 sm:px-4 pt-3 sm:pt-4 pb-3 sm:pb-3 border-b border-border bg-primary/5">
+        {/* ===== ZONA 1: IDENTIDADE (fixa, fora do scroll) ===== */}
+        <div className="shrink-0 px-3 sm:px-4 pt-3 sm:pt-4 pb-3 sm:pb-3 border-b border-border bg-primary/5">
           <PatientIdentityHeader
             patientId={patient.id}
             fallbackName={patient.name}
@@ -504,6 +506,9 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
           </div>
 
         </div>
+
+        {/* ===== CORPO ROLAVEL (unico scroll do painel) ===== */}
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch] pb-[max(1.5rem,env(safe-area-inset-bottom))]">
 
         {/* ===== ZONA 2: AÇÕES PRIMÁRIAS ===== */}
         {/*
@@ -1213,6 +1218,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
             </TabsContent>
           </div>
         </Tabs>
+        </div>{/* /corpo rolavel */}
         </div>
       </aside>
       <MedicalDocumentDialog
