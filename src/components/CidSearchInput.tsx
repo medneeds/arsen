@@ -28,54 +28,116 @@ interface CidCode {
    renderizar tudo trava o navegador, entao mostramos no maximo este tanto. */
 const MAX_RESULTS = 60;
 
-/* Catálogo carregado uma única vez e compartilhado entre instâncias */
+const normalize = (s: string) =>
+  s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
+/* ---------------------------------------------------------------------------
+   Cache do catalogo de CID.
+   - CATALOG_CACHE: memoria (por aba), compartilhado entre instancias.
+   - IndexedDB: persiste entre recargas/F5 e entre sessoes no mesmo aparelho,
+     validado pela contagem de linhas da tabela. Assim a tela so baixa os ~14k
+     codigos UMA vez por aparelho (ou quando a tabela muda), em vez de a cada
+     carga. Toda operacao de IDB falha de forma silenciosa e cai para a rede;
+     a busca continua client-side (acento-insensivel via normalize).
+--------------------------------------------------------------------------- */
 let CATALOG_CACHE: CidCode[] | null = null;
 let CATALOG_PROMISE: Promise<CidCode[]> | null = null;
+
+const IDB_NAME = "arsen-cid-cache";
+const IDB_STORE = "kv";
+const IDB_KEY = "cid10_catalog_v1";
+
+interface CachedCatalog { count: number; rows: CidCode[]; }
+
+function idbOpen(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(IDB_NAME, 1);
+    req.onupgradeneeded = () => {
+      if (!req.result.objectStoreNames.contains(IDB_STORE)) req.result.createObjectStore(IDB_STORE);
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function idbGet(key: string): Promise<CachedCatalog | null> {
+  try {
+    const db = await idbOpen();
+    return await new Promise<CachedCatalog | null>((resolve) => {
+      const tx = db.transaction(IDB_STORE, "readonly");
+      const r = tx.objectStore(IDB_STORE).get(key);
+      r.onsuccess = () => resolve((r.result as CachedCatalog) ?? null);
+      r.onerror = () => resolve(null);
+    });
+  } catch { return null; }
+}
+
+async function idbSet(key: string, val: CachedCatalog): Promise<void> {
+  try {
+    const db = await idbOpen();
+    await new Promise<void>((resolve) => {
+      const tx = db.transaction(IDB_STORE, "readwrite");
+      tx.objectStore(IDB_STORE).put(val, key);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => resolve();
+    });
+  } catch { /* cache best-effort: ignora falha de escrita */ }
+}
+
+async function fetchAllFromServer(): Promise<CidCode[]> {
+  const all: CidCode[] = [];
+  const PAGE = 1000;
+  let from = 0;
+  // paginado para passar do limite padrao de 1000 linhas por resposta
+  while (true) {
+    // Tabela dedicada `cid10_codes`. A "categoria" de exibicao usa capitulo
+    // (capitulo CID) quando presente, senao categoria.
+    const { data, error } = await supabase
+      .from("cid10_codes")
+      .select("codigo, descricao, categoria, capitulo")
+      .order("codigo")
+      .range(from, from + PAGE - 1);
+    if (error || !data || data.length === 0) break;
+    all.push(...data.map((r: { codigo: string | null; descricao: string | null; categoria: string | null; capitulo: string | null }) => {
+      const code = r.codigo ?? "";
+      const description = r.descricao ?? "";
+      const category = r.capitulo ?? r.categoria ?? "";
+      return { code, description, category, ncode: normalize(code), ndesc: normalize(description), ncat: normalize(category) };
+    }) as CidCode[]);
+    if (data.length < PAGE) break;
+    from += PAGE;
+  }
+  return all;
+}
 
 function loadCatalog(): Promise<CidCode[]> {
   if (CATALOG_CACHE) return Promise.resolve(CATALOG_CACHE);
   if (CATALOG_PROMISE) return CATALOG_PROMISE;
   CATALOG_PROMISE = (async () => {
-    const all: CidCode[] = [];
-    const PAGE = 1000;
-    let from = 0;
-    // paginate to bypass 1000-row default limit
-    // (the table currently has ~255 rows but this is future-proof)
-     
-    while (true) {
-      // Tabela dedicada `cid10_codes` (mantida com o mesmo nome, a pedido).
-      // code→codigo, description→descricao. A "categoria" de exibição usa
-      // capitulo (capítulo CID) quando presente, senão categoria.
-      const { data, error } = await supabase
+    // 1. Contagem viva da tabela (query leve, head) para validar o cache local.
+    let liveCount: number | null = null;
+    try {
+      const { count } = await supabase
         .from("cid10_codes")
-        .select("codigo, descricao, categoria, capitulo")
-        .order("codigo")
-        .range(from, from + PAGE - 1);
-      if (error || !data || data.length === 0) break;
-      all.push(...data.map((r: { codigo: string | null; descricao: string | null; categoria: string | null; capitulo: string | null }) => {
-        const code = r.codigo ?? "";
-        const description = r.descricao ?? "";
-        const category = r.capitulo ?? r.categoria ?? "";
-        return {
-          code,
-          description,
-          category,
-          ncode: normalize(code),
-          ndesc: normalize(description),
-          ncat: normalize(category),
-        };
-      }) as CidCode[]);
-      if (data.length < PAGE) break;
-      from += PAGE;
+        .select("*", { count: "exact", head: true });
+      liveCount = typeof count === "number" ? count : null;
+    } catch { liveCount = null; }
+
+    // 2. Cache local: usa se a contagem bater (ou se a rede nao respondeu a contagem).
+    const cached = await idbGet(IDB_KEY);
+    if (cached?.rows?.length && (liveCount === null || cached.count === liveCount)) {
+      CATALOG_CACHE = cached.rows;
+      return cached.rows;
     }
+
+    // 3. Baixa tudo e repovoa o cache local.
+    const all = await fetchAllFromServer();
     CATALOG_CACHE = all;
+    if (all.length) void idbSet(IDB_KEY, { count: liveCount ?? all.length, rows: all });
     return all;
   })();
   return CATALOG_PROMISE;
 }
-
-const normalize = (s: string) =>
-  s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
 export function CidSearchInput({
   value, onChange, placeholder, className,
