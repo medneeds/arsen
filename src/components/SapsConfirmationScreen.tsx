@@ -80,7 +80,9 @@ export function SapsConfirmationScreen({
         });
         if (sectorCode) params.set("patientSector", sectorCode);
         if (age) params.set("patientAge", age);
-        navigate(`/paciente?${params.toString()}`);
+        // SAPS preenchido/validado segue DIRETO para a admissao (nao mais para o
+        // hub do paciente) — o SAPS e etapa que antecede a admissao da UTI/UCI.
+        navigate(`/admissao?${params.toString()}`);
       } else {
         navigate("/painel-clinico");
       }

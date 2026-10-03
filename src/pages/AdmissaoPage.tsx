@@ -94,10 +94,10 @@ export default function AdmissaoPage() {
   // ─── Aba SAPS 3 dentro da Admissao (UTI 1/2, UCI 2) — visualizacao completa
   // read-only da ficha ja gravada + impressao apos validacao. A ficha e editada
   // na /saps3; aqui e consulta.
-  // Abre na aba SAPS quando o setor exige (SAPS vem antes da admissao no fluxo).
-  const [activeTab, setActiveTab] = useState<"admissao" | "saps">(
-    SAPS_SECTORS.includes(patientSector) ? "saps" : "admissao",
-  );
+  // Abre SEMPRE na aba Admissao: o tipo de admissao e a tela primaria, e o SAPS
+  // e etapa da via Cuidados Intensivos (fica acessivel pela aba, sem preemptar o
+  // topo). A navegacao vinda do SAPS validado ja chega para registrar a admissao.
+  const [activeTab, setActiveTab] = useState<"admissao" | "saps">("admissao");
   const [sapsRow, setSapsRow] = useState<SapsRow | null>(null);
   // Forca o refetch da sapsRow apos o embute salvar/validar (onEmbeddedDone).
   const [sapsReloadTick, setSapsReloadTick] = useState(0);
