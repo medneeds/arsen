@@ -1,3 +1,17 @@
+// ============================================================================
+// OBSOLETO - NAO IMPLANTAR / NAO EXECUTAR.
+//
+// Esta function insere em cid10_codes com colunas em INGLES (code, description,
+// category, chapter) que NAO existem na tabela real (colunas em portugues:
+// codigo, descricao, categoria, capitulo). Qualquer execucao falharia no insert.
+// Alem disso so traz ~algumas centenas de codigos hardcoded.
+//
+// Fonte de verdade do CID-10: a tabela cid10_codes ja esta populada com o
+// catalogo DATASUS completo (14233 codigos), registrado na migration
+// 20261003170000_cid10_datasus_completo_seed.sql e aplicado via Table Editor.
+// O guard de count>0 hoje impede qualquer insert, mas o arquivo fica aqui
+// apenas como registro historico. Para repopular, use o seed DATASUS.
+// ============================================================================
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {

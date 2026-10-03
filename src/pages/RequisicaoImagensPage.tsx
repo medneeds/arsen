@@ -252,10 +252,11 @@ const RequisicaoImagensPage = () => {
         setHydratedFromRegistry(true);
 
         // Diagnóstico a partir da própria internação.
-        // MIGRAÇÃO: CID (cid_primary/cid_secondary) e cid10_codes não têm coluna/
-        // tabela de destino utilizável aqui → cidPrimary/cidSecondary degradados
-        // (permanecem em branco; o médico preenche). Diagnóstico vem de
-        // internacoes.hipotese_diagnostica (fallback: queixa_principal).
+        // MIGRAÇÃO: internacoes não tem coluna cid_primary/cid_secondary, então
+        // não há como puxar o CID da admissão aqui → cidPrimary/cidSecondary
+        // degradados (o médico preenche; a busca usa o catálogo vivo cid10_codes
+        // via CidSearchInput). Diagnóstico vem de internacoes.hipotese_diagnostica
+        // (fallback: queixa_principal).
         const diagFromInternacao =
           (internacao as any).hipotese_diagnostica ||
           (internacao as any).queixa_principal ||
