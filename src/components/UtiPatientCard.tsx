@@ -1,6 +1,6 @@
 import { Patient } from "@/types/patient";
 import { DischargeStatusRibbon } from "./DischargeStatusRibbon";
-import { calcDIH, getEffectiveAdmissionDate } from "@/lib/dihCalc";
+import { calcDIH, getMapDihAnchorDate } from "@/lib/dihCalc";
 import { useSectorStayTimer } from "@/hooks/useSectorStayTimer";
 import { isExtraBed } from "@/utils/bedNaming";
 import { formatDateBR } from "@/utils/dateUtils";
@@ -718,14 +718,17 @@ export function UtiPatientCard({
   const colors = colorSchemes[colorVariant];
 
   const daysInUti = useMemo(() => {
-    const eff = getEffectiveAdmissionDate({
+    // DIH do mapa: admissao hospitalar; se ausente, cai para a data de admissao
+    // no setor (sectorSince) — mesma regra do card nao-UTI. Nao usa
+    // getEffectiveAdmissionDate (essa alimenta o rotulo Dn da timeline).
+    const eff = getMapDihAnchorDate({
       utiAdmissionDate: patient.utiAdmissionDate,
       admittedAt: patient.admittedAt,
       admissionDate: patient.admissionDate,
-      sector: patient.sector,
+      sectorSince: patient.sectorSince,
     });
     return calcDIH(eff) ?? 0;
-  }, [patient.utiAdmissionDate, patient.admittedAt, patient.admissionDate, patient.sector]);
+  }, [patient.utiAdmissionDate, patient.admittedAt, patient.admissionDate, patient.sectorSince]);
 
   // TPS (Tempo de Permanencia no Setor): entrada no setor atual (sectorSince =
   // conclusao da ultima transferencia interna); fallback admissao hospitalar para

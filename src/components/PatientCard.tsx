@@ -27,7 +27,7 @@ import { useBedAllocationRequests } from "@/hooks/useBedAllocationRequests";
 import { formatAgeDisplay } from "@/utils/ageDisplay";
 import { differenceInDays, differenceInHours, differenceInMinutes, parseISO, isValid, parse } from "date-fns";
 import { useSectorStayTimer } from "@/hooks/useSectorStayTimer";
-import { calcDIH, formatDIHLabel, formatAdmissionDateBR, getEffectiveAdmissionDate } from "@/lib/dihCalc";
+import { calcDIH, formatDIHLabel, formatAdmissionDateBR, getEffectiveAdmissionDate, getMapDihAnchorDate } from "@/lib/dihCalc";
 import { usePrivacy, maskName } from "@/contexts/PrivacyContext";
 import { useConductHistory } from "@/hooks/useConductHistory";
 import { ConductHistoryDialog } from "./ConductHistoryDialog";
@@ -676,7 +676,9 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
   const stayTimer = useSectorStayTimer(patient.sectorSince ?? patient.admissionDate);
   // DIH (Dias de Internacao Hospitalar): ancora na admissao hospitalar
   // (data_entrada) e NAO reinicia em transferencia interna — distinta do TPS.
-  const dih = calcDIH(patient.admissionDate);
+  // DIH do mapa: usa a ancora do mapa (admissao hospitalar; se ausente, data de
+  // admissao no setor) para o selo nunca sumir por data_entrada vazia.
+  const dih = calcDIH(getMapDihAnchorDate(patient));
 
   // O detalhamento clinico (hipoteses/antecedentes/pendencias) saiu do mapa e
   // vive na Passagem de Plantao (Painel Clinico) — o mapa deixa de ser ambiente

@@ -88,4 +88,36 @@ export function getEffectiveAdmissionDate(p: {
   return null;
 }
 
+/**
+ * Ancora do DIH EXCLUSIVA DO MAPA DE LEITOS. Regra clinica (Artur): quando NAO ha
+ * data de admissao HOSPITALAR configurada (internacoes.data_entrada vazia), o DIH
+ * do mapa deve contar a partir da data de admissao NO SETOR — senao o selo DIH
+ * some ou mostra data incongruente, enquanto o TPS (sectorSince) segue certo.
+ *
+ * Ordem:
+ *   1) admittedAt / admissionDate  — data de admissao hospitalar (data_entrada)
+ *   2) sectorSince                 — entrada no setor atual (evento de transferencia
+ *                                    mais recente OU data_admissao_uti; ja resolvido
+ *                                    em usePatients). Fallback quando (1) esta vazio.
+ *   3) utiAdmissionDate[0]         — ultimo recurso.
+ *
+ * NAO usar getEffectiveAdmissionDate aqui: aquela alimenta o rotulo Dn da timeline
+ * de evolucoes e os impressos, que devem permanecer ancorados so na admissao
+ * hospitalar. Este helper e so para o selo DIH dos cards do mapa.
+ */
+export function getMapDihAnchorDate(p: {
+  utiAdmissionDate?: string | string[] | null;
+  admittedAt?: string | null;
+  admissionDate?: string | null;
+  sectorSince?: string | null;
+} | null | undefined): string | null {
+  if (!p) return null;
+  if (p.admittedAt) return p.admittedAt;
+  if (p.admissionDate) return p.admissionDate;
+  if (p.sectorSince) return p.sectorSince;
+  const uti = Array.isArray(p.utiAdmissionDate) ? p.utiAdmissionDate[0] : p.utiAdmissionDate;
+  if (uti) return uti as string;
+  return null;
+}
+
 
