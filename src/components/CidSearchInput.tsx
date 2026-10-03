@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
@@ -148,9 +149,20 @@ export function CidSearchInput({
   const [isLoading, setIsLoading] = useState(!CATALOG_CACHE);
   const containerRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  /* Posicao do dropdown: renderizado em portal no body (posicao fixa) para
+     escapar do overflow-hidden do AccordionContent, que recortava a lista. */
+  const [menuRect, setMenuRect] = useState<{ top: number; left: number; width: number } | null>(null);
 
   const selectedCode = value ? value.split(" - ")[0] : "";
   const selectedDesc = value ? value.substring(value.indexOf(" - ") + 3) : "";
+
+  const updateMenuRect = useCallback(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    setMenuRect({ top: r.bottom + 4, left: r.left, width: r.width });
+  }, []);
 
   /* Carrega catálogo uma vez */
   useEffect(() => {
@@ -162,16 +174,30 @@ export function CidSearchInput({
     return () => { mounted = false; };
   }, []);
 
-  /* Fecha ao clicar fora */
+  /* Fecha ao clicar fora (considera tambem o dropdown em portal) */
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
-      }
+      const t = e.target as Node;
+      if (containerRef.current?.contains(t)) return;
+      if (dropdownRef.current?.contains(t)) return;
+      setIsOpen(false);
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  /* Recalcula a posicao do dropdown enquanto aberto (scroll/resize do dialog) */
+  useEffect(() => {
+    if (!(isOpen && !value)) return;
+    updateMenuRect();
+    const onMove = () => updateMenuRect();
+    window.addEventListener("scroll", onMove, true);
+    window.addEventListener("resize", onMove);
+    return () => {
+      window.removeEventListener("scroll", onMove, true);
+      window.removeEventListener("resize", onMove);
+    };
+  }, [isOpen, value, updateMenuRect]);
 
   /* Filtra sobre campos pre-normalizados (includes barato, sem NFD por tecla) */
   const matches = useMemo(() => {
@@ -281,8 +307,12 @@ export function CidSearchInput({
         </div>
       )}
 
-      {isOpen && !value && (
-        <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-md overflow-hidden">
+      {isOpen && !value && menuRect && createPortal(
+        <div
+          ref={dropdownRef}
+          style={{ position: "fixed", top: menuRect.top, left: menuRect.left, width: menuRect.width, zIndex: 9999 }}
+          className="bg-popover border rounded-md shadow-md overflow-hidden"
+        >
           <div className="px-3 py-2 text-xs uppercase tracking-wide text-muted-foreground bg-muted/40 border-b flex items-center justify-between">
             <span>{search ? `${matches.length} ${matches.length === 1 ? 'resultado' : 'resultados'}` : `${catalog.length} CIDs disponíveis`}</span>
             <span className="font-normal">{hiddenCount > 0 ? `mostrando ${MAX_RESULTS} — refine a busca` : 'Role ou digite'}</span>
@@ -321,7 +351,8 @@ export function CidSearchInput({
               </div>
             ))}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
