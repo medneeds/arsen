@@ -1027,35 +1027,24 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
   //
   // Modo EMERGENCIA (Sala Vermelha): obrigatorios reduzidos ao minimo do paciente
   // em estabilizacao — HDA + CID primario + Conduta. "Estado geral" do exame fisico
-  // NAO bloqueia. Nos modos uti/enfermaria os obrigatorios atuais permanecem
-  // (HDA + Estado geral + Conduta).
-  const missingList = (isEmergencia
-    ? [
-        missing.hda && "HDA",
-        missing.cidPrimary && "CID primário",
-        missing.plan && "Conduta inicial",
-      ]
-    : [
-        missing.hda && "HDA",
-        missing.examGeneral && "Estado geral (exame físico)",
-        missing.plan && "Conduta inicial",
-      ]
-  ).filter(Boolean) as string[];
+  // OBRIGATORIOS UNIFICADOS em TODAS as vias (emergencia, enfermaria, UTI):
+  // HDA + CID primario + Conduta/Plano. O exame fisico (Estado geral) deixa de ser
+  // obrigatorio — mesma estrutura de obrigatorios do padrao da emergencia, o que
+  // permite importar dados entre admissoes com os mesmos campos exigidos.
+  const missingList = ([
+    missing.hda && "HDA",
+    missing.cidPrimary && "CID primário",
+    missing.plan && "Conduta inicial",
+  ]).filter(Boolean) as string[];
 
   const validate = (): string | null => {
     if (missing.hda) return "História da Doença Atual (HDA) é obrigatória";
-    if (isEmergencia) {
-      if (missing.cidPrimary) return "CID primário é obrigatório";
-    } else {
-      if (missing.examGeneral) return "Estado geral (exame físico) é obrigatório";
-    }
+    if (missing.cidPrimary) return "CID primário é obrigatório";
     if (missing.plan) return "Conduta inicial é obrigatória";
     return null;
   };
 
-  const canValidate = isEmergencia
-    ? !missing.hda && !missing.cidPrimary && !missing.plan
-    : !missing.hda && !missing.examGeneral && !missing.plan;
+  const canValidate = !missing.hda && !missing.cidPrimary && !missing.plan;
 
   const handleSaveDraft = () => {
     try {
@@ -1790,6 +1779,8 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
             onValueChange={setOpenSections}
             className="rounded-lg border border-border bg-card divide-y divide-border"
           >
+            {/* ORDEM UNIFICADA (igual ao padrao da emergencia), para importacao de
+                dados entre admissoes aproveitar os campos na mesma sequencia. */}
             <AccordionSectionItem id="nm-diagnostico" icon={FileText} iconColor="text-foreground" label="Diagnóstico (CID-10)" hint="Busca por código ou descrição" required>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
@@ -1798,40 +1789,22 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
                     placeholder="Ex.: J18, pneumonia..." className={cn("mt-1", reqRing(attempted && missing.cidPrimary))} />
                 </div>
                 <div>
-                  <Label className="text-xs">CID secundário</Label>
+                  <Label className="text-xs">CID secundário <span className="font-normal text-muted-foreground">(opcional)</span></Label>
                   <CidSearchInput value={cidSecondary} onChange={setCidSecondary}
                     placeholder="Opcional" className="mt-1" />
                 </div>
               </div>
             </AccordionSectionItem>
 
-            <AccordionSectionItem id="nm-previsao" icon={CalendarDays} iconColor="text-warning-on-soft" label="Previsão de alta" hint="Dias e data sincronizados">
-              <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-3 items-end">
-                <div>
-                  <Label className="text-xs flex items-center gap-1"><Hash className="h-3 w-3" /> Dias de internação previstos</Label>
-                  <Input
-                    type="number" min={0} value={predictionDays}
-                    onChange={e => handleDaysChange(e.target.value)}
-                    disabled={noPrediction}
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs flex items-center gap-1"><CalendarDays className="h-3 w-3" /> Data prevista</Label>
-                  <Input
-                    type="date" value={predictionDate}
-                    onChange={e => handleDateChange(e.target.value)}
-                    disabled={noPrediction}
-                    className="mt-1"
-                  />
-                </div>
-                <label className="flex items-center gap-2 text-xs text-foreground pb-2 select-none">
-                  <Checkbox checked={noPrediction} onCheckedChange={v => setNoPrediction(v === true)} />
-                  Sem previsão
-                </label>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Resultado: <strong className="text-foreground">{dischargePredictionLabel}</strong>
+            <AccordionSectionItem id="nm-hipoteses" icon={Stethoscope} iconColor="text-foreground" label="Hipóteses Diagnósticas" hint="Um item por hipótese — sincroniza automaticamente com o painel clínico">
+              <ItemListField
+                items={hypothesesItems}
+                onChange={setHypothesesItems}
+                placeholder="Ex.: Sepse de foco pulmonar"
+                inputAriaLabel="Adicionar hipótese diagnóstica"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Cada item vira uma hipótese no card do paciente. Esse campo passa a ser <strong>somente leitura no painel</strong> e só é atualizado por nova evolução clínica.
               </p>
             </AccordionSectionItem>
 
@@ -1876,32 +1849,6 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
               </div>
             </AccordionSectionItem>
 
-            <AccordionSectionItem
-              id="nm-glasgow"
-              icon={Brain}
-              iconColor="text-muted-foreground"
-              label="Escala de Coma de Glasgow"
-              hint={glasgowTotal != null ? `Total ${glasgowTotal} / 15` : "Selecione O / V / M"}
-            >
-              <div className="space-y-3">
-                <GlasgowRow label="Abertura ocular (1-4)" options={GLASGOW_EYE} value={glasgowEye} onSelect={setGlasgowEye} />
-                <GlasgowRow label="Resposta verbal (1-5)" options={GLASGOW_VERBAL} value={glasgowVerbal} onSelect={setGlasgowVerbal} />
-                <GlasgowRow label="Resposta motora (1-6)" options={GLASGOW_MOTOR} value={glasgowMotor} onSelect={setGlasgowMotor} />
-                <div className="flex items-center justify-between rounded-md border border-border bg-background px-3 py-2">
-                  <span className="text-xs uppercase tracking-wide text-muted-foreground">Total de Glasgow</span>
-                  <span className={cn(
-                    "text-lg font-semibold",
-                    glasgowTotal == null ? "text-muted-foreground"
-                      : glasgowTotal <= 8 ? "text-critical-on-soft"
-                      : glasgowTotal <= 12 ? "text-warning-on-soft"
-                      : "text-released-on-soft"
-                  )}>
-                    {glasgowTotal != null ? `${glasgowTotal} / 15` : "— / 15"}
-                  </span>
-                </div>
-              </div>
-            </AccordionSectionItem>
-
             <AccordionSectionItem id="nm-vitais" icon={HeartPulse} iconColor="text-released-on-soft" label="Sinais vitais admissionais">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 <div><Label className="text-xs">FC (bpm)</Label><Input value={fc} onChange={e => setFc(e.target.value)} placeholder="bpm" className="mt-1" inputMode="numeric" /></div>
@@ -1936,6 +1883,61 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
                       <span className="text-xs">Preencha peso e altura</span>
                     )}
                   </div>
+                </div>
+              </div>
+            </AccordionSectionItem>
+
+            <AccordionSectionItem id="nm-exame" icon={Stethoscope} iconColor="text-muted-foreground" label="Exame físico" hint="Mesmos campos da evolução">
+              <div>
+                <Label className="text-xs">Estado geral</Label>
+                <Textarea
+                  value={examFieldState.general.value}
+                  onChange={e => examFieldState.general.set(e.target.value)}
+                  rows={1}
+                  className="mt-1"
+                />
+              </div>
+              {/* Demais aparelhos — campos/rotulos/ordem IDENTICOS a evolucao. */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {EXAM_FIELDS.filter(f => f.key !== "general").map(f => (
+                  <div key={f.key} className={f.key === "neurological" ? "sm:col-span-2" : undefined}>
+                    <Label className="text-xs">{f.label}</Label>
+                    <Textarea
+                      value={examFieldState[f.key].value}
+                      onChange={e => examFieldState[f.key].set(e.target.value)}
+                      rows={1}
+                      className="mt-1"
+                      placeholder={f.key === "neurological"
+                        ? "Glasgow, pupilas, força, sensibilidade, reflexos, sinais focais..."
+                        : undefined}
+                    />
+                  </div>
+                ))}
+              </div>
+            </AccordionSectionItem>
+
+            <AccordionSectionItem
+              id="nm-glasgow"
+              icon={Brain}
+              iconColor="text-muted-foreground"
+              label="Escala de Coma de Glasgow"
+              hint={glasgowTotal != null ? `Total ${glasgowTotal} / 15` : "Selecione O / V / M"}
+            >
+              <div className="space-y-3">
+                <GlasgowRow label="Abertura ocular (1-4)" options={GLASGOW_EYE} value={glasgowEye} onSelect={setGlasgowEye} />
+                <GlasgowRow label="Resposta verbal (1-5)" options={GLASGOW_VERBAL} value={glasgowVerbal} onSelect={setGlasgowVerbal} />
+                <GlasgowRow label="Resposta motora (1-6)" options={GLASGOW_MOTOR} value={glasgowMotor} onSelect={setGlasgowMotor} />
+                <div className="flex items-center justify-between rounded-md border border-border bg-background px-3 py-2">
+                  <span className="text-xs uppercase tracking-wide text-muted-foreground">Total de Glasgow</span>
+                  <span className={cn(
+                    "text-lg font-semibold",
+                    glasgowTotal == null ? "text-muted-foreground"
+                      : glasgowTotal <= 8 ? "text-critical-on-soft"
+                      : glasgowTotal <= 12 ? "text-warning-on-soft"
+                      : "text-released-on-soft"
+                  )}>
+                    {glasgowTotal != null ? `${glasgowTotal} / 15` : "— / 15"}
+                  </span>
                 </div>
               </div>
             </AccordionSectionItem>
@@ -1976,36 +1978,6 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
               </div>
             </AccordionSectionItem>
 
-            <AccordionSectionItem id="nm-exame" icon={Stethoscope} iconColor="text-muted-foreground" label="Exame físico" hint="Mesmos campos da evolução" required>
-              {/* Estado geral — obrigatorio (fora da grade, com ReqLabel). */}
-              <div>
-                <ReqLabel missing={attempted && missing.examGeneral}>Estado geral</ReqLabel>
-                <Textarea
-                  value={examFieldState.general.value}
-                  onChange={e => examFieldState.general.set(e.target.value)}
-                  rows={1}
-                  className={cn("mt-1", reqRing(attempted && missing.examGeneral))}
-                />
-              </div>
-              {/* Demais aparelhos — campos/rotulos/ordem IDENTICOS a evolucao. */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {EXAM_FIELDS.filter(f => f.key !== "general").map(f => (
-                  <div key={f.key} className={f.key === "neurological" ? "sm:col-span-2" : undefined}>
-                    <Label className="text-xs">{f.label}</Label>
-                    <Textarea
-                      value={examFieldState[f.key].value}
-                      onChange={e => examFieldState[f.key].set(e.target.value)}
-                      rows={1}
-                      className="mt-1"
-                      placeholder={f.key === "neurological"
-                        ? "Glasgow, pupilas, força, sensibilidade, reflexos, sinais focais..."
-                        : undefined}
-                    />
-                  </div>
-                ))}
-              </div>
-            </AccordionSectionItem>
-
             {/* Exames complementares — mesmo widget da evolucao (RichTextEditor).
                 Persistido em internacoes.exames_relevantes no handleSubmit. */}
             <AccordionSectionItem id="nm-exames-comp" icon={FileText} iconColor="text-muted-foreground" label="Exames Complementares" hint="Laboratoriais e de imagem — opcional">
@@ -2030,15 +2002,33 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
               </div>
             </AccordionSectionItem>
 
-            <AccordionSectionItem id="nm-hipoteses" icon={Stethoscope} iconColor="text-foreground" label="Hipóteses Diagnósticas" hint="Um item por hipótese — sincroniza automaticamente com o painel clínico">
-              <ItemListField
-                items={hypothesesItems}
-                onChange={setHypothesesItems}
-                placeholder="Ex.: Sepse de foco pulmonar"
-                inputAriaLabel="Adicionar hipótese diagnóstica"
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Cada item vira uma hipótese no card do paciente. Esse campo passa a ser <strong>somente leitura no painel</strong> e só é atualizado por nova evolução clínica.
+            <AccordionSectionItem id="nm-previsao" icon={CalendarDays} iconColor="text-warning-on-soft" label="Previsão de alta" hint="Dias e data sincronizados">
+              <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-3 items-end">
+                <div>
+                  <Label className="text-xs flex items-center gap-1"><Hash className="h-3 w-3" /> Dias de internação previstos</Label>
+                  <Input
+                    type="number" min={0} value={predictionDays}
+                    onChange={e => handleDaysChange(e.target.value)}
+                    disabled={noPrediction}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs flex items-center gap-1"><CalendarDays className="h-3 w-3" /> Data prevista</Label>
+                  <Input
+                    type="date" value={predictionDate}
+                    onChange={e => handleDateChange(e.target.value)}
+                    disabled={noPrediction}
+                    className="mt-1"
+                  />
+                </div>
+                <label className="flex items-center gap-2 text-xs text-foreground pb-2 select-none">
+                  <Checkbox checked={noPrediction} onCheckedChange={v => setNoPrediction(v === true)} />
+                  Sem previsão
+                </label>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Resultado: <strong className="text-foreground">{dischargePredictionLabel}</strong>
               </p>
             </AccordionSectionItem>
 
