@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Copy, IdCard, ChevronDown, ShieldAlert } from "lucide-react";
+import { Copy, IdCard, ChevronDown, ShieldAlert, Pin } from "lucide-react";
 import { format, parseISO, isValid } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
@@ -35,6 +35,13 @@ export interface PatientIdentityHeaderProps {
   showFullDetailsToggle?: boolean;
   /** Quando true, renderiza o painel completo sempre aberto (sem botão de toggle). */
   alwaysExpanded?: boolean;
+  /** Controle de "fixar painel": quando fornecido, renderiza um pino compacto a
+   *  ESQUERDA do nome (usado na cockpit fixa, no lugar da barra de "Fixar"). */
+  pinControl?: { pinned: boolean; onToggle: () => void };
+  /** Quando fornecido, o botão "Ver dados do prontuário" chama isto (abrir o
+   *  dialogo que mostra os dados completos + edicao) em vez de expandir o painel
+   *  inline read-only. Centraliza ver+editar numa superficie so. */
+  onViewFullData?: () => void;
 }
 
 const clinicalStatusConfig: Record<string, { label: string; dot: string; bg: string }> = {
@@ -76,6 +83,8 @@ export function PatientIdentityHeader({
   className,
   showFullDetailsToggle = true,
   alwaysExpanded = false,
+  pinControl,
+  onViewFullData,
 }: PatientIdentityHeaderProps) {
   const { namesHidden } = usePrivacy();
   const { currentHospital } = useHospital();
@@ -110,6 +119,22 @@ export function PatientIdentityHeader({
         "flex items-start justify-between gap-2",
         isCockpit ? "mb-2" : "mb-2"
       )}>
+        {pinControl && (
+          <button
+            type="button"
+            onClick={pinControl.onToggle}
+            title={pinControl.pinned ? "Desafixar (recolhe ao tirar o mouse)" : "Fixar painel aberto"}
+            aria-pressed={pinControl.pinned}
+            className={cn(
+              "mt-0.5 shrink-0 inline-flex items-center justify-center h-6 w-6 rounded-md transition-colors",
+              pinControl.pinned
+                ? "text-primary bg-primary/10"
+                : "text-muted-foreground hover:text-primary hover:bg-primary/10",
+            )}
+          >
+            <Pin className={cn("h-3.5 w-3.5", pinControl.pinned && "fill-current")} />
+          </button>
+        )}
         <div className="min-w-0 flex-1">
           <h3 className={cn(
             "patient-id font-semibold leading-tight text-foreground",
@@ -149,16 +174,20 @@ export function PatientIdentityHeader({
         <>
           <button
             type="button"
-            onClick={() => setShowFullId((v) => !v)}
+            onClick={onViewFullData ? onViewFullData : () => setShowFullId((v) => !v)}
             className="mt-2 w-full inline-flex items-center justify-between gap-1 text-xs uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-md border border-border/50 hover:bg-muted/40"
           >
             <span className="inline-flex items-center gap-2">
               <IdCard className="h-3 w-3" />
-              {showFullId ? "Ocultar dados completos" : "Ver dados do prontuário"}
+              {onViewFullData ? "Ver dados do prontuário" : (showFullId ? "Ocultar dados completos" : "Ver dados do prontuário")}
             </span>
-            <ChevronDown className={cn("h-3 w-3 transition-transform", showFullId && "rotate-180")} />
+            {/* Sem onViewFullData: expande o painel inline (chevron). Com
+                onViewFullData: abre o dialogo (ver + editar), sem chevron. */}
+            {!onViewFullData && (
+              <ChevronDown className={cn("h-3 w-3 transition-transform", showFullId && "rotate-180")} />
+            )}
           </button>
-          {showFullId && (
+          {!onViewFullData && showFullId && (
             <div className="mt-2 rounded-md border border-border/60 bg-background/60 p-3 space-y-2 text-xs">
               <FullIdRow label="Nome social" value={registry?.socialName} />
               <FullIdRow label="CPF" value={registry?.cpf} mono />

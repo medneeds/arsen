@@ -45,7 +45,7 @@ import { usePatientLive } from "@/hooks/usePatientLive";
 import { formatDistanceToNow } from "date-fns";
 import { usePatientDischargeDocs } from "@/hooks/usePatientDischargeDocs";
 import { printDischargeDocument, DISCHARGE_DOC_SHORT } from "@/lib/dischargeDocuments";
-import { Skull, FileSignature, ArrowLeftRight, Pencil } from "lucide-react";
+import { Skull, FileSignature, ArrowLeftRight } from "lucide-react";
 import { MedicalDocumentDialog } from "./MedicalDocumentDialog";
 import { CVCChecklistDialog } from "./CVCChecklistDialog";
 import { PatientRoundPrintDialog } from "./PatientRoundPrintDialog";
@@ -476,24 +476,6 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
           "overflow-y-auto overscroll-contain",
           variant === "fixed" && !isExpanded && "hidden"
         )}>
-        {variant === "fixed" && isExpanded && (
-          <div className="flex justify-end px-2 pt-2 bg-gradient-to-b from-primary/[0.06] via-primary/[0.03] to-transparent border-b border-primary/10">
-            <button
-              type="button"
-              title={pinned ? "Desafixar (recolher ao tirar o mouse)" : "Fixar painel aberto"}
-              onClick={() => setPinned((v) => !v)}
-              className={cn(
-                "inline-flex items-center gap-1 text-xs uppercase tracking-wider px-3 py-1 rounded-full transition-all duration-200",
-                pinned
-                  ? "bg-primary text-primary-foreground shadow-sm hover:shadow-md"
-                  : "bg-muted/60 text-muted-foreground hover:bg-primary/10 hover:text-primary"
-              )}
-            >
-              <ChevronRight className={cn("h-3 w-3 transition-transform", pinned ? "rotate-90" : "rotate-180")} />
-              {pinned ? "Fixado" : "Fixar"}
-            </button>
-          </div>
-        )}
         {/* ===== ZONA 1: IDENTIDADE (sticky) ===== */}
         <div className="px-3 sm:px-4 pt-3 sm:pt-4 pb-3 sm:pb-3 border-b border-border bg-primary/5">
           <PatientIdentityHeader
@@ -504,6 +486,12 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
             fallbackAge={patient.age}
             fallbackClinicalStatus={patient.clinicalStatus}
             variant="cockpit"
+            // Fixar painel: pino compacto a esquerda do nome (so na cockpit fixa),
+            // no lugar da antiga barra "Fixar" que ocupava uma faixa inteira no topo.
+            pinControl={variant === "fixed" ? { pinned, onToggle: () => setPinned((v) => !v) } : undefined}
+            // "Ver dados do prontuario" abre o dialogo de ver+editar (centraliza), no
+            // lugar do painel inline read-only + botao "Editar" separado.
+            onViewFullData={() => setRecordEditOpen(true)}
           />
 
           <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs mt-2">
@@ -515,15 +503,6 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setRecordEditOpen(true)}
-            title="Editar prontuário e ficha cadastral (auditado)"
-            className="mt-2 w-full inline-flex items-center justify-center gap-1 text-xs uppercase tracking-wider text-muted-foreground hover:text-foreground px-2 py-1 rounded-md border border-border/50 hover:bg-muted/40 transition-colors"
-          >
-            <Pencil className="h-3 w-3" />
-            Editar prontuário / ficha cadastral
-          </button>
         </div>
 
         {/* ===== ZONA 2: AÇÕES PRIMÁRIAS ===== */}
