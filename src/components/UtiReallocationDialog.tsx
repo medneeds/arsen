@@ -21,12 +21,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useHospital } from "@/contexts/HospitalContext";
 import { useDepartment } from "@/contexts/DepartmentContext";
-import { ArrowRightLeft, BedDouble, Check, User, MapPin, ClipboardList, Eye, History, AlertTriangle } from "lucide-react";
+import { ArrowRightLeft, BedDouble, User, MapPin, ClipboardList, Eye, History, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { MovementConfirmDialog } from "@/components/MovementConfirmDialog";
 import { classifyTransfer, requiresSaps, classificationLabel } from "@/lib/sectorComplexity";
 import { recordSectorEntry } from "@/lib/internalTransfer";
 import { isExtraBed } from "@/utils/bedNaming";
+import { BedSelectorGrid, type BedOption } from "@/components/shared/BedSelectorGrid";
 
 interface UtiReallocationDialogProps {
   patient: Patient | null;
@@ -297,24 +298,15 @@ export function UtiReallocationDialog({
             <div className="space-y-2">
               <Label htmlFor="targetBed">Leito de Destino *</Label>
               {availableBeds.length > 0 ? (
-                <Select value={targetBedId} onValueChange={setTargetBedId}>
-                  <SelectTrigger id="targetBed">
-                    <SelectValue placeholder="Selecione o leito vago" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableBeds.map((bed) => (
-                      <SelectItem key={bed.id} value={bed.id}>
-                        <div className="flex items-center gap-2">
-                          <Check className="h-4 w-4 text-released" />
-                          <span>Leito {bed.bedNumber}</span>
-                          <Badge variant="outline" className="ml-2 text-xs text-released-on-soft border-released-border">
-                            Disponível
-                          </Badge>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <BedSelectorGrid
+                  beds={availableBeds.map((bed): BedOption => ({
+                    id: bed.id,
+                    label: bed.bedNumber,
+                    status: isExtraBed(bed.bedNumber) ? "extra" : "livre",
+                  }))}
+                  value={targetBedId || null}
+                  onChange={setTargetBedId}
+                />
               ) : (
                 <div className="p-3 bg-warning-soft border border-warning-border rounded-lg">
                   <p className="text-sm text-warning-on-soft">
