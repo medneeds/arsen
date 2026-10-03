@@ -68,21 +68,16 @@ async function resolveProfissionalId(userId: string | null | undefined): Promise
 /** Chave do rascunho local por prontuário — nunca por leito/linha reutilizável. */
 const draftKeyFor = (registryId: string) => `admission_draft:v2:${registryId}`;
 
-/** Label com sinalização forte de obrigatoriedade */
+/** Label de campo obrigatorio: so um asterisco vermelho ao lado (sem a palavra
+ *  "Obrigatorio"). O destaque `missing` (apos tentativa de submit) colore o texto
+ *  do label, mantendo a sinalizacao de pendencia sem poluir o layout. */
 const ReqLabel = ({ children, missing }: { children: React.ReactNode; missing?: boolean }) => (
   <Label className={cn(
-    "text-xs flex items-center gap-2",
+    "text-xs flex items-center gap-1",
     missing ? "text-critical-on-soft" : "text-foreground"
   )}>
     <span>{children}</span>
-    <span className={cn(
-      "inline-flex items-center gap-1 rounded-md px-1 py-px text-xs font-semibold uppercase tracking-wider",
-      missing
-        ? "bg-critical-soft text-critical-on-soft ring-1 ring-critical"
-        : "bg-critical-soft text-critical-on-soft ring-1 ring-critical"
-    )}>
-      <span className="leading-none">*</span> Obrigatório
-    </span>
+    <span className="text-destructive font-semibold leading-none" aria-hidden="true">*</span>
   </Label>
 );
 
