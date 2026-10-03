@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, Activity, TrendingUp, Bed, MapPin } from "lucide-react";
@@ -44,6 +44,14 @@ export function SapsConfirmationScreen({
   // Embute: vira true quando a animacao/progresso conclui — libera os botoes.
   const [showEmbeddedActions, setShowEmbeddedActions] = useState(false);
 
+  // BUG FIX (loading infinito): onComplete e uma closure recriada a cada render
+  // do pai. Se estivesse nas deps do effect abaixo, qualquer re-render do pai
+  // (AdmissaoPage usa realtime/cockpit) dentro dos 3s limpava e reiniciava o
+  // setTimeout -> a tela embutida ficava presa em "Finalizando validacao...".
+  // Guardamos onComplete numa ref (sempre atual) e o tiramos das deps.
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
+
   useEffect(() => {
     const interval = setInterval(() => {
       setProgress((prev) => {
@@ -86,7 +94,7 @@ export function SapsConfirmationScreen({
       } else {
         navigate("/painel-clinico");
       }
-      onComplete();
+      onCompleteRef.current();
     }, 3000);
 
     return () => {
@@ -94,7 +102,8 @@ export function SapsConfirmationScreen({
       clearInterval(countdownInterval);
       clearTimeout(timeout);
     };
-  }, [navigate, onComplete, patientId, patientName, bedNumber, sectorCode, age, embedded]);
+    // onComplete sai das deps de proposito (ref acima) — ver BUG FIX.
+  }, [navigate, patientId, patientName, bedNumber, sectorCode, age, embedded]);
 
   const getMortalityColor = (m: number) => {
     if (m < 10) return "text-released";
