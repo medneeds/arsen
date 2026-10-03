@@ -45,6 +45,7 @@ import { admissionModeForSector, isSurgicalSector, type AdmissionMode } from "@/
 import { parseDiagnosesText } from "@/lib/diagnosesText";
 import { calcDIH } from "@/lib/dihCalc";
 import { isSemAlergia, SEM_RELATO } from "@/lib/allergyStatus";
+import { SapsView, type SapsRow } from "@/components/saps3/SapsView";
 import { toEvolucaoStatusDb } from "@/lib/evolucaoStatus";
 import { PatientIdentityHeader } from "@/components/PatientIdentityHeader";
 import { usePatientIdentifiers } from "@/hooks/usePatientIdentifiers";
@@ -101,6 +102,10 @@ interface AdmissionFormProps {
   /** Modo pagina (dentro do shell ClinicalHeader): oculta o cabecalho interno de
    *  dialogo (identidade duplicada), ja provido pelo shell. Diálogo usa false. */
   embedded?: boolean;
+  /** SAPS 3 sob a via Cuidados Intensivos: a ficha ja carregada (consulta) e um
+   *  gatilho para abrir/preencher. Passados pela AdmissaoPage; o dialogo omite. */
+  sapsRow?: SapsRow | null;
+  onOpenSaps?: () => void;
 }
 
 /* ───────── Helpers ───────── */
@@ -427,7 +432,7 @@ const openSectionsForMode = (mode: AdmissionMode): string[] =>
 
 /* ───────── Component ───────── */
 
-export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }: AdmissionFormProps) {
+export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, sapsRow = null, onOpenSaps }: AdmissionFormProps) {
   const { currentHospital, currentState } = useHospital();
   const { currentDepartment } = useDepartment();
   const { user } = useAuth();
@@ -2174,20 +2179,33 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
                 </div>
               </AccordionSectionItem>
 
-              <AccordionSectionItem id="nm-uti-saps" icon={ShieldCheck} iconColor="text-warning-on-soft" label="Ficha SAPS 3 — Aviso">
-                <p className="text-xs text-foreground leading-relaxed">
-                  A admissão UTI/UCI gera automaticamente uma <strong>Ficha SAPS 3 pendente</strong>, com prazo de{" "}
-                  <strong className="text-warning-on-soft">24 horas</strong> a partir da pré-admissão (janela operacional / AMIB).
-                  A admissão pode ser <strong>validada e impressa normalmente</strong>; a SAPS 3 segue como tarefa paralela
-                  no Painel Clínico até ser finalizada em <code>/saps3</code>.
-                </p>
-                <label className="flex items-start gap-2 rounded-md border border-warning-border bg-warning-soft/70 p-3 cursor-pointer select-none">
-                  <Checkbox checked={sapsAck} onCheckedChange={v => setSapsAck(v === true)} className="mt-1" />
-                  <span className="text-xs text-foreground">
-                    <strong className="uppercase tracking-wide text-warning-on-soft">Ciência (opcional)</strong> — declaro estar
-                    ciente de que a ficha SAPS 3 está pendente e deve ser finalizada em até 24 h.
-                  </span>
-                </label>
+              <AccordionSectionItem id="nm-uti-saps" icon={ShieldCheck} iconColor="text-warning-on-soft" label="Ficha SAPS 3">
+                {sapsRow?.status === "validada" ? (
+                  // Ficha ja validada: mostra o RESULTADO aqui mesmo, sob a via CI
+                  // (consulta — sem carregar a pagina do SAPS).
+                  <SapsView row={sapsRow} />
+                ) : (
+                  <div className="space-y-3">
+                    <p className="text-xs text-foreground leading-relaxed">
+                      A admissão UTI/UCI gera automaticamente uma <strong>Ficha SAPS 3 pendente</strong>, com prazo de{" "}
+                      <strong className="text-warning-on-soft">24 horas</strong> a partir da pré-admissão (janela operacional / AMIB).
+                      A admissão pode ser <strong>validada e impressa normalmente</strong>; a SAPS 3 segue como tarefa paralela.
+                    </p>
+                    {onOpenSaps && (
+                      <Button type="button" variant="outline" size="sm" onClick={onOpenSaps} className="gap-1.5">
+                        <Activity className="h-3.5 w-3.5" />
+                        {sapsRow ? "Abrir / completar ficha SAPS 3" : "Preencher ficha SAPS 3"}
+                      </Button>
+                    )}
+                    <label className="flex items-start gap-2 rounded-md border border-warning-border bg-warning-soft/70 p-3 cursor-pointer select-none">
+                      <Checkbox checked={sapsAck} onCheckedChange={v => setSapsAck(v === true)} className="mt-1" />
+                      <span className="text-xs text-foreground">
+                        <strong className="uppercase tracking-wide text-warning-on-soft">Ciência (opcional)</strong> — declaro estar
+                        ciente de que a ficha SAPS 3 está pendente e deve ser finalizada em até 24 h.
+                      </span>
+                    </label>
+                  </div>
+                )}
               </AccordionSectionItem>
             </>
             )}

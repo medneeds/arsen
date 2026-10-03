@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Printer, ClipboardCheck, Activity, AlertTriangle, History } from "lucide-react";
+import { Printer, ClipboardCheck, AlertTriangle, History } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { AdmissionForm } from "@/components/admission/AdmissionForm";
@@ -187,42 +187,18 @@ export default function AdmissaoPage() {
               </p>
             }
           />
-          {/* Toggle Admissao | SAPS — a aba SAPS so aparece nos setores que
-              exigem (UTI/UCI2) ou quando ja ha ficha. */}
-          {showSapsTab && (
-            <div className="mb-3 inline-flex rounded-lg border bg-muted/40 p-0.5 print:hidden">
-              {/* SAPS vem ANTES da Admissao — reflete a ordem do fluxo (SAPS 3 e
-                  preenchido/validado antes da admissao D0). */}
-              <button
-                type="button"
-                onClick={() => setActiveTab("saps")}
-                className={cn(
-                  "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
-                  activeTab === "saps" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                <Activity className="h-3.5 w-3.5" /> SAPS 3
-                {sapsRow?.status === "pendente" && (
-                  <span className="ml-1 h-1.5 w-1.5 rounded-full bg-warning" title="SAPS pendente" />
-                )}
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("admissao")}
-                className={cn(
-                  "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
-                  activeTab === "admissao" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                <ClipboardCheck className="h-3.5 w-3.5" /> Admissão
-              </button>
-            </div>
-          )}
-
+          {/* SAPS 3 nao e mais aba solta no topo: o acesso vem de DENTRO da via
+              "Cuidados Intensivos" no AdmissionForm (onOpenSaps -> activeTab "saps").
+              Aqui so renderizamos o conteudo da ficha quando aberto, com "voltar". */}
           {activeTab === "saps" && showSapsTab ? (
             <div className="rounded-lg border bg-card p-4">
               <div className="mb-3 flex items-center justify-between gap-2">
-                <h2 className="text-sm font-semibold tracking-tight text-foreground">Ficha SAPS 3</h2>
+                <div className="flex items-center gap-2">
+                  <Button size="sm" variant="ghost" onClick={() => setActiveTab("admissao")} className="h-7 gap-1 text-xs">
+                    <ClipboardCheck className="h-3.5 w-3.5" /> Voltar à admissão
+                  </Button>
+                  <h2 className="text-sm font-semibold tracking-tight text-foreground">Ficha SAPS 3</h2>
+                </div>
                 <div className="flex items-center gap-2">
                   {sapsValidada && sapsRow && (
                     <Button
@@ -299,6 +275,8 @@ export default function AdmissaoPage() {
                 <AdmissionForm
                   embedded
                   patient={patient}
+                  sapsRow={sapsRow}
+                  onOpenSaps={() => setActiveTab("saps")}
                   onClose={() => navigate(returnTo)}
                   onSuccess={() => toast.success("Admissão hospitalar registrada. Módulos clínicos liberados.")}
                 />
