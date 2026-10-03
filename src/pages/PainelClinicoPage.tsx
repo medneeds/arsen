@@ -420,6 +420,13 @@ export default function PainelClinicoPage() {
                 const pendencies = parseTextArray(patient.pendencies);
                 const saps = sapsScores[patient.id];
                 const diagnoses = normalizeDiagnoses(patient.diagnoses);
+                // Admissao pendente = leito ocupado sem admissao finalizada (mesma
+                // heuristica da AdmissaoPage: sem diagnostico E sem historia). Nao
+                // sinaliza quando ja ha desfecho/saida sinalizada (admissionStatus).
+                const admissionPending =
+                  !patient.admissionStatus &&
+                  diagnoses.length === 0 &&
+                  (patient.medicalHistory?.length ?? 0) === 0;
                 const ageLabel = patient.age ? `${String(patient.age).replace(/\s*a$/i, "")} anos` : null;
                 return (
                   // MIGRAÇÃO/FIX: era <button> e continha outro <button> (Eye) → nesting inválido.
@@ -450,6 +457,14 @@ export default function PainelClinicoPage() {
                         {patient.admissionStatus && (
                           <div className="mt-1.5">
                             <DischargeStatusRibbon status={patient.admissionStatus} compact />
+                          </div>
+                        )}
+                        {admissionPending && (
+                          <div className="mt-1.5">
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 gap-1 bg-warning/10 text-warning-on-soft border-warning/30">
+                              <ClipboardList className="h-3 w-3" />
+                              Admissão pendente
+                            </Badge>
                           </div>
                         )}
                         {(days !== null || (saps && saps.status !== 'pendente')) && (
@@ -501,6 +516,10 @@ export default function PainelClinicoPage() {
                   const prescStatus = getPrescriptionStatus(getTodaysPrescriptionStatus(patient.name, patient.registryId));
                   const pendencies = parseTextArray(patient.pendencies);
                   const diagnoses = normalizeDiagnoses(patient.diagnoses);
+                  const admissionPending =
+                    !patient.admissionStatus &&
+                    diagnoses.length === 0 &&
+                    (patient.medicalHistory?.length ?? 0) === 0;
                   const ageLabel = patient.age ? `${String(patient.age).replace(/\s*a$/i, "")} anos` : null;
 
                   return (
@@ -531,6 +550,14 @@ export default function PainelClinicoPage() {
                           {patient.admissionStatus && (
                             <div className="mt-1">
                               <DischargeStatusRibbon status={patient.admissionStatus} compact />
+                            </div>
+                          )}
+                          {admissionPending && (
+                            <div className="mt-1">
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 gap-1 bg-warning/10 text-warning-on-soft border-warning/30">
+                                <ClipboardList className="h-3 w-3" />
+                                Admissão pendente
+                              </Badge>
                             </div>
                           )}
                           {diagnoses.length > 0 && (
