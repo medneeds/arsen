@@ -420,15 +420,21 @@ function pathwayFromSector(sector: string): AdmissionPathway {
   return "enfermaria";
 }
 
-/* ───────── Acordeao — secoes abertas por padrao, por modo efetivo ───────── */
-const EMERGENCIA_OPEN_SECTIONS = ["em-hda", "em-cid", "em-conduta", "em-vitais", "em-glasgow"];
-const NORMAL_OPEN_SECTIONS = [
+/* ───────── Acordeao — secoes abertas por padrao, por modo efetivo ─────────
+   Regra (Artur): na admissao, abrem por padrao APENAS os OBRIGATORIOS (CID, HDA,
+   Plano); os demais ficam retraidos — para emergencia e enfermaria. A UTI mantem
+   o comportamento habitual (mais secoes abertas, inclusive as especificas). */
+const EMERGENCIA_OPEN_SECTIONS = ["em-cid", "em-hda", "em-conduta"];
+const ENFERMARIA_OPEN_SECTIONS = ["nm-diagnostico", "nm-hda", "nm-plano"];
+const UTI_OPEN_SECTIONS = [
   "nm-diagnostico", "nm-hda", "nm-glasgow", "nm-vitais",
   "nm-exame", "nm-plano", "nm-hipoteses",
   "nm-uti-justif", "nm-uti-disp",
 ];
 const openSectionsForMode = (mode: AdmissionMode): string[] =>
-  mode === "emergencia" ? EMERGENCIA_OPEN_SECTIONS : NORMAL_OPEN_SECTIONS;
+  mode === "emergencia" ? EMERGENCIA_OPEN_SECTIONS
+    : mode === "uti" ? UTI_OPEN_SECTIONS
+    : ENFERMARIA_OPEN_SECTIONS;
 
 /* ───────── Component ───────── */
 
