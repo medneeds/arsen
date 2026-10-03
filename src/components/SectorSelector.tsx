@@ -135,7 +135,7 @@ export function SectorSelector({ variant = "light", navigateOnSelect = true, onS
       <PopoverContent
         align="start"
         sideOffset={6}
-        className="w-72 p-0 border-border/60 shadow-md"
+        className="w-[min(92vw,460px)] p-0 border-border/60 shadow-md"
       >
         <div className="px-3 py-3 border-b border-border/60 bg-muted/40">
           <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
