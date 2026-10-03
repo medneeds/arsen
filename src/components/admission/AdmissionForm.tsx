@@ -1149,6 +1149,11 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
           // existente, lida como relevantExams pelo mapa/painel). Texto limpo
           // do editor, line-based como o restante de exames_relevantes.
           exames_relevantes: richHtmlToPlainText(complementares).trim() || null,
+          // Previsao de alta -> coluna propria internacoes.previsao_alta (lida pelo
+          // mapa como utiDischargePrediction e exibida no card). Antes so ia pro
+          // texto do SOAP, entao o chip "Previsao de Alta" do card ficava "—".
+          // Guarda a data ISO (predictionDate); "sem previsao" grava null.
+          previsao_alta: noPrediction ? null : (predictionDate || null),
           status: "ativa",
         } as any)
         .eq("id", patient.id);
