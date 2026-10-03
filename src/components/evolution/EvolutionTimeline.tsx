@@ -555,7 +555,18 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                       </Badge>
                       {(() => {
                         const k = getComplementaryKind(evo);
-                        if (!k) return null;
+                        if (!k) {
+                          // Evolucao PADRAO (rotina/diurna): recebe a marcacao "Rotina"
+                          // com a MESMA identidade visual de Noturna/Vespertina. A
+                          // admissao ja tem badge proprio (acima) e NAO recebe "Rotina".
+                          if (isAdmission) return null;
+                          return (
+                            <Badge variant="outline" className={cn("text-xs px-2 py-0 gap-1", "bg-muted text-muted-foreground border-border")}>
+                              <Zap className="h-2.5 w-2.5" />
+                              Rotina
+                            </Badge>
+                          );
+                        }
                         const m = COMPLEMENTARY_BADGE[k];
                         return (
                           <Badge variant="outline" className={cn("text-xs px-2 py-0 gap-1", m.badgeClass)}>
