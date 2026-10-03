@@ -36,7 +36,7 @@ import {
   Stethoscope, Loader2, AlertTriangle, ClipboardCheck,
   HeartPulse, Activity, FileText, Pill, CalendarDays, Hash,
   Printer, ShieldCheck, Save, Trash2, Brain, Gauge, ClipboardList,
-  Plus, X, ChevronUp, ChevronDown,
+  Plus, X, ChevronUp, ChevronDown, Lock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { printAdmissionNormaZero } from "@/lib/printAdmission";
@@ -441,6 +441,11 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
   // disponivel. O setor so define a escolha INICIAL; o medico troca livremente.
   const initialPathway = useMemo<AdmissionPathway>(() => pathwayFromSector(patient.sector), [patient.sector]);
   const [selectedPathway, setSelectedPathway] = useState<AdmissionPathway>(initialPathway);
+  // PERMISSIONAMENTO (cadeados): a admissao so e permitida na via do SETOR atual.
+  // As demais vias ficam visiveis, porem bloqueadas (cadeado). Admissoes validadas
+  // de outros setores seguem acessiveis para CONSULTA (AdmissaoReadOnlyView), nunca
+  // para edicao de outra via. allowedPathway deriva do setor do paciente.
+  const allowedPathway = initialPathway;
   // Via unica "Enfermaria Clinico-Cirurgica": o recorte cirurgico vira um toggle
   // OPCIONAL (paciente cirurgico). Inicia ligado quando o setor ja e cirurgico.
   const [surgicalPatient, setSurgicalPatient] = useState<boolean>(() => isSurgicalSector(patient.sector));
@@ -1444,9 +1449,9 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
       </header>
 
       <div className="px-4 sm:px-6 py-4 min-w-0 overflow-x-hidden">
-        {/* ───── Toggle "Tipo de admissao" — ESCOLHA DO MEDICO, 4 vias, SEMPRE
-            visivel (inclusive quando ja houve admissao). Dirige o modo efetivo do
-            form (layout, obrigatorios, persistencia). ───── */}
+        {/* ───── Toggle "Tipo de admissao" — PERMISSIONADO POR SETOR (cadeados).
+            So a via do setor atual e selecionavel; as demais aparecem com cadeado
+            (nao editaveis). Protege o fluxo de admissao hospitalar. ───── */}
         <div className="mb-4">
           <Label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted-foreground">
             Tipo de admissão
@@ -1454,20 +1459,36 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
           <ToggleGroup
             type="single"
             value={selectedPathway}
-            onValueChange={v => { if (isAdmissionPathway(v)) setSelectedPathway(v); }}
+            onValueChange={v => { if (isAdmissionPathway(v) && v === allowedPathway) setSelectedPathway(v); }}
             className="flex w-full flex-wrap justify-start gap-1 rounded-lg border border-border bg-muted/40 p-1"
           >
-            {PATHWAY_OPTIONS.map(opt => (
-              <ToggleGroupItem
-                key={opt.value}
-                value={opt.value}
-                aria-label={opt.label}
-                className="flex-1 min-w-[8.5rem] rounded-md px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground data-[state=on]:bg-card data-[state=on]:text-foreground data-[state=on]:shadow-sm"
-              >
-                {opt.label}
-              </ToggleGroupItem>
-            ))}
+            {PATHWAY_OPTIONS.map(opt => {
+              const locked = opt.value !== allowedPathway;
+              return (
+                <ToggleGroupItem
+                  key={opt.value}
+                  value={opt.value}
+                  disabled={locked}
+                  aria-label={opt.label}
+                  title={locked
+                    ? `Admissão disponível apenas no setor correspondente (via liberada: ${PATHWAY_BADGE[allowedPathway]})`
+                    : opt.label}
+                  className={cn(
+                    "flex-1 min-w-[8.5rem] inline-flex items-center justify-center gap-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+                    locked
+                      ? "text-muted-foreground/40 cursor-not-allowed"
+                      : "text-muted-foreground hover:text-foreground data-[state=on]:bg-card data-[state=on]:text-foreground data-[state=on]:shadow-sm",
+                  )}
+                >
+                  {locked && <Lock className="h-3 w-3" />}
+                  {opt.label}
+                </ToggleGroupItem>
+              );
+            })}
           </ToggleGroup>
+          <p className="mt-1.5 text-xs text-muted-foreground">
+            Admissão liberada apenas na via do setor atual. Admissões validadas de outros setores ficam disponíveis para consulta.
+          </p>
         </div>
 
         {isEmergencia ? (
