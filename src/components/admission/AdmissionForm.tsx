@@ -44,6 +44,7 @@ import { resolveCurrentBedSector } from "@/lib/resolvePatientHeader";
 import { admissionModeForSector, isSurgicalSector, type AdmissionMode } from "@/lib/sectorComplexity";
 import { parseDiagnosesText } from "@/lib/diagnosesText";
 import { calcDIH } from "@/lib/dihCalc";
+import { isSemAlergia, SEM_RELATO } from "@/lib/allergyStatus";
 import { toEvolucaoStatusDb } from "@/lib/evolucaoStatus";
 import { PatientIdentityHeader } from "@/components/PatientIdentityHeader";
 import { usePatientIdentifiers } from "@/hooks/usePatientIdentifiers";
@@ -674,8 +675,8 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
   // Alergias — toggle Sim/Nao controla o estado `allergies` (persistencia inalterada).
   const handleAllergyMode = (mode: "nao" | "sim") => {
     setAllergyMode(mode);
-    if (mode === "nao") setAllergies("Nega");
-    else if (allergies.trim().toLowerCase() === "nega") setAllergies("");
+    if (mode === "nao") setAllergies(SEM_RELATO);
+    else if (isSemAlergia(allergies)) setAllergies("");
   };
 
   const resetForm = () => {
@@ -732,7 +733,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
         // Modo da alergia derivado do valor salvo (compat com rascunho antigo).
         {
           const alg = (d.allergies ?? "").trim();
-          setAllergyMode(alg === "" ? null : (alg.toLowerCase() === "nega" ? "nao" : "sim"));
+          setAllergyMode(alg === "" ? null : (isSemAlergia(alg) ? "nao" : "sim"));
         }
         setWeight(d.weight ?? ""); setHeight(d.height ?? "");
         // PA: formato novo (paSys/paDia) ou legado (`pa` "120/80").
@@ -1204,7 +1205,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
       const culturesText = richHtmlToPlainText(culturesHtml).trim();
       const antibioticosText = richHtmlToPlainText(antibioticosHtml).trim();
       const soapAdmission = {
-        subjective: `HDA:\n${hda}\n\nAMP: ${amp || "—"}\nMUC: ${muc || "—"}\nAlergias: ${allergies || "Nega"}`,
+        subjective: `HDA:\n${hda}\n\nAMP: ${amp || "—"}\nMUC: ${muc || "—"}\nAlergias: ${allergies || SEM_RELATO}`,
         objective: `Antropometria: peso ${weight || "—"} kg, altura ${height || "—"} m${imcLine}\n` +
                    `SSVV admissionais: PA ${pa || "—"} | FC ${fc || "—"} | FR ${fr || "—"} | SpO₂ ${spo2 || "—"} | Tax ${tax || "—"} | Dx ${dx || "—"}${glasgowLine}`,
         assessment: `CID primário: ${cidPrimary}${cidSecondary ? `\nCID secundário: ${cidSecondary}` : ""}` +
@@ -1591,11 +1592,11 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
           <AccordionSectionItem id="em-alergias" icon={AlertTriangle} iconColor="text-warning-on-soft" label="Alergias medicamentosas">
             <div className="flex flex-wrap items-center gap-3">
               <ToggleGroup type="single" value={allergyMode ?? ""} onValueChange={v => { if (v === "nao" || v === "sim") handleAllergyMode(v); }}>
-                <ToggleGroupItem value="nao" className="data-[state=on]:bg-released data-[state=on]:text-white">Nega</ToggleGroupItem>
+                <ToggleGroupItem value="nao" className="data-[state=on]:bg-released data-[state=on]:text-white">Sem relato</ToggleGroupItem>
                 <ToggleGroupItem value="sim" className="data-[state=on]:bg-critical data-[state=on]:text-white">Sim</ToggleGroupItem>
               </ToggleGroup>
               {allergyMode === "sim" && (
-                <Input value={allergies === "Nega" ? "" : allergies} onChange={e => setAllergies(e.target.value)} placeholder="Especificar alergia(s)..." className="flex-1 min-w-[12rem]" />
+                <Input value={isSemAlergia(allergies) ? "" : allergies} onChange={e => setAllergies(e.target.value)} placeholder="Especificar alergia(s)..." className="flex-1 min-w-[12rem]" />
               )}
             </div>
           </AccordionSectionItem>
@@ -1818,12 +1819,12 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
                   value={allergyMode ?? ""}
                   onValueChange={v => { if (v === "nao" || v === "sim") handleAllergyMode(v); }}
                 >
-                  <ToggleGroupItem value="nao" className="data-[state=on]:bg-released data-[state=on]:text-white">Nega</ToggleGroupItem>
+                  <ToggleGroupItem value="nao" className="data-[state=on]:bg-released data-[state=on]:text-white">Sem relato</ToggleGroupItem>
                   <ToggleGroupItem value="sim" className="data-[state=on]:bg-critical data-[state=on]:text-white">Sim</ToggleGroupItem>
                 </ToggleGroup>
                 {allergyMode === "sim" && (
                   <Input
-                    value={allergies === "Nega" ? "" : allergies}
+                    value={isSemAlergia(allergies) ? "" : allergies}
                     onChange={e => setAllergies(e.target.value)}
                     placeholder="Especificar alergia(s)..."
                     className="flex-1 min-w-[12rem]"

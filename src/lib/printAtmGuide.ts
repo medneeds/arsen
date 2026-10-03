@@ -3,6 +3,7 @@
 // (reprint of an already validated antibiotic in course).
 import { format } from "date-fns";
 import { buildNormaZeroDocument, openPrintWindow, prepareLogo } from "@/lib/printNormaZero";
+import { isSemAlergia } from "@/lib/allergyStatus";
 
 export interface AtmPrintEntry {
   medication: string;
@@ -81,7 +82,7 @@ export function buildAtmBodyHtml({
           <th>Idade</th><td>${esc(patient.age)}</td>
           <th>Peso</th><td>${patient.weight ? esc(patient.weight) + 'kg' : '—'}</td>
           <th>Alergias</th>
-          <td><strong style="color:${patient.allergies && patient.allergies !== 'NDAM' ? '#dc2626' : 'inherit'}">${esc(patient.allergies || 'NDAM')}</strong></td>
+          <td><strong style="color:${patient.allergies && !isSemAlergia(patient.allergies) ? '#dc2626' : 'inherit'}">${esc(patient.allergies || 'Sem relato')}</strong></td>
         </tr>
         <tr>
           <th>Data nascimento</th><td>${patient.birthDate ? esc(patient.birthDate.split('-').reverse().join('/')) : '—'}</td>

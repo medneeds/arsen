@@ -3,6 +3,7 @@ import { BedDouble, AlertTriangle } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { CopyNameButton } from "@/components/CopyNameButton";
+import { isSemAlergia } from "@/lib/allergyStatus";
 import { format } from "date-fns";
 
 interface PatientInfoHeaderProps {
@@ -65,7 +66,7 @@ export function PatientInfoHeader({
             <Label className="text-xs text-muted-foreground font-medium flex items-center gap-1 whitespace-nowrap">
               <AlertTriangle className="h-3 w-3 text-destructive" /> Alergias
             </Label>
-            <Badge variant={allergies === "NDAM" ? "secondary" : "destructive"} className="text-xs">
+            <Badge variant={isSemAlergia(allergies) ? "secondary" : "destructive"} className="text-xs">
               {allergies || "—"}
             </Badge>
           </div>

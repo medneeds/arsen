@@ -30,6 +30,7 @@ import { useUnifiedMedicationCatalog } from "@/hooks/useUnifiedMedicationCatalog
 import { printAtmGuide } from "@/lib/printAtmGuide";
 import { cn } from "@/lib/utils";
 import { useCurrentDoctor } from "@/hooks/useCurrentDoctor";
+import { isSemAlergia } from "@/lib/allergyStatus";
 
 interface AntimicrobialEntry {
   id: string;
@@ -1322,7 +1323,7 @@ function buildAtmBodyHtml({
           <th>Idade</th><td>${esc(patient.age)}</td>
           <th>Peso</th><td>${patient.weight ? esc(patient.weight) + 'kg' : '—'}</td>
           <th>Alergias</th>
-          <td><strong style="color:${patient.allergies && patient.allergies !== 'NDAM' ? '#dc2626' : 'inherit'}">${esc(patient.allergies || 'NDAM')}</strong></td>
+          <td><strong style="color:${patient.allergies && !isSemAlergia(patient.allergies) ? '#dc2626' : 'inherit'}">${esc(patient.allergies || 'Sem relato')}</strong></td>
         </tr>
         <tr>
           <th>Data emissão</th><td>${esc(today)}</td>

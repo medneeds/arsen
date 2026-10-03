@@ -93,7 +93,7 @@ export async function printAdmissionNormaZero(d: AdmissionPrintInput) {
       ${row("HDA", d.hda)}
       ${row("AMP", d.amp)}
       ${row("MUC", d.muc)}
-      ${row("Alergias", d.allergies || "Nega")}
+      ${row("Alergias", d.allergies || "Sem relato")}
     </table>
 
     <h2 class="nz-section">Antropometria & Sinais Vitais</h2>

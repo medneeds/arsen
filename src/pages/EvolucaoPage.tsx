@@ -42,6 +42,7 @@ import { EvolutionTimeline } from "@/components/evolution/EvolutionTimeline";
 import { DiagnosticsPanel } from "@/components/evolution/DiagnosticsPanel";
 import type { Patient } from "@/types/patient";
 import { getEffectiveAdmissionDate } from "@/lib/dihCalc";
+import { isSemAlergia } from "@/lib/allergyStatus";
 import { calcDIH } from "@/lib/dihCalc";
 import { formatDeviceLabel, deviceAlertTone, type EvolutionDevice } from "@/lib/devicesCatalog";
 // Setores que exigem SAPS 3 (UTI 1 / UTI 2 / UCI 2) — MESMO criterio da admissao
@@ -1008,9 +1009,15 @@ const EvolucaoPage = () => {
                     <td style={labelSt}>Admissão</td>
                     <td style={cellSt}>{fmt(headerAdmissionDate)}</td>
                     <td style={{ ...labelSt, color: '#dc2626', fontSize: '6pt' }}>ALERGIAS</td>
-                    <td style={{ ...cellSt, fontWeight: 700, color: '#991b1b', backgroundColor: '#fef2f2', fontSize: '7.5pt' }}>
-                      {headerAllergies || 'NDAM'}
-                    </td>
+                    {(() => {
+                      const a = headerAllergies || 'Sem relato';
+                      const ok = isSemAlergia(a);
+                      return (
+                        <td style={{ ...cellSt, fontWeight: 700, color: ok ? '#166534' : '#991b1b', backgroundColor: ok ? '#f0fdf4' : '#fef2f2', fontSize: '7.5pt' }}>
+                          {a}
+                        </td>
+                      );
+                    })()}
                   </tr>
                   {/* Linha 4: Sexo / Peso — linha compacta complementar */}
                   <tr>

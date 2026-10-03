@@ -46,6 +46,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { cn, asUuidOrNull } from "@/lib/utils";
+import { isSemAlergia } from "@/lib/allergyStatus";
 import {
   PRESCRIPTION_INTERVALS,
   intervalToPhases as canonicalIntervalToPhases,
@@ -8810,7 +8811,7 @@ const PrescricaoPage = () => {
             )}
           </div>
           {(() => {
-            const isNDAM = patient.allergies.trim().toUpperCase() === "NDAM";
+            const isNDAM = isSemAlergia(patient.allergies);
             return (
               <div className="flex items-center gap-2">
                 <Label className="text-xs text-muted-foreground font-medium flex items-center gap-1 whitespace-nowrap">
@@ -11760,7 +11761,13 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
             <td style={headerCellStyle}>Atendimento</td>
             <td style={cellStyle}>{patient.encounterCode ? `#${patient.encounterCode}` : '—'}</td>
             <td style={{ ...headerCellStyle, color: '#dc2626', fontSize: '6pt' }}>ALERGIAS</td>
-            <td style={{ ...cellStyle, fontWeight: 700, color: '#991b1b', fontSize: '7.5pt', backgroundColor: '#fef2f2' }}>{patient.allergies || 'NDAM'}</td>
+            {(() => {
+              const a = patient.allergies || 'Sem relato';
+              const ok = isSemAlergia(a);
+              return (
+                <td style={{ ...cellStyle, fontWeight: 700, color: ok ? '#166534' : '#991b1b', fontSize: '7.5pt', backgroundColor: ok ? '#f0fdf4' : '#fef2f2' }}>{a}</td>
+              );
+            })()}
           </tr>
         </tbody>
       </table>

@@ -5,6 +5,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CidSearchInput } from "@/components/CidSearchInput";
 import { CopyNameButton } from "@/components/CopyNameButton";
 import { cn } from "@/lib/utils";
+import { isSemAlergia } from "@/lib/allergyStatus";
 
 interface CompactPatientHeaderProps {
   name: string;
@@ -49,7 +50,7 @@ export function CompactPatientHeader({
   hideCid = false,
   className,
 }: CompactPatientHeaderProps) {
-  const hasAllergy = allergies && allergies !== "NDAM" && allergies.trim() !== "";
+  const hasAllergy = !!allergies && allergies.trim() !== "" && !isSemAlergia(allergies);
 
   return (
     <div

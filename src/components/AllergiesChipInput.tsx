@@ -4,16 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { isSemAlergia, SEM_RELATO } from "@/lib/allergyStatus";
 
 interface AllergiesChipInputProps {
-  /** Display value: comma-separated string (e.g. "Dipirona, Sulfa") or "NDAM" */
+  /** Display value: comma-separated string (e.g. "Dipirona, Sulfa") ou "Sem relato" */
   value: string;
   onChange: (next: string) => void;
   className?: string;
   maxInline?: number;
 }
-
-const NDAM = "NDAM";
 
 function parseItems(value: string): string[] {
   return (value ?? "")
@@ -43,14 +42,14 @@ export function AllergiesChipInput({
   maxInline = 3,
 }: AllergiesChipInputProps) {
   const items = parseItems(value);
-  const isNDAM = items.length === 1 && items[0].toUpperCase() === NDAM;
-  const realItems = isNDAM ? [] : items;
+  const isSemRelato = items.length === 1 && isSemAlergia(items[0]);
+  const realItems = isSemRelato ? [] : items;
 
   const [draft, setDraft] = useState("");
   const [popoverOpen, setPopoverOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const empty = realItems.length === 0 && !isNDAM;
+  const empty = realItems.length === 0 && !isSemRelato;
 
   const commitDraft = () => {
     const parts = parseItems(draft);
@@ -75,8 +74,8 @@ export function AllergiesChipInput({
     onChange(joinItems(realItems.filter((_, i) => i !== idx)));
   };
 
-  const setNDAM = () => {
-    onChange(NDAM);
+  const setSemRelato = () => {
+    onChange(SEM_RELATO);
     setDraft("");
   };
 
@@ -98,14 +97,14 @@ export function AllergiesChipInput({
         "flex items-center gap-1 min-h-7 px-2 py-1 rounded-md border bg-background transition-colors",
         empty
           ? "border-warning/60 bg-warning-soft/30"
-          : isNDAM
+          : isSemRelato
           ? "border-released/50 bg-released-soft/40"
           : "border-destructive/30 bg-destructive/[0.03]",
         className,
       )}
       onClick={() => inputRef.current?.focus()}
     >
-      {isNDAM ? (
+      {isSemRelato ? (
         <span
           className={cn(
             baseChip,
@@ -113,10 +112,10 @@ export function AllergiesChipInput({
           )}
         >
           <ShieldCheck className="h-2.5 w-2.5" />
-          NDAM
+          Sem relato
           <button
             type="button"
-            aria-label="Remover NDAM"
+            aria-label="Remover sem relato"
             className="ml-1 hover:text-released-on-soft"
             onClick={(e) => {
               e.stopPropagation();
@@ -239,7 +238,7 @@ export function AllergiesChipInput({
               onBlur={() => {
                 if (draft.trim()) commitDraft();
               }}
-              placeholder={empty ? "NDAM ou listar..." : ""}
+              placeholder={empty ? "Sem relato ou listar..." : ""}
               aria-label="Adicionar alergia"
               className={cn(
                 "h-6 border-0 bg-transparent px-1 text-xs shadow-none focus-visible:ring-0 focus-visible:ring-offset-0",
@@ -254,11 +253,11 @@ export function AllergiesChipInput({
               className="text-xs font-medium uppercase tracking-wider text-released-on-soft hover:underline px-1"
               onClick={(e) => {
                 e.stopPropagation();
-                setNDAM();
+                setSemRelato();
               }}
-              title="Nega Drogas, Alimentos e Medicamentos"
+              title="Sem relato de alergias"
             >
-              NDAM
+              Sem relato
             </button>
           )}
         </>

@@ -11,6 +11,7 @@ import { buildNutritionParts, buildHydrationLine } from "@/lib/nutritionHydratio
 import { assembleInhalationInstruction } from "@/lib/inhalationInstruction";
 import { buildAtbLineParts } from "@/lib/atbLine";
 import { describeInsulinPlan, type InsulinPlan } from "@/lib/insulinTherapy";
+import { isSemAlergia } from "@/lib/allergyStatus";
 
 
 export interface ExtraPrintItem {
@@ -341,7 +342,7 @@ export async function printExtraPrescription(opts: ExtraPrintOptions) {
       </tr>
       <tr>
         <th>Alergias</th>
-        <td colspan="3" style="${patient.allergies ? "color:#b91c1c;font-weight:600" : ""}">${escape(patient.allergies) || "Nega"}</td>
+        <td colspan="3" style="${patient.allergies && !isSemAlergia(patient.allergies) ? "color:#b91c1c;font-weight:600" : ""}">${escape(patient.allergies) || "Sem relato"}</td>
       </tr>
       <tr>
         <th>Vínculo</th>
