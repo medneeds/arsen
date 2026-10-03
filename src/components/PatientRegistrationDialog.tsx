@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from "react";
-import { normalizePatientName, normalizePatientNameInput, normalizeAddress, normalizeAddressInput } from "@/utils/normalizePatientName";
+import { normalizePatientName, normalizePatientNameInput } from "@/utils/normalizePatientName";
+import { AddressFields } from "@/components/shared/AddressFields";
+import { buildEnderecoLine } from "@/lib/address";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -47,6 +49,7 @@ interface PatientFormData {
   neighborhood: string;
   city: string;
   state: string;
+  cep: string;
   destination_sector: string;
   notes: string;
   // NI fields
@@ -72,6 +75,7 @@ const EMPTY_FORM: PatientFormData = {
   neighborhood: "",
   city: "",
   state: "",
+  cep: "",
   destination_sector: "",
   notes: "",
   is_unidentified: false,
@@ -502,7 +506,13 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
           cns: form.cns?.replace(/\D/g, "") || null,
           prontuario,
           telefone: form.phone?.trim() || null,
-          endereco: form.address?.trim() || null,
+          // pacientes so tem a coluna `endereco` (campo unico) — concatena as
+          // partes (logradouro, bairro, cidade/UF, CEP). As partes estruturadas
+          // ficam preservadas em pre_admissoes.dados_extraidos_ia abaixo.
+          endereco: buildEnderecoLine({
+            cep: form.cep, address: form.address, neighborhood: form.neighborhood,
+            city: form.city, state: form.state,
+          }) || null,
         } as any)
         .select("id")
         .single();
@@ -539,6 +549,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
           neighborhood: form.neighborhood?.trim() || null,
           city: form.city?.trim() || null,
           state: form.state?.trim() || null,
+          cep: form.cep?.trim() || null,
           medical_record: prontuario,
           destination_sector: effectiveDestination || null,
           notes: form.notes?.trim() || null,
@@ -830,28 +841,11 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
                   <Input value={form.phone} onChange={e => updateField("phone", e.target.value)} placeholder="(00) 00000-0000" />
                 </div>
                 <div className="col-span-2">
-                  <Label className="text-xs">Endereço</Label>
-                  <Input value={form.address} onChange={e => updateField("address", normalizeAddressInput(e.target.value))} className="uppercase tracking-wider" />
-                </div>
-                <div>
-                  <Label className="text-xs">Bairro</Label>
-                  <Input value={form.neighborhood} onChange={e => updateField("neighborhood", normalizeAddressInput(e.target.value))} className="uppercase tracking-wider" />
-                </div>
-                <div className="grid grid-cols-[1fr_90px] gap-2">
-                  <div>
-                    <Label className="text-xs">Cidade</Label>
-                    <Input value={form.city} onChange={e => updateField("city", normalizeAddressInput(e.target.value))} className="uppercase tracking-wider" />
-                  </div>
-                  <div>
-                    <Label className="text-xs">Estado (UF)</Label>
-                    <Input
-                      value={form.state}
-                      onChange={e => updateField("state", normalizePatientNameInput(e.target.value).slice(0, 2))}
-                      maxLength={2}
-                      placeholder="UF"
-                      className="uppercase tracking-wider"
-                    />
-                  </div>
+                  <AddressFields
+                    value={{ cep: form.cep, address: form.address, neighborhood: form.neighborhood, city: form.city, state: form.state }}
+                    onChange={(v) => setForm(prev => ({ ...prev, cep: v.cep, address: v.address, neighborhood: v.neighborhood, city: v.city, state: v.state }))}
+                    idPrefix="reg-addr"
+                  />
                 </div>
               </div>
             )}
