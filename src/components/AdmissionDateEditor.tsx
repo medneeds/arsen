@@ -130,50 +130,55 @@ export function AdmissionDateEditor({ patientId, value, onChange, field = "data_
     // de entrada no schema novo; admitted_at/uti_admission_date degradados).
     // profiles → profissionais (nome via user_id). `patientId` = internacoes.id.
     if (patientId) {
-      try {
-        const { data: auth } = await supabase.auth.getUser();
-        const user = auth?.user;
-        let displayName: string | null = user?.email ?? null;
-        if (user) {
-          const { data: prof } = await supabase
-            .from("profissionais")
-            .select("nome")
-            .eq("user_id", user.id)
-            .maybeSingle();
-          if ((prof as any)?.nome) displayName = (prof as any).nome;
-        }
-        const oldParts = splitBR(value);
-        const oldISO = value ? brToISO(oldParts.date, oldParts.time) || null : null;
+      const oldParts = splitBR(value);
+      const oldISO = value ? brToISO(oldParts.date, oldParts.time) || null : null;
 
-        await supabase.from("logs_auditoria").insert({
-          tipo_evento: "alteracao_data_internacao",
-          nome_tabela: "internacoes",
-          internacao_id: patientId,
-          registro_id: patientId,
-          campo_alterado: field,
-          valor_antigo: oldISO,
-          valor_novo: newValueISO,
-          // changed_by_name não tem coluna própria → preservado em dados_novos.
-          dados_novos: { changed_by_name: displayName },
-          ator_user_id: user?.id ?? null,
-          email_ator: user?.email ?? null,
-          motivo: reason || null,
-        } as any);
-
-        const { error: updateErr } = await supabase
-          .from("internacoes")
-          .update({ [field]: newValueISO } as any)
-          .eq("id", patientId);
-        if (updateErr) {
-          console.error("[AdmissionDateEditor] internacao update failed", updateErr);
-          toast.error("Erro ao salvar data de admissão");
-          return;
-        }
-      } catch (err) {
-        console.error("[AdmissionDateEditor] history insert failed", err);
-        toast.error("Não foi possível registrar histórico");
+      // 1. Grava a DATA (critico) — unico await que bloqueia o fechamento, para
+      //    manter o fluxo fluido. Numa rede de hospital, encadear auth +
+      //    profissionais + auditoria antes do update deixava o "Salvar" travado.
+      const { error: updateErr } = await supabase
+        .from("internacoes")
+        .update({ [field]: newValueISO } as any)
+        .eq("id", patientId);
+      if (updateErr) {
+        console.error("[AdmissionDateEditor] internacao update failed", updateErr);
+        toast.error("Erro ao salvar data de admissão");
         return;
       }
+
+      // 2. Auditoria em SEGUNDO PLANO — nao bloqueia a edicao. A data ja esta
+      //    gravada; se o log falhar, registra no console sem travar o usuario.
+      void (async () => {
+        try {
+          const { data: auth } = await supabase.auth.getUser();
+          const user = auth?.user;
+          let displayName: string | null = user?.email ?? null;
+          if (user) {
+            const { data: prof } = await supabase
+              .from("profissionais")
+              .select("nome")
+              .eq("user_id", user.id)
+              .maybeSingle();
+            if ((prof as any)?.nome) displayName = (prof as any).nome;
+          }
+          await supabase.from("logs_auditoria").insert({
+            tipo_evento: "alteracao_data_internacao",
+            nome_tabela: "internacoes",
+            internacao_id: patientId,
+            registro_id: patientId,
+            campo_alterado: field,
+            valor_antigo: oldISO,
+            valor_novo: newValueISO,
+            // changed_by_name não tem coluna própria → preservado em dados_novos.
+            dados_novos: { changed_by_name: displayName },
+            ator_user_id: user?.id ?? null,
+            email_ator: user?.email ?? null,
+            motivo: reason || null,
+          } as any);
+        } catch (err) {
+          console.error("[AdmissionDateEditor] audit insert failed", err);
+        }
+      })();
     }
 
     onChange(newValueDisplay);
