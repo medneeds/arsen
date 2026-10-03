@@ -44,15 +44,6 @@ export interface PatientIdentityHeaderProps {
   onViewFullData?: () => void;
 }
 
-const clinicalStatusConfig: Record<string, { label: string; dot: string; bg: string }> = {
-  gravissimo: { label: "Gravíssimo", dot: "bg-destructive", bg: "bg-destructive/10 text-destructive" },
-  grave: { label: "Grave", dot: "bg-destructive", bg: "bg-destructive/10 text-destructive" },
-  grave_estavel: { label: "Grave estável", dot: "bg-warning", bg: "bg-warning/15 text-warning" },
-  potencialmente_grave: { label: "Potencialmente grave", dot: "bg-warning", bg: "bg-warning/15 text-warning" },
-  regular: { label: "Regular", dot: "bg-primary", bg: "bg-primary/10 text-primary" },
-  paliativado: { label: "Cuidados paliativos", dot: "bg-accent", bg: "bg-accent/10 text-accent" },
-};
-
 function formatDate(d?: string | null): string {
   if (!d) return "—";
   try {
@@ -78,7 +69,6 @@ export function PatientIdentityHeader({
   fallbackBed,
   fallbackSector,
   fallbackAge,
-  fallbackClinicalStatus,
   variant = "dialog",
   className,
   showFullDetailsToggle = true,
@@ -105,9 +95,6 @@ export function PatientIdentityHeader({
   // desatualizado. livePatient?.age e fallbackAge são o campo estático
   // (patients.age), usados só quando não há patient_registry vinculado.
   const age = registry?.age || livePatient?.age || fallbackAge || null;
-  const clinicalStatusKey =
-    livePatient?.clinicalStatus || (fallbackClinicalStatus || "regular");
-  const status = clinicalStatusConfig[clinicalStatusKey] || clinicalStatusConfig.regular;
   const displayName = maskName(name, namesHidden);
 
   const isCockpit = variant === "cockpit";
@@ -151,13 +138,8 @@ export function PatientIdentityHeader({
             <span className="font-medium text-foreground">{bed}</span>
           </p>
         </div>
-        <div className={cn(
-          "flex items-center gap-2 px-2 py-1 rounded-md text-xs font-medium uppercase tracking-wide whitespace-nowrap",
-          status.bg
-        )}>
-          <span className={cn("h-1.5 w-1.5 rounded-full", status.dot)} />
-          {status.label}
-        </div>
+        {/* Badge de status clinico (severidade) removido: e dado administrativo que
+            nao se reutiliza e competia espaco com o nome do paciente. */}
       </div>
 
       {/* ===== Linha 2: Prontuário + Atendimento ===== */}

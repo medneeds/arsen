@@ -21,7 +21,6 @@ import {
   BedDouble,
   IdCard,
   ClipboardList,
-  Stethoscope,
   CalendarCheck,
   ArrowRightLeft,
   RefreshCw,
@@ -44,16 +43,6 @@ interface EditPatientDialogProps {
   onOpenChange: (open: boolean) => void;
   onSave: (updatedPatient: Patient) => void;
 }
-
-const CLINICAL_STATUS_OPTIONS = [
-  { value: "gravissimo", label: "GRAVÍSSIMO" },
-  { value: "grave", label: "GRAVE" },
-  { value: "grave_estavel", label: "GRAVE, PORÉM ESTÁVEL" },
-  { value: "potencialmente_grave", label: "POTENCIALMENTE GRAVE" },
-  { value: "regular", label: "REGULAR" },
-  { value: "paliativado", label: "CUIDADOS PALIATIVOS" },
-  { value: "protocolo_me", label: "EM PROTOCOLO DE ME" },
-] as const;
 
 export function EditPatientDialog({
   patient,
@@ -195,37 +184,8 @@ export function EditPatientDialog({
                   Dados Hospitalares
                 </div>
 
-                {/* Status clínico */}
-                <div className="space-y-2">
-                  <Label className="text-xs font-medium flex items-center gap-2">
-                    <Stethoscope className="h-3.5 w-3.5 text-muted-foreground" />
-                    Status Clínico (Severidade)
-                  </Label>
-                  <Select
-                    value={formData.clinicalStatus || ""}
-                    onValueChange={(v) =>
-                      setFormData({
-                        ...formData,
-                        clinicalStatus: (v || null) as Patient["clinicalStatus"],
-                      })
-                    }
-                  >
-                    <SelectTrigger className="h-9 text-xs">
-                      <SelectValue placeholder="Selecione o status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CLINICAL_STATUS_OPTIONS.map((opt) => (
-                        <SelectItem
-                          key={opt.value}
-                          value={opt.value}
-                          className="text-xs"
-                        >
-                          {opt.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                {/* Status Clinico (Severidade) removido: e dado administrativo/
+                    clinico que nao e reutilizado; identificacao administrativa so. */}
 
                 {/* Datas hospitalares — DIH (internacao hospitalar) + admissao no
                     setor + previsao de alta, como FONTES SEPARADAS. data_entrada
