@@ -450,23 +450,22 @@ export default function PainelClinicoPage() {
                           <span className={cn("inline-block h-2 w-2 rounded-full", prescStatus.dotColor, prescStatus.pulsing && "animate-pulse-soft")} />
                           <span className="text-xs text-muted-foreground">{prescStatus.label}</span>
                         </div>
-                        <div className="mt-2 flex items-baseline gap-1.5">
+                        {/* Nome + idade e, AO LADO (mesma linha, com wrap), a tarja de
+                            sinalizacao (alta/obito/transferencia) ou o badge de admissao
+                            pendente — mutuamente exclusivos — para nao ocupar linha propria. */}
+                        <div className="mt-2 flex items-center gap-x-1.5 gap-y-1 flex-wrap">
                           <p className="min-w-0 font-medium text-sm text-foreground leading-tight line-clamp-2">{patient.name}</p>
                           {ageLabel && <span className="shrink-0 text-xs text-muted-foreground">{ageLabel}</span>}
-                        </div>
-                        {patient.admissionStatus && (
-                          <div className="mt-1.5">
+                          {patient.admissionStatus && (
                             <DischargeStatusRibbon status={patient.admissionStatus} compact />
-                          </div>
-                        )}
-                        {admissionPending && (
-                          <div className="mt-1.5">
+                          )}
+                          {admissionPending && (
                             <Badge variant="outline" className="text-[10px] px-1.5 py-0 gap-1 bg-warning/10 text-warning-on-soft border-warning/30">
                               <ClipboardList className="h-3 w-3" />
                               Admissão pendente
                             </Badge>
-                          </div>
-                        )}
+                          )}
+                        </div>
                         {(days !== null || (saps && saps.status !== 'pendente')) && (
                           <p className="text-xs text-muted-foreground mt-1">
                             {days !== null && <span className={cn(days > 7 && "text-destructive font-medium")}>{days}d int.</span>}
@@ -543,23 +542,22 @@ export default function PainelClinicoPage() {
                       </TableCell>
                       <TableCell>
                         <div>
-                          <div className="flex items-baseline gap-1.5">
+                          {/* Nome + idade e, AO LADO (mesma linha, com wrap), a tarja de
+                              sinalizacao ou o badge de admissao pendente — sem ocupar
+                              linha propria. */}
+                          <div className="flex items-center gap-x-1.5 gap-y-1 flex-wrap">
                             <p className="min-w-0 font-medium text-foreground leading-tight hover:text-primary transition-colors">{patient.name}</p>
                             {ageLabel && <span className="shrink-0 text-xs text-muted-foreground">{ageLabel}</span>}
-                          </div>
-                          {patient.admissionStatus && (
-                            <div className="mt-1">
+                            {patient.admissionStatus && (
                               <DischargeStatusRibbon status={patient.admissionStatus} compact />
-                            </div>
-                          )}
-                          {admissionPending && (
-                            <div className="mt-1">
+                            )}
+                            {admissionPending && (
                               <Badge variant="outline" className="text-[10px] px-1.5 py-0 gap-1 bg-warning/10 text-warning-on-soft border-warning/30">
                                 <ClipboardList className="h-3 w-3" />
                                 Admissão pendente
                               </Badge>
-                            </div>
-                          )}
+                            )}
+                          </div>
                           {diagnoses.length > 0 && (
                             <p className="text-xs text-muted-foreground mt-1 line-clamp-1 max-w-[260px]">
                               {diagnoses.join("  |  ")}
