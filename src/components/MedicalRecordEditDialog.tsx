@@ -161,7 +161,7 @@ const PRONTUARIO_FIELDS = new Set(["numero_prontuario"]);
 export function MedicalRecordEditDialog({
   open, onOpenChange, patientId, patientName, onSaved,
 }: Props) {
-  const [tab, setTab] = useState<"prontuario" | "ficha" | "historico" | "danger">("prontuario");
+  const [tab, setTab] = useState<"prontuario" | "ficha" | "historico" | "danger">("ficha");
   const { user } = useAuth();
   const [isDeveloper, setIsDeveloper] = useState(false);
   const [deleteReason, setDeleteReason] = useState("");
@@ -719,7 +719,7 @@ export function MedicalRecordEditDialog({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base">
               <FileText className="h-5 w-5 text-primary" />
-              Editar Prontuário & Ficha Cadastral
+              Identificação do paciente
             </DialogTitle>
             <DialogDescription className="text-xs">
               Paciente: <strong className="uppercase tracking-wider">{patientName || "—"}</strong>. Toda alteração é auditada com seu nome, e-mail, data/hora e motivo.
@@ -732,12 +732,9 @@ export function MedicalRecordEditDialog({
             </div>
           ) : (
             <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="flex-1 flex flex-col min-h-0">
-              <TabsList className={isDeveloper ? "grid grid-cols-4 w-full" : "grid grid-cols-3 w-full"}>
-                <TabsTrigger value="prontuario" className="text-xs gap-2">
-                  <IdCard className="h-3.5 w-3.5" /> Prontuário
-                </TabsTrigger>
+              <TabsList className={isDeveloper ? "grid grid-cols-3 w-full" : "grid grid-cols-2 w-full"}>
                 <TabsTrigger value="ficha" className="text-xs gap-2">
-                  <FileText className="h-3.5 w-3.5" /> Ficha cadastral
+                  <IdCard className="h-3.5 w-3.5" /> Identificação
                   {regChanges.length > 0 && <Badge variant="secondary" className="ml-1 h-4 px-1 text-xs">{regChanges.length}</Badge>}
                 </TabsTrigger>
                 <TabsTrigger value="historico" className="text-xs gap-2">
@@ -754,84 +751,85 @@ export function MedicalRecordEditDialog({
                 )}
               </TabsList>
 
-              {/* ============ ABA PRONTUÁRIO ============ */}
-              <TabsContent value="prontuario" className="flex-1 mt-3 min-h-0">
-                <ScrollArea className="h-[58vh] pr-2">
-                  {!record ? (
-                    <div className="rounded-md border border-dashed border-warning/40 bg-warning/5 p-4 text-sm space-y-3">
-                      <div className="flex items-start gap-2">
-                        <span className="text-warning-on-soft font-medium text-xs uppercase tracking-wide">
-                          Sem prontuário vinculado
-                        </span>
-                      </div>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        Este paciente ainda não possui registro em <code>medical_records</code> — comum em leitos
-                        legados (UTI/PIS) admitidos antes da migração. Informe o nº de prontuário (PIN/PIS ou
-                        identificador legado) para criar o vínculo agora. O modo <code>manual_legacy</code> será
-                        aplicado automaticamente e a ação fica registrada no histórico.
-                      </p>
-                      <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-end">
-                        <div className="flex-1">
-                          <Label className="text-xs font-medium">Nº do prontuário (PIN/PIS ou legado)</Label>
-                          <Input
-                            value={createLegacyNumber}
-                            onChange={(e) => setCreateLegacyNumber(e.target.value)}
-                            placeholder="Ex.: 123456 ou PIS-7788"
-                            className="h-9 text-xs uppercase tracking-wider mt-1"
-                            disabled={creatingLegacy}
-                          />
-                        </div>
-                        <Button
-                          size="sm"
-                          onClick={createLegacyMedicalRecord}
-                          disabled={creatingLegacy || createLegacyNumber.trim().length < 1}
-                          className="gap-2"
-                        >
-                          {creatingLegacy ? "Criando..." : "Criar prontuário legado"}
-                        </Button>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Após a criação você poderá editar o nº, alternar para o formato oficial AA-UUU-SSSSSS-DV
-                        e completar a ficha cadastral normalmente.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      <section className="space-y-3 p-3 rounded-lg border bg-card">
-                        {/* MIGRAÇÃO: prontuário é campo único pacientes.prontuario. Nº Legado/PIN,
-                            modo de geração e flag "legado" (medical_records) foram degradados. */}
-                        <div>
-                          <Label className="text-xs font-semibold">Nº do Prontuário</Label>
-                          <Input value={numero} onChange={(e) => setNumero(e.target.value)}
-                            className="h-9 text-xs uppercase" placeholder="Nº do prontuário" />
-                        </div>
-                      </section>
-
-                      <section className="space-y-2 p-3 rounded-lg border border-warning/30 bg-warning/10">
-                        <Label className="text-xs font-medium flex items-center gap-2">
-                          <AlertTriangle className="h-3.5 w-3.5 text-warning-on-soft" />
-                          Motivo da alteração do prontuário (obrigatório)
-                        </Label>
-                        <Textarea value={mrReason} onChange={(e) => setMrReason(e.target.value)} rows={2}
-                          placeholder="Ex.: Vinculação com prontuário PIS / correção de digitação..."
-                          className="text-xs" />
-                      </section>
-
-                      <div className="flex justify-end">
-                        <Button onClick={tryConfirmProntuario} disabled={!mrChanges.length || saving} className="gap-2">
-                          <Save className="h-4 w-4" /> Revisar e salvar prontuário
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </ScrollArea>
-              </TabsContent>
-
-              {/* ============ ABA FICHA CADASTRAL ============ */}
+              {/* ============ ABA IDENTIFICACAO (ex-Ficha cadastral) ============ */}
               <TabsContent value="ficha" className="flex-1 mt-3 min-h-0">
                 <ScrollArea className="h-[58vh] pr-2">
                   {(
                     <div className="space-y-3">
+                      {/* Numero de prontuario — movido da antiga aba "Prontuario" para
+                          DENTRO da Identificacao (o fluxo separado e perigoso foi
+                          removido). Sem registro: vincula prontuario legado; com
+                          registro: edita o numero com justificativa obrigatoria e
+                          salvamento auditado (mesma logica tryConfirmProntuario). */}
+                      {!record ? (
+                        <div className="rounded-md border border-dashed border-warning/40 bg-warning/5 p-4 text-sm space-y-3">
+                          <div className="flex items-start gap-2">
+                            <span className="text-warning-on-soft font-medium text-xs uppercase tracking-wide">
+                              Sem prontuário vinculado
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground leading-relaxed">
+                            Este paciente ainda não possui registro em <code>medical_records</code> — comum em leitos
+                            legados (UTI/PIS) admitidos antes da migração. Informe o nº de prontuário (PIN/PIS ou
+                            identificador legado) para criar o vínculo agora. O modo <code>manual_legacy</code> será
+                            aplicado automaticamente e a ação fica registrada no histórico.
+                          </p>
+                          <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-end">
+                            <div className="flex-1">
+                              <Label className="text-xs font-medium">Nº do prontuário (PIN/PIS ou legado)</Label>
+                              <Input
+                                value={createLegacyNumber}
+                                onChange={(e) => setCreateLegacyNumber(e.target.value)}
+                                placeholder="Ex.: 123456 ou PIS-7788"
+                                className="h-9 text-xs uppercase tracking-wider mt-1"
+                                disabled={creatingLegacy}
+                              />
+                            </div>
+                            <Button
+                              size="sm"
+                              onClick={createLegacyMedicalRecord}
+                              disabled={creatingLegacy || createLegacyNumber.trim().length < 1}
+                              className="gap-2"
+                            >
+                              {creatingLegacy ? "Criando..." : "Criar prontuário legado"}
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <section className="space-y-3 p-3 rounded-lg border bg-card">
+                          <div>
+                            <Label className="text-xs font-semibold">Nº do Prontuário</Label>
+                            <Input
+                              value={numero}
+                              onChange={(e) => setNumero(e.target.value)}
+                              disabled={!cadastroEditMode}
+                              className="h-9 text-xs uppercase mt-1"
+                              placeholder="Nº do prontuário"
+                            />
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Padrão do sistema (PIS). Para alterar, ative <strong>"Atualizar cadastro"</strong> e informe o motivo abaixo.
+                            </p>
+                          </div>
+                          {cadastroEditMode && mrChanges.length > 0 && (
+                            <>
+                              <div className="space-y-2 p-2 rounded-md border border-warning/30 bg-warning/10">
+                                <Label className="text-xs font-medium flex items-center gap-2">
+                                  <AlertTriangle className="h-3.5 w-3.5 text-warning-on-soft" />
+                                  Motivo da alteração do prontuário (obrigatório)
+                                </Label>
+                                <Textarea value={mrReason} onChange={(e) => setMrReason(e.target.value)} rows={2}
+                                  placeholder="Ex.: Vinculação com prontuário PIS / correção de digitação..."
+                                  className="text-xs" />
+                              </div>
+                              <div className="flex justify-end">
+                                <Button size="sm" onClick={tryConfirmProntuario} disabled={!mrChanges.length || saving} className="gap-2">
+                                  <Save className="h-4 w-4" /> Salvar nº de prontuário
+                                </Button>
+                              </div>
+                            </>
+                          )}
+                        </section>
+                      )}
                       {!registry && (
                         <div className="rounded-md border border-warning/40 bg-warning/10 p-3 text-xs flex items-start gap-2">
                           <FileWarning className="h-4 w-4 text-warning-on-soft shrink-0 mt-1" />
@@ -962,15 +960,10 @@ export function MedicalRecordEditDialog({
                         <FieldInput label="UF" value={reg.state || ""} onChange={(v) => setRegField("state", v)} disabled={!cadastroEditMode} highlight={pisFromFieldsApplied.has("state")} />
                       </FieldGrid>
 
-                      <FieldGrid title="Clínico">
-                        <FieldInput label="Alergias conhecidas" value={reg.allergies || ""} onChange={(v) => setRegField("allergies", v)} fullWidth disabled={!cadastroEditMode} />
-                        <FieldInput label="Comorbidades" value={reg.comorbidities || ""} onChange={(v) => setRegField("comorbidities", v)} fullWidth disabled={!cadastroEditMode} />
-                      </FieldGrid>
-
-                      <FieldGrid title="Origem PIS">
-                        <FieldInput label="Prontuário PIS / legado (referência)" value={reg.medical_record || ""} onChange={(v) => setRegField("medical_record", v)} fullWidth disabled={!cadastroEditMode} highlight={pisFromFieldsApplied.has("medical_record")} />
-                      </FieldGrid>
-
+                      {/* Campos clinicos (alergias/comorbidades) e "Origem PIS" removidos
+                          da Identificacao: a identificacao e cadastral; alergias/comorbidades
+                          sao mantidas nos fluxos clinicos, e o nº de prontuario vive na secao
+                          do topo. */}
                       {cadastroEditMode && (
                         <>
                           <section className="space-y-2 p-3 rounded-lg border border-warning/30 bg-warning/10">
