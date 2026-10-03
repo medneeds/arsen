@@ -370,33 +370,39 @@ const ItemListField = ({
    disponivel. O modo efetivo do form (uti/enfermaria/emergencia) e a secao de
    dados cirurgicos DERIVAM da via escolhida — nao mais do setor. O setor apenas
    define a escolha INICIAL (coerente), que o medico pode trocar livremente. */
-type AdmissionPathway = "emergencia" | "enfermaria_clinica" | "enfermaria_cirurgica" | "uti";
+type AdmissionPathway = "emergencia" | "enfermaria" | "uti";
 
 /** Modo de admissao efetivo de cada via (dirige obrigatorios, layout e persistencia). */
 const PATHWAY_MODE: Record<AdmissionPathway, AdmissionMode> = {
   emergencia: "emergencia",
-  enfermaria_clinica: "enfermaria",
-  enfermaria_cirurgica: "enfermaria",
+  enfermaria: "enfermaria",
   uti: "uti",
 };
 
 const PATHWAY_OPTIONS: { value: AdmissionPathway; label: string }[] = [
   { value: "emergencia", label: "Urgência e Emergência" },
-  { value: "enfermaria_clinica", label: "Enfermaria Clínica" },
-  { value: "enfermaria_cirurgica", label: "Enfermaria Cirúrgica" },
+  { value: "enfermaria", label: "Enfermaria Clínico-Cirúrgica" },
   { value: "uti", label: "Cuidados Intensivos" },
 ];
 
 /** Rotulo curto para a faixa/badge do cabecalho (reflete a via escolhida). */
 const PATHWAY_BADGE: Record<AdmissionPathway, string> = {
   emergencia: "URGÊNCIA E EMERGÊNCIA",
-  enfermaria_clinica: "ENFERMARIA CLÍNICA",
-  enfermaria_cirurgica: "ENFERMARIA CIRÚRGICA",
+  enfermaria: "ENFERMARIA CLÍNICO-CIRÚRGICA",
   uti: "CUIDADOS INTENSIVOS",
 };
 
 const isAdmissionPathway = (v: unknown): v is AdmissionPathway =>
   typeof v === "string" && Object.prototype.hasOwnProperty.call(PATHWAY_MODE, v);
+
+/** Normaliza vias LEGADAS (rascunhos antigos) para o conjunto atual de 3 vias:
+ *  enfermaria_clinica/enfermaria_cirurgica -> enfermaria. Retorna null se invalido. */
+function normalizePathway(v: unknown): AdmissionPathway | null {
+  if (v === "enfermaria_clinica" || v === "enfermaria_cirurgica") return "enfermaria";
+  return isAdmissionPathway(v) ? v : null;
+}
+/** Rascunho/legado era via cirurgica? (para reativar a secao cirurgica). */
+const wasLegacySurgical = (v: unknown): boolean => v === "enfermaria_cirurgica";
 
 /** Escolha inicial da via a partir do setor: UTI/UCI -> Cuidados Intensivos,
  *  Sala Vermelha -> Urgencia e Emergencia, setor cirurgico -> Enfermaria
@@ -406,7 +412,7 @@ function pathwayFromSector(sector: string): AdmissionPathway {
   const mode = admissionModeForSector(sector);
   if (mode === "uti") return "uti";
   if (mode === "emergencia") return "emergencia";
-  return isSurgicalSector(sector) ? "enfermaria_cirurgica" : "enfermaria_clinica";
+  return "enfermaria";
 }
 
 /* ───────── Acordeao — secoes abertas por padrao, por modo efetivo ───────── */
@@ -435,13 +441,19 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
   // disponivel. O setor so define a escolha INICIAL; o medico troca livremente.
   const initialPathway = useMemo<AdmissionPathway>(() => pathwayFromSector(patient.sector), [patient.sector]);
   const [selectedPathway, setSelectedPathway] = useState<AdmissionPathway>(initialPathway);
+  // Via unica "Enfermaria Clinico-Cirurgica": o recorte cirurgico vira um toggle
+  // OPCIONAL (paciente cirurgico). Inicia ligado quando o setor ja e cirurgico.
+  const [surgicalPatient, setSurgicalPatient] = useState<boolean>(() => isSurgicalSector(patient.sector));
   // Modo efetivo do form DERIVA da via escolhida (nao mais do setor). isUti/
   // isEmergencia dirigem layout, obrigatorios e persistencia; isCirurgica habilita
   // a secao aditiva "Dados cirurgicos" (agora a via "Enfermaria Cirurgica").
   const admissionMode: AdmissionMode = PATHWAY_MODE[selectedPathway];
   const isUti = selectedPathway === "uti";
   const isEmergencia = selectedPathway === "emergencia";
-  const isCirurgica = selectedPathway === "enfermaria_cirurgica";
+  const isEnfermaria = selectedPathway === "enfermaria";
+  // Dados cirurgicos: secao OPCIONAL da via enfermaria, habilitada pelo toggle
+  // "paciente cirurgico" (nao mais uma via propria).
+  const isCirurgica = isEnfermaria && surgicalPatient;
   // Secoes abertas do acordeao (mesma identidade visual da evolucao). Essenciais
   // abertas por padrao; complementares recolhidas. No modo emergencia o essencial
   // de estabilizacao fica aberto e os complementos, recolhidos — preservando o
@@ -719,7 +731,12 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
         // Via escolhida no rascunho (quando ausente/invalida, mantem o default do
         // setor). Preserva a escolha do medico e os campos so visiveis naquela via
         // (UTI/cirurgicos) no round-trip do rascunho.
-        if (isAdmissionPathway(d.selectedPathway)) setSelectedPathway(d.selectedPathway);
+        // Via: normaliza legado (enfermaria_clinica/cirurgica -> enfermaria) e,
+        // se o rascunho era cirurgico, reativa o toggle de paciente cirurgico.
+        const hydratedPathway = normalizePathway(d.selectedPathway);
+        if (hydratedPathway) setSelectedPathway(hydratedPathway);
+        if (typeof d.surgicalPatient === "boolean") setSurgicalPatient(d.surgicalPatient);
+        else if (wasLegacySurgical(d.selectedPathway)) setSurgicalPatient(true);
         setHda(d.hda ?? ""); setMuc(d.muc ?? "");
         // Antecedentes: formato novo (array) ou legado (`amp` string multilinha).
         setAntecedentesItems(
@@ -889,7 +906,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
     const t = setTimeout(() => {
       try {
         const payload = {
-          selectedPathway,
+          selectedPathway, surgicalPatient,
           hda, amp, antecedentes: antecedentesItems, muc, allergies,
           weight, height, paSys, paDia, pa, fc, fr, spo2, tax, dx,
           glasgowEye, glasgowVerbal, glasgowMotor,
@@ -915,7 +932,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
     }, 600);
     return () => clearTimeout(t);
   }, [
-    draftHydrated, draftKey, selectedPathway,
+    draftHydrated, draftKey, selectedPathway, surgicalPatient,
     hda, amp, antecedentesItems, muc, allergies, weight, height, paSys, paDia, pa, fc, fr, spo2, tax, dx,
     glasgowEye, glasgowVerbal, glasgowMotor,
     physGeneral, physCv, physResp, physAbd, physExt, physNeuro,
@@ -933,7 +950,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
     if (isSaved) setIsSaved(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    selectedPathway,
+    selectedPathway, surgicalPatient,
     hda, amp, muc, allergies, weight, height, paSys, paDia, pa, fc, fr, spo2, tax, dx,
     glasgowEye, glasgowVerbal, glasgowMotor,
     physGeneral, physCv, physResp, physAbd, physExt, physNeuro,
@@ -1037,7 +1054,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
         return;
       }
       const payload = {
-        selectedPathway,
+        selectedPathway, surgicalPatient,
         hda, amp, antecedentes: amp ? amp.split("\n") : [], muc, allergies,
         weight, height, paSys, paDia, pa, fc, fr, spo2, tax, dx,
         glasgowEye, glasgowVerbal, glasgowMotor,
@@ -2157,7 +2174,19 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false }:
         </div>
         )}
 
-        {/* ───── Dados cirúrgicos (setores cirúrgicos) — aditivo, independe do modo ───── */}
+        {/* Toggle "paciente cirurgico" — via unica Enfermaria Clinico-Cirurgica.
+            Marca-se quando houver recorte cirurgico, revelando os Dados cirurgicos. */}
+        {isEnfermaria && (
+          <label className="mt-6 flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-3 cursor-pointer select-none">
+            <Checkbox checked={surgicalPatient} onCheckedChange={v => setSurgicalPatient(v === true)} />
+            <span className="text-sm text-foreground">
+              <strong>Paciente cirúrgico</strong>
+              <span className="text-xs text-muted-foreground"> — habilita os Dados cirúrgicos (procedimento, cirurgião, anestesia)</span>
+            </span>
+          </label>
+        )}
+
+        {/* ───── Dados cirúrgicos — secao opcional da via enfermaria (toggle acima) ───── */}
         {isCirurgica && (
           <div className="w-full min-w-0 mt-6">
             <Accordion
