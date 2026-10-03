@@ -139,7 +139,7 @@ export function PatientIdentityHeader({
           <h3 className={cn(
             "patient-id font-semibold leading-tight text-foreground",
             alwaysExpanded ? "text-base sm:text-lg break-words" : "truncate",
-            isCockpit ? "text-sm" : "text-base"
+            isCockpit ? "text-base sm:text-lg" : "text-base"
           )}>
             {displayName}
           </h3>
@@ -280,10 +280,10 @@ export function PatientIdentityHeader({
 function IdRow({ label, value, mono }: { label: string; value?: string | null; mono?: boolean }) {
   const has = !!value;
   return (
-    <div className="group flex items-center justify-between gap-2 text-xs">
-      <span className="text-muted-foreground uppercase tracking-wide text-xs">{label}</span>
+    <div className="group flex items-center justify-between gap-2 text-[11px]">
+      <span className="text-muted-foreground uppercase tracking-wide text-[10px]">{label}</span>
       <span className="flex items-center gap-1 min-w-0">
-        <span className={cn("truncate font-medium", has ? "text-foreground" : "text-muted-foreground/60", mono && "font-mono")}>
+        <span className={cn("truncate font-medium text-[11px]", has ? "text-foreground" : "text-muted-foreground/60", mono && "font-mono")}>
           {value || "—"}
         </span>
         {has && (
