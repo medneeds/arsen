@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Copy, IdCard, ChevronDown, ShieldAlert, Pin } from "lucide-react";
+import { Copy, IdCard, ChevronDown, ShieldAlert } from "lucide-react";
 import { format, parseISO, isValid } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
@@ -9,6 +9,7 @@ import { useHospital } from "@/contexts/HospitalContext";
 import { usePatientLive } from "@/hooks/usePatientLive";
 import { usePatientIdentifiers } from "@/hooks/usePatientIdentifiers";
 import { sectorLabelFromCode } from "@/lib/hospitalSectors";
+import { formatAgeLabel } from "@/lib/ageLabel";
 
 /**
  * Cabeçalho unificado de identificação do paciente.
@@ -35,9 +36,9 @@ export interface PatientIdentityHeaderProps {
   showFullDetailsToggle?: boolean;
   /** Quando true, renderiza o painel completo sempre aberto (sem botão de toggle). */
   alwaysExpanded?: boolean;
-  /** Controle de "fixar painel": quando fornecido, renderiza um pino compacto a
-   *  ESQUERDA do nome (usado na cockpit fixa, no lugar da barra de "Fixar"). */
-  pinControl?: { pinned: boolean; onToggle: () => void };
+  /** Chips extras (ex.: Admissão / Internação), renderizados logo abaixo dos dados
+   *  de identificação e antes do botão "Ver dados do prontuário". Só na variante cockpit. */
+  metaChips?: React.ReactNode;
   /** Quando fornecido, o botão "Ver dados do prontuário" chama isto (abrir o
    *  dialogo que mostra os dados completos + edicao) em vez de expandir o painel
    *  inline read-only. Centraliza ver+editar numa superficie so. */
@@ -73,7 +74,7 @@ export function PatientIdentityHeader({
   className,
   showFullDetailsToggle = true,
   alwaysExpanded = false,
-  pinControl,
+  metaChips,
   onViewFullData,
 }: PatientIdentityHeaderProps) {
   const { namesHidden } = usePrivacy();
@@ -94,62 +95,50 @@ export function PatientIdentityHeader({
   // registry.age é calculado ao vivo a partir de birth_date — nunca fica
   // desatualizado. livePatient?.age e fallbackAge são o campo estático
   // (patients.age), usados só quando não há patient_registry vinculado.
-  const age = registry?.age || livePatient?.age || fallbackAge || null;
+  const age = formatAgeLabel(registry?.age || livePatient?.age || fallbackAge || null);
   const displayName = maskName(name, namesHidden);
 
   const isCockpit = variant === "cockpit";
 
   return (
     <div className={cn("w-full", className)}>
-      {/* ===== Linha 1: Nome + Idade · Setor · Leito + Status ===== */}
-      <div className={cn(
-        "flex items-start justify-between gap-2",
-        isCockpit ? "mb-2" : "mb-2"
-      )}>
-        {pinControl && (
-          <button
-            type="button"
-            onClick={pinControl.onToggle}
-            title={pinControl.pinned ? "Desafixar (recolhe ao tirar o mouse)" : "Fixar painel aberto"}
-            aria-pressed={pinControl.pinned}
-            className={cn(
-              "mt-0.5 shrink-0 inline-flex items-center justify-center h-6 w-6 rounded-md transition-colors",
-              pinControl.pinned
-                ? "text-primary bg-primary/10"
-                : "text-muted-foreground hover:text-primary hover:bg-primary/10",
-            )}
-          >
-            <Pin className={cn("h-3.5 w-3.5", pinControl.pinned && "fill-current")} />
-          </button>
-        )}
-        <div className="min-w-0 flex-1">
-          <h3 className={cn(
-            "patient-id font-semibold leading-tight text-foreground",
-            alwaysExpanded ? "text-base sm:text-lg break-words" : "truncate",
-            isCockpit ? "text-base sm:text-lg" : "text-base"
-          )}>
+      {isCockpit ? (
+        <>
+          {/* Cockpit: nome limpo como elemento principal; dados em blocos compactos. */}
+          <h3 className="patient-id text-lg font-semibold leading-snug text-foreground break-words">
             {displayName}
           </h3>
-          <p className={cn(
-            "text-muted-foreground mt-1 preserve-case",
-            isCockpit ? "text-xs" : "text-xs"
-          )}>
-            {age ? `${age} anos` : "—"} • {sector || "—"} • Leito{" "}
-            <span className="font-medium text-foreground">{bed}</span>
-          </p>
-        </div>
-        {/* Badge de status clinico (severidade) removido: e dado administrativo que
-            nao se reutiliza e competia espaco com o nome do paciente. */}
-      </div>
+          <div className="mt-2 flex flex-wrap gap-1.5 preserve-case">
+            <InfoChip>{age ?? "Idade não informada"}</InfoChip>
+            <InfoChip>{sector || "Setor —"}</InfoChip>
+            <InfoChip label="Leito" value={bed} />
+            <CopyChip label="Prontuário" value={prontuario} />
+            <CopyChip label="Atendimento" value={atendimento} />
+          </div>
+          {metaChips && <div className="mt-1.5 flex flex-wrap gap-1.5 preserve-case">{metaChips}</div>}
+        </>
+      ) : (
+        <>
+          {/* ===== Linha 1: Nome + Idade · Setor · Leito ===== */}
+          <div className="mb-2 flex items-start justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <h3 className="patient-id font-semibold leading-tight text-foreground truncate text-base">
+                {displayName}
+              </h3>
+              <p className="text-muted-foreground mt-1 preserve-case text-xs">
+                {age ?? "—"} • {sector || "—"} • Leito{" "}
+                <span className="font-medium text-foreground">{bed}</span>
+              </p>
+            </div>
+          </div>
 
-      {/* ===== Linha 2: Prontuário + Atendimento ===== */}
-      <div className={cn(
-        "grid gap-1",
-        isCockpit ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-2"
-      )}>
-        <IdRow label="Prontuário" value={prontuario} mono />
-        <IdRow label="Atendimento" value={atendimento} mono />
-      </div>
+          {/* ===== Linha 2: Prontuário + Atendimento ===== */}
+          <div className="grid gap-1 grid-cols-1 sm:grid-cols-2">
+            <IdRow label="Prontuário" value={prontuario} mono />
+            <IdRow label="Atendimento" value={atendimento} mono />
+          </div>
+        </>
+      )}
 
       {/* ===== Painel "Ver dados do prontuário" ===== */}
       {showFullDetailsToggle && !alwaysExpanded && (
@@ -256,6 +245,52 @@ export function PatientIdentityHeader({
         </div>
       )}
     </div>
+  );
+}
+
+const chipBase =
+  "inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/40 px-2 py-0.5 text-xs leading-5 text-foreground";
+
+/** Bloco compacto de informação. Texto simples ou rótulo + valor. */
+export function InfoChip({
+  label,
+  value,
+  children,
+}: {
+  label?: string;
+  value?: string | null;
+  children?: React.ReactNode;
+}) {
+  return (
+    <span className={chipBase}>
+      {label && <span className="text-muted-foreground">{label}</span>}
+      {value !== undefined ? <span className="font-medium">{value || "—"}</span> : children}
+    </span>
+  );
+}
+
+/** Bloco com valor copiável (prontuário / atendimento). Vazio vira "—" sem botão. */
+function CopyChip({ label, value }: { label: string; value?: string | null }) {
+  if (!value) {
+    return (
+      <span className={chipBase}>
+        <span className="text-muted-foreground">{label}</span>
+        <span className="text-muted-foreground/60">—</span>
+      </span>
+    );
+  }
+  return (
+    <button
+      type="button"
+      onClick={() => copyValue(value, label)}
+      title={`Copiar ${label}`}
+      aria-label={`Copiar ${label} ${value}`}
+      className={cn(chipBase, "group cursor-pointer hover:bg-muted/70 transition-colors")}
+    >
+      <span className="text-muted-foreground">{label}</span>
+      <span className="font-medium font-mono">{value}</span>
+      <Copy className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity" />
+    </button>
   );
 }
 

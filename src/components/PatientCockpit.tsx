@@ -51,7 +51,7 @@ import { CVCChecklistDialog } from "./CVCChecklistDialog";
 import { PatientRoundPrintDialog } from "./PatientRoundPrintDialog";
 import { MedicalRecordEditDialog } from "./MedicalRecordEditDialog";
 import { Printer } from "lucide-react";
-import { PatientIdentityHeader } from "./PatientIdentityHeader";
+import { PatientIdentityHeader, InfoChip } from "./PatientIdentityHeader";
 import { SuspendDischargeDialog } from "./SuspendDischargeDialog";
 import { CancelTransferSignalDialog } from "./CancelTransferSignalDialog";
 import { useSignalingStatus, SignalingStatusPanel } from "@/components/SignalingStatusPanel";
@@ -130,13 +130,12 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
   const queryClient = useQueryClient();
   const [showFullId, setShowFullId] = useState(false);
   const [recordEditOpen, setRecordEditOpen] = useState(false);
-  const [pinned, setPinned] = useState(false);
   const [hovering, setHovering] = useState(false);
   const [docDialogOpen, setDocDialogOpen] = useState(false);
   const [roundPrintOpen, setRoundPrintOpen] = useState(false);
   const [receituarioOpen, setReceituarioOpen] = useState(false);
   const [cvcChecklistOpen, setCvcChecklistOpen] = useState(false);
-  const isExpanded = variant === "inline" || pinned || hovering;
+  const isExpanded = variant === "inline" || hovering;
   const isMobile = useIsMobile();
   // Cockpit fixa só aparece a partir de lg (≥1024px). Abaixo disso (mobile,
   // tablets, monitores verticais, janelas reduzidas) usamos FAB + Sheet.
@@ -369,7 +368,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
     <TooltipProvider delayDuration={300}>
       <aside
         onMouseEnter={() => variant === "fixed" && setHovering(true)}
-        onMouseLeave={() => variant === "fixed" && !pinned && setHovering(false)}
+        onMouseLeave={() => variant === "fixed" && setHovering(false)}
         className={cn(
           variant === "fixed" && [
             // Sticky: entra no fluxo do documento — sem sobreposição de conteúdo.
@@ -400,7 +399,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
           <button
             type="button"
             title="Expandir painel do paciente"
-            onClick={() => setPinned(true)}
+            onClick={() => setHovering(true)}
             onMouseEnter={() => setHovering(true)}
             className={cn(
               "group relative flex flex-col items-center justify-center w-full",
@@ -488,23 +487,19 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
             fallbackAge={patient.age}
             fallbackClinicalStatus={patient.clinicalStatus}
             variant="cockpit"
-            // Fixar painel: pino compacto a esquerda do nome (so na cockpit fixa),
-            // no lugar da antiga barra "Fixar" que ocupava uma faixa inteira no topo.
-            pinControl={variant === "fixed" ? { pinned, onToggle: () => setPinned((v) => !v) } : undefined}
+            // Admissao e tempo de internacao: blocos junto da identificacao.
+            metaChips={
+              <>
+                <InfoChip label="Admissão" value={formatDate(patient.admissionDate)} />
+                <InfoChip label="Internação">
+                  <StayDays admissionDate={patient.admissionDate} />
+                </InfoChip>
+              </>
+            }
             // "Ver dados do prontuario" abre o dialogo de ver+editar (centraliza), no
             // lugar do painel inline read-only + botao "Editar" separado.
             onViewFullData={() => setRecordEditOpen(true)}
           />
-
-          <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs mt-2">
-            <div className="text-muted-foreground">
-              Internação: <span className="text-foreground font-medium"><StayDays admissionDate={patient.admissionDate} /></span>
-            </div>
-            <div className="text-muted-foreground truncate">
-              Adm: <span className="text-foreground font-medium">{formatDate(patient.admissionDate)}</span>
-            </div>
-          </div>
-
         </div>
 
         {/* ===== CORPO ROLAVEL (unico scroll do painel) ===== */}
