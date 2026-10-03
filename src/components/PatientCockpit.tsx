@@ -52,6 +52,7 @@ import { PatientRoundPrintDialog } from "./PatientRoundPrintDialog";
 import { MedicalRecordEditDialog } from "./MedicalRecordEditDialog";
 import { Printer } from "lucide-react";
 import { PatientIdentityHeader, InfoChip } from "./PatientIdentityHeader";
+import { parseClinicalList } from "@/lib/clinicalList";
 import { SuspendDischargeDialog } from "./SuspendDischargeDialog";
 import { CancelTransferSignalDialog } from "./CancelTransferSignalDialog";
 import { useSignalingStatus, SignalingStatusPanel } from "@/components/SignalingStatusPanel";
@@ -239,8 +240,8 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
   const status = clinicalStatusConfig[patient.clinicalStatus || "regular"] || clinicalStatusConfig.regular;
   const sector = sectorLabelFromCode(patient.sector);
   const allergies = parseList(patient.utiAllergies);
-  const diagnoses = parseList(patient.diagnoses);
-  const medHistory = parseList(patient.medicalHistory);
+  const diagnoses = parseClinicalList(patient.diagnoses);
+  const medHistory = parseClinicalList(patient.medicalHistory);
   const pendencies = parseList(patient.pendencies);
   const exams = parseList(patient.relevantExams);
   const conducts = parseList(patient.utiDailyConducts);
@@ -819,70 +820,6 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
           </button>
         )}
 
-        {/* ===== ZONA 3.8: ROUND MULTIPROFISSIONAL (realtime) ===== */}
-        {round ? (
-          <div className="mx-3 mt-1 mb-1 flex items-stretch gap-1 rounded-md border border-border bg-muted/40 hover:bg-muted/70 transition overflow-hidden">
-            <button
-              onClick={() => goPatient("/round")}
-              className="flex items-start justify-between gap-2 px-3 py-2 text-left flex-1 min-w-0"
-            >
-              <div className="flex items-start gap-2 min-w-0 flex-1">
-                <Users className="h-3.5 w-3.5 text-primary shrink-0 mt-1" />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs font-medium text-foreground">Round multiprofissional</span>
-                    <span className="inline-flex items-center gap-1 rounded-md px-2 py-0 text-xs font-medium uppercase tracking-wide bg-primary/10 text-primary">
-                      {formatDate(round.roundDate)}
-                    </span>
-                  </div>
-                  <p className="text-xs text-foreground/80 leading-tight mt-1 tabular-nums">
-                    {round.responsesCount} {round.responsesCount === 1 ? "resposta" : "respostas"} • {round.goalsCount} {round.goalsCount === 1 ? "meta" : "metas"}
-                  </p>
-                  <p className="text-xs text-muted-foreground leading-tight mt-1">
-                    {(() => {
-                      try {
-                        return `Atualizado ${formatDistanceToNow(new Date(round.updatedAt), { addSuffix: true, locale: ptBR })}`;
-                      } catch { return "—"; }
-                    })()}
-                  </p>
-                </div>
-              </div>
-              <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-1" />
-            </button>
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); setRoundPrintOpen(true); }}
-              title="Imprimir round (em branco ou preenchido)"
-              className="px-2 border-l border-border hover:bg-primary/10 text-primary transition flex items-center justify-center"
-            >
-              <Printer className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setRoundPrintOpen(true)}
-            className="mx-3 mt-1 mb-1 flex items-center gap-2 rounded-md border border-dashed border-border bg-muted/20 hover:bg-muted/50 transition px-3 py-2 text-left w-[calc(100%-1.5rem)]"
-          >
-            <Printer className="h-3.5 w-3.5 text-primary shrink-0" />
-            <span className="text-xs font-medium text-foreground">Imprimir folha do Round</span>
-            <span className="text-xs text-muted-foreground ml-auto">em branco</span>
-          </button>
-        )}
-
-        {roundPrintOpen && (
-          <PatientRoundPrintDialog
-            open={roundPrintOpen}
-            onOpenChange={setRoundPrintOpen}
-            patientId={patient.id}
-            patientName={patient.name}
-            patientSector={sector}
-            patientBed={patient.bedNumber}
-            patientAge={registry?.age || patient.age}
-          />
-        )}
-
-
         {/* ===== ZONA 3.9: SOLICITAÇÃO NIR (realtime, com tracking + autonomia médica) ===== */}
         {nirRequest && (() => {
           const elapsedMin = Math.max(0, Math.floor((Date.now() - new Date(nirRequest.createdAt).getTime()) / 60000));
@@ -1044,6 +981,69 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
           </div>
         )}
 
+        {/* ===== ZONA 3.8: ROUND MULTIPROFISSIONAL (realtime) ===== */}
+        {round ? (
+          <div className="mx-3 mt-1 mb-1 flex items-stretch gap-1 rounded-md border border-border bg-muted/40 hover:bg-muted/70 transition overflow-hidden">
+            <button
+              onClick={() => goPatient("/round")}
+              className="flex items-start justify-between gap-2 px-3 py-2 text-left flex-1 min-w-0"
+            >
+              <div className="flex items-start gap-2 min-w-0 flex-1">
+                <Users className="h-3.5 w-3.5 text-primary shrink-0 mt-1" />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs font-medium text-foreground">Round multiprofissional</span>
+                    <span className="inline-flex items-center gap-1 rounded-md px-2 py-0 text-xs font-medium uppercase tracking-wide bg-primary/10 text-primary">
+                      {formatDate(round.roundDate)}
+                    </span>
+                  </div>
+                  <p className="text-xs text-foreground/80 leading-tight mt-1 tabular-nums">
+                    {round.responsesCount} {round.responsesCount === 1 ? "resposta" : "respostas"} • {round.goalsCount} {round.goalsCount === 1 ? "meta" : "metas"}
+                  </p>
+                  <p className="text-xs text-muted-foreground leading-tight mt-1">
+                    {(() => {
+                      try {
+                        return `Atualizado ${formatDistanceToNow(new Date(round.updatedAt), { addSuffix: true, locale: ptBR })}`;
+                      } catch { return "—"; }
+                    })()}
+                  </p>
+                </div>
+              </div>
+              <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-1" />
+            </button>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setRoundPrintOpen(true); }}
+              title="Imprimir round (em branco ou preenchido)"
+              className="px-2 border-l border-border hover:bg-primary/10 text-primary transition flex items-center justify-center"
+            >
+              <Printer className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setRoundPrintOpen(true)}
+            className="mx-3 mt-1 mb-1 flex items-center gap-2 rounded-md border border-dashed border-border bg-muted/20 hover:bg-muted/50 transition px-3 py-2 text-left w-[calc(100%-1.5rem)]"
+          >
+            <Printer className="h-3.5 w-3.5 text-primary shrink-0" />
+            <span className="text-xs font-medium text-foreground">Imprimir folha do Round</span>
+            <span className="text-xs text-muted-foreground ml-auto">em branco</span>
+          </button>
+        )}
+
+        {roundPrintOpen && (
+          <PatientRoundPrintDialog
+            open={roundPrintOpen}
+            onOpenChange={setRoundPrintOpen}
+            patientId={patient.id}
+            patientName={patient.name}
+            patientSector={sector}
+            patientBed={patient.bedNumber}
+            patientAge={registry?.age || patient.age}
+          />
+        )}
+
         <Tabs defaultValue="resumo" className="flex flex-col">
           <TabsList className="mx-2 sm:mx-3 mt-2 grid grid-cols-4 h-9 sm:h-8 p-1 shrink-0">
             <TabsTrigger value="resumo" className="text-xs h-8 sm:h-7 px-1">Resumo</TabsTrigger>
@@ -1053,20 +1053,14 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
           </TabsList>
 
           <div className="mt-1 pb-3">
-            {/* ABA RESUMO: diagnósticos + antecedentes + responsável */}
+            {/* ABA RESUMO: diagnósticos + antecedentes. "Responsável médico" retirado por ora: nao ha fonte
+                confiavel e central do medico responsavel; reintroduzir quando houver. */}
             <TabsContent value="resumo" className="px-3 sm:px-3 pb-3 space-y-3 mt-2 data-[state=inactive]:hidden">
               <CockpitSection icon={Stethoscope} title="Diagnósticos" count={diagnoses.length}>
                 <ItemList items={diagnoses} emptyMsg="Sem diagnósticos registrados." />
               </CockpitSection>
               <CockpitSection icon={FileText} title="Antecedentes" count={medHistory.length}>
                 <ItemList items={medHistory} emptyMsg="Nenhum antecedente registrado." />
-              </CockpitSection>
-              <CockpitSection icon={User2} title="Responsável médico">
-                <div className="text-xs text-foreground preserve-case">
-                  {patient.medicalResponsibility?.leaderNames || (
-                    <EmptyMsg>Sem responsável definido.</EmptyMsg>
-                  )}
-                </div>
               </CockpitSection>
             </TabsContent>
 
