@@ -3,7 +3,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ArrowRightLeft, BedDouble, ChevronDown, ChevronUp, AlertTriangle, Clock, X, CheckCircle2, Loader2 } from "lucide-react";
@@ -16,6 +15,7 @@ import { usePatients } from "@/hooks/usePatients";
 import { completeInternalTransfer, cancelInternalTransferRequest } from "@/lib/internalTransfer";
 import { sectorLabelFromCode } from "@/lib/hospitalSectors";
 import { classificationLabel } from "@/lib/sectorComplexity";
+import { BedSelectorGrid, type BedOption } from "@/components/shared/BedSelectorGrid";
 
 interface Props {
   sectorCode: string;
@@ -68,17 +68,49 @@ export function InternalTransferQueueSection({ sectorCode, onTransferComplete }:
     return (patients ?? [])
       .filter((p) => {
         const matchSector = p.sector === targetSector;
-        const matchDept   = deptEquivalent && (p as any).department === deptEquivalent;
+        const matchDept   = deptEquivalent && (p as { department?: string }).department === deptEquivalent;
         const isVacant    = !p.name || p.name.trim() === "";
         return (matchSector || matchDept) && isVacant;
       })
       .sort((a, b) => (parseInt(a.bedNumber) || 0) - (parseInt(b.bedNumber) || 0));
   }, [patients, target?.target_sector_code]);
 
+  // Todos os leitos do setor destino (livres + ocupados) para o grid animado —
+  // mesma experiencia visual do pre-admitir. Livres selecionaveis; ocupados
+  // exibidos desabilitados. Sem EXTRA nesta fase (seria criar leito no destino).
+  const sectorBeds = useMemo<BedOption[]>(() => {
+    if (!target?.target_sector_code) return [];
+    const targetSector = target.target_sector_code;
+    const SECTOR_TO_DEPT: Record<string, string> = {
+      enfermaria_transicao: "ENFERMARIA DE TRANSIÇÃO",
+      enfermaria_vascular:  "ENFERMARIA VASCULAR",
+      neuro_01: "NEURO 01", neuro_02: "NEURO 02",
+      clinica_cirurgica: "CLÍNICA CIRÚRGICA",
+      ucc: "UCC", blue: "UCI 1", outside: "UCI 2",
+      sala_vermelha: "SALA VERMELHA", sala_laranja: "SALA LARANJA",
+      observacao_clinica: "OBSERVAÇÃO CLÍNICA",
+    };
+    const deptEquivalent = SECTOR_TO_DEPT[targetSector];
+    return (patients ?? [])
+      .filter((p) => p.sector === targetSector || (deptEquivalent && (p as { department?: string }).department === deptEquivalent))
+      .sort((a, b) => (parseInt(a.bedNumber) || 0) - (parseInt(b.bedNumber) || 0))
+      .map((p) => ({
+        id: p.id,
+        label: p.bedNumber,
+        status: (!p.name || p.name.trim() === "") ? ("livre" as const) : ("ocupado" as const),
+      }));
+  }, [patients, target?.target_sector_code]);
+
   const handleAllocate = async () => {
     if (!target || !bedId) return;
     const bed = (patients ?? []).find((p) => p.id === bedId);
     if (!bed) return;
+    // Guarda: so leito vago (o grid ja desabilita ocupados, mas reforcamos para
+    // nunca apontar uma internacao para um leito ja ocupado).
+    if (bed.name && bed.name.trim() !== "") {
+      toast({ title: "Leito ocupado", description: "Selecione um leito vago.", variant: "destructive" });
+      return;
+    }
     if (!currentHospital || !currentState) return;
     setSubmitting(true);
     try {
@@ -112,8 +144,8 @@ export function InternalTransferQueueSection({ sectorCode, onTransferComplete }:
       // instancia local (lista de vagos). Sem isto, o paciente transferido so
       // aparecia no destino via realtime ou reload.
       onTransferComplete?.();
-    } catch (err: any) {
-      toast({ title: "Erro ao alocar", description: err?.message ?? "Tente novamente.", variant: "destructive" });
+    } catch (err) {
+      toast({ title: "Erro ao alocar", description: err instanceof Error ? err.message : "Tente novamente.", variant: "destructive" });
     } finally {
       setSubmitting(false);
     }
@@ -221,14 +253,7 @@ export function InternalTransferQueueSection({ sectorCode, onTransferComplete }:
               ) : availableBeds.length === 0 ? (
                 <p className="text-xs text-destructive">Nenhum leito vago neste setor.</p>
               ) : (
-                <Select value={bedId} onValueChange={setBedId}>
-                  <SelectTrigger><SelectValue placeholder="Selecione o leito" /></SelectTrigger>
-                  <SelectContent>
-                    {availableBeds.map((b) => (
-                      <SelectItem key={b.id} value={b.id}>Leito {b.bedNumber}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <BedSelectorGrid beds={sectorBeds} value={bedId || null} onChange={setBedId} />
               )}
             </div>
           </div>
