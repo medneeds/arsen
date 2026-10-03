@@ -13,6 +13,8 @@ import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { CidSearchInput } from "@/components/CidSearchInput";
+import { usePatientCid } from "@/hooks/usePatientCid";
 import { format } from "date-fns";
 
 /* ── SUS procedure catalog ─────────────────────────────────────── */
@@ -134,6 +136,19 @@ const RequisicaoImagensPage = () => {
   const [observations, setObservations] = useState("");
   const [useContrast, setUseContrast] = useState(false);
   const [useSedation, setUseSedation] = useState(false);
+
+  // CID da ADMISSAO reverbera para a APAC (pre-preenchido, editavel). Mesma fonte
+  // do painel/evolucao: snapshot __cid_primary/__cid_secondary nas evolucoes da
+  // internacao (usePatientCid). So preenche o que ainda estiver em branco.
+  const apacPatientId = searchParams.get("patientId");
+  const { cidPrimary: admCidPrimary, cidSecondary: admCidSecondary } =
+    usePatientCid(apacPatientId && apacPatientId.length > 10 ? apacPatientId : null);
+  useEffect(() => {
+    if (admCidPrimary) setCidPrimary((prev) => prev || admCidPrimary);
+  }, [admCidPrimary]);
+  useEffect(() => {
+    if (admCidSecondary.length) setCidSecondary((prev) => prev || admCidSecondary[0]);
+  }, [admCidSecondary]);
 
   // Load doctor profile (full_name, crm, cpf) — fallback para user_metadata
   useEffect(() => {
@@ -370,48 +385,61 @@ const RequisicaoImagensPage = () => {
     // observacoes; o solicitante vira FK profissional (solicitado_por).
     const pid = searchParams.get("patientId");
     const internacaoId = pid && pid.length > 10 ? pid : null;
-    if (internacaoId) {
-      try {
-        const apacItems = selectedProcedures
-          .filter((p: any) => p.code || p.name)
-          .map((p: any) => ({
-            code: p.code || "",
-            name: p.name || "",
-            quantity: p.quantity ?? 1,
-          }));
+    // A solicitacao de APAC PRECISA de internacao vinculada (solicitacoes_exame.
+    // internacao_id e NOT NULL). Sem ela nao ha como gerar os "solicitados", a guia
+    // nem o historico. Antes isso era pulado em silencio -> "nao gerava nada".
+    if (!internacaoId) {
+      toast.error("Abra a APAC a partir do paciente (pelo mapa/painel): sem internação vinculada não é possível registrar a solicitação.");
+      return;
+    }
+    try {
+      // qty (nao "quantity") — o item perdia a quantidade digitada.
+      const apacItems = selectedProcedures
+        .filter((p) => p.code || p.name)
+        .map((p) => ({
+          code: p.code || "",
+          name: p.name || "",
+          quantity: p.qty ?? 1,
+        }));
 
-        const notesMeta: string[] = [];
-        if (cidPrimary) notesMeta.push(`CID Principal: ${cidPrimary}`);
-        if (cidSecondary) notesMeta.push(`CID Secundário: ${cidSecondary}`);
-        if (cidAssociated) notesMeta.push(`CID Associado: ${cidAssociated}`);
-        if (diagnosis) notesMeta.push(`Diagnóstico: ${diagnosis}`);
-        if (doctorName) notesMeta.push(`Médico: ${doctorName}${doctorCRM ? ` (CRM ${doctorCRM})` : ""}`);
+      const notesMeta: string[] = [];
+      if (cidPrimary) notesMeta.push(`CID Principal: ${cidPrimary}`);
+      if (cidSecondary) notesMeta.push(`CID Secundário: ${cidSecondary}`);
+      if (cidAssociated) notesMeta.push(`CID Associado: ${cidAssociated}`);
+      if (diagnosis) notesMeta.push(`Diagnóstico: ${diagnosis}`);
+      if (doctorName) notesMeta.push(`Médico: ${doctorName}${doctorCRM ? ` (CRM ${doctorCRM})` : ""}`);
 
-        let solicitadoPor: string | null = null;
-        if (user?.id) {
-          const { data: prof } = await supabase
-            .from("profissionais")
-            .select("id")
-            .eq("user_id", user.id)
-            .maybeSingle();
-          solicitadoPor = (prof as any)?.id ?? null;
-        }
-
-        const { error: erroNaoBloqueante2 } = await supabase.from("solicitacoes_exame").insert({
-          internacao_id: internacaoId,
-          categoria: "apac",
-          itens: apacItems.length > 0 ? apacItems : [{ name: "APAC" }],
-          indicacao_clinica: observations || null,
-          prioridade: "eletivo",
-          status: "pendente",
-          observacoes: notesMeta.join(" | ") || null,
-          solicitado_por: solicitadoPor,
-        });
-        // Nao bloqueia o fluxo, mas nao pode sumir: antes o resultado era descartado.
-        if (erroNaoBloqueante2) console.warn("[RequisicaoImagensPage] falha nao-bloqueante ao registrar em solicitacoes_exame:", erroNaoBloqueante2);
-      } catch (err) {
-        console.warn("[APAC] falha ao registrar em solicitacoes_exame:", err);
+      let solicitadoPor: string | null = null;
+      if (user?.id) {
+        const { data: prof } = await supabase
+          .from("profissionais")
+          .select("id")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        solicitadoPor = (prof as { id?: string } | null)?.id ?? null;
       }
+
+      // BLOQUEANTE + ERRO VISIVEL: se nao gravar, nao imprime e o medico ve o motivo
+      // (antes o erro virava console.warn e sumia — a solicitacao "nao acontecia").
+      const { error } = await supabase.from("solicitacoes_exame").insert({
+        internacao_id: internacaoId,
+        categoria: "apac",
+        itens: apacItems.length > 0 ? apacItems : [{ name: "APAC" }],
+        indicacao_clinica: observations || null,
+        prioridade: "eletivo",
+        status: "pendente",
+        observacoes: notesMeta.join(" | ") || null,
+        solicitado_por: solicitadoPor,
+      });
+      if (error) {
+        console.error("[APAC] erro ao registrar solicitacao:", error);
+        toast.error(`Não foi possível registrar a solicitação de APAC: ${error.message}`);
+        return;
+      }
+    } catch (err) {
+      console.error("[APAC] falha ao registrar em solicitacoes_exame:", err);
+      toast.error("Falha ao registrar a solicitação de APAC. Tente novamente.");
+      return;
     }
 
     window.print();
@@ -577,15 +605,15 @@ const RequisicaoImagensPage = () => {
                 <div className="grid grid-cols-3 gap-3">
                   <div>
                     <Label className="text-xs text-muted-foreground">CID-10 Principal</Label>
-                    <Input value={cidPrimary} onChange={(e) => setCidPrimary(e.target.value)} placeholder="Ex: I63.9" className="font-mono" />
+                    <CidSearchInput value={cidPrimary} onChange={setCidPrimary} placeholder="Ex.: I63, AVC..." />
                   </div>
                   <div>
                     <Label className="text-xs text-muted-foreground">CID-10 Secundário</Label>
-                    <Input value={cidSecondary} onChange={(e) => setCidSecondary(e.target.value)} className="font-mono" />
+                    <CidSearchInput value={cidSecondary} onChange={setCidSecondary} placeholder="Opcional" />
                   </div>
                   <div>
                     <Label className="text-xs text-muted-foreground">CID-10 Associado</Label>
-                    <Input value={cidAssociated} onChange={(e) => setCidAssociated(e.target.value)} className="font-mono" />
+                    <CidSearchInput value={cidAssociated} onChange={setCidAssociated} placeholder="Opcional" />
                   </div>
                 </div>
                 <div>
@@ -1004,15 +1032,15 @@ const RequisicaoImagensPage = () => {
                 </td>
                 <td>
                   <span className="apac-field-label">34 — CID-10 PRINCIPAL</span>
-                  <div className="apac-field-value" style={{ fontFamily: "monospace" }}>{cidPrimary.toUpperCase()}</div>
+                  <div className="apac-field-value" style={{ fontFamily: "monospace" }}>{cidPrimary.split(" - ")[0].toUpperCase()}</div>
                 </td>
                 <td>
                   <span className="apac-field-label">35 — CID-10 SECUNDÁRIO</span>
-                  <div className="apac-field-value" style={{ fontFamily: "monospace" }}>{cidSecondary.toUpperCase()}</div>
+                  <div className="apac-field-value" style={{ fontFamily: "monospace" }}>{cidSecondary.split(" - ")[0].toUpperCase()}</div>
                 </td>
                 <td>
                   <span className="apac-field-label">36 — CID-10 CAUSAS ASSOC.</span>
-                  <div className="apac-field-value" style={{ fontFamily: "monospace" }}>{cidAssociated.toUpperCase()}</div>
+                  <div className="apac-field-value" style={{ fontFamily: "monospace" }}>{cidAssociated.split(" - ")[0].toUpperCase()}</div>
                 </td>
               </tr>
               <tr>
