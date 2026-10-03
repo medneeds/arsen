@@ -13,12 +13,8 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { NormaZeroPrintHeader, generatePrintDocCode, getNormaZeroMissingFields, NormaZeroBlockedDocument } from "@/components/NormaZeroPrintHeader";
 import {
-  NotebookPen, Plus, Loader2, AlertTriangle, ChevronDown, Sun, Moon, Zap, Activity, Printer,
+  NotebookPen, Plus, Loader2, AlertTriangle, ChevronDown, Sun, Moon, Zap,
 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { SapsView, type SapsRow } from "@/components/saps3/SapsView";
-import Saps3Page from "@/pages/Saps3Page";
-import { printSapsDocument } from "@/lib/printSaps";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator,
@@ -45,16 +41,6 @@ import { getEffectiveAdmissionDate } from "@/lib/dihCalc";
 import { isSemAlergia } from "@/lib/allergyStatus";
 import { calcDIH } from "@/lib/dihCalc";
 import { formatDeviceLabel, deviceAlertTone, type EvolutionDevice } from "@/lib/devicesCatalog";
-// Setores que exigem SAPS 3 (UTI 1 / UTI 2 / UCI 2) — MESMO criterio da admissao
-// (nao usar isUtiSector, que e mais amplo: inclui UCI 1 e Sala Laranja).
-const SAPS_SECTORS = ["red", "yellow", "outside"];
-const SAPS_SELECT =
-  "id, status, pending_since, validado_em, validado_por, escore_box1, escore_box2, escore_box3, escore_total, " +
-  "mortalidade_prevista, idade, dias_hospital_antes_uti, origem_admissao, comorbidades, admissao_planejada, " +
-  "motivo_admissao, motivo_admissao_detalhe, status_cirurgico, tipo_cirurgia, infeccao_na_admissao, " +
-  "escore_glasgow, fc_mais_alta, pas_mais_baixa, temperatura_mais_baixa, bilirrubina_mais_alta, " +
-  "creatinina_mais_alta, leucocitos, plaquetas_mais_baixas, ph_mais_baixo, relacao_pao2_fio2, ventilacao_mecanica";
-
 interface PatientHeader {
   name: string;
   birthDate: string;
@@ -284,30 +270,6 @@ const EvolucaoPage = () => {
     return monitoredCode || u.includes("UTI") || u.includes("UCI") || u.includes("LARANJA");
   }, [patient.unit, initialPatientSector]);
 
-  // ─── SAPS 3 na evolucao (espelha a Admissao): aba de consulta read-only
-  // (SapsView) + preenchimento embutido, so para setores que exigem SAPS. Gate
-  // pelo MESMO criterio da admissao (SAPS_SECTORS). initialPatientId e o internacao_id.
-  const [sapsTab, setSapsTab] = useState<"evolucao" | "saps">("evolucao");
-  const [sapsRow, setSapsRow] = useState<SapsRow | null>(null);
-  const [sapsReloadTick, setSapsReloadTick] = useState(0);
-  const requiresSaps = SAPS_SECTORS.includes(initialPatientSector);
-  const showSapsTab = requiresSaps || !!sapsRow;
-  const sapsValidada = sapsRow?.status === "validada";
-  useEffect(() => {
-    if (!initialPatientId) { setSapsRow(null); return; }
-    let cancel = false;
-    (async () => {
-      const { data } = await supabase
-        .from("avaliacoes_saps3")
-        .select(SAPS_SELECT)
-        .eq("internacao_id", initialPatientId)
-        .order("criado_em", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (!cancel) setSapsRow((data as unknown as SapsRow) ?? null);
-    })();
-    return () => { cancel = true; };
-  }, [initialPatientId, sapsTab, sapsReloadTick]);
 
   const resetNewForm = () => {
     setNewSoap({ subjective: "", objective: "", assessment: "", plan: "" });
@@ -679,72 +641,6 @@ const EvolucaoPage = () => {
           </div>
         </div>
 
-        {/* Aba SAPS 3 na evolucao da UTI/UCI (espelha a Admissao). So nos setores
-            que exigem SAPS (red/yellow/outside). Consulta via SapsView; preenchimento
-            via Saps3Page embutido. */}
-        {showSapsTab && (
-          <div className="inline-flex rounded-lg border bg-muted/40 p-0.5 print:hidden">
-            <button
-              type="button"
-              onClick={() => setSapsTab("saps")}
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
-                sapsTab === "saps" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              <Activity className="h-3.5 w-3.5" /> SAPS 3
-              {sapsRow?.status === "pendente" && (
-                <span className="ml-1 h-1.5 w-1.5 rounded-full bg-warning" title="SAPS pendente" />
-              )}
-            </button>
-            <button
-              type="button"
-              onClick={() => setSapsTab("evolucao")}
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
-                sapsTab === "evolucao" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              <NotebookPen className="h-3.5 w-3.5" /> Evolução
-            </button>
-          </div>
-        )}
-
-        {showSapsTab && sapsTab === "saps" ? (
-          <div className="rounded-lg border bg-card p-4">
-            <div className="mb-3 flex items-center justify-between gap-2">
-              <h2 className="text-sm font-semibold tracking-tight text-foreground">Ficha SAPS 3</h2>
-              {sapsValidada && sapsRow && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => printSapsDocument(sapsRow, {
-                    patientName: initialPatientName,
-                    patientBed: initialPatientBed,
-                    patientSector: initialPatientSector,
-                  })}
-                >
-                  <Printer className="h-3.5 w-3.5 mr-1" /> Imprimir
-                </Button>
-              )}
-            </div>
-            {sapsValidada && sapsRow ? (
-              <SapsView row={sapsRow} />
-            ) : (
-              <Saps3Page
-                embedded
-                embedPatientId={initialPatientId}
-                embedPatientName={initialPatientName}
-                embedPatientBed={initialPatientBed}
-                embedPatientSector={initialPatientSector}
-                embedCompleteSapsId={sapsRow?.id}
-                onEmbeddedDone={() => setSapsReloadTick((t) => t + 1)}
-                onEmbeddedGoToAdmission={() => setSapsTab("evolucao")}
-              />
-            )}
-          </div>
-        ) : (
-        <>
         {/* Complementary evolution form (compact, single field) — Intercorrência | Vespertina | Noturna */}
         {showIntercurrenceForm && currentComplementary && (
           <div className={cn("rounded-lg border-2 p-3 sm:p-4 space-y-3", currentComplementary.borderClass, currentComplementary.bgClass)}>
@@ -896,8 +792,6 @@ const EvolucaoPage = () => {
             <p className="text-sm font-medium text-muted-foreground">Nenhuma evolução registrada</p>
             <p className="text-xs text-muted-foreground/70 mt-1">Clique em "Nova Evolução" para criar a primeira</p>
           </div>
-        )}
-        </>
         )}
         </div>
 
