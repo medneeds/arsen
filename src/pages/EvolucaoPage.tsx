@@ -408,18 +408,45 @@ const EvolucaoPage = () => {
       updateCidSecondary(srcCidSecondary);
     }
     const srcSoap: any = source.soap_data || {};
+    const isAdmissionSource = source.evolution_type === "admission";
     const { devices: srcDevices, culturesHtml: srcCulturesHtml, antibioticos: srcAntibioticos,
             planItems: srcPlanItems, pendenciasItems: srcPendencias,
             antecedentes: srcAntecSoap,
             diagnosticHypotheses: srcSoapHypo,
             ...soapBase } = srcSoap;
-    setNewSoap({ ...soapBase });
+
+    if (isAdmissionSource) {
+      // Copia a partir da ADMISSAO: o campo "Evolucao" recebe SO a HDA; assessment
+      // e objective sao zerados para nao arrastar o que nao evolui (CID em texto,
+      // justificativa UTI, vasoativo, SOFA, antropometria, SSVV/Glasgow em texto).
+      // Os campos estruturados (CID, vitais, hipoteses, antecedentes, dispositivos)
+      // seguem pelos caminhos proprios abaixo.
+      const rawSubj = typeof soapBase.subjective === "string" ? soapBase.subjective : "";
+      // Admissao persistida: "HDA:\n{hda}\n\nAMP: ...\nMUC: ...\nAlergias: ...".
+      // Admissao virtual (sintetizada): subjective ja e so a historia, sem prefixo.
+      const hdaMatch = rawSubj.match(/^HDA:\s*\n([\s\S]*?)(?:\n\n(?:AMP|MUC|Alergias)\b|$)/i);
+      const hdaOnly = (hdaMatch ? hdaMatch[1] : rawSubj).trim();
+      setNewSoap({ subjective: hdaOnly, objective: "", assessment: "", plan: "" });
+    } else {
+      setNewSoap({ ...soapBase });
+    }
+
     setNewVitals({ ...source.vital_signs });
     setNewExam({ ...source.physical_exam });
     setNewDevices(Array.isArray(srcDevices) ? srcDevices : []);
     setNewCulturesHtml(typeof srcCulturesHtml === "string" ? srcCulturesHtml : "");
     setNewAntibioticos(typeof srcAntibioticos === "string" ? srcAntibioticos : "");
-    setPlanItems(Array.isArray(srcPlanItems) ? srcPlanItems : []);
+
+    // Plano: evolucoes ja trazem planItems; a admissao guarda o plano como TEXTO
+    // ("{plano}\n\nPrevisao de alta: ..."). Nesse caso, quebra em itens (sem o
+    // sufixo de previsao, que ja vive no contexto diagnostico do paciente).
+    let resolvedPlanItems: string[] = Array.isArray(srcPlanItems) ? srcPlanItems.filter(Boolean) : [];
+    if (isAdmissionSource && resolvedPlanItems.length === 0) {
+      const rawPlan = typeof soapBase.plan === "string" ? soapBase.plan : "";
+      const planBody = rawPlan.replace(/\n*Previs[aã]o de alta:[\s\S]*$/i, "").trim();
+      resolvedPlanItems = planBody ? planBody.split("\n").map(s => s.trim()).filter(Boolean) : [];
+    }
+    setPlanItems(resolvedPlanItems);
     setPendenciasItems(Array.isArray(srcPendencias) ? srcPendencias : []);
 
     // Hipóteses diagnósticas — buscar em múltiplas fontes:
