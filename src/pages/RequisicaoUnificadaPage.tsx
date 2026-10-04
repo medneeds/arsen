@@ -46,6 +46,7 @@ import { cn, asUuidOrNull } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { fromSolicitacaoStatusDb } from "@/lib/solicitacaoStatus";
 import { normalizeSolicitacao, applyAuthor, type ProfissionalLite, type SolicitacaoContext } from "@/lib/solicitacaoNormalize";
+import { toSectorCode } from "@/lib/requisitionSector";
 import {
   exigeJustificativaPrincipal,
   itensForaDaRotina,
@@ -421,10 +422,6 @@ const RequisicaoUnificadaPage = () => {
   const isTcSelected = formSelectedItems.some(item => TC_PATTERN.test(item));
   const [tcValidationOpen, setTcValidationOpen] = useState(false);
   const [reqValidationOpen, setReqValidationOpen] = useState(false);
-  const [lastSubmittedReqId, setLastSubmittedReqId] = useState<string | null>(null);
-  // Paciente da solicitacao recem-criada (para a guia impressa pelo popup "Requisicao enviada").
-  const [lastSubmittedCtx, setLastSubmittedCtx] = useState<SolicitacaoContext>({});
-  const [printReqOpen, setPrintReqOpen] = useState(false);
   const [formCustomItem, setFormCustomItem] = useState("");
   // Etapa 2 — busca de exame dentro da categoria (Imagem e demais)
   const [examSearch, setExamSearch] = useState("");
@@ -467,7 +464,9 @@ const RequisicaoUnificadaPage = () => {
     setFormPatientId(patientId || null);
     setFormPatientName(patientName || "");
     setFormPatientBed(patientBed || "");
-    setFormPatientSector(patientSector || "");
+    // Pode chegar como nome do setor ("UTI 2"): traduz para o codigo ("yellow") para a
+    // tela escolher as rotinas certas (UTI x Enfermaria).
+    setFormPatientSector(toSectorCode(patientSector));
     if (patientId || patientName) setActiveSubTab("solicitar");
   }, [searchParams.get("patientId"), searchParams.get("patientName")]);
 
@@ -790,21 +789,18 @@ const RequisicaoUnificadaPage = () => {
           observacoes: notesContent || null,
           solicitado_por: solicitadoPor,
         })
-        .select("id")
+        .select("*")
         .single();
       if (insertError) throw insertError;
       toast.success(`${CATEGORIES[activeCategory].shortLabel}: ${formSelectedItems.length} item(ns) solicitado(s)`);
-      // Abre popup de impressão da guia recém-criada
-      const createdId = (createdRow as any)?.id ?? null;
-      if (createdId) {
-        setLastSubmittedReqId(createdId);
-        setLastSubmittedCtx({ patientName: formPatientName, patientBed: formPatientBed, patientSector: formPatientSector });
-        setPrintReqOpen(true);
-      }
+      // Guia recém-criada: imprime direto pelo MESMO caminho do botão Imprimir da lista
+      // (sem popup intermediário). Captura o paciente antes de limpar o formulário.
+      const printCtx: SolicitacaoContext = { patientName: formPatientName, patientBed: formPatientBed, patientSector: formPatientSector };
       // Preserva paciente selecionado para encadear novas solicitações sem reabrir o picker.
       resetRequestFields();
       setActiveSubTab("solicitados");
       fetchRequests();
+      if (createdRow) void printSavedRequisition(createdRow, printCtx);
     } catch (err: any) {
       console.error("[Requisicoes] handleSubmitRequest falhou:", err);
       const msg = err?.message || err?.error_description || err?.details || "Erro desconhecido";
@@ -1051,7 +1047,7 @@ const RequisicaoUnificadaPage = () => {
                 setFormPatientId(p.id);
                 setFormPatientName(p.name || "");
                 setFormPatientBed(p.bed_number || "");
-                setFormPatientSector(p.sector || "");
+                setFormPatientSector(toSectorCode(p.sector));
               }}
               onProcedureRegistered={() => { fetchAllProcedures(); setActiveSubTab("solicitados"); }}
             />
@@ -1959,15 +1955,6 @@ const RequisicaoUnificadaPage = () => {
         }}
       />
 
-      {/* Popup de impressão após submit bem-sucedido */}
-      {printReqOpen && lastSubmittedReqId && (
-        <PrintAfterSubmitReqDialog
-          reqId={lastSubmittedReqId}
-          ctx={lastSubmittedCtx}
-          open={printReqOpen}
-          onClose={() => { setPrintReqOpen(false); setLastSubmittedReqId(null); }}
-        />
-      )}
     </div>
   );
 };
@@ -3968,71 +3955,28 @@ function LabComparativeView({ requests, patientName, patientId, allRequests }: {
   );
 }
 
-// ── PrintAfterSubmitReqDialog ────────────────────────────────────────────────
-// Popup de impressão que aparece logo após uma requisição ser submetida.
-// Busca o registro recém-criado pelo ID e oferece impressão da guia.
-function PrintAfterSubmitReqDialog({
-  reqId, ctx, open, onClose,
-}: { reqId: string; ctx: SolicitacaoContext; open: boolean; onClose: () => void }) {
-  const [req, setReq] = React.useState<ReturnType<typeof normalizeSolicitacao> | null>(null);
-
-  React.useEffect(() => {
-    if (!open || !reqId) return;
-    let cancelled = false;
-    // Mesmo pedido de impressao da lista: normalizeSolicitacao (nome/leito/setor do
-    // paciente) + autor resolvido em profissionais. Antes este popup montava um
-    // objeto proprio, sem esses campos, e a guia saia com o paciente em branco.
-    (async () => {
-      const { data } = await supabase.from("solicitacoes_exame").select("*").eq("id", reqId).maybeSingle();
-      if (!data || cancelled) return;
-      const row = data as { solicitado_por?: string | null };
-      let prof: ProfissionalLite | null = null;
-      if (row.solicitado_por) {
-        const { data: p } = await supabase
-          .from("profissionais")
-          .select("id, nome, crm:numero_conselho")
-          .eq("id", row.solicitado_por)
-          .maybeSingle();
-        prof = (p as unknown as ProfissionalLite | null) ?? null;
-      }
-      if (!cancelled) setReq(applyAuthor(normalizeSolicitacao(row, ctx), prof));
-    })();
-    return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, reqId]);
-
-  const handlePrint = async () => {
-    if (!req) return;
-    // Fecha o popup ANTES: o dialogo de gasometria e uma camada propria e nao pode
-    // ficar atras de um dialogo modal. Mesma funcao da lista: com gasometria + outros
-    // exames pergunta como imprimir; sem gasometria imprime direto.
-    onClose();
+// ── Impressão da guia logo após solicitar ───────────────────────────────────
+// Sem popup intermediário: monta o pedido como a lista (normalizeSolicitacao com o
+// paciente + autor em profissionais) e chama a MESMA função do botão Imprimir da
+// lista. Ela decide sozinha: com gasometria + outros exames pergunta como imprimir;
+// nos demais casos imprime direto. Falhas não derrubam a solicitação (já gravada).
+async function printSavedRequisition(row: { solicitado_por?: string | null }, ctx: SolicitacaoContext) {
+  try {
+    let prof: ProfissionalLite | null = null;
+    if (row.solicitado_por) {
+      const { data: p } = await supabase
+        .from("profissionais")
+        .select("id, nome, crm:numero_conselho")
+        .eq("id", row.solicitado_por)
+        .maybeSingle();
+      prof = (p as unknown as ProfissionalLite | null) ?? null;
+    }
+    const req = applyAuthor(normalizeSolicitacao(row, ctx), prof);
     await printRequisitionGuideWithGasometriaPrompt(req, (s) => getSectorLabel(s));
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
-      <DialogContent className="max-w-sm">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-sm">
-            <CheckCircle2 className="h-4 w-4 text-released-on-soft" />
-            Requisição enviada
-          </DialogTitle>
-          <DialogDescription className="text-xs">
-            A requisição foi registrada com sucesso. Deseja imprimir a guia agora?
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter className="gap-2 mt-2">
-          <Button variant="outline" size="sm" onClick={onClose}>
-            Fechar
-          </Button>
-          <Button size="sm" onClick={handlePrint} className="gap-2" disabled={!req}>
-            <Printer className="h-3.5 w-3.5" /> Imprimir guia
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
+  } catch (err) {
+    console.error("[Requisicoes] impressao da guia apos solicitar falhou:", err);
+    toast.error("Requisição criada, mas não foi possível preparar a guia. Imprima pela lista.");
+  }
 }
 
 export default RequisicaoUnificadaPage;
