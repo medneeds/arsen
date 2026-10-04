@@ -4,6 +4,7 @@ import { usePatientLive } from "@/hooks/usePatientLive";
 import { usePatientIdentifiers } from "@/hooks/usePatientIdentifiers";
 import { usePatientRegistryIdentity } from "@/hooks/usePatientRegistryIdentity";
 import { cn } from "@/lib/utils";
+import { formatAgeLabel } from "@/lib/ageLabel";
 
 /**
  * Sub-cabecalho PADRAO de identidade do paciente, compartilhado por todos os
@@ -19,6 +20,11 @@ import { cn } from "@/lib/utils";
  *  - usePatientIdentifiers -> prontuario e data de nascimento.
  * Antes, cada pagina copiava esse bloco inline e divergia (campos faltando, setor
  * em codigo). Este componente centraliza e corrige de uma vez.
+ *
+ * Apresentacao: no escopo de atendimento os dados saem com rotulo por extenso
+ * ("Data de nascimento:", "Prontuário:", "Atendimento:"), idade "42 anos" e numeros
+ * em destaque na fonte normal do sistema. O escopo "registry" (Historico) e
+ * intencionalmente diferente e mantem a apresentacao anterior.
  */
 
 interface PatientIdentityBarProps {
@@ -70,6 +76,7 @@ export function PatientIdentityBar({ patientId, patientRegistryId, rightSlot, cl
   // tolerante por usePatientIdentifiers. So aparece no escopo de atendimento
   // (nao no historico, que e nivel de prontuario) e quando disponivel.
   const atendimento = ids.atendimento || null;
+  const ageLabel = formatAgeLabel(age);
 
   return (
     <div className={cn("hidden sm:flex items-center justify-between gap-4", className)}>
@@ -87,31 +94,55 @@ export function PatientIdentityBar({ patientId, patientRegistryId, rightSlot, cl
           </p>
           <div className="flex items-center gap-2 flex-wrap mt-1">
             {!registryOnly && sector && (
-              <span className="px-2 py-1 rounded-md bg-muted text-muted-foreground text-xs font-medium uppercase tracking-wide">
+              <span className="px-2 py-1 rounded-md bg-muted text-foreground text-xs font-medium">
                 {sector}
               </span>
             )}
-            {age && (
-              <span className="px-2 py-1 rounded-md bg-muted text-muted-foreground text-xs font-medium">
-                {age}
-              </span>
-            )}
-            {birthDate && (
+            {registryOnly ? (
               <>
-                <span className="text-muted-foreground/40 text-xs">·</span>
-                <span className="text-xs text-muted-foreground">{formatBirth(birthDate)}</span>
+                {age && (
+                  <span className="px-2 py-1 rounded-md bg-muted text-muted-foreground text-xs font-medium">
+                    {age}
+                  </span>
+                )}
+                {birthDate && (
+                  <>
+                    <span className="text-muted-foreground/40 text-xs">·</span>
+                    <span className="text-xs text-muted-foreground">{formatBirth(birthDate)}</span>
+                  </>
+                )}
+                {prontuario && (
+                  <>
+                    <span className="text-muted-foreground/40 text-xs">·</span>
+                    <span className="text-xs text-muted-foreground font-mono">Pront. {prontuario}</span>
+                  </>
+                )}
               </>
-            )}
-            {prontuario && (
+            ) : (
               <>
-                <span className="text-muted-foreground/40 text-xs">·</span>
-                <span className="text-xs text-muted-foreground font-mono">Pront. {prontuario}</span>
-              </>
-            )}
-            {!registryOnly && atendimento && (
-              <>
-                <span className="text-muted-foreground/40 text-xs">·</span>
-                <span className="text-xs text-muted-foreground font-mono">Atend. {atendimento}</span>
+                {ageLabel && (
+                  <span className="px-2 py-1 rounded-md bg-muted text-foreground text-xs font-medium">
+                    {ageLabel}
+                  </span>
+                )}
+                {birthDate && (
+                  <>
+                    <span className="text-muted-foreground/40 text-xs">·</span>
+                    <LabeledValue label="Data de nascimento" value={formatBirth(birthDate)} />
+                  </>
+                )}
+                {prontuario && (
+                  <>
+                    <span className="text-muted-foreground/40 text-xs">·</span>
+                    <LabeledValue label="Prontuário" value={prontuario} />
+                  </>
+                )}
+                {atendimento && (
+                  <>
+                    <span className="text-muted-foreground/40 text-xs">·</span>
+                    <LabeledValue label="Atendimento" value={atendimento} />
+                  </>
+                )}
               </>
             )}
           </div>
@@ -121,6 +152,15 @@ export function PatientIdentityBar({ patientId, patientRegistryId, rightSlot, cl
       {/* DIREITA: conteudo custom do modulo */}
       {rightSlot && <div className="text-right shrink-0">{rightSlot}</div>}
     </div>
+  );
+}
+
+/** Rotulo em cinza + valor em destaque, na fonte normal do sistema (digitos de largura uniforme). */
+function LabeledValue({ label, value }: { label: string; value: string }) {
+  return (
+    <span className="text-xs text-muted-foreground preserve-case">
+      {label}: <span className="font-medium text-foreground tabular-nums">{value}</span>
+    </span>
   );
 }
 
