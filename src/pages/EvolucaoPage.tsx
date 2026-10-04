@@ -617,25 +617,24 @@ const EvolucaoPage = () => {
           />
         {/* SAPS pending alert removed */}
         {/* Page Header — title + patient identity inline */}
-        <div className="flex items-center justify-between gap-2 flex-wrap">
-          {/* Sub-cabecalho padrao de identidade (componente compartilhado). */}
+        <div className="space-y-2">
+          {/* Sub-cabecalho padrao de identidade (componente compartilhado): mesmo bloco
+              das demais abas (Admissao, Prescricao, Requisicoes, Monitoramento, Docs). */}
           <PatientIdentityBar
             patientId={initialPatientId || null}
-            className="flex-1"
+            className="print:hidden rounded-lg border border-border bg-card/60 px-3 py-3"
             rightSlot={
-              <>
-                <p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground leading-tight">EVOLUÇÃO CLÍNICA</p>
-                <p className="text-xs text-muted-foreground mt-1">Timeline de evoluções do paciente</p>
-              </>
+              <p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground leading-tight">EVOLUÇÃO CLÍNICA</p>
             }
           />
-          <div className="flex items-center gap-2 w-full sm:w-auto">
+          {/* Acoes da aba: abaixo do bloco, a direita. */}
+          <div className="flex items-center justify-end gap-2 w-full">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="outline"
                   size="sm"
-                  className="gap-2 text-xs border-warning/40 text-warning-on-soft hover:bg-warning/10 hover:text-warning-on-soft flex-1 sm:flex-none min-h-9"
+                  className="gap-2 text-xs border-warning/40 text-warning-on-soft hover:bg-warning/10 hover:text-warning-on-soft flex-1 sm:flex-none h-8"
                   disabled={showIntercurrenceForm || showNewForm}
                 >
                   <Zap className="h-3.5 w-3.5" /> Evolução complementar
@@ -665,7 +664,7 @@ const EvolucaoPage = () => {
             </DropdownMenu>
             <Button
               size="sm"
-              className="gap-2 text-xs flex-1 sm:flex-none min-h-9"
+              className="gap-2 text-xs flex-1 sm:flex-none h-8"
               onClick={handleOpenNewEvolution}
               disabled={showNewForm || showIntercurrenceForm}
             >
