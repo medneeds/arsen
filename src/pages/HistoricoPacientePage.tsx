@@ -276,6 +276,10 @@ export default function HistoricoPacientePage() {
   const patientId = searchParams.get("patientId");
   const patientRegistryId = searchParams.get("patientRegistryId");
   const patientName = searchParams.get("patientName") ?? "Paciente";
+  // Modo CONSULTA (sem atendimento ativo): aberto por pessoa (registry), sem
+  // internacao ativa ancorando. Rotula o cabecalho de forma distinta do
+  // historico de um paciente internado agora.
+  const isConsultaMode = !patientId && !!patientRegistryId;
   const patientBed = searchParams.get("patientBed");
   const patientSector = searchParams.get("patientSector");
 
@@ -1162,7 +1166,7 @@ export default function HistoricoPacientePage() {
           paciente), no lugar do header proprio com "Voltar". A impressao do
           historico inteiro foi removida: imprime-se por item/bloco no proprio
           banco de eventos (vai acumular muitos atendimentos com o tempo). */}
-      <ClinicalHeader moduleLabel="Histórico" />
+      <ClinicalHeader moduleLabel={isConsultaMode ? "Prontuário" : "Histórico"} />
 
       {/* Conteúdo — largura total (igual aos demais modulos), sem container
           centralizado, para aproveitar o espaco. */}
@@ -1175,7 +1179,7 @@ export default function HistoricoPacientePage() {
           className="print:hidden rounded-lg border border-border bg-card/60 px-3 py-3 mb-4"
           rightSlot={
             <p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground leading-tight">
-              HISTÓRICO DO PACIENTE
+              {isConsultaMode ? "CONSULTA DE PRONTUÁRIO" : "HISTÓRICO DO PACIENTE"}
             </p>
           }
         />
