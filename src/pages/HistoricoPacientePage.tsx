@@ -1170,6 +1170,7 @@ export default function HistoricoPacientePage() {
         {/* Sub-cabecalho padrao de identidade — unica fonte de identidade. */}
         <PatientIdentityBar
           patientId={patientId}
+          patientRegistryId={resolvedRegistryId}
           scope="registry"
           className="print:hidden rounded-lg border border-border bg-card/60 px-3 py-3 mb-4"
           rightSlot={

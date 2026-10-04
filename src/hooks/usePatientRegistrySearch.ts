@@ -16,6 +16,9 @@ export interface PatientRegistryHit {
   current_bed: string | null;
   current_sector: string | null;
   admission_status: string | null;
+  /** internacoes.id do atendimento ATIVO (data_alta null), se houver. Null =
+   *  paciente sem atendimento ativo (rotear para o Historico por registry). */
+  active_internacao_id: string | null;
 }
 
 /**
@@ -69,14 +72,15 @@ export function usePatientRegistrySearch(searchTerm: string, enabled = true) {
       const pacienteIds = pacientes.map((r) => r.id);
       const { data: internacoes } = await supabase
         .from("internacoes")
-        .select("paciente_id, status, leito:leitos(numero, setor:setores(nome))")
+        .select("id, paciente_id, status, leito:leitos(numero, setor:setores(nome))")
         .in("paciente_id", pacienteIds)
         .is("data_alta", null);
 
-      const bedByPaciente = new Map<string, { bed: string; sector: string; status: string }>();
+      const bedByPaciente = new Map<string, { internacaoId: string; bed: string; sector: string; status: string }>();
       (internacoes ?? []).forEach((i: any) => {
         if (i.paciente_id && !bedByPaciente.has(i.paciente_id)) {
           bedByPaciente.set(i.paciente_id, {
+            internacaoId: i.id,
             bed: i.leito?.numero ?? "—",
             sector: i.leito?.setor?.nome ?? "—",
             status: i.status ?? "—",
@@ -101,6 +105,7 @@ export function usePatientRegistrySearch(searchTerm: string, enabled = true) {
           current_bed: bed?.bed ?? null,
           current_sector: bed?.sector ?? null,
           admission_status: bed?.status ?? null,
+          active_internacao_id: bed?.internacaoId ?? null,
         };
       });
     },

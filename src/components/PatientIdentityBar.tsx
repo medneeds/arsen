@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { useHospital } from "@/contexts/HospitalContext";
 import { usePatientLive } from "@/hooks/usePatientLive";
 import { usePatientIdentifiers } from "@/hooks/usePatientIdentifiers";
+import { usePatientRegistryIdentity } from "@/hooks/usePatientRegistryIdentity";
 import { cn } from "@/lib/utils";
 
 /**
@@ -23,6 +24,9 @@ import { cn } from "@/lib/utils";
 interface PatientIdentityBarProps {
   /** internacao_id (patientId da URL). */
   patientId: string | null;
+  /** pacientes.id (a PESSOA). Usado quando NAO ha atendimento ativo (patientId
+   *  ausente): a identidade vem direto do cadastro, sem leito/setor. */
+  patientRegistryId?: string | null;
   /** Conteudo do lado direito — titulo do modulo, data, badges etc. */
   rightSlot?: ReactNode;
   className?: string;
@@ -48,18 +52,20 @@ function formatBirth(bd: string | null | undefined): string {
   }
 }
 
-export function PatientIdentityBar({ patientId, rightSlot, className, scope = "encounter" }: PatientIdentityBarProps) {
+export function PatientIdentityBar({ patientId, patientRegistryId, rightSlot, className, scope = "encounter" }: PatientIdentityBarProps) {
   const { patient } = usePatientLive(patientId || null);
   const { currentHospital } = useHospital();
   const ids = usePatientIdentifiers(patientId || null, patient?.name || null, currentHospital?.id || null);
+  // Sem atendimento ativo (sem patientId): identidade direto do cadastro da pessoa.
+  const reg = usePatientRegistryIdentity(patientId ? null : (patientRegistryId || null));
 
   const registryOnly = scope === "registry";
   const bed = patient?.bedNumber || "—";
-  const name = patient?.name || "Paciente não identificado";
+  const name = patient?.name || reg?.name || "Paciente não identificado";
   const sector = patient?.sector || ""; // setores.nome = rotulo
-  const age = patient?.age || ids.registry?.age || "";
-  const birthDate = ids.registry?.birthDate || null;
-  const prontuario = ids.prontuario || null;
+  const age = patient?.age || ids.registry?.age || reg?.age || "";
+  const birthDate = ids.registry?.birthDate || reg?.birthDate || null;
+  const prontuario = ids.prontuario || reg?.prontuario || null;
   // Numero de atendimento (internacoes.numero_atendimento), resolvido de forma
   // tolerante por usePatientIdentifiers. So aparece no escopo de atendimento
   // (nao no historico, que e nivel de prontuario) e quando disponivel.
