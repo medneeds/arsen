@@ -16,7 +16,7 @@ import {
   Search, AlertTriangle, UtensilsCrossed, Droplets, Syringe, History,
   ClipboardList, X, Check, Shield, Wind, TestTube, FileText, FlaskConical,
   GripVertical, CheckSquare, Square, Pause, MoreHorizontal, CopyPlus, Lock, Eye, EyeOff, ShieldCheck, Fingerprint,
-  Zap, Loader2, CalendarDays, Circle, RotateCw, Package, Hash, List, AlignJustify, ChevronUp, Wand2, BedDouble, PlusCircle, ChevronDown, User as UserIcon } from "lucide-react";
+  Zap, Loader2, CalendarDays, Circle, RotateCw, Package, List, AlignJustify, ChevronUp, Wand2, BedDouble, PlusCircle, ChevronDown, User as UserIcon } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
@@ -8747,11 +8747,6 @@ const PrescricaoPage = () => {
                     Salva
                   </Badge>
                 )}
-                {patient.encounterCode && (
-                  <span className="font-mono text-xs bg-muted text-muted-foreground px-2 py-1 rounded-md">
-                    <Hash className="inline h-2.5 w-2.5 mr-1" />{patient.encounterCode}
-                  </span>
-                )}
                 <span className="text-xs text-muted-foreground font-mono">{prescriptionDate}</span>
               </div>
               {(createdByProfessional || digitalSignature) && (
@@ -8776,7 +8771,7 @@ const PrescricaoPage = () => {
           }
         />
 
-        {/* Row 1 — Clinical context (peso, alergias, calendário, dose/kg, templates, atalhos) */}
+        {/* Row 1 — Clinical context (peso, alergias, calendário, dose/kg, templates). A tecla ? abre os atalhos. */}
         <div className="flex items-center gap-2 flex-wrap px-2 sm:px-3 py-2 sm:border-t sm:border-border/40">
           {/* Peso — rotulo e valor numa UNIDADE unica (o numero faz parte da
               marcacao do peso, "abraçado" pelo mesmo contorno). */}
@@ -8857,9 +8852,6 @@ const PrescricaoPage = () => {
               <Button variant="outline" size="sm" className="h-7 text-xs gap-1 px-2">
                 <CalendarDays className="h-3 w-3" />
                 {historyDate ? format(historyDate, "dd/MM/yyyy") : "Calendário"}
-                {savedPrescriptions.length > 0 && (
-                  <span className="ml-1 text-xs font-mono text-muted-foreground">({savedPrescriptions.length})</span>
-                )}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-[320px] p-0" align="end">
@@ -9014,22 +9006,13 @@ const PrescricaoPage = () => {
             )}
           </Button>
           <div className="ml-auto flex items-center gap-2">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="sm" onClick={() => setShortcutsHelpOpen(true)} className="h-7 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground">
-                  <kbd className="px-1 py-0 rounded-md border border-border bg-muted text-xs font-mono">?</kbd>
-                  <span className="hidden md:inline">Atalhos</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="text-xs">Atalhos de teclado (?)</TooltipContent>
-            </Tooltip>
             <Button variant="ghost" size="sm" onClick={fetchPrescriptions} disabled={loadingList} className="h-7 text-xs gap-1 px-2">
               <RefreshCw className={cn("h-3 w-3", loadingList && "animate-spin")} /> Atualizar
             </Button>
           </div>
         </div>
 
-        {/* Row 2 — Prescription actions (Nova, Extra, Interações, ATM, TEV, Validar | Compacto | Imprimir) */}
+        {/* Row 2 — Prescription actions (Nova, Extra, Interações, ATM, TEV | Compacto). Validar e Imprimir ficam so no fim da pagina. */}
         <div className="flex items-center gap-1 flex-wrap px-3 py-2 border-t border-border bg-muted/40 rounded-b-lg">
 
           <Tooltip>
@@ -9119,47 +9102,6 @@ const PrescricaoPage = () => {
               </TooltipTrigger>
               <TooltipContent side="top" className="text-xs">
                 {compactView ? 'Alternar para visualização expandida' : 'Alternar para visualização compacta'}
-              </TooltipContent>
-            </Tooltip>
-            {/* Validar — entre Expandido e Imprimir */}
-            <Button
-              variant={prescriptionLocked ? "ghost" : "default"}
-              size="sm"
-              onClick={requestValidateAll}
-              disabled={allItemsValidated}
-              className={cn(
-                "gap-1 text-xs h-7 px-2 transition-colors",
-                prescriptionLocked
-                  ? "text-muted-foreground hover:bg-primary/10 hover:text-primary"
-                  : "bg-released hover:bg-released/85 text-white"
-              )}
-            >
-              <ShieldCheck className="h-3 w-3" />
-              {allItemsValidated ? "Validada" : prescriptionLocked ? "Validar pendentes" : "Validar"}
-            </Button>
-            {/* Botão Imprimir destacado — extrema direita */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={() => {
-                    if (!allItemsValidated) {
-                      const pending = items.filter(i => i.status === 'active' && !isItemValidatedToday(i)).length;
-                      toast.error("Impressão bloqueada — há itens pendentes", {
-                        description: `${pending} ${pending === 1 ? 'item aguarda' : 'itens aguardam'} validação. Valide ou exclua os itens pendentes antes de imprimir.`,
-                      });
-                      return;
-                    }
-                    handlePrint();
-                  }}
-                  className="gap-2 text-xs h-7 px-3 text-primary-foreground font-medium border-0 bg-primary hover:bg-primary/90 shadow-[0_2px_8px_-2px_hsl(217_90%_55%/0.55)] hover:shadow-[0_4px_14px_-2px_hsl(217_90%_55%/0.7)] transition-all ring-1 ring-inset ring-white/20"
-                >
-                  <Printer className="h-3.5 w-3.5" /> Imprimir
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="top" className="text-xs max-w-[240px]">
-                Imprimir a prescrição validada e, quando aplicável, as guias regulatórias (ATM / Psicotrópicos).
               </TooltipContent>
             </Tooltip>
           </div>
