@@ -31,7 +31,7 @@ export function usePatientDischargeDocs(patientId?: string | null, patientName?:
       if (!patientId) return [];
       const { data, error } = await supabase
         .from("altas")
-        .select("id, tipo, conteudo, crm_assinatura, data_hora")
+        .select("id, tipo, conteudo, crm_assinatura, data_hora, assinante:profissionais!altas_assinado_por_fkey(nome)")
         .eq("internacao_id", patientId)
         .in("tipo", DISCHARGE_TIPOS)
         .order("data_hora", { ascending: false })
@@ -48,7 +48,10 @@ export function usePatientDischargeDocs(patientId?: string | null, patientName?:
           id: r.id,
           document_type: fromAltaTipoDb(r.tipo),
           patient_name: conteudo?.patient_name ?? patientName ?? "",
-          signed_by_name: null, // MIGRAÇÃO: sem coluna de nome do assinante em altas
+          // Assinante: nome embutido no conteudo, senão resolve pela FK
+          // altas.assinado_por → profissionais.nome (dados migrados usam a coluna).
+          signed_by_name: (conteudo as { signed_by_name?: string } | null)?.signed_by_name
+            ?? (r.assinante?.nome ?? null),
           signed_by_crm: r.crm_assinatura ?? null,
           signed_at: r.data_hora,
           content: conteudo,

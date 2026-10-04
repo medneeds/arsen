@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { fromEvolucaoStatusDb } from "@/lib/evolucaoStatus";
 
 // MIGRAÇÃO: clinical_evolutions → evolucoes (ancorada por internacao_id).
 // patient_registry/patient_encounters mortos: removidos os filtros por
@@ -118,7 +119,10 @@ export function useLatestEvolution(
       const soap: any = row.soap || {};
       setEvolution({
         id: row.id,
-        status: row.status || "draft",
+        // evolucoes.status é PT no banco (rascunho/validada/suspensa); traduz p/
+        // o VM inglês, senão o badge do cockpit mostra "Em andamento" para
+        // evolução validada (incl. todas as migradas).
+        status: fromEvolucaoStatusDb(row.status),
         createdAt: row.criado_em || row.data_hora,
         createdByName: soap.__created_by_name ?? null,
         validatedAt: soap.__validated_at ?? null,

@@ -39,6 +39,7 @@ import { printEvolution } from "@/lib/printEvolution";
 import type { EvolutionRecord } from "@/hooks/useEvolutions";
 import { printRequisitionGuideWithGasometriaPrompt } from "@/lib/printRequisitionWithGasometriaPrompt";
 import { printProcedimentoRequest, printTerapeuticoRequest } from "@/pages/RequisicaoUnificadaPage";
+import { fromEvolucaoStatusDb } from "@/lib/evolucaoStatus";
 
 const PRINTABLE_TYPES = new Set<TimelineEventType>([
   "evolution",
@@ -671,7 +672,7 @@ export default function HistoricoPacientePage() {
           soap_data: { subjective: "", objective: "", assessment: "", plan: "", ...soap },
           vital_signs: { pa: "", fc: "", fr: "", temp: "", spo2: "", glasgow: "", diurese: "", dor: "", ...(soap.__vital_signs ?? {}) },
           physical_exam: { general: "", cardiovascular: "", respiratory: "", abdomen: "", neurological: "", extremities: "", skin: "", other: "", ...((d.exame_fisico as any) ?? {}) },
-          status: (d.status as EvolutionRecord["status"]) ?? "draft",
+          status: fromEvolucaoStatusDb(d.status) as EvolutionRecord["status"],
           evolution_type: soap.__evolution_type ?? undefined,
           diagnostic_hypotheses: soap.__diagnostic_hypotheses ?? null,
           cid_primary: soap.__cid_primary ?? null,
