@@ -716,17 +716,11 @@ const RequisicaoUnificadaPage = () => {
       const merged = new Set([...prev, ...allComboItems]);
       return Array.from(merged);
     });
-    const crossCats = Object.keys(combo.categories).filter(c => c !== activeCategory);
-    const crossNote = crossCats.length > 0
-      ? ` (inclui itens de ${crossCats.map(c => CATEGORIES[c as CategoryKey]?.shortLabel).join(", ")})`
-      : "";
-    toast.success(`${combo.label} aplicado — ${allComboItems.length} exames${crossNote}`);
   };
 
   const removeCombo = (combo: UtiCombo) => {
     const allComboItems = Object.values(combo.categories).flat();
     setFormSelectedItems(prev => prev.filter(item => !allComboItems.includes(item)));
-    toast.info(`${combo.label} removido`);
   };
 
   const isComboFullySelected = (combo: UtiCombo) => {
