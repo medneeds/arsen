@@ -1,5 +1,17 @@
-import { COMORBIDADES, milParaContagem, formatarContagem } from "@/lib/saps3";
+import {
+  COMORBIDADES, milParaContagem, formatarContagem,
+  LOCAL_ANTES_UTI, STATUS_CIRURGICO, SITIO_CIRURGICO, INFECCAO,
+  IDADE, DIAS_ANTES_UTI, PLANEJADA, MOTIVO, GLASGOW, VASOATIVO,
+  FC, PAS, TEMPERATURA, BILIRRUBINA, CREATININA, LEUCOCITOS, PLAQUETAS, PH, OXIGENACAO,
+} from "@/lib/saps3";
 import type { SapsRow } from "@/components/saps3/SapsView";
+
+// Faixa gravada (ex.: "lt120") -> rotulo PT (saps3.ts). Fallback para o codigo.
+const labelFrom = (faixas: { id: string; rotulo: string }[], code?: string | null): string => {
+  const c = String(code ?? "").trim();
+  if (!c) return "";
+  return faixas.find((f) => f.id === c)?.rotulo ?? c;
+};
 
 /**
  * Impressao da ficha SAPS 3 validada (helper HTML + janela, mesmo padrao de
@@ -39,31 +51,42 @@ export function printSapsDocument(row: SapsRow, id: PrintSapsIdentity = {}) {
   const leuco = row.leucocitos != null ? formatarContagem(milParaContagem(row.leucocitos)) : "";
   const plaq = row.plaquetas_mais_baixas != null ? formatarContagem(milParaContagem(row.plaquetas_mais_baixas)) : "";
 
+  // Respostas por faixa (formato atual) — fonte primaria; colunas como fallback.
+  const r: Record<string, unknown> =
+    row.respostas && typeof row.respostas === "object" && !Array.isArray(row.respostas)
+      ? (row.respostas as Record<string, unknown>)
+      : {};
+  const code = (k: string): string => (typeof r[k] === "string" ? (r[k] as string) : "");
+  const fx = (def: { faixas: { id: string; rotulo: string }[] }, key: string, fallback = ""): string =>
+    labelFrom(def.faixas, code(key)) || fallback;
+  const comorbRaw = Array.isArray(r.comorbidades) ? r.comorbidades : row.comorbidades;
+
   const boxI = [
-    field("Idade", num(row.idade, " anos")),
-    field("Dias no hospital antes da UTI", num(row.dias_hospital_antes_uti)),
-    field("Origem", row.origem_admissao ?? ""),
-    field("Comorbidades", comorbLabels(row.comorbidades)),
-    field("Admissao planejada", row.admissao_planejada == null ? "" : row.admissao_planejada ? "Sim" : "Nao"),
+    field("Idade", fx(IDADE, "idade", num(row.idade, " anos"))),
+    field("Dias no hospital antes da UTI", fx(DIAS_ANTES_UTI, "dias", num(row.dias_hospital_antes_uti))),
+    field("Origem", fx(LOCAL_ANTES_UTI, "local", labelFrom(LOCAL_ANTES_UTI.faixas, row.origem_admissao))),
+    field("Comorbidades", comorbLabels(comorbRaw)),
+    field("Admissao planejada", fx(PLANEJADA, "planejada", row.admissao_planejada == null ? "" : row.admissao_planejada ? "Planejada" : "Nao planejada")),
   ].join("");
   const boxII = [
-    field("Motivo", row.motivo_admissao_detalhe || row.motivo_admissao || ""),
-    field("Status cirurgico", row.status_cirurgico ?? ""),
-    field("Tipo de cirurgia", row.tipo_cirurgia ?? ""),
-    field("Infeccao na admissao", row.infeccao_na_admissao ?? ""),
+    field("Motivo", (row.motivo_admissao_detalhe || "").trim() || fx(MOTIVO, "motivo") || row.motivo_admissao || ""),
+    field("Status cirurgico", fx(STATUS_CIRURGICO, "statusCirurgico", labelFrom(STATUS_CIRURGICO.faixas, row.status_cirurgico))),
+    field("Tipo de cirurgia", fx(SITIO_CIRURGICO, "sitioCirurgico", labelFrom(SITIO_CIRURGICO.faixas, row.tipo_cirurgia))),
+    field("Infeccao na admissao", fx(INFECCAO, "infeccao", labelFrom(INFECCAO.faixas, row.infeccao_na_admissao))),
   ].join("");
   const boxIII = [
-    field("Glasgow", num(row.escore_glasgow)),
-    field("FC (mais alta)", num(row.fc_mais_alta, " bpm")),
-    field("PAS (mais baixa)", num(row.pas_mais_baixa, " mmHg")),
-    field("Temperatura (mais baixa)", num(row.temperatura_mais_baixa, " C")),
-    field("Bilirrubina (mais alta)", num(row.bilirrubina_mais_alta, " mg/dL")),
-    field("Creatinina (mais alta)", num(row.creatinina_mais_alta, " mg/dL")),
-    field("Leucocitos", leuco ? `${leuco} /mm3` : ""),
-    field("Plaquetas", plaq ? `${plaq} /mm3` : ""),
-    field("pH (mais baixo)", num(row.ph_mais_baixo)),
-    field("PaO2/FiO2", num(row.relacao_pao2_fio2)),
+    field("Glasgow", fx(GLASGOW, "glasgow", num(row.escore_glasgow))),
+    field("FC (mais alta)", fx(FC, "fc", num(row.fc_mais_alta, " bpm"))),
+    field("PAS (mais baixa)", fx(PAS, "pas", num(row.pas_mais_baixa, " mmHg"))),
+    field("Temperatura (mais baixa)", fx(TEMPERATURA, "temperatura", num(row.temperatura_mais_baixa, " C"))),
+    field("Bilirrubina (mais alta)", fx(BILIRRUBINA, "bilirrubina", num(row.bilirrubina_mais_alta, " mg/dL"))),
+    field("Creatinina (mais alta)", fx(CREATININA, "creatinina", num(row.creatinina_mais_alta, " mg/dL"))),
+    field("Leucocitos", fx(LEUCOCITOS, "leucocitos", leuco ? `${leuco} /mm3` : "")),
+    field("Plaquetas", fx(PLAQUETAS, "plaquetas", plaq ? `${plaq} /mm3` : "")),
+    field("pH (mais baixo)", fx(PH, "ph", num(row.ph_mais_baixo))),
+    field("Oxigenacao (PaO2/FiO2)", fx(OXIGENACAO, "oxigenacao", num(row.relacao_pao2_fio2))),
     field("Ventilacao mecanica", row.ventilacao_mecanica == null ? "" : row.ventilacao_mecanica ? "Sim" : "Nao"),
+    field("Droga vasoativa (antes da UTI)", fx(VASOATIVO, "vasoativo")),
   ].join("");
 
   const ident = [

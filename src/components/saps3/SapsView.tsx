@@ -2,13 +2,24 @@ import { useQuery } from "@tanstack/react-query";
 import { User as UserIcon, ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { COMORBIDADES, milParaContagem, formatarContagem, LOCAL_ANTES_UTI, STATUS_CIRURGICO, SITIO_CIRURGICO, INFECCAO } from "@/lib/saps3";
+import {
+  COMORBIDADES, milParaContagem, formatarContagem,
+  LOCAL_ANTES_UTI, STATUS_CIRURGICO, SITIO_CIRURGICO, INFECCAO,
+  IDADE, DIAS_ANTES_UTI, PLANEJADA, MOTIVO, GLASGOW, VASOATIVO,
+  FC, PAS, TEMPERATURA, BILIRRUBINA, CREATININA, LEUCOCITOS, PLAQUETAS, PH, OXIGENACAO,
+} from "@/lib/saps3";
 
 /**
  * Visualizacao READ-ONLY completa de uma ficha SAPS 3 ja gravada (avaliacoes_saps3).
  * Mostra o escore (box1/2/3, total, mortalidade prevista) e todos os campos
  * preenchidos, agrupados por Box. Sem inputs — apos a validacao a ficha nao e
  * mais editavel, so consultada/impressa. Campos vazios sao escondidos.
+ *
+ * FORMATO: o formulario grava as respostas como FAIXAS categoricas em `respostas`
+ * (ex.: {"fc":"lt120","creatinina":"2_3.4"}); as colunas numericas individuais
+ * (fc_mais_alta, creatinina_mais_alta, ...) ficam null nesse formato. Por isso o
+ * detalhamento aqui le `respostas` (faixa -> rotulo via saps3.ts), com fallback
+ * para as colunas (fichas antigas que gravavam valor cru).
  */
 
 export interface SapsRow {
@@ -22,6 +33,8 @@ export interface SapsRow {
   escore_box3?: number | null;
   escore_total?: number | null;
   mortalidade_prevista?: number | null;
+  // Respostas por faixa (formato atual) — fonte primaria do detalhamento.
+  respostas?: unknown;
   // Box I
   idade?: number | null;
   dias_hospital_antes_uti?: number | null;
@@ -61,8 +74,8 @@ const fmtFull = (iso?: string | null): string => {
   });
 };
 
-// Traduz o codigo enum gravado (ex.: "operating_room") para o rotulo PT canonico
-// definido em saps3.ts. Fallback para o proprio codigo se nao mapear.
+// Traduz o codigo de faixa gravado (ex.: "operating_room", "lt120") para o rotulo
+// PT canonico definido em saps3.ts. Fallback para o proprio codigo se nao mapear.
 const labelFrom = (faixas: { id: string; rotulo: string }[], code?: string | null): string => {
   const c = String(code ?? "").trim();
   if (!c) return "";
@@ -135,6 +148,17 @@ export function SapsView({ row }: { row: SapsRow }) {
   const plaq = row.plaquetas_mais_baixas != null ? formatarContagem(milParaContagem(row.plaquetas_mais_baixas)) : "";
   const isPending = row.status === "pendente";
 
+  // Respostas por faixa (formato atual). Fonte primaria do detalhamento.
+  const r: Record<string, unknown> =
+    row.respostas && typeof row.respostas === "object" && !Array.isArray(row.respostas)
+      ? (row.respostas as Record<string, unknown>)
+      : {};
+  const code = (k: string): string => (typeof r[k] === "string" ? (r[k] as string) : "");
+  // Rotulo preferindo a faixa de `respostas`; se vazio, usa o fallback (coluna).
+  const fx = (def: { faixas: { id: string; rotulo: string }[] }, key: string, fallback = ""): string =>
+    labelFrom(def.faixas, code(key)) || fallback;
+  const comorbRaw = Array.isArray(r.comorbidades) ? r.comorbidades : row.comorbidades;
+
   // Nome/CRM de quem validou a ficha (validado_por e FK profissionais.id).
   const { data: validador } = useQuery({
     queryKey: ["saps-validador", row.validado_por],
@@ -185,38 +209,39 @@ export function SapsView({ row }: { row: SapsRow }) {
       </div>
 
       <Group title="Box I — Condições prévias" collapsible>
-        <Field label="Idade" value={num(row.idade, " anos")} />
-        <Field label="Dias no hospital antes da UTI" value={num(row.dias_hospital_antes_uti)} />
-        <Field label="Origem" value={labelFrom(LOCAL_ANTES_UTI.faixas, row.origem_admissao)} />
-        <Field label="Comorbidades" value={comorbLabels(row.comorbidades)} />
-        <Field label="Admissão planejada" value={row.admissao_planejada == null ? "" : row.admissao_planejada ? "Sim" : "Não"} />
+        <Field label="Idade" value={fx(IDADE, "idade", num(row.idade, " anos"))} />
+        <Field label="Dias no hospital antes da UTI" value={fx(DIAS_ANTES_UTI, "dias", num(row.dias_hospital_antes_uti))} />
+        <Field label="Origem" value={fx(LOCAL_ANTES_UTI, "local", labelFrom(LOCAL_ANTES_UTI.faixas, row.origem_admissao))} />
+        <Field label="Comorbidades" value={comorbLabels(comorbRaw)} />
+        <Field label="Admissão planejada" value={fx(PLANEJADA, "planejada", row.admissao_planejada == null ? "" : row.admissao_planejada ? "Planejada" : "Não planejada")} />
       </Group>
 
       <Group title="Box II — Circunstâncias da admissão" collapsible>
-        <Field label="Motivo" value={(row.motivo_admissao_detalhe || "").trim() || MOTIVO_GRUPO[String(row.motivo_admissao ?? "").trim()] || row.motivo_admissao || ""} />
-        <Field label="Status cirúrgico" value={labelFrom(STATUS_CIRURGICO.faixas, row.status_cirurgico)} />
-        <Field label="Tipo de cirurgia" value={labelFrom(SITIO_CIRURGICO.faixas, row.tipo_cirurgia)} />
-        <Field label="Infecção na admissão" value={labelFrom(INFECCAO.faixas, row.infeccao_na_admissao)} />
+        <Field label="Motivo" value={(row.motivo_admissao_detalhe || "").trim() || fx(MOTIVO, "motivo") || MOTIVO_GRUPO[String(row.motivo_admissao ?? "").trim()] || row.motivo_admissao || ""} />
+        <Field label="Status cirúrgico" value={fx(STATUS_CIRURGICO, "statusCirurgico", labelFrom(STATUS_CIRURGICO.faixas, row.status_cirurgico))} />
+        <Field label="Tipo de cirurgia" value={fx(SITIO_CIRURGICO, "sitioCirurgico", labelFrom(SITIO_CIRURGICO.faixas, row.tipo_cirurgia))} />
+        <Field label="Infecção na admissão" value={fx(INFECCAO, "infeccao", labelFrom(INFECCAO.faixas, row.infeccao_na_admissao))} />
       </Group>
 
       <Group title="Box III — Fisiologia" collapsible>
-        <Field label="Glasgow" value={num(row.escore_glasgow)} />
-        <Field label="FC (mais alta)" value={num(row.fc_mais_alta, " bpm")} />
-        <Field label="PAS (mais baixa)" value={num(row.pas_mais_baixa, " mmHg")} />
-        <Field label="Temperatura (mais baixa)" value={num(row.temperatura_mais_baixa, " °C")} />
-        <Field label="Bilirrubina (mais alta)" value={num(row.bilirrubina_mais_alta, " mg/dL")} />
-        <Field label="Creatinina (mais alta)" value={num(row.creatinina_mais_alta, " mg/dL")} />
-        <Field label="Leucócitos" value={leuco ? `${leuco} /mm³` : ""} />
-        <Field label="Plaquetas" value={plaq ? `${plaq} /mm³` : ""} />
-        <Field label="pH (mais baixo)" value={num(row.ph_mais_baixo)} />
-        <Field label="PaO₂/FiO₂" value={num(row.relacao_pao2_fio2)} />
+        <Field label="Glasgow" value={fx(GLASGOW, "glasgow", num(row.escore_glasgow))} />
+        <Field label="FC (mais alta)" value={fx(FC, "fc", num(row.fc_mais_alta, " bpm"))} />
+        <Field label="PAS (mais baixa)" value={fx(PAS, "pas", num(row.pas_mais_baixa, " mmHg"))} />
+        <Field label="Temperatura (mais baixa)" value={fx(TEMPERATURA, "temperatura", num(row.temperatura_mais_baixa, " °C"))} />
+        <Field label="Bilirrubina (mais alta)" value={fx(BILIRRUBINA, "bilirrubina", num(row.bilirrubina_mais_alta, " mg/dL"))} />
+        <Field label="Creatinina (mais alta)" value={fx(CREATININA, "creatinina", num(row.creatinina_mais_alta, " mg/dL"))} />
+        <Field label="Leucócitos" value={fx(LEUCOCITOS, "leucocitos", leuco ? `${leuco} /mm³` : "")} />
+        <Field label="Plaquetas" value={fx(PLAQUETAS, "plaquetas", plaq ? `${plaq} /mm³` : "")} />
+        <Field label="pH (mais baixo)" value={fx(PH, "ph", num(row.ph_mais_baixo))} />
+        <Field label="Oxigenação (PaO₂/FiO₂)" value={fx(OXIGENACAO, "oxigenacao", num(row.relacao_pao2_fio2))} />
         <Field label="Ventilação mecânica" value={row.ventilacao_mecanica == null ? "" : row.ventilacao_mecanica ? "Sim" : "Não"} />
+        <Field label="Droga vasoativa (antes da UTI)" value={fx(VASOATIVO, "vasoativo")} />
       </Group>
 
-      {/* Ressalva: alguns itens do escore nao sao reconstruiveis (nunca gravados). */}
+      {/* Ressalva: o detalhamento O/V/M do Glasgow nao e armazenado nesta ficha. */}
       <p className="text-[11px] text-muted-foreground">
-        Observação: uso de vasoativo antes da UTI e detalhamento do Glasgow (O/V/M) não são
-        armazenados nesta ficha — o escore usa o valor consolidado no momento da validação.
+        Observação: o detalhamento do Glasgow (O/V/M) não é armazenado nesta ficha — o escore
+        usa o valor consolidado no momento da validação.
       </p>
     </div>
   );

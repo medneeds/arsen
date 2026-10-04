@@ -76,7 +76,7 @@ const ICONS: Record<TimelineEventType, React.ElementType> = {
 const SAPS_SECTORS = new Set(["red", "yellow", "outside"]);
 // Mesmo conjunto de colunas lido pela AdmissaoPage (+ internacao_id para o mapa).
 const SAPS_SELECT =
-  "id, internacao_id, status, pending_since, validado_em, validado_por, escore_box1, escore_box2, escore_box3, escore_total, " +
+  "id, internacao_id, status, pending_since, validado_em, validado_por, respostas, escore_box1, escore_box2, escore_box3, escore_total, " +
   "mortalidade_prevista, idade, dias_hospital_antes_uti, origem_admissao, comorbidades, admissao_planejada, " +
   "motivo_admissao, motivo_admissao_detalhe, status_cirurgico, tipo_cirurgia, infeccao_na_admissao, " +
   "escore_glasgow, fc_mais_alta, pas_mais_baixa, temperatura_mais_baixa, bilirrubina_mais_alta, " +
