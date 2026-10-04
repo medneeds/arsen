@@ -71,6 +71,10 @@ interface EvolutionFormProps {
   /** CID primário ativo — usado para gatear validação (obrigatório). */
   cidPrimary?: string | null;
   cidSecondary?: string | string[] | null;
+  /** Exibe a seção Dispositivos/Culturas/Antibióticos. Default true; nas evoluções
+   *  de rotina é ligado só para setores UTI/UCI (o bloco e especifico de CI, como
+   *  na admissao). */
+  showDevices?: boolean;
   /** Dispositivos invasivos (lista catálogo + custom). */
   devices?: EvolutionDevice[];
   onDevicesChange?: (next: EvolutionDevice[]) => void;
@@ -127,6 +131,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
   hypothesesSlot,
   antecedentesSlot,
   diagnosticsReviewSlot,
+  showDevices = true,
   devices, onDevicesChange,
   culturesHtml, onCulturesChange,
   antibioticosHtml, onAntibioticosChange,
@@ -519,7 +524,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
           />
         </SectionItem>
 
-        {onDevicesChange && onCulturesChange && (
+        {showDevices && onDevicesChange && onCulturesChange && (
           <SectionItem
             id="devices"
             icon={Activity}

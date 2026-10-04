@@ -722,6 +722,7 @@ const EvolucaoPage = () => {
               hypothesesSlot={hypothesesSlot}
               antecedentesSlot={antecedentesSlot}
               diagnosticsReviewSlot={diagnosticsReviewSlot}
+              showDevices={isUtiSector}
               planItems={planItems}
               onPlanItemsChange={setPlanItems}
               pendenciasItems={pendenciasItems}
@@ -776,6 +777,7 @@ const EvolucaoPage = () => {
             cidPrimary={cidPrimary}
             cidSecondary={Array.isArray(cidSecondary) ? cidSecondary.join(", ") : cidSecondary}
             diagnosticsSlot={diagnosticsReviewSlot}
+            showDevices={isUtiSector}
             onUpdate={updateEvolution}
             onValidate={validateEvolution}
             onSuspend={suspendEvolution}
