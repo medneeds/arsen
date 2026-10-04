@@ -510,9 +510,11 @@ const EvolucaoPage = () => {
     );
   }
 
-  // Slot do painel Diagnósticos — injetado como 1ª seção colapsável dentro do form
-  const diagnosticsSlot = (
+  // Painel Diagnósticos SEGMENTADO (igual à admissão): Diagnóstico (main) +
+  // Hipóteses + Antecedentes em seções separadas. A Revisão usa o painel completo.
+  const makeDiagnosticsPanel = (render: "all" | "main" | "hypotheses" | "antecedentes") => (
     <DiagnosticsPanel
+      render={render}
       cidPrimary={cidPrimary}
       cidSecondary={cidSecondary}
       onCidPrimaryChange={updateCidPrimary}
@@ -534,6 +536,10 @@ const EvolucaoPage = () => {
       onClearAll={handleClearDiagnostics}
     />
   );
+  const diagnosticsSlot = makeDiagnosticsPanel("main");
+  const hypothesesSlot = makeDiagnosticsPanel("hypotheses");
+  const antecedentesSlot = makeDiagnosticsPanel("antecedentes");
+  const diagnosticsReviewSlot = makeDiagnosticsPanel("all");
 
   // Banner de alerta quando alta prevista está nas próximas 24h
   const dischargeAlert = isWithin24h(utiDischargePrediction) && (
@@ -713,7 +719,9 @@ const EvolucaoPage = () => {
               onSave={handleCreateEvolution}
               saving={creating}
               diagnosticsSlot={diagnosticsSlot}
-              diagnosticsReviewSlot={diagnosticsSlot}
+              hypothesesSlot={hypothesesSlot}
+              antecedentesSlot={antecedentesSlot}
+              diagnosticsReviewSlot={diagnosticsReviewSlot}
               planItems={planItems}
               onPlanItemsChange={setPlanItems}
               pendenciasItems={pendenciasItems}
@@ -767,7 +775,7 @@ const EvolucaoPage = () => {
             patientId={initialPatientId || null}
             cidPrimary={cidPrimary}
             cidSecondary={Array.isArray(cidSecondary) ? cidSecondary.join(", ") : cidSecondary}
-            diagnosticsSlot={diagnosticsSlot}
+            diagnosticsSlot={diagnosticsReviewSlot}
             onUpdate={updateEvolution}
             onValidate={validateEvolution}
             onSuspend={suspendEvolution}
