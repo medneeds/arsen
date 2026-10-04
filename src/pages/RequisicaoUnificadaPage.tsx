@@ -45,6 +45,7 @@ import { toast } from "sonner";
 import { cn, asUuidOrNull } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { fromSolicitacaoStatusDb } from "@/lib/solicitacaoStatus";
+import { normalizeSolicitacao, applyAuthor, type ProfissionalLite, type SolicitacaoContext } from "@/lib/solicitacaoNormalize";
 import {
   exigeJustificativaPrincipal,
   itensForaDaRotina,
@@ -74,51 +75,6 @@ async function resolveProfissionalId(userId: string | null | undefined): Promise
     const { data } = await supabase.from("profissionais").select("id").eq("user_id", userId).maybeSingle();
     return (data as { id?: string } | null)?.id ?? null;
   } catch { return null; }
-}
-
-// AUTORIA: linha minima de profissionais para resolver autor (id -> nome/CRM),
-// sem introduzir `any`. CRM vive em numero_conselho (nao ha coluna `crm`);
-// o alias PostgREST (crm:numero_conselho) mantem o campo `crm` no view-model.
-interface ProfissionalLite {
-  id: string;
-  nome: string | null;
-  crm: string | null;
-}
-
-// MIGRAÇÃO: solicitacoes_exame só tem internacao_id + campos clínicos — não há
-// colunas de paciente/unidade/documento/solicitante. Normaliza a linha nova
-// para o shape legado que RequestCard e os builders de impressão consomem
-// (todos recebem `req` como any). Campos sem coluna nova são degradados.
-function normalizeSolicitacao(
-  row: any,
-  ctx: { patientName?: string; patientBed?: string; patientSector?: string },
-) {
-  return {
-    id: row.id,
-    internacao_id: row.internacao_id,
-    patient_id: row.internacao_id,            // scoping client-side usa patient_id
-    patient_name: ctx.patientName || "",       // MIGRAÇÃO: sem coluna → contexto do form
-    patient_bed: ctx.patientBed || "",         // MIGRAÇÃO: idem
-    patient_sector: ctx.patientSector || "",   // MIGRAÇÃO: idem
-    category: row.categoria,
-    items: Array.isArray(row.itens) ? row.itens : [],
-    priority: row.prioridade,
-    status: fromSolicitacaoStatusDb(row.status),
-    clinical_indication: row.indicacao_clinica || "",
-    notes: row.observacoes || "",
-    results: row.resultado_texto || null,
-    result_data: row.resultado_dados || null,
-    completed_at: row.concluido_em || null,
-    completed_by: null,                        // MIGRAÇÃO: concluido_por é FK profissional; nome não resolvido
-    created_at: row.criado_em,
-    // AUTORIA: solicitado_por e FK de profissionais.id; o nome/CRM sao resolvidos
-    // em lote na pagina (useQuery) e injetados como requested_by_name/_crm.
-    solicitado_por: row.solicitado_por ?? null,
-    requested_by_name: "",                     // resolvido na pagina a partir de solicitado_por
-    requested_by_crm: null,                    // idem (profissionais.numero_conselho)
-    document_payload: null,                    // MIGRAÇÃO: sem coluna → reimpressão de snapshot indisponível
-    patient_registry_id: null,                 // MIGRAÇÃO: sem coluna no schema novo
-  };
 }
 
 // ── UTI Exam Combos ──
@@ -466,6 +422,8 @@ const RequisicaoUnificadaPage = () => {
   const [tcValidationOpen, setTcValidationOpen] = useState(false);
   const [reqValidationOpen, setReqValidationOpen] = useState(false);
   const [lastSubmittedReqId, setLastSubmittedReqId] = useState<string | null>(null);
+  // Paciente da solicitacao recem-criada (para a guia impressa pelo popup "Requisicao enviada").
+  const [lastSubmittedCtx, setLastSubmittedCtx] = useState<SolicitacaoContext>({});
   const [printReqOpen, setPrintReqOpen] = useState(false);
   const [formCustomItem, setFormCustomItem] = useState("");
   // Etapa 2 — busca de exame dentro da categoria (Imagem e demais)
@@ -608,8 +566,7 @@ const RequisicaoUnificadaPage = () => {
     if (solicitantesMap.size === 0) return requests;
     return requests.map((r) => {
       const prof = r.solicitado_por ? solicitantesMap.get(r.solicitado_por as string) : undefined;
-      if (!prof) return r;
-      return { ...r, requested_by_name: prof.nome ?? "", requested_by_crm: prof.crm ?? null };
+      return applyAuthor(r, prof);
     });
   }, [requests, solicitantesMap]);
 
@@ -841,6 +798,7 @@ const RequisicaoUnificadaPage = () => {
       const createdId = (createdRow as any)?.id ?? null;
       if (createdId) {
         setLastSubmittedReqId(createdId);
+        setLastSubmittedCtx({ patientName: formPatientName, patientBed: formPatientBed, patientSector: formPatientSector });
         setPrintReqOpen(true);
       }
       // Preserva paciente selecionado para encadear novas solicitações sem reabrir o picker.
@@ -2005,6 +1963,7 @@ const RequisicaoUnificadaPage = () => {
       {printReqOpen && lastSubmittedReqId && (
         <PrintAfterSubmitReqDialog
           reqId={lastSubmittedReqId}
+          ctx={lastSubmittedCtx}
           open={printReqOpen}
           onClose={() => { setPrintReqOpen(false); setLastSubmittedReqId(null); }}
         />
@@ -4013,45 +3972,42 @@ function LabComparativeView({ requests, patientName, patientId, allRequests }: {
 // Popup de impressão que aparece logo após uma requisição ser submetida.
 // Busca o registro recém-criado pelo ID e oferece impressão da guia.
 function PrintAfterSubmitReqDialog({
-  reqId, open, onClose,
-}: { reqId: string; open: boolean; onClose: () => void }) {
-  const { currentHospital } = useHospital();
-  const [req, setReq] = React.useState<any>(null);
+  reqId, ctx, open, onClose,
+}: { reqId: string; ctx: SolicitacaoContext; open: boolean; onClose: () => void }) {
+  const [req, setReq] = React.useState<ReturnType<typeof normalizeSolicitacao> | null>(null);
 
   React.useEffect(() => {
     if (!open || !reqId) return;
-    // MIGRAÇÃO: exam_requests → solicitacoes_exame (colunas pt-BR). Mapeia para
-    // o shape em inglês que buildRequisitionGuideHtml espera.
-    supabase.from("solicitacoes_exame").select("*").eq("id", reqId).maybeSingle()
-      .then(({ data }) => {
-        if (!data) return;
-        const d = data as any;
-        setReq({
-          id: d.id,
-          patient_id: d.internacao_id,
-          category: d.categoria,
-          items: d.itens,
-          clinical_indication: d.indicacao_clinica,
-          priority: d.prioridade,
-          status: d.status,
-          notes: d.observacoes,
-          created_at: d.criado_em,
-        });
-      });
+    let cancelled = false;
+    // Mesmo pedido de impressao da lista: normalizeSolicitacao (nome/leito/setor do
+    // paciente) + autor resolvido em profissionais. Antes este popup montava um
+    // objeto proprio, sem esses campos, e a guia saia com o paciente em branco.
+    (async () => {
+      const { data } = await supabase.from("solicitacoes_exame").select("*").eq("id", reqId).maybeSingle();
+      if (!data || cancelled) return;
+      const row = data as { solicitado_por?: string | null };
+      let prof: ProfissionalLite | null = null;
+      if (row.solicitado_por) {
+        const { data: p } = await supabase
+          .from("profissionais")
+          .select("id, nome, crm:numero_conselho")
+          .eq("id", row.solicitado_por)
+          .maybeSingle();
+        prof = (p as unknown as ProfissionalLite | null) ?? null;
+      }
+      if (!cancelled) setReq(applyAuthor(normalizeSolicitacao(row, ctx), prof));
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, reqId]);
 
   const handlePrint = async () => {
     if (!req) return;
-    const getSectorLabel = (s: string) => s || "";
-    const { buildRequisitionGuideHtml } = await import("@/components/PrintableRequisitionGuide");
-    const html = await buildRequisitionGuideHtml(req, getSectorLabel);
-    const w = window.open("", "_blank", "width=900,height=700");
-    if (!w) return;
-    w.document.write(html);
-    w.document.close();
-    w.focus();
-    setTimeout(() => { w.print(); }, 400);
+    // Fecha o popup ANTES: o dialogo de gasometria e uma camada propria e nao pode
+    // ficar atras de um dialogo modal. Mesma funcao da lista: com gasometria + outros
+    // exames pergunta como imprimir; sem gasometria imprime direto.
     onClose();
+    await printRequisitionGuideWithGasometriaPrompt(req, (s) => getSectorLabel(s));
   };
 
   return (
