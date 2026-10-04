@@ -167,6 +167,15 @@ import { useCurrentDoctor } from "@/hooks/useCurrentDoctor";
 import { Switch } from "@/components/ui/switch";
 
 // --- Types ---
+/**
+ * Estilo unico das caixas de contexto do cabecalho (Peso, Alergias, Calendario,
+ * Dose/kg, Templates): mesma altura, contorno, raio, fonte e peso. Cor so quando
+ * ha funcao clinica (peso vazio, estado das alergias); o resto e neutro.
+ */
+const CONTEXT_CHIP =
+  "inline-flex items-center gap-1.5 h-7 rounded-md border border-border bg-background px-2 text-xs font-medium text-foreground transition-colors";
+const CONTEXT_CHIP_BTN = cn(CONTEXT_CHIP, "hover:bg-muted/60 hover:text-foreground");
+
 interface DigitalSignature {
   doctorName: string;
   crm: string;
@@ -8776,10 +8785,10 @@ const PrescricaoPage = () => {
           {/* Peso — rotulo e valor numa UNIDADE unica (o numero faz parte da
               marcacao do peso, "abraçado" pelo mesmo contorno). */}
           <div className={cn(
-            "inline-flex items-center gap-1.5 h-7 rounded-md border px-2 text-xs transition-colors",
-            !patient.weight.trim() ? "border-warning/60 bg-warning-soft/30" : "border-border bg-muted/30",
+            CONTEXT_CHIP,
+            !patient.weight.trim() && "border-warning/60 bg-warning-soft/30",
           )}>
-            <span className="text-muted-foreground font-medium whitespace-nowrap">Peso</span>
+            <span className="text-muted-foreground whitespace-nowrap">Peso</span>
             {patient.weight.trim() && !editingWeight ? (
               // Salvo e fechado: display read-only com lapis para reeditar.
               <button
@@ -8817,12 +8826,7 @@ const PrescricaoPage = () => {
             // que ele descreve, sem folga, formando uma so informacao.
             return (
               <div className="inline-flex items-stretch">
-                <span className={cn(
-                  "inline-flex items-center gap-1 rounded-l-md border border-r-0 px-2 text-xs font-medium whitespace-nowrap",
-                  isNDAM
-                    ? "border-released/50 bg-released-soft/40 text-released-on-soft"
-                    : "border-border bg-muted/30 text-muted-foreground",
-                )}>
+                <span className={cn(CONTEXT_CHIP, "rounded-r-none border-r-0 whitespace-nowrap")}>
                   {isNDAM ? (
                     <ShieldCheck className="h-3 w-3 text-released-on-soft" />
                   ) : (
@@ -8849,8 +8853,8 @@ const PrescricaoPage = () => {
 
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="h-7 text-xs gap-1 px-2">
-                <CalendarDays className="h-3 w-3" />
+              <Button variant="outline" size="sm" className={CONTEXT_CHIP_BTN}>
+                <CalendarDays className="h-3 w-3 text-muted-foreground" />
                 {historyDate ? format(historyDate, "dd/MM/yyyy") : "Calendário"}
               </Button>
             </PopoverTrigger>
@@ -8986,7 +8990,7 @@ const PrescricaoPage = () => {
             variant="outline"
             size="sm"
             onClick={() => { setDoseCalcInitialMed(undefined); setDoseCalcOpen(true); }}
-            className="h-7 text-xs gap-1 px-2 border-border/40 hover:bg-muted"
+            className={CONTEXT_CHIP_BTN}
             title="Calculadora de dose por peso/superfície corporal"
           >
             <Calculator className="h-3 w-3 text-muted-foreground" /> Dose/kg
@@ -8995,10 +8999,10 @@ const PrescricaoPage = () => {
             variant="outline"
             size="sm"
             onClick={() => setQuickTemplatesDialogOpen(true)}
-            className="h-7 text-xs gap-1 px-2 border-warning/40 hover:bg-warning-soft"
+            className={CONTEXT_CHIP_BTN}
             title="Templates clínicos prontos (Sepse, Pós-op, DPOC...)"
           >
-            <Zap className="h-3 w-3 text-warning" /> Templates
+            <Zap className="h-3 w-3 text-muted-foreground" /> Templates
             {quickTemplates.length > 0 && (
               <span className="ml-1 text-xs font-mono text-muted-foreground">
                 ({quickTemplates.length})
