@@ -20,6 +20,7 @@ import { usePatientCid } from "@/hooks/usePatientCid";
 import { buildNormaZeroDocument, openPrintWindow, prepareLogo } from "@/lib/printNormaZero";
 import { useReceituario } from "@/hooks/useReceituario";
 import { printReceituario, type ReceituarioType } from "@/lib/receituario";
+import { BLANK_RX_NOTICE, buildBlankReceituarioHtml, validateBlankReceituario } from "@/lib/receituarioBlank";
 import type { ReceituarioItem } from "@/lib/receituario";
 import { useDocumentoMedico, type DocumentoMedicoType } from "@/hooks/useDocumentoMedico";
 import { printDocumentoMedico } from "@/lib/documentoMedico";
@@ -110,6 +111,9 @@ export function MedicalDocumentDialog({
   
   // receituario
   const [rx, setRx] = useState<RxItem[]>([{ name: "", dose: "", route: "VO", freq: "", duration: "" }]);
+  // Receituario simples EM BRANCO: o medico escreve o texto inteiro (sem tabela de medicamentos).
+  const [rxBlank, setRxBlank] = useState(false);
+  const [blankText, setBlankText] = useState("");
 
   const reset = () => {
     // setIncludeCid saiu daqui: o estado includeCid foi removido em aa62d9bb e a
@@ -117,6 +121,7 @@ export function MedicalDocumentDialog({
     // que o medico fechava "Emitir documento" estourava ReferenceError.
     setKind(null); setBody(""); setDays("");
     setRx([{ name: "", dose: "", route: "VO", freq: "", duration: "" }]);
+    setRxBlank(false); setBlankText("");
   };
 
   const close = () => { reset(); onOpenChange(false); };
@@ -144,7 +149,12 @@ export function MedicalDocumentDialog({
   const startEdit = (k: DocKind) => {
     setKind(k);
     setBody(defaultBody(k));
+    setRxBlank(false);
+    setBlankText("");
   };
+
+  // Modelo em branco vale so para o receituario SIMPLES (controle especial segue estruturado).
+  const isBlankRx = kind === "receituario" && rxBlank;
 
   const buildBodyHtml = (): string => {
     if (!tpl) return "";
@@ -182,6 +192,10 @@ export function MedicalDocumentDialog({
           </tr>
         </tbody>
       </table>`;
+
+    if (isBlankRx) {
+      return `${patientLine}${buildBlankReceituarioHtml(blankText)}`;
+    }
 
     if (isRx) {
       const rows = rx.filter((r) => r.name.trim()).map((r, i) => `
@@ -221,8 +235,14 @@ export function MedicalDocumentDialog({
     // só que aqui nem existia tabela até esta correção. Se salvar falhar,
     // nada é impresso.
     if (isRx) {
-      const validItems = rx.filter((r) => r.name.trim());
-      if (validItems.length === 0) {
+      const validItems = isBlankRx ? [] : rx.filter((r) => r.name.trim());
+      if (isBlankRx) {
+        const blankError = validateBlankReceituario(blankText);
+        if (blankError) {
+          toast.error(blankError);
+          return;
+        }
+      } else if (validItems.length === 0) {
         toast.error("Adicione pelo menos um medicamento antes de imprimir");
         return;
       }
@@ -242,7 +262,7 @@ export function MedicalDocumentDialog({
         patient_bed: patientBed,
         patient_sector: patientSector,
         items,
-        free_text: body || undefined,
+        free_text: (isBlankRx ? blankText : body) || undefined,
         signed_by_name: doctor.fullName || undefined,
         signed_by_crm: doctor.crm || undefined,
       });
@@ -304,6 +324,29 @@ export function MedicalDocumentDialog({
     });
     openPrintWindow(html, "Preparando documento…");
   };
+
+  // Escolha do modelo (so no receituario simples): padrao (com medicamentos) x em branco.
+  const rxModelToggle = kind === "receituario" ? (
+    <div className="flex items-center gap-2">
+      <Label className="text-xs text-muted-foreground">Modelo</Label>
+      <div className="inline-flex gap-1">
+        <Button
+          type="button" size="sm" className="h-7 text-xs"
+          variant={rxBlank ? "outline" : "default"}
+          onClick={() => setRxBlank(false)}
+        >
+          Padrão
+        </Button>
+        <Button
+          type="button" size="sm" className="h-7 text-xs"
+          variant={rxBlank ? "default" : "outline"}
+          onClick={() => setRxBlank(true)}
+        >
+          Em branco
+        </Button>
+      </div>
+    </div>
+  ) : null;
 
   return (
     <Dialog open={open} onOpenChange={(v) => (v ? onOpenChange(v) : close())}>
@@ -444,8 +487,22 @@ export function MedicalDocumentDialog({
                 </div>
               )}
 
-              {isRx ? (
+              {isBlankRx ? (
                 <div className="space-y-2">
+                  {rxModelToggle}
+                  <Label className="text-xs block">Texto do receituário</Label>
+                  <Textarea
+                    value={blankText}
+                    onChange={(e) => setBlankText(e.target.value)}
+                    rows={6}
+                    className="text-sm leading-relaxed"
+                    placeholder="Escreva o receituário como preferir…"
+                  />
+                  <p className="text-xs text-muted-foreground">{BLANK_RX_NOTICE}</p>
+                </div>
+              ) : isRx ? (
+                <div className="space-y-2">
+                  {rxModelToggle}
                   <div className="flex items-center justify-between">
                     <Label className="text-xs">Itens do receituário</Label>
                     <Button

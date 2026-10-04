@@ -10,6 +10,7 @@ import {
   openPrintWindow,
   prepareLogo,
 } from "@/lib/printNormaZero";
+import { isBlankReceituario, buildBlankReceituarioHtml } from "@/lib/receituarioBlank";
 
 // ── Tipos ───────────────────────────────────────────────────────────────────
 
@@ -82,6 +83,8 @@ const TYPE_LABELS: Record<ReceituarioType, { title: string; sectorLabel: string;
 };
 
 function buildReceituarioBody(data: ReceituarioData): string {
+  // Receituario simples em branco (sem itens, so texto): corpo e apenas o texto digitado.
+  const blank = data.type === "simples" && isBlankReceituario(data.items, data.free_text);
   const sector = data.patient_bed && data.patient_sector
     ? `${data.patient_bed} · ${data.patient_sector}`
     : data.patient_bed || data.patient_sector || "";
@@ -135,6 +138,8 @@ function buildReceituarioBody(data: ReceituarioData): string {
       </div>
     </div>
   `;
+
+  if (blank) return titleSection + header + buildBlankReceituarioHtml(data.free_text ?? "");
 
   return titleSection + header + itemsHtml + freeTextHtml + especialNote;
 }
