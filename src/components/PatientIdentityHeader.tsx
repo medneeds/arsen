@@ -286,7 +286,7 @@ export function InfoChip({
   return (
     <span className={chipBase}>
       {label && <span className="text-muted-foreground">{label}</span>}
-      {value !== undefined ? <span className="font-medium">{value || "—"}</span> : children}
+      {value !== undefined ? <span className="font-medium tabular-nums">{value || "—"}</span> : children}
     </span>
   );
 }
@@ -310,7 +310,7 @@ function CopyChip({ label, value }: { label: string; value?: string | null }) {
       className={cn(chipBase, "group cursor-pointer hover:bg-muted/70 transition-colors")}
     >
       <span className="text-muted-foreground">{label}</span>
-      <span className="font-medium font-mono">{value}</span>
+      <span className="font-medium tabular-nums">{value}</span>
       <Copy className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity" />
     </button>
   );
