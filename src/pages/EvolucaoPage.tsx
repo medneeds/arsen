@@ -39,6 +39,7 @@ import { DiagnosticsPanel } from "@/components/evolution/DiagnosticsPanel";
 import type { Patient } from "@/types/patient";
 import { getEffectiveAdmissionDate } from "@/lib/dihCalc";
 import { isSemAlergia } from "@/lib/allergyStatus";
+import { normalizeAdmissionSoap } from "@/lib/admissionSoapNormalizer";
 import { calcDIH } from "@/lib/dihCalc";
 import { formatDeviceLabel, deviceAlertTone, type EvolutionDevice } from "@/lib/devicesCatalog";
 interface PatientHeader {
@@ -398,15 +399,7 @@ const EvolucaoPage = () => {
   const performDuplicate = (source: EvolutionRecord) => {
     // Limpa qualquer estado sujo de interações anteriores antes de popular.
     resetNewForm();
-    // Restaura snapshot de CID da evolução original no estado do paciente
-    const srcCidPrimary = (source as any).cid_primary;
-    const srcCidSecondary = (source as any).cid_secondary;
-    if (typeof srcCidPrimary === "string" && srcCidPrimary.trim()) {
-      updateCidPrimary(srcCidPrimary);
-    }
-    if (Array.isArray(srcCidSecondary) && srcCidSecondary.length > 0) {
-      updateCidSecondary(srcCidSecondary);
-    }
+
     const srcSoap: any = source.soap_data || {};
     const isAdmissionSource = source.evolution_type === "admission";
     const { devices: srcDevices, culturesHtml: srcCulturesHtml, antibioticos: srcAntibioticos,
@@ -415,18 +408,26 @@ const EvolucaoPage = () => {
             diagnosticHypotheses: srcSoapHypo,
             ...soapBase } = srcSoap;
 
+    // APROVEITAMENTO: a admissao (sobretudo registros ANTIGOS) guarda CID, hipoteses,
+    // HDA, antecedentes e plano como TEXTO em subjective/assessment/plan. O normalizador
+    // extrai esses campos (de estruturado OU do texto) para caírem no arcabouço novo.
+    const norm = isAdmissionSource ? normalizeAdmissionSoap(srcSoap) : null;
+
+    // CID — restaura no contexto do paciente.
+    if (norm) {
+      if (norm.cidPrimary) updateCidPrimary(norm.cidPrimary);
+      if (norm.cidSecondary.length > 0) updateCidSecondary(norm.cidSecondary);
+    } else {
+      const srcCidPrimary = (source as any).cid_primary;
+      const srcCidSecondary = (source as any).cid_secondary;
+      if (typeof srcCidPrimary === "string" && srcCidPrimary.trim()) updateCidPrimary(srcCidPrimary);
+      if (Array.isArray(srcCidSecondary) && srcCidSecondary.length > 0) updateCidSecondary(srcCidSecondary);
+    }
+
+    // Campo "Evolucao" — da admissao recebe SO a HDA (assessment/objective zerados para
+    // nao arrastar o que nao evolui); de uma evolucao, copia o SOAP base como esta.
     if (isAdmissionSource) {
-      // Copia a partir da ADMISSAO: o campo "Evolucao" recebe SO a HDA; assessment
-      // e objective sao zerados para nao arrastar o que nao evolui (CID em texto,
-      // justificativa UTI, vasoativo, SOFA, antropometria, SSVV/Glasgow em texto).
-      // Os campos estruturados (CID, vitais, hipoteses, antecedentes, dispositivos)
-      // seguem pelos caminhos proprios abaixo.
-      const rawSubj = typeof soapBase.subjective === "string" ? soapBase.subjective : "";
-      // Admissao persistida: "HDA:\n{hda}\n\nAMP: ...\nMUC: ...\nAlergias: ...".
-      // Admissao virtual (sintetizada): subjective ja e so a historia, sem prefixo.
-      const hdaMatch = rawSubj.match(/^HDA:\s*\n([\s\S]*?)(?:\n\n(?:AMP|MUC|Alergias)\b|$)/i);
-      const hdaOnly = (hdaMatch ? hdaMatch[1] : rawSubj).trim();
-      setNewSoap({ subjective: hdaOnly, objective: "", assessment: "", plan: "" });
+      setNewSoap({ subjective: norm!.hda, objective: "", assessment: "", plan: "" });
     } else {
       setNewSoap({ ...soapBase });
     }
@@ -437,41 +438,37 @@ const EvolucaoPage = () => {
     setNewCulturesHtml(typeof srcCulturesHtml === "string" ? srcCulturesHtml : "");
     setNewAntibioticos(typeof srcAntibioticos === "string" ? srcAntibioticos : "");
 
-    // Plano: evolucoes ja trazem planItems; a admissao guarda o plano como TEXTO
-    // ("{plano}\n\nPrevisao de alta: ..."). Nesse caso, quebra em itens (sem o
-    // sufixo de previsao, que ja vive no contexto diagnostico do paciente).
-    let resolvedPlanItems: string[] = Array.isArray(srcPlanItems) ? srcPlanItems.filter(Boolean) : [];
-    if (isAdmissionSource && resolvedPlanItems.length === 0) {
-      const rawPlan = typeof soapBase.plan === "string" ? soapBase.plan : "";
-      const planBody = rawPlan.replace(/\n*Previs[aã]o de alta:[\s\S]*$/i, "").trim();
-      resolvedPlanItems = planBody ? planBody.split("\n").map(s => s.trim()).filter(Boolean) : [];
-    }
-    setPlanItems(resolvedPlanItems);
+    // Plano — da admissao: itens estruturados ou quebrados do texto (via normalizador).
+    setPlanItems(norm ? norm.planItems : (Array.isArray(srcPlanItems) ? srcPlanItems.filter(Boolean) : []));
     setPendenciasItems(Array.isArray(srcPendencias) ? srcPendencias : []);
 
-    // Hipóteses diagnósticas — buscar em múltiplas fontes:
-    // 1. soap_data.diagnosticHypotheses (array — formato novo)
-    // 2. diagnostic_hypotheses (campo raiz — string legada)
-    const rootHypo = (source as any).diagnostic_hypotheses;
-    const resolvedHypo: string[] = Array.isArray(srcSoapHypo) && srcSoapHypo.length > 0
-      ? srcSoapHypo.filter(Boolean)
-      : typeof rootHypo === "string" && rootHypo.trim()
-        ? rootHypo.split("\n").filter(Boolean)
-        : [];
-    setDiagnosticHypotheses(resolvedHypo as any);
-
-    // Antecedentes — buscar em múltiplas fontes:
-    // 1. soap_data.antecedentes (array — formato novo)
-    // 2. campo raiz antecedentes (legado)
-    const rootAntec = (source as any).antecedentes;
-    const resolvedAntec: string[] = Array.isArray(srcAntecSoap) && srcAntecSoap.length > 0
-      ? srcAntecSoap.filter(Boolean)
-      : Array.isArray(rootAntec) && rootAntec.length > 0
-        ? rootAntec.filter(Boolean)
-        : typeof rootAntec === "string" && rootAntec.trim()
-          ? rootAntec.split("\n").filter(Boolean)
+    // Hipóteses diagnósticas.
+    if (norm) {
+      setDiagnosticHypotheses(norm.hypotheses);
+    } else {
+      const rootHypo = (source as any).diagnostic_hypotheses;
+      const resolvedHypo: string[] = Array.isArray(srcSoapHypo) && srcSoapHypo.length > 0
+        ? srcSoapHypo.filter(Boolean)
+        : typeof rootHypo === "string" && rootHypo.trim()
+          ? rootHypo.split("\n").filter(Boolean)
           : [];
-    setAntecedentes(resolvedAntec);
+      setDiagnosticHypotheses(resolvedHypo as any);
+    }
+
+    // Antecedentes.
+    if (norm) {
+      setAntecedentes(norm.antecedentes);
+    } else {
+      const rootAntec = (source as any).antecedentes;
+      const resolvedAntec: string[] = Array.isArray(srcAntecSoap) && srcAntecSoap.length > 0
+        ? srcAntecSoap.filter(Boolean)
+        : Array.isArray(rootAntec) && rootAntec.length > 0
+          ? rootAntec.filter(Boolean)
+          : typeof rootAntec === "string" && rootAntec.trim()
+            ? rootAntec.split("\n").filter(Boolean)
+            : [];
+      setAntecedentes(resolvedAntec);
+    }
     // Pré-carregar previsão de alta da origem — já está no hook via realtime,
     // mas garantir que o campo reflita o valor salvo no banco ao duplicar
     // (o hook usePatientDiagnosticContext já faz isso automaticamente via fetch)
