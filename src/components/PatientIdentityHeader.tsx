@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Copy, IdCard, ChevronDown, ShieldAlert } from "lucide-react";
+import { Copy, IdCard, ChevronDown, ShieldAlert, Pin } from "lucide-react";
 import { format, parseISO, isValid } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
@@ -36,6 +36,9 @@ export interface PatientIdentityHeaderProps {
   showFullDetailsToggle?: boolean;
   /** Quando true, renderiza o painel completo sempre aberto (sem botão de toggle). */
   alwaysExpanded?: boolean;
+  /** Controle de "fixar painel": quando fornecido, renderiza um pino compacto a
+   *  ESQUERDA do nome (cockpit fixa). Fixado, o painel não recolhe ao tirar o mouse. */
+  pinControl?: { pinned: boolean; onToggle: () => void };
   /** Chips extras (ex.: Admissão / Internação), renderizados logo abaixo dos dados
    *  de identificação e antes do botão "Ver dados do prontuário". Só na variante cockpit. */
   metaChips?: React.ReactNode;
@@ -74,6 +77,7 @@ export function PatientIdentityHeader({
   className,
   showFullDetailsToggle = true,
   alwaysExpanded = false,
+  pinControl,
   metaChips,
   onViewFullData,
 }: PatientIdentityHeaderProps) {
@@ -105,9 +109,27 @@ export function PatientIdentityHeader({
       {isCockpit ? (
         <>
           {/* Cockpit: nome limpo como elemento principal; dados em blocos compactos. */}
-          <h3 className="patient-id text-lg font-semibold leading-snug text-foreground break-words">
-            {displayName}
-          </h3>
+          <div className="flex items-start gap-2">
+            {pinControl && (
+              <button
+                type="button"
+                onClick={pinControl.onToggle}
+                title={pinControl.pinned ? "Desafixar (recolhe ao tirar o mouse)" : "Fixar painel aberto"}
+                aria-pressed={pinControl.pinned}
+                className={cn(
+                  "mt-0.5 shrink-0 inline-flex items-center justify-center h-6 w-6 rounded-md transition-colors",
+                  pinControl.pinned
+                    ? "text-primary bg-primary/10"
+                    : "text-muted-foreground hover:text-primary hover:bg-primary/10",
+                )}
+              >
+                <Pin className={cn("h-3.5 w-3.5", pinControl.pinned && "fill-current")} />
+              </button>
+            )}
+            <h3 className="patient-id min-w-0 flex-1 text-lg font-semibold leading-snug text-foreground break-words">
+              {displayName}
+            </h3>
+          </div>
           <div className="mt-2 flex flex-wrap gap-1.5 preserve-case">
             <InfoChip>{age ?? "Idade não informada"}</InfoChip>
             <InfoChip>{sector || "Setor —"}</InfoChip>

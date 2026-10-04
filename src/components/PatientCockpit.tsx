@@ -131,12 +131,13 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
   const queryClient = useQueryClient();
   const [showFullId, setShowFullId] = useState(false);
   const [recordEditOpen, setRecordEditOpen] = useState(false);
+  const [pinned, setPinned] = useState(false);
   const [hovering, setHovering] = useState(false);
   const [docDialogOpen, setDocDialogOpen] = useState(false);
   const [roundPrintOpen, setRoundPrintOpen] = useState(false);
   const [receituarioOpen, setReceituarioOpen] = useState(false);
   const [cvcChecklistOpen, setCvcChecklistOpen] = useState(false);
-  const isExpanded = variant === "inline" || hovering;
+  const isExpanded = variant === "inline" || pinned || hovering;
   const isMobile = useIsMobile();
   // Cockpit fixa só aparece a partir de lg (≥1024px). Abaixo disso (mobile,
   // tablets, monitores verticais, janelas reduzidas) usamos FAB + Sheet.
@@ -369,7 +370,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
     <TooltipProvider delayDuration={300}>
       <aside
         onMouseEnter={() => variant === "fixed" && setHovering(true)}
-        onMouseLeave={() => variant === "fixed" && setHovering(false)}
+        onMouseLeave={() => variant === "fixed" && !pinned && setHovering(false)}
         className={cn(
           variant === "fixed" && [
             // Sticky: entra no fluxo do documento — sem sobreposição de conteúdo.
@@ -400,7 +401,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
           <button
             type="button"
             title="Expandir painel do paciente"
-            onClick={() => setHovering(true)}
+            onClick={() => setPinned(true)}
             onMouseEnter={() => setHovering(true)}
             className={cn(
               "group relative flex flex-col items-center justify-center w-full",
@@ -488,6 +489,8 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
             fallbackAge={patient.age}
             fallbackClinicalStatus={patient.clinicalStatus}
             variant="cockpit"
+            // Fixar painel: pino a esquerda do nome (so na cockpit fixa).
+            pinControl={variant === "fixed" ? { pinned, onToggle: () => setPinned((v) => !v) } : undefined}
             // Admissao e tempo de internacao: blocos junto da identificacao.
             metaChips={
               <>
