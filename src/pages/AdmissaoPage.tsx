@@ -15,10 +15,8 @@ import { AdmissaoReadOnlyView } from "@/components/admission/AdmissaoReadOnlyVie
 import Saps3Page from "@/pages/Saps3Page";
 import { printSapsDocument } from "@/lib/printSaps";
 import { usePatientLive } from "@/hooks/usePatientLive";
+import { admissionModeForSector } from "@/lib/sectorComplexity";
 import type { Patient } from "@/types/patient";
-
-// Setores que exigem SAPS 3 (UTI 1 / UTI 2 / UCI 2) — mesmo criterio da alocacao.
-const SAPS_SECTORS = ["red", "yellow", "outside"];
 const SAPS_SELECT =
   "id, status, pending_since, validado_em, validado_por, respostas, escore_box1, escore_box2, escore_box3, escore_total, " +
   "mortalidade_prevista, idade, dias_hospital_antes_uti, origem_admissao, comorbidades, admissao_planejada, " +
@@ -101,20 +99,51 @@ export default function AdmissaoPage() {
   const [sapsRow, setSapsRow] = useState<SapsRow | null>(null);
   // Forca o refetch da sapsRow apos o embute salvar/validar (onEmbeddedDone).
   const [sapsReloadTick, setSapsReloadTick] = useState(0);
-  const requiresSaps = SAPS_SECTORS.includes(patient.sector);
+  // Exige SAPS = via de Cuidados Intensivos (mesma fonte de verdade do isUti da
+  // admissao). Antes a lista fixa ["red","yellow","outside"] nao cobria os codigos
+  // uti_01/uti_02/uci_02 — a aba SAPS sumia em UTI quando a ficha nao era achada.
+  const requiresSaps = admissionModeForSector(patient.sector) === "uti";
 
   useEffect(() => {
     if (!patientId) { setSapsRow(null); return; }
     let cancel = false;
     (async () => {
-      const { data } = await supabase
-        .from("avaliacoes_saps3")
-        .select(SAPS_SELECT)
-        .eq("internacao_id", patientId)
-        .order("criado_em", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (!cancel) setSapsRow((data as unknown as SapsRow) ?? null);
+      const fetchByInternacao = (id: string) =>
+        supabase
+          .from("avaliacoes_saps3")
+          .select(SAPS_SELECT)
+          .eq("internacao_id", id)
+          .order("criado_em", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+      // 1. Pela internacao da URL.
+      const q1 = await fetchByInternacao(patientId);
+      if (q1.error) console.error("[AdmissaoPage] falha ao ler SAPS por patientId:", q1.error);
+      let row = (q1.data as unknown as SapsRow) ?? null;
+
+      // 2. Fallback: se nao achou (e sem erro de RLS), resolve a internacao ATIVA
+      //    da pessoa e busca por ela — o patientId da URL pode apontar para outra
+      //    internacao da mesma pessoa (a ficha ancora na internacao ativa).
+      if (!row && !q1.error) {
+        const { data: inter } = await supabase
+          .from("internacoes").select("paciente_id").eq("id", patientId).maybeSingle();
+        const pacienteId = (inter as { paciente_id?: string | null } | null)?.paciente_id ?? null;
+        if (pacienteId) {
+          const { data: ativa } = await supabase
+            .from("internacoes").select("id")
+            .eq("paciente_id", pacienteId).is("data_alta", null)
+            .order("data_entrada", { ascending: false }).limit(1).maybeSingle();
+          const ativaId = (ativa as { id?: string } | null)?.id ?? null;
+          if (ativaId && ativaId !== patientId) {
+            const q2 = await fetchByInternacao(ativaId);
+            if (q2.error) console.error("[AdmissaoPage] falha ao ler SAPS pela internacao ativa:", q2.error);
+            row = (q2.data as unknown as SapsRow) ?? null;
+          }
+        }
+      }
+
+      if (!cancel) setSapsRow(row);
     })();
     return () => { cancel = true; };
   }, [patientId, activeTab, sapsReloadTick]);
