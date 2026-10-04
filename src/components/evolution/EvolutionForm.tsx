@@ -62,11 +62,19 @@ interface EvolutionFormProps {
   hasUnsaved?: boolean;
   /** Render slot for the Diagnostics panel — placed as 1st collapsible section. */
   diagnosticsSlot?: React.ReactNode;
+  /** Hipóteses Diagnósticas — seção separada logo após Diagnóstico (igual à admissão). */
+  hypothesesSlot?: React.ReactNode;
+  /** Antecedentes mórbidos — seção separada após Hipóteses (igual à admissão). */
+  antecedentesSlot?: React.ReactNode;
   /** Optional compact render of the diagnostics panel inside the Revisão (review) section. */
   diagnosticsReviewSlot?: React.ReactNode;
   /** CID primário ativo — usado para gatear validação (obrigatório). */
   cidPrimary?: string | null;
   cidSecondary?: string | string[] | null;
+  /** Exibe a seção Dispositivos/Culturas/Antibióticos. Default true; nas evoluções
+   *  de rotina é ligado só para setores UTI/UCI (o bloco e especifico de CI, como
+   *  na admissao). */
+  showDevices?: boolean;
   /** Dispositivos invasivos (lista catálogo + custom). */
   devices?: EvolutionDevice[];
   onDevicesChange?: (next: EvolutionDevice[]) => void;
@@ -120,7 +128,10 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
   onSave, onValidate, saving, readOnly = false, isValidated = false,
   autoSave = false, hasUnsaved = false,
   diagnosticsSlot,
+  hypothesesSlot,
+  antecedentesSlot,
   diagnosticsReviewSlot,
+  showDevices = true,
   devices, onDevicesChange,
   culturesHtml, onCulturesChange,
   antibioticosHtml, onAntibioticosChange,
@@ -138,7 +149,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
   pendenciasItems,
   onPendenciasItemsChange,
 }) => {
-  const [openSections, setOpenSections] = useState<string[]>(['diagnostics', 'devices', 'evolucao', 'complementares', 'plan']);
+  const [openSections, setOpenSections] = useState<string[]>(['diagnostics', 'hypotheses', 'devices', 'evolucao', 'complementares', 'plan']);
   const [showPendencias, setShowPendencias] = useState(false);
   const [autoSavedAt, setAutoSavedAt] = useState<Date | null>(null);
   const [showReviewModal, setShowReviewModal] = useState(false);
@@ -303,7 +314,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
     );
   }
 
-  const expandAll = () => setOpenSections(['diagnostics', 'vitals', 'exam', 'devices', 'evolucao', 'complementares', 'plan']);
+  const expandAll = () => setOpenSections(['diagnostics', 'hypotheses', 'antecedentes', 'vitals', 'exam', 'devices', 'evolucao', 'complementares', 'plan']);
   const collapseAll = () => setOpenSections([]);
 
   return (
@@ -359,6 +370,34 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
             required
           >
             {diagnosticsSlot}
+          </SectionItem>
+        )}
+
+        {/* Hipóteses Diagnósticas — seção própria logo após Diagnóstico (espelha a admissão). */}
+        {hypothesesSlot && (
+          <SectionItem
+            id="hypotheses"
+            icon={Stethoscope}
+            iconColor="text-foreground"
+            label="Hipóteses Diagnósticas"
+            hint="Um item por hipótese — sincroniza com o painel clínico"
+            required={false}
+          >
+            {hypothesesSlot}
+          </SectionItem>
+        )}
+
+        {/* Antecedentes mórbidos pessoais — seção própria (espelha a admissão). */}
+        {antecedentesSlot && (
+          <SectionItem
+            id="antecedentes"
+            icon={FileText}
+            iconColor="text-muted-foreground"
+            label="Antecedentes mórbidos pessoais"
+            hint="Acrescente um a um"
+            required={false}
+          >
+            {antecedentesSlot}
           </SectionItem>
         )}
 
@@ -485,7 +524,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
           />
         </SectionItem>
 
-        {onDevicesChange && onCulturesChange && (
+        {showDevices && onDevicesChange && onCulturesChange && (
           <SectionItem
             id="devices"
             icon={Activity}

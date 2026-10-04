@@ -48,6 +48,12 @@ interface DiagnosticsPanelProps {
   /** Indica que o conteúdo veio replicado de uma evolução anterior. */
   replicated?: boolean;
 
+  /** Modo de render — permite segmentar o painel em seções separadas (igual a
+   *  admissao): "all" (tudo, padrao), "main" (CID + previsao + paliativo +
+   *  isolamento, sem hipoteses/antecedentes), "hypotheses" (so hipoteses),
+   *  "antecedentes" (so antecedentes). */
+  render?: "all" | "main" | "hypotheses" | "antecedentes";
+
   className?: string;
 }
 
@@ -126,6 +132,7 @@ export function DiagnosticsPanel({
   showUtiPrediction = false,
   onClearAll,
   replicated = false,
+  render = "all",
   className,
 }: DiagnosticsPanelProps) {
   // Estado local para resposta imediata ao usuário (evita lag de propagação prop→pai→filho)
@@ -161,6 +168,71 @@ export function DiagnosticsPanel({
       if (hospitalDischargePrediction) onHospitalDischargePredictionChange("");
     }
   };
+
+  // Blocos extraidos para reuso entre o modo "all" e os modos segmentados.
+  const hypothesesBlock = onDiagnosticHypothesesChange ? (() => {
+    const hypoItems: string[] = Array.isArray(diagnosticHypotheses)
+      ? diagnosticHypotheses as string[]
+      : (diagnosticHypotheses as string).split("\n").filter(Boolean);
+    return (
+      <div className="rounded-md border border-border/60 bg-background/40 p-3 space-y-2">
+        <div className="flex items-center justify-between gap-2">
+          <Label className="text-xs uppercase tracking-wide text-muted-foreground font-medium flex items-center gap-2">
+            <Stethoscope className="h-3 w-3" />
+            Hipóteses / Diagnósticos
+            <span className="text-xs normal-case tracking-normal text-muted-foreground/60">(prioridade = ordem)</span>
+          </Label>
+          <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-foreground px-2 py-1 text-xs font-medium">
+            <Lock className="h-2.5 w-2.5" />
+            Sincroniza com o painel
+          </span>
+        </div>
+        <ItemListEditor
+          items={hypoItems.length > 0 ? hypoItems : [""]}
+          onChange={(arr) => onDiagnosticHypothesesChange(arr)}
+          placeholder="Ex: Sepse de foco pulmonar..."
+          addLabel="+ Hipótese"
+          numbered
+          numberColor="text-primary"
+          showReorder
+        />
+        <p className="text-xs text-muted-foreground leading-tight">
+          O item no topo é a hipótese principal. A ordem define prioridade no painel clínico.
+        </p>
+      </div>
+    );
+  })() : null;
+
+  const antecedentesBlock = onAntecedentesChange ? (
+    <div className="rounded-md border border-border/60 bg-background/40 p-3 space-y-2">
+      <div className="flex items-center justify-between gap-2">
+        <Label className="text-xs uppercase tracking-wide text-muted-foreground font-medium flex items-center gap-2">
+          <Stethoscope className="h-3 w-3 text-muted-foreground" />
+          Antecedentes Clínicos
+        </Label>
+        <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-foreground px-2 py-1 text-xs font-medium">
+          <Lock className="h-2.5 w-2.5" />
+          Sincroniza com o painel
+        </span>
+      </div>
+      <ItemListEditor
+        items={antecedentes.length > 0 ? antecedentes : [""]}
+        onChange={onAntecedentesChange}
+        placeholder="Ex: HAS, DM2, Tabagismo..."
+        addLabel="+ Antecedente"
+        showReorder={false}
+        numberColor="text-foreground"
+      />
+    </div>
+  ) : null;
+
+  // Modos segmentados: renderizam apenas o bloco pedido (mesmo markup/estado).
+  if (render === "hypotheses") {
+    return <section className={cn("space-y-3", className)}>{hypothesesBlock}</section>;
+  }
+  if (render === "antecedentes") {
+    return <section className={cn("space-y-3", className)}>{antecedentesBlock}</section>;
+  }
 
   return (
     <section className={cn("space-y-3", className)}>
@@ -278,64 +350,10 @@ export function DiagnosticsPanel({
         )}
       </div>
 
-      {/* Hipóteses Diagnósticas — por item, ordenável, sincroniza com o painel clínico */}
-      {onDiagnosticHypothesesChange && (() => {
-        // Normalizar: aceita string (legado) ou string[]
-        const hypoItems: string[] = Array.isArray(diagnosticHypotheses)
-          ? diagnosticHypotheses as string[]
-          : (diagnosticHypotheses as string).split("\n").filter(Boolean);
-        return (
-          <div className="rounded-md border border-border/60 bg-background/40 p-3 space-y-2">
-            <div className="flex items-center justify-between gap-2">
-              <Label className="text-xs uppercase tracking-wide text-muted-foreground font-medium flex items-center gap-2">
-                <Stethoscope className="h-3 w-3" />
-                Hipóteses / Diagnósticos
-                <span className="text-xs normal-case tracking-normal text-muted-foreground/60">(prioridade = ordem)</span>
-              </Label>
-              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-foreground px-2 py-1 text-xs font-medium">
-                <Lock className="h-2.5 w-2.5" />
-                Sincroniza com o painel
-              </span>
-            </div>
-            <ItemListEditor
-              items={hypoItems.length > 0 ? hypoItems : [""]}
-              onChange={(arr) => onDiagnosticHypothesesChange(arr)}
-              placeholder="Ex: Sepse de foco pulmonar..."
-              addLabel="+ Hipótese"
-              numbered
-              numberColor="text-primary"
-              showReorder
-            />
-            <p className="text-xs text-muted-foreground leading-tight">
-              O item no topo é a hipótese principal. A ordem define prioridade no painel clínico.
-            </p>
-          </div>
-        );
-      })()}
-
-      {/* Antecedentes Clínicos — novo campo por item, sincroniza com o painel clínico */}
-      {onAntecedentesChange && (
-        <div className="rounded-md border border-border/60 bg-background/40 p-3 space-y-2">
-          <div className="flex items-center justify-between gap-2">
-            <Label className="text-xs uppercase tracking-wide text-muted-foreground font-medium flex items-center gap-2">
-              <Stethoscope className="h-3 w-3 text-muted-foreground" />
-              Antecedentes Clínicos
-            </Label>
-            <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-foreground px-2 py-1 text-xs font-medium">
-              <Lock className="h-2.5 w-2.5" />
-              Sincroniza com o painel
-            </span>
-          </div>
-          <ItemListEditor
-            items={antecedentes.length > 0 ? antecedentes : [""]}
-            onChange={onAntecedentesChange}
-            placeholder="Ex: HAS, DM2, Tabagismo..."
-            addLabel="+ Antecedente"
-            showReorder={false}
-            numberColor="text-foreground"
-          />
-        </div>
-      )}
+      {/* Hipóteses e Antecedentes — seções separadas (igual à admissão). No modo
+          "all" renderizam aqui; nos modos segmentados saem por fora (early return). */}
+      {render === "all" && hypothesesBlock}
+      {render === "all" && antecedentesBlock}
 
       <div className="rounded-md border border-border/60 bg-background/40 p-3 space-y-2">
         <div className="flex items-center justify-between">

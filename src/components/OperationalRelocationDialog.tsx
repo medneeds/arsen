@@ -29,6 +29,8 @@ import { executeOperationalRelocation } from "@/lib/bedLifecycle";
 import { ArrowRightLeft, BedDouble, Loader2, Wrench, AlertTriangle } from "lucide-react";
 import { MovementConfirmDialog } from "@/components/MovementConfirmDialog";
 import { sectorLabelFromCode } from "@/lib/hospitalSectors";
+import { isExtraBed } from "@/utils/bedNaming";
+import { BedSelectorGrid, type BedOption } from "@/components/shared/BedSelectorGrid";
 
 const REASONS = [
   { value: "reforma", label: "Reforma / obra no quarto" },
@@ -298,18 +300,15 @@ export function OperationalRelocationDialog({
             {targetSector && (
               <div className="space-y-2">
                 <Label className="text-xs uppercase tracking-wider">Leito vago *</Label>
-                <Select value={targetBedId} onValueChange={setTargetBedId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o leito" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {bedsForSector.map((b) => (
-                      <SelectItem key={b.id} value={b.id}>
-                        Leito {b.bed_number}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <BedSelectorGrid
+                  beds={bedsForSector.map((b): BedOption => ({
+                    id: b.id,
+                    label: b.bed_number,
+                    status: isExtraBed(b.bed_number) ? "extra" : "livre",
+                  }))}
+                  value={targetBedId || null}
+                  onChange={setTargetBedId}
+                />
               </div>
             )}
 

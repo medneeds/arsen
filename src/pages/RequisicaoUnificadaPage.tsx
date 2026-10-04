@@ -716,17 +716,11 @@ const RequisicaoUnificadaPage = () => {
       const merged = new Set([...prev, ...allComboItems]);
       return Array.from(merged);
     });
-    const crossCats = Object.keys(combo.categories).filter(c => c !== activeCategory);
-    const crossNote = crossCats.length > 0
-      ? ` (inclui itens de ${crossCats.map(c => CATEGORIES[c as CategoryKey]?.shortLabel).join(", ")})`
-      : "";
-    toast.success(`${combo.label} aplicado — ${allComboItems.length} exames${crossNote}`);
   };
 
   const removeCombo = (combo: UtiCombo) => {
     const allComboItems = Object.values(combo.categories).flat();
     setFormSelectedItems(prev => prev.filter(item => !allComboItems.includes(item)));
-    toast.info(`${combo.label} removido`);
   };
 
   const isComboFullySelected = (combo: UtiCombo) => {
@@ -2944,9 +2938,10 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
         .maybeSingle();
 
       // MIGRAÇÃO: CID (cid_primary) não tem coluna em internacoes → degradado.
-      // O diagnóstico vem de internacoes.hipotese_diagnostica. A tabela morta
-      // cid10_codes foi substituída por codigos_referencia(tipo='cid10'), mas
-      // sem código de origem não há o que consultar aqui.
+      // O diagnóstico vem de internacoes.hipotese_diagnostica. Observação: a
+      // tabela cid10_codes continua VIVA (catálogo CID-10 completo DATASUS, lido
+      // pelo CidSearchInput); o que falta aqui é o código de origem gravado na
+      // internação para consultar — por isso cai no texto do diagnóstico.
       const { data: internacao } = await supabase
         .from("internacoes")
         .select("hipotese_diagnostica")

@@ -108,7 +108,9 @@ export function AllergiesChipInput({
         <span
           className={cn(
             baseChip,
-            "border-released/40 bg-released/10 text-released-on-soft",
+            // "Sem relato" em caixa normal e fonte menor (nao e alerta — e o
+            // estado tranquilo; nao precisa gritar como os chips de alergia real).
+            "border-released/40 bg-released/10 text-released-on-soft normal-case text-[10px]",
           )}
         >
           <ShieldCheck className="h-2.5 w-2.5" />
@@ -250,7 +252,7 @@ export function AllergiesChipInput({
           {empty && (
             <button
               type="button"
-              className="text-xs font-medium uppercase tracking-wider text-released-on-soft hover:underline px-1"
+              className="text-[10px] font-medium normal-case text-released-on-soft hover:underline px-1"
               onClick={(e) => {
                 e.stopPropagation();
                 setSemRelato();

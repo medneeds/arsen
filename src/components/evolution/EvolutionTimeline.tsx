@@ -50,6 +50,8 @@ interface EvolutionTimelineProps {
   diagnosticsSlot?: React.ReactNode;
   /** Alergias vivas do paciente (string já formatada) — repassada ao EvolutionForm. */
   allergiesOverride?: string;
+  /** Exibe a seção Dispositivos/Culturas/ATB (só UTI/UCI nas evoluções de rotina). */
+  showDevices?: boolean;
   onUpdate: (id: string, updates: any) => Promise<boolean>;
   onValidate: (id: string) => Promise<boolean>;
   onSuspend: (id: string, reason: string) => Promise<boolean>;
@@ -67,7 +69,7 @@ const STATUS_CONFIG = {
 };
 
 export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
-  evolutions, admissionDate, patientRecord, cidPrimary, cidSecondary, patientId, diagnosticsSlot, onUpdate, onValidate, onSuspend, onDelete, onDuplicate, onLocalDirtyChange,
+  evolutions, admissionDate, patientRecord, cidPrimary, cidSecondary, patientId, diagnosticsSlot, showDevices = true, onUpdate, onValidate, onSuspend, onDelete, onDuplicate, onLocalDirtyChange,
 }) => {
   const { user } = useAuth();
   const { currentHospital } = useHospital();
@@ -781,6 +783,7 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                       return (
                         <EvolutionForm
                           hidePlan={isIntercurrence(evo)}
+                          showDevices={showDevices}
                           soap={data.soap}
                           vitals={data.vitals}
                           physicalExam={data.exam}

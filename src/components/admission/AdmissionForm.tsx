@@ -457,6 +457,13 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
   // de outros setores seguem acessiveis para CONSULTA (AdmissaoReadOnlyView), nunca
   // para edicao de outra via. allowedPathway deriva do setor do paciente.
   const allowedPathway = initialPathway;
+  // Ordena as vias com a LIBERADA (do setor atual) primeiro, a esquerda — as
+  // bloqueadas vem depois. Evita falsa sinalizacao (ex.: paciente em CI com a
+  // via Cuidados Intensivos aparecendo por ultimo, a direita).
+  const orderedPathwayOptions = useMemo(() => [
+    ...PATHWAY_OPTIONS.filter(o => o.value === allowedPathway),
+    ...PATHWAY_OPTIONS.filter(o => o.value !== allowedPathway),
+  ], [allowedPathway]);
   // Via unica "Enfermaria Clinico-Cirurgica": o recorte cirurgico vira um toggle
   // OPCIONAL (paciente cirurgico). Inicia ligado quando o setor ja e cirurgico.
   const [surgicalPatient, setSurgicalPatient] = useState<boolean>(() => isSurgicalSector(patient.sector));
@@ -497,6 +504,16 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
   // (objetivo, otimizado para a Sala Vermelha). Analogo ao SAPS que so aparece
   // na via UTI — fica sob o guarda-chuva da propria via de emergencia.
   const [emergMode, setEmergMode] = useState<"padrao" | "express">("padrao");
+  // Sub-aba da via Cuidados Intensivos: "saps" (ficha SAPS 3) a esquerda ou
+  // "intensivos" (corpo da admissao). SAPS pendente abre no preenchimento;
+  // validada pula para Cuidados Intensivos.
+  const [utiTab, setUtiTab] = useState<"saps" | "intensivos">(
+    () => (sapsRow?.status === "validada" ? "intensivos" : "saps"),
+  );
+  // Quando a ficha passa a validada (carrega/valida), pula para Cuidados Intensivos.
+  useEffect(() => {
+    if (sapsRow?.status === "validada") setUtiTab("intensivos");
+  }, [sapsRow?.status]);
 
   // Rotulo do dia da admissao (D0/Dn): DERIVADO da data de admissao HOSPITALAR
   // (internacoes.data_entrada), igual a timeline de evolucoes. So e D0 quando a
@@ -1462,7 +1479,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
             onValueChange={v => { if (isAdmissionPathway(v) && v === allowedPathway) setSelectedPathway(v); }}
             className="flex w-full flex-wrap justify-start gap-1 rounded-lg border border-border bg-muted/40 p-1"
           >
-            {PATHWAY_OPTIONS.map(opt => {
+            {orderedPathwayOptions.map(opt => {
               const locked = opt.value !== allowedPathway;
               return (
                 <ToggleGroupItem
@@ -1778,7 +1795,57 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
           )}
         </div>
         ) : (
-        <div className="w-full min-w-0">
+        <div className="w-full min-w-0 space-y-4">
+          {/* Sub-toggle SAPS | Cuidados Intensivos — so na via CI. SAPS a esquerda:
+              pendente abre no preenchimento; validada pula para Cuidados Intensivos. */}
+          {isUti && (
+            <ToggleGroup
+              type="single"
+              value={utiTab}
+              onValueChange={v => { if (v === "saps" || v === "intensivos") setUtiTab(v); }}
+              className="grid grid-cols-2 gap-2"
+            >
+              <ToggleGroupItem value="saps" className="border border-border gap-1.5 data-[state=on]:bg-warning data-[state=on]:text-white">
+                <ShieldCheck className="h-3.5 w-3.5" />
+                SAPS 3
+                {sapsRow?.status !== "validada" && <span className="text-[10px] uppercase tracking-wide opacity-80">pendente</span>}
+              </ToggleGroupItem>
+              <ToggleGroupItem value="intensivos" className="border border-border data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
+                Cuidados Intensivos
+              </ToggleGroupItem>
+            </ToggleGroup>
+          )}
+
+          {isUti && utiTab === "saps" ? (
+          /* ═══════════ Aba SAPS 3 — relatorio (boxes + detalhamento) ou pendencia ═══════════ */
+          <div className="rounded-lg border border-border bg-card p-4">
+            {sapsRow?.status === "validada" ? (
+              // Ficha validada: RESULTADO aqui mesmo (resumo dos boxes + expansao).
+              <SapsView row={sapsRow} />
+            ) : (
+              <div className="space-y-3">
+                <p className="text-xs text-foreground leading-relaxed">
+                  A admissão UTI/UCI gera automaticamente uma <strong>Ficha SAPS 3 pendente</strong>, com prazo de{" "}
+                  <strong className="text-warning-on-soft">24 horas</strong> a partir da pré-admissão (janela operacional / AMIB).
+                  A admissão pode ser <strong>validada e impressa normalmente</strong>; a SAPS 3 segue como tarefa paralela.
+                </p>
+                {onOpenSaps && (
+                  <Button type="button" variant="outline" size="sm" onClick={onOpenSaps} className="gap-1.5">
+                    <Activity className="h-3.5 w-3.5" />
+                    {sapsRow ? "Abrir / completar ficha SAPS 3" : "Preencher ficha SAPS 3"}
+                  </Button>
+                )}
+                <label className="flex items-start gap-2 rounded-md border border-warning-border bg-warning-soft/70 p-3 cursor-pointer select-none">
+                  <Checkbox checked={sapsAck} onCheckedChange={v => setSapsAck(v === true)} className="mt-1" />
+                  <span className="text-xs text-foreground">
+                    <strong className="uppercase tracking-wide text-warning-on-soft">Ciência (opcional)</strong> — declaro estar
+                    ciente de que a ficha SAPS 3 está pendente e deve ser finalizada em até 24 h.
+                  </span>
+                </label>
+              </div>
+            )}
+          </div>
+          ) : (
           <Accordion
             type="multiple"
             value={openSections}
@@ -2174,38 +2241,10 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
                   )}
                 </div>
               </AccordionSectionItem>
-
-              <AccordionSectionItem id="nm-uti-saps" icon={ShieldCheck} iconColor="text-warning-on-soft" label="Ficha SAPS 3">
-                {sapsRow?.status === "validada" ? (
-                  // Ficha ja validada: mostra o RESULTADO aqui mesmo, sob a via CI
-                  // (consulta — sem carregar a pagina do SAPS).
-                  <SapsView row={sapsRow} />
-                ) : (
-                  <div className="space-y-3">
-                    <p className="text-xs text-foreground leading-relaxed">
-                      A admissão UTI/UCI gera automaticamente uma <strong>Ficha SAPS 3 pendente</strong>, com prazo de{" "}
-                      <strong className="text-warning-on-soft">24 horas</strong> a partir da pré-admissão (janela operacional / AMIB).
-                      A admissão pode ser <strong>validada e impressa normalmente</strong>; a SAPS 3 segue como tarefa paralela.
-                    </p>
-                    {onOpenSaps && (
-                      <Button type="button" variant="outline" size="sm" onClick={onOpenSaps} className="gap-1.5">
-                        <Activity className="h-3.5 w-3.5" />
-                        {sapsRow ? "Abrir / completar ficha SAPS 3" : "Preencher ficha SAPS 3"}
-                      </Button>
-                    )}
-                    <label className="flex items-start gap-2 rounded-md border border-warning-border bg-warning-soft/70 p-3 cursor-pointer select-none">
-                      <Checkbox checked={sapsAck} onCheckedChange={v => setSapsAck(v === true)} className="mt-1" />
-                      <span className="text-xs text-foreground">
-                        <strong className="uppercase tracking-wide text-warning-on-soft">Ciência (opcional)</strong> — declaro estar
-                        ciente de que a ficha SAPS 3 está pendente e deve ser finalizada em até 24 h.
-                      </span>
-                    </label>
-                  </div>
-                )}
-              </AccordionSectionItem>
             </>
             )}
           </Accordion>
+          )}
         </div>
         )}
 

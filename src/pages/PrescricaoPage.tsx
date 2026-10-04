@@ -8778,54 +8778,67 @@ const PrescricaoPage = () => {
 
         {/* Row 1 — Clinical context (peso, alergias, calendário, dose/kg, templates, atalhos) */}
         <div className="flex items-center gap-2 flex-wrap px-2 sm:px-3 py-2 sm:border-t sm:border-border/40">
-          <div className="flex items-center gap-2">
-            <Label className="text-xs text-muted-foreground font-medium whitespace-nowrap">Peso (kg)</Label>
+          {/* Peso — rotulo e valor numa UNIDADE unica (o numero faz parte da
+              marcacao do peso, "abraçado" pelo mesmo contorno). */}
+          <div className={cn(
+            "inline-flex items-center gap-1.5 h-7 rounded-md border px-2 text-xs transition-colors",
+            !patient.weight.trim() ? "border-warning/60 bg-warning-soft/30" : "border-border bg-muted/30",
+          )}>
+            <span className="text-muted-foreground font-medium whitespace-nowrap">Peso</span>
             {patient.weight.trim() && !editingWeight ? (
               // Salvo e fechado: display read-only com lapis para reeditar.
               <button
                 type="button"
                 onClick={() => setEditingWeight(true)}
                 title="Peso salvo. Clique para editar."
-                className="inline-flex items-center gap-1 h-7 px-2 rounded-md border border-border bg-muted/40 text-xs font-medium text-foreground hover:bg-muted"
+                className="inline-flex items-center gap-1 font-medium text-foreground hover:opacity-80"
               >
-                {patient.weight} kg
+                <span className="tabular-nums">{patient.weight}</span>
+                <span className="text-muted-foreground">kg</span>
                 <Pencil className="h-3 w-3 text-muted-foreground" />
               </button>
             ) : (
-              <Input
-                value={patient.weight}
-                // Ao comecar a digitar com o campo vazio, entra em modo edicao —
-                // senao, ao 1o digito o peso vira nao-vazio, a condicao flipa para
-                // o display read-only e o input "fecha sozinho". Fecha so no
-                // blur/Enter (salvo e fechado).
-                onChange={(e) => { if (!editingWeight) setEditingWeight(true); updatePatient("weight", e.target.value); }}
-                onBlur={() => { if (patient.weight.trim()) setEditingWeight(false); }}
-                onKeyDown={(e) => { if (e.key === "Enter" && patient.weight.trim()) { e.preventDefault(); (e.target as HTMLInputElement).blur(); setEditingWeight(false); } }}
-                autoFocus={editingWeight}
-                placeholder="72"
-                className={cn(
-                  "h-7 w-14 text-xs font-medium",
-                  !patient.weight.trim() && "border-warning/60 bg-warning-soft/30"
-                )}
-              />
+              <>
+                <Input
+                  value={patient.weight}
+                  // Ao comecar a digitar com o campo vazio, entra em modo edicao —
+                  // senao, ao 1o digito o peso vira nao-vazio, a condicao flipa para
+                  // o display read-only e o input "fecha sozinho". Fecha so no
+                  // blur/Enter (salvo e fechado).
+                  onChange={(e) => { if (!editingWeight) setEditingWeight(true); updatePatient("weight", e.target.value); }}
+                  onBlur={() => { if (patient.weight.trim()) setEditingWeight(false); }}
+                  onKeyDown={(e) => { if (e.key === "Enter" && patient.weight.trim()) { e.preventDefault(); (e.target as HTMLInputElement).blur(); setEditingWeight(false); } }}
+                  autoFocus={editingWeight}
+                  placeholder="72"
+                  className="h-5 w-10 border-0 bg-transparent p-0 text-xs font-medium tabular-nums shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                />
+                <span className="text-muted-foreground">kg</span>
+              </>
             )}
           </div>
           {(() => {
             const isNDAM = isSemAlergia(patient.allergies);
+            // Rotulo CONECTADO ao campo (grupo unico): o rotulo encosta no valor
+            // que ele descreve, sem folga, formando uma so informacao.
             return (
-              <div className="flex items-center gap-2">
-                <Label className="text-xs text-muted-foreground font-medium flex items-center gap-1 whitespace-nowrap">
+              <div className="inline-flex items-stretch">
+                <span className={cn(
+                  "inline-flex items-center gap-1 rounded-l-md border border-r-0 px-2 text-xs font-medium whitespace-nowrap",
+                  isNDAM
+                    ? "border-released/50 bg-released-soft/40 text-released-on-soft"
+                    : "border-border bg-muted/30 text-muted-foreground",
+                )}>
                   {isNDAM ? (
                     <ShieldCheck className="h-3 w-3 text-released-on-soft" />
                   ) : (
                     <AlertTriangle className="h-3 w-3 text-destructive" />
-                  )}{" "}
+                  )}
                   Alergias
-                </Label>
+                </span>
                 <AllergiesChipInput
                   value={patient.allergies}
                   onChange={(next) => updatePatient("allergies", next)}
-                  className="max-w-[340px]"
+                  className="rounded-l-none max-w-[340px]"
                 />
               </div>
             );
