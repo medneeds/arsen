@@ -40,6 +40,7 @@ import type { Patient } from "@/types/patient";
 import { getEffectiveAdmissionDate } from "@/lib/dihCalc";
 import { isSemAlergia } from "@/lib/allergyStatus";
 import { normalizeAdmissionSoap } from "@/lib/admissionSoapNormalizer";
+import { supabase } from "@/integrations/supabase/client";
 import { calcDIH } from "@/lib/dihCalc";
 import { formatDeviceLabel, deviceAlertTone, type EvolutionDevice } from "@/lib/devicesCatalog";
 interface PatientHeader {
@@ -396,7 +397,7 @@ const EvolucaoPage = () => {
 
   /** Aplica a duplicação real (sem confirmação). Mantém o comportamento original:
    *  copia SOAP, sinais vitais, exame físico, dispositivos, culturas e hipóteses da fonte. */
-  const performDuplicate = (source: EvolutionRecord) => {
+  const performDuplicate = async (source: EvolutionRecord) => {
     // Limpa qualquer estado sujo de interações anteriores antes de popular.
     resetNewForm();
 
@@ -413,6 +414,21 @@ const EvolucaoPage = () => {
     // extrai esses campos (de estruturado OU do texto) para caírem no arcabouço novo.
     const norm = isAdmissionSource ? normalizeAdmissionSoap(srcSoap) : null;
 
+    // Fallback da HDA: se o soap da admissao nao traz a historia (subjective vazio/sem
+    // o texto), busca de internacoes.historia_clinica. source.patient_id = internacao_id.
+    let hdaFallback = "";
+    if (norm && !norm.hda && source.patient_id) {
+      try {
+        const { data } = await supabase
+          .from("internacoes")
+          .select("historia_clinica, queixa_principal")
+          .eq("id", source.patient_id)
+          .maybeSingle();
+        const r = data as { historia_clinica?: string | null; queixa_principal?: string | null } | null;
+        hdaFallback = (r?.historia_clinica || r?.queixa_principal || "").trim();
+      } catch { /* best-effort: segue sem fallback */ }
+    }
+
     // CID — restaura no contexto do paciente.
     if (norm) {
       if (norm.cidPrimary) updateCidPrimary(norm.cidPrimary);
@@ -427,7 +443,7 @@ const EvolucaoPage = () => {
     // Campo "Evolucao" — da admissao recebe SO a HDA (assessment/objective zerados para
     // nao arrastar o que nao evolui); de uma evolucao, copia o SOAP base como esta.
     if (isAdmissionSource) {
-      setNewSoap({ subjective: norm!.hda, objective: "", assessment: "", plan: "" });
+      setNewSoap({ subjective: norm!.hda || hdaFallback, objective: "", assessment: "", plan: "" });
     } else {
       setNewSoap({ ...soapBase });
     }
@@ -1027,7 +1043,7 @@ const EvolucaoPage = () => {
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
-                if (pendingDuplicate) performDuplicate(pendingDuplicate);
+                if (pendingDuplicate) void performDuplicate(pendingDuplicate);
                 setPendingDuplicate(null);
               }}
             >

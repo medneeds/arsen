@@ -59,9 +59,13 @@ export function normalizeAdmissionSoap(soap: Record<string, unknown> | null | un
     if (m) hypotheses = m[1].split("\n").map((l) => l.trim()).filter(Boolean);
   }
 
-  // ── HDA: do subjective "HDA:\n...\n\n(AMP|MUC|Alergias)". Senao, subjective inteiro ──
-  const hm = subjective.match(/HDA\s*:\s*\n?([\s\S]*?)(?:\n\s*\n\s*(?:AMP|MUC|Alergias)\b|$)/i);
-  const hda = (hm ? hm[1] : subjective).trim();
+  // ── HDA: tudo em subjective ANTES do bloco AMP/MUC/Alergias, sem o rotulo "HDA:".
+  //    Robusto a: HDA vazia (nao arrasta o AMP), quebra simples ou dupla de linha
+  //    antes do AMP, SSVV/gasometria no meio, e subjective sem o prefixo "HDA:". ──
+  let hda = subjective;
+  const cut = subjective.search(/\n\s*\n?\s*(?:AMP|MUC|Alergias)\s*:/i);
+  if (cut >= 0) hda = subjective.slice(0, cut);
+  hda = hda.replace(/^\s*HDA\s*:\s*/i, "").trim();
 
   // ── Antecedentes: array estruturado ou "AMP:" do subjective ──
   let antecedentes = asArr(s.antecedentes);
