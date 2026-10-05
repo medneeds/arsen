@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { formatDeviceLabel, type EvolutionDevice } from "@/lib/devicesCatalog";
+import { normalizeAdmissionSoap } from "@/lib/admissionSoapNormalizer";
 
 /**
  * SEED do formulario de admissao a partir da historia JA persistida na propria
@@ -93,6 +94,30 @@ export async function seedAdmissionFromHistory(internacaoId: string): Promise<Ad
       }
     } catch {
       /* leitura best-effort — ignora */
+    }
+
+    // ── 1b) Fallback da HDA a partir da evolucao D0 (mais antiga / admissao) ──
+    // Pacientes recuperados podem ter a historia SO no soap da evolucao D0 (no
+    // topico "Evolucao"), nao em internacoes.historia_clinica. O normalizador
+    // identifica a HDA — separando de "Evolucao medica", AMP/MUC/Alergias — e
+    // lida com soap em HTML (evolucoes novas) ou texto puro (admissao).
+    if (!seed.hda) {
+      try {
+        const { data } = await supabase
+          .from("evolucoes")
+          .select("soap")
+          .eq("internacao_id", internacaoId)
+          .order("data_hora", { ascending: true })
+          .limit(1)
+          .maybeSingle();
+        const soap = (data?.soap ?? null) as Record<string, unknown> | null;
+        if (soap) {
+          const hda = normalizeAdmissionSoap(soap).hda;
+          if (hda) seed.hda = hda;
+        }
+      } catch {
+        /* leitura best-effort — ignora */
+      }
     }
 
     // ── 2) ultima evolucao: antecedentes, CID, vitais, Glasgow, dispositivos ──

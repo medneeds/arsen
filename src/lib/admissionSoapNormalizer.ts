@@ -31,11 +31,32 @@ const asStr = (v: unknown): string => (typeof v === "string" ? v : "");
 const asArr = (v: unknown): string[] =>
   Array.isArray(v) ? (v as unknown[]).map((x) => String(x).trim()).filter(Boolean) : [];
 
+/**
+ * Converte HTML de editor rico em texto com quebras de linha reais, PRESERVANDO
+ * texto puro intacto. Evolucoes novas gravam o soap como HTML (<p><b>HDA</b>: …),
+ * enquanto a admissao/D0 costuma ser texto puro com "\n". Sem isso, o parsing por
+ * "\n" (HDA antes de AMP/MUC/Alergias) falharia nos registros em HTML.
+ */
+const htmlToLines = (raw: string): string => {
+  if (!/[<&]/.test(raw)) return raw; // texto puro: nao mexe (preserva os \n)
+  return raw
+    .replace(/<\s*br\s*\/?\s*>/gi, "\n")
+    .replace(/<\/\s*(?:p|div|li|h[1-6]|tr)\s*>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/&quot;/gi, '"')
+    .replace(/[ \t]+\n/g, "\n");
+};
+
 export function normalizeAdmissionSoap(soap: Record<string, unknown> | null | undefined): NormalizedAdmission {
   const s = soap ?? {};
-  const subjective = asStr(s.subjective);
-  const assessment = asStr(s.assessment);
-  const plan = asStr(s.plan);
+  const subjective = htmlToLines(asStr(s.subjective));
+  const assessment = htmlToLines(asStr(s.assessment));
+  const plan = htmlToLines(asStr(s.plan));
 
   // ── CID: estruturado (__cid_primary/secundario) ou do texto do assessment ──
   let cidPrimary = asStr(s.__cid_primary).trim();
@@ -63,7 +84,10 @@ export function normalizeAdmissionSoap(soap: Record<string, unknown> | null | un
   //    Robusto a: HDA vazia (nao arrasta o AMP), quebra simples ou dupla de linha
   //    antes do AMP, SSVV/gasometria no meio, e subjective sem o prefixo "HDA:". ──
   let hda = subjective;
-  const cut = subjective.search(/\n\s*\n?\s*(?:AMP|MUC|Alergias)\s*:/i);
+  // Corta no PRIMEIRO marcador que encerra a HDA — inline (apos ponto) ou em
+  // nova linha: AMP/MUC/Alergias (antecedentes/medicacoes/alergias) ou o inicio
+  // da "Evolucao medica" (nota diaria, que nao e historia admissional).
+  const cut = subjective.search(/(?:\bAMP\s*:|\bMUC\s*:|\bAlergias\s*:|Evolu[çc][aã]o\s+m[eé]dica\s*:)/i);
   if (cut >= 0) hda = subjective.slice(0, cut);
   hda = hda.replace(/^\s*HDA\s*:\s*/i, "").trim();
 
