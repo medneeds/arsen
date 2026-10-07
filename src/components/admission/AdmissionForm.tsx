@@ -200,6 +200,43 @@ const GlasgowRow = ({
   </div>
 );
 
+/* ───────── RASS — Richmond Agitation-Sedation Scale (sedoanalgesia continua) ───────── */
+
+const RASS_OPTIONS = [
+  { v: 4, l: "Combativo" }, { v: 3, l: "Muito agitado" }, { v: 2, l: "Agitado" },
+  { v: 1, l: "Inquieto" }, { v: 0, l: "Alerta e calmo" }, { v: -1, l: "Sonolento" },
+  { v: -2, l: "Sedacao leve" }, { v: -3, l: "Sedacao moderada" },
+  { v: -4, l: "Sedacao profunda" }, { v: -5, l: "Nao desperta" },
+];
+
+const rassLabel = (v: number | null): string => {
+  if (v == null) return "";
+  const o = RASS_OPTIONS.find((x) => x.v === v);
+  const n = v > 0 ? `+${v}` : String(v);
+  return o ? `${n} (${o.l})` : n;
+};
+
+const RassRow = ({ value, onSelect }: { value: number | null; onSelect: (v: number) => void }) => (
+  <div>
+    <Label className="text-xs text-muted-foreground">RASS — Richmond Agitation-Sedation Scale (−5 a +4)</Label>
+    <div className="mt-1 flex flex-wrap gap-1.5">
+      {RASS_OPTIONS.map((o) => (
+        <button
+          type="button" key={o.v} onClick={() => onSelect(o.v)}
+          className={cn(
+            "rounded-full border px-2.5 py-1 text-xs transition-colors",
+            value === o.v
+              ? "border-released bg-released text-white"
+              : "border-border bg-background text-foreground hover:bg-muted",
+          )}
+        >
+          <span className="font-semibold">{o.v > 0 ? `+${o.v}` : o.v}</span> <span className="opacity-80">{o.l}</span>
+        </button>
+      ))}
+    </div>
+  </div>
+);
+
 /* ───────── UTI — justificativa de admissão (vocabulário fixo) ───────── */
 
 const UTI_JUSTIFICATIVAS: { codigo: string; rotulo: string }[] = [
@@ -585,6 +622,9 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
   const [glasgowEye, setGlasgowEye] = useState<number | null>(null);
   const [glasgowVerbal, setGlasgowVerbal] = useState<number | null>(null);
   const [glasgowMotor, setGlasgowMotor] = useState<number | null>(null);
+  // Sedoanalgesia continua -> avaliar neurologico por RASS no lugar do Glasgow.
+  const [sedoanalgesia, setSedoanalgesia] = useState(false);
+  const [rass, setRass] = useState<number | null>(null);
 
   // Antecedentes morbidos pessoais — lista incremental simples (string[]).
   const [antecedentesItems, setAntecedentesItems] = useState<string[]>([]);
@@ -730,6 +770,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
     setWeight(""); setHeight("");
     setPaSys(""); setPaDia(""); setFc(""); setFr(""); setSpo2(""); setTax(""); setDx("");
     setGlasgowEye(null); setGlasgowVerbal(null); setGlasgowMotor(null);
+    setSedoanalgesia(false); setRass(null);
     setPhysGeneral(""); setPhysCv(""); setPhysResp(""); setPhysAbd(""); setPhysExt(""); setPhysNeuro("");
     setPhysSkin(""); setPhysOther(""); setComplementares("");
     setPlanItems([]); setCidPrimary(""); setCidSecondary(""); setHypothesesItems([]);
@@ -800,6 +841,8 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
         setGlasgowEye(typeof d.glasgowEye === "number" ? d.glasgowEye : null);
         setGlasgowVerbal(typeof d.glasgowVerbal === "number" ? d.glasgowVerbal : null);
         setGlasgowMotor(typeof d.glasgowMotor === "number" ? d.glasgowMotor : null);
+        setSedoanalgesia(d.sedoanalgesia === true);
+        setRass(typeof d.rass === "number" ? d.rass : null);
         setPhysGeneral(d.physGeneral ?? ""); setPhysCv(d.physCv ?? "");
         setPhysResp(d.physResp ?? ""); setPhysAbd(d.physAbd ?? ""); setPhysExt(d.physExt ?? ""); setPhysNeuro(d.physNeuro ?? "");
         setPhysSkin(d.physSkin ?? ""); setPhysOther(d.physOther ?? "");
@@ -969,7 +1012,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
           selectedPathway, surgicalPatient,
           hda, amp, antecedentes: antecedentesItems, muc, allergies,
           weight, height, paSys, paDia, pa, fc, fr, spo2, tax, dx,
-          glasgowEye, glasgowVerbal, glasgowMotor,
+          glasgowEye, glasgowVerbal, glasgowMotor, sedoanalgesia, rass,
           physGeneral, physCv, physResp, physAbd, physExt, physNeuro,
           physSkin, physOther, complementares,
           plan, planItems, cidPrimary, cidSecondary,
@@ -994,7 +1037,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
   }, [
     draftHydrated, draftKey, selectedPathway, surgicalPatient,
     hda, amp, antecedentesItems, muc, allergies, weight, height, paSys, paDia, pa, fc, fr, spo2, tax, dx,
-    glasgowEye, glasgowVerbal, glasgowMotor,
+    glasgowEye, glasgowVerbal, glasgowMotor, sedoanalgesia, rass,
     physGeneral, physCv, physResp, physAbd, physExt, physNeuro,
     physSkin, physOther, complementares,
     plan, planItems, cidPrimary, cidSecondary, diagnosticHypotheses, hypothesesItems,
@@ -1012,7 +1055,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
   }, [
     selectedPathway, surgicalPatient,
     hda, amp, muc, allergies, weight, height, paSys, paDia, pa, fc, fr, spo2, tax, dx,
-    glasgowEye, glasgowVerbal, glasgowMotor,
+    glasgowEye, glasgowVerbal, glasgowMotor, sedoanalgesia, rass,
     physGeneral, physCv, physResp, physAbd, physExt, physNeuro,
     physSkin, physOther, complementares,
     plan, cidPrimary, cidSecondary, diagnosticHypotheses,
@@ -1283,9 +1326,12 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
       }
 
       const imcLine = imc ? ` | IMC ${imc.value} (${imc.label})` : "";
-      const glasgowLine = glasgowTotal != null
-        ? `\nGlasgow: ${glasgowTotal} (O${glasgowEye} V${glasgowVerbal} M${glasgowMotor})`
-        : "";
+      // Neurologico: RASS quando sob sedoanalgesia continua, senao Glasgow.
+      const glasgowLine = sedoanalgesia && rass != null
+        ? `\nRASS: ${rassLabel(rass)}`
+        : glasgowTotal != null
+          ? `\nGlasgow: ${glasgowTotal} (O${glasgowEye} V${glasgowVerbal} M${glasgowMotor})`
+          : "";
       const antecedentesList = amp ? amp.split("\n") : [];
       // Resumos em texto dos campos compartilhados (dispositivos/culturas/ATB)
       // para o texto corrido do SOAP. A fonte estruturada vai no soap.devices.
@@ -1345,6 +1391,9 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
             pa, fc, fr, temp: tax, spo2,
             glasgow: glasgowTotal != null ? String(glasgowTotal) : "",
             glasgow_ovm: { ocular: glasgowEye, verbal: glasgowVerbal, motora: glasgowMotor, total: glasgowTotal },
+            // Neurologico por RASS quando sob sedoanalgesia continua.
+            sedoanalgesia,
+            rass: sedoanalgesia && rass != null ? String(rass) : "",
             diurese: "", dor: "",
           },
           __diagnostic_hypotheses: diagnosticHypotheses.trim() || null,
@@ -2046,21 +2095,36 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
               hint={glasgowTotal != null ? `Total ${glasgowTotal} / 15` : "Selecione O / V / M"}
             >
               <div className="space-y-3">
-                <GlasgowRow label="Abertura ocular (1-4)" options={GLASGOW_EYE} value={glasgowEye} onSelect={setGlasgowEye} />
-                <GlasgowRow label="Resposta verbal (1-5)" options={GLASGOW_VERBAL} value={glasgowVerbal} onSelect={setGlasgowVerbal} />
-                <GlasgowRow label="Resposta motora (1-6)" options={GLASGOW_MOTOR} value={glasgowMotor} onSelect={setGlasgowMotor} />
-                <div className="flex items-center justify-between rounded-md border border-border bg-background px-3 py-2">
-                  <span className="text-xs uppercase tracking-wide text-muted-foreground">Total de Glasgow</span>
-                  <span className={cn(
-                    "text-lg font-semibold",
-                    glasgowTotal == null ? "text-muted-foreground"
-                      : glasgowTotal <= 8 ? "text-critical-on-soft"
-                      : glasgowTotal <= 12 ? "text-warning-on-soft"
-                      : "text-released-on-soft"
-                  )}>
-                    {glasgowTotal != null ? `${glasgowTotal} / 15` : "— / 15"}
-                  </span>
-                </div>
+                <label className="flex items-center gap-2 text-xs text-foreground cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={sedoanalgesia}
+                    onChange={(e) => setSedoanalgesia(e.target.checked)}
+                    className="h-3.5 w-3.5 rounded border-border accent-primary"
+                  />
+                  Paciente sob <strong>sedoanalgesia contínua</strong> — avaliar por RASS no lugar do Glasgow
+                </label>
+                {sedoanalgesia ? (
+                  <RassRow value={rass} onSelect={setRass} />
+                ) : (
+                  <>
+                    <GlasgowRow label="Abertura ocular (1-4)" options={GLASGOW_EYE} value={glasgowEye} onSelect={setGlasgowEye} />
+                    <GlasgowRow label="Resposta verbal (1-5)" options={GLASGOW_VERBAL} value={glasgowVerbal} onSelect={setGlasgowVerbal} />
+                    <GlasgowRow label="Resposta motora (1-6)" options={GLASGOW_MOTOR} value={glasgowMotor} onSelect={setGlasgowMotor} />
+                    <div className="flex items-center justify-between rounded-md border border-border bg-background px-3 py-2">
+                      <span className="text-xs uppercase tracking-wide text-muted-foreground">Total de Glasgow</span>
+                      <span className={cn(
+                        "text-lg font-semibold",
+                        glasgowTotal == null ? "text-muted-foreground"
+                          : glasgowTotal <= 8 ? "text-critical-on-soft"
+                          : glasgowTotal <= 12 ? "text-warning-on-soft"
+                          : "text-released-on-soft"
+                      )}>
+                        {glasgowTotal != null ? `${glasgowTotal} / 15` : "— / 15"}
+                      </span>
+                    </div>
+                  </>
+                )}
               </div>
             </AccordionSectionItem>
 
