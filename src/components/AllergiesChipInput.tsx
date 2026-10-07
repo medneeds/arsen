@@ -94,12 +94,15 @@ export function AllergiesChipInput({
   return (
     <div
       className={cn(
-        "flex items-center gap-1 min-h-7 px-2 py-1 rounded-md border bg-background transition-colors",
+        // Sem borda no container: os chips internos ja tem contorno proprio —
+        // a borda do container criava um contorno DUPLO. Mantem so o leve bg de
+        // estado (vazio/sem relato/alergia) para sinalizar sem o anel redundante.
+        "flex items-center gap-1 min-h-7 px-2 py-1 rounded-md bg-background transition-colors",
         empty
-          ? "border-warning/60 bg-warning-soft/30"
+          ? "bg-warning-soft/30"
           : isSemRelato
-          ? "border-released/50 bg-released-soft/40"
-          : "border-destructive/30 bg-destructive/[0.03]",
+          ? "bg-released-soft/40"
+          : "bg-destructive/[0.03]",
         className,
       )}
       onClick={() => inputRef.current?.focus()}
