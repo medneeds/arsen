@@ -39,6 +39,17 @@ const escape = (s: string) =>
     .replace(/>/g, "&gt;")
     .replace(/\n/g, "<br/>");
 
+/**
+ * format date-fns seguro: data nula/invalida devolve `fallback` em vez de lancar
+ * RangeError "Invalid time value" (que fazia o botao de impressao falhar sem gerar
+ * o PDF quando created_at/validated_at vinham vazios ou nao parseaveis).
+ */
+const fmtSafe = (v: unknown, pattern: string, fallback = "—"): string => {
+  if (!v) return fallback;
+  const d = v instanceof Date ? v : new Date(String(v));
+  return Number.isNaN(d.getTime()) ? fallback : format(d, pattern, { locale: ptBR });
+};
+
 // Classifica o tipo de evolução complementar para o PDF
 const getEvolutionType = (evo: EvolutionRecord): "normal" | "intercurrence" | "vespertina" | "noturna" => {
   const t = (evo.soap_data as any)?.type ?? (evo as any).evolution_type;
@@ -92,10 +103,7 @@ export const printEvolution = async (
 
   const logo = await prepareLogo();
 
-  const createdAt = format(new Date(evo.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
-  const validatedAt = evo.validated_at
-    ? format(new Date(evo.validated_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })
-    : null;
+  const validatedAt = fmtSafe(evo.validated_at, "dd/MM/yyyy 'às' HH:mm", "") || null;
 
   // Nome impresso (com nome social, se houver)
   const baseName = ctx?.patientName || evo.patient_name || "—";
