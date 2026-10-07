@@ -896,17 +896,23 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
     if (seededKeyRef.current === draftKey) return; // ja tentou para este prontuario
     seededKeyRef.current = draftKey;
 
-    // PRIORIDADE rascunho > seed: havendo rascunho, nao semeia.
+    // PRIORIDADE rascunho > seed: havendo rascunho, os demais campos NAO sao
+    // semeados (rascunho vence). EXCECAO: a HDA e recuperada mesmo havendo
+    // rascunho. A chave do rascunho e por pessoa (registryId) e persiste entre
+    // sessoes; um rascunho antigo salvo SEM HDA (anterior a historia existir)
+    // bloqueava o seed inteiro e deixava a historia admissional vazia para
+    // sempre. O guard por campo (prev.trim()) preserva HDA ja digitada.
     let hasDraft = false;
     try { hasDraft = !!localStorage.getItem(draftKey); } catch { /* localStorage indisponivel */ }
-    if (hasDraft) return;
 
     let cancelled = false;
     (async () => {
       const seed = await seedAdmissionFromHistory(patient.id);
       if (cancelled || Object.keys(seed).length === 0) return;
       // Preenche so o que veio e so se o campo ainda estiver vazio.
+      // HDA primeiro: e recuperada mesmo havendo rascunho (vide nota acima).
       if (seed.hda) setHda(prev => (prev.trim() ? prev : seed.hda!));
+      if (hasDraft) { setSeededFromHistory(true); return; }
       if (seed.planItems?.length) setPlanItems(prev => (prev.length ? prev : seed.planItems!));
       if (seed.hypothesesItems?.length) setHypothesesItems(prev => (prev.length ? prev : seed.hypothesesItems!));
       if (seed.antecedentesItems?.length) setAntecedentesItems(prev => (prev.length ? prev : seed.antecedentesItems!));
