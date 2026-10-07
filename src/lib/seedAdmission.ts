@@ -178,7 +178,12 @@ export async function seedAdmissionFromHistory(internacaoId: string): Promise<Ad
         .limit(1)
         .maybeSingle();
       const soap = (data?.soap ?? null) as Record<string, unknown> | null;
-      if (soap && soap.__evolution_type === "admission") {
+      // Admissao = evolucao mais antiga marcada como "admission" OU, para dados
+      // recuperados da sincronizacao com producao (que podem nao trazer o
+      // marcador __evolution_type), a mais antiga que carregue uma HDA. Como e a
+      // 1a evolucao da internacao, ela e a admissao (D0) de fato.
+      const subjHasHda = /\bHDA\b/i.test(asText(soap?.subjective));
+      if (soap && (soap.__evolution_type === "admission" || subjHasHda)) {
         const n = normalizeAdmissionSoap(soap);
         if (n.hda) seed.hda = n.hda;
         if (n.complementares) seed.complementares = n.complementares;
