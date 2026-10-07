@@ -102,6 +102,24 @@ test("HDA vazia nao arrasta AMP para a historia", () => {
   assert.deepStrictEqual(n.antecedentes, ["HAS"]);
 });
 
+test("antropometria: peso e altura extraidos do objective", () => {
+  const n = normalizeAdmissionSoap({
+    subjective: "HDA:\nx",
+    objective: "Antropometria: peso 78 kg, altura 1,70 m (IMC 27,0)\nSSVV admissionais: PA 120/80 | FC 88",
+  });
+  assert.strictEqual(n.weight, "78");
+  assert.strictEqual(n.height, "1,70");
+});
+
+test("antropometria ausente ('—') nao vira valor", () => {
+  const n = normalizeAdmissionSoap({
+    subjective: "HDA:\nx",
+    objective: "Antropometria: peso — kg, altura — m\nSSVV admissionais: PA — | FC —",
+  });
+  assert.strictEqual(n.weight, "");
+  assert.strictEqual(n.height, "");
+});
+
 test("soap nulo/sem chaves devolve tudo vazio, nunca lanca", () => {
   const n = normalizeAdmissionSoap(null);
   assert.strictEqual(n.hda, "");
@@ -110,6 +128,8 @@ test("soap nulo/sem chaves devolve tudo vazio, nunca lanca", () => {
   assert.strictEqual(n.allergies, "");
   assert.strictEqual(n.cidPrimary, "");
   assert.strictEqual(n.dischargeLabel, "");
+  assert.strictEqual(n.weight, "");
+  assert.strictEqual(n.height, "");
   assert.deepStrictEqual(n.hypotheses, []);
   assert.deepStrictEqual(n.antecedentes, []);
   assert.deepStrictEqual(n.planItems, []);

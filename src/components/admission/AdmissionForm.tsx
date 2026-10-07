@@ -918,6 +918,9 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
       if (seed.antecedentesItems?.length) setAntecedentesItems(prev => (prev.length ? prev : seed.antecedentesItems!));
       if (seed.cidPrimary) setCidPrimary(prev => (prev.trim() ? prev : seed.cidPrimary!));
       if (seed.cidSecondary) setCidSecondary(prev => (prev.trim() ? prev : seed.cidSecondary!));
+      // Antropometria (peso/altura) — estaveis, puxados da admissao D0.
+      if (seed.weight) setWeight(prev => (prev.trim() ? prev : seed.weight!));
+      if (seed.height) setHeight(prev => (prev.trim() ? prev : seed.height!));
       // Exames complementares (lab), MUC, Alergias — desmembrados da admissao D0.
       if (seed.complementares) setComplementares(prev => (prev.trim() ? prev : seed.complementares!));
       if (seed.muc) setMuc(prev => (prev.trim() ? prev : seed.muc!));

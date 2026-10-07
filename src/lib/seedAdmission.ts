@@ -33,6 +33,9 @@ export interface AdmissionSeed {
   cidSecondary?: string;
   /** Rotulo cru da previsao de alta (ex.: "01/10/2026 (D+5)"). */
   dischargeLabel?: string;
+  /** Peso (kg) e altura (m) da antropometria da admissao. */
+  weight?: string;
+  height?: string;
   /** Exame fisico por topico (coluna evolucoes.exame_fisico da admissao). */
   physGeneral?: string;
   physCv?: string;
@@ -187,6 +190,8 @@ export async function seedAdmissionFromHistory(internacaoId: string): Promise<Ad
         if (n.cidSecondary.length) seed.cidSecondary = n.cidSecondary.join(", ");
         if (n.planItems.length) seed.planItems = n.planItems;
         if (n.dischargeLabel) seed.dischargeLabel = n.dischargeLabel;
+        if (n.weight) seed.weight = n.weight;
+        if (n.height) seed.height = n.height;
         // Exame fisico por topico (coluna dedicada, nao fica no soap).
         const ef = (data as { exame_fisico?: unknown } | null)?.exame_fisico;
         if (ef && typeof ef === "object") {

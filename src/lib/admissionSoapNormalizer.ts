@@ -33,6 +33,10 @@ export interface NormalizedAdmission {
   allergies: string;
   /** Rotulo cru da previsao de alta (ex.: "01/10/2026 (D+5)"), "" se ausente. */
   dischargeLabel: string;
+  /** Peso (kg) extraido da antropometria do objective, "" se ausente. */
+  weight: string;
+  /** Altura (m) extraida da antropometria do objective, "" se ausente. */
+  height: string;
 }
 
 const asStr = (v: unknown): string => (typeof v === "string" ? v : "");
@@ -94,6 +98,7 @@ const htmlToLines = (raw: string): string => {
 export function normalizeAdmissionSoap(soap: Record<string, unknown> | null | undefined): NormalizedAdmission {
   const s = soap ?? {};
   const subjective = htmlToLines(asStr(s.subjective));
+  const objective = htmlToLines(asStr(s.objective));
   const assessment = htmlToLines(asStr(s.assessment));
   const plan = htmlToLines(asStr(s.plan));
 
@@ -173,8 +178,17 @@ export function normalizeAdmissionSoap(soap: Record<string, unknown> | null | un
   const dal = plan.match(/Previs[aã]o de alta\s*:\s*(.+)/i);
   if (dal) dischargeLabel = cleanField(dal[1]);
 
+  // ── Antropometria: peso/altura do objective ("Antropometria: peso X kg,
+  //    altura Y m"). O "—" (sem valor) nao casa com [\d.,]+, entao fica "". ──
+  let weight = "";
+  const wM = objective.match(/\bpeso\s+([\d]+(?:[.,][\d]+)?)\s*kg/i);
+  if (wM) weight = wM[1].trim();
+  let height = "";
+  const hM = objective.match(/\baltura\s+([\d]+(?:[.,][\d]+)?)\s*m\b/i);
+  if (hM) height = hM[1].trim();
+
   return {
     cidPrimary, cidSecondary, hypotheses, hda, antecedentes, planItems,
-    complementares, muc, allergies, dischargeLabel,
+    complementares, muc, allergies, dischargeLabel, weight, height,
   };
 }
