@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { format, differenceInCalendarDays, parseISO, startOfDay } from "date-fns";
+import { format, differenceInCalendarDays, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   ChevronDown, ChevronUp, Copy, Trash2, ShieldCheck, ShieldOff,
@@ -28,6 +28,24 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
+
+/**
+ * Data valida ou null. Blinda contra created_at/validated_at/admissionDate nulos
+ * ou nao parseaveis: sem isso, `format` do date-fns lanca RangeError "Invalid
+ * time value" e a ErrorBoundary derruba a timeline INTEIRA (um registro ruim
+ * some com todas as evolucoes do paciente).
+ */
+const toValidDate = (v: unknown): Date | null => {
+  if (!v) return null;
+  const d = v instanceof Date ? v : new Date(String(v));
+  return Number.isNaN(d.getTime()) ? null : d;
+};
+
+/** format date-fns seguro: devolve `fallback` quando a data e invalida. */
+const safeFormat = (v: unknown, pattern: string, fallback = "—"): string => {
+  const d = toValidDate(v);
+  return d ? format(d, pattern, { locale: ptBR }) : fallback;
+};
 
 interface DayGroup {
   dayLabel: string;
@@ -344,19 +362,22 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
 
   // Group evolutions by internment day
   const dayGroups = useMemo((): DayGroup[] => {
-    const admDate = admissionDate ? startOfDay(parseISO(admissionDate)) : null;
+    const admParsed = toValidDate(admissionDate);
+    const admDate = admParsed ? startOfDay(admParsed) : null;
     const groups = new Map<number, DayGroup>();
 
     filteredEvolutions.forEach(evo => {
-      const evoDate = startOfDay(new Date(evo.created_at));
-      const dayNumber = admDate ? differenceInCalendarDays(evoDate, admDate) : 0;
+      // created_at invalido/nulo nao pode derrubar o agrupamento: cai em D0.
+      const evoParsed = toValidDate(evo.created_at);
+      const evoDate = evoParsed ? startOfDay(evoParsed) : null;
+      const dayNumber = admDate && evoDate ? differenceInCalendarDays(evoDate, admDate) : 0;
       const dayNum = Math.max(0, dayNumber);
 
       if (!groups.has(dayNum)) {
         groups.set(dayNum, {
           dayLabel: `D${dayNum}`,
           dayNumber: dayNum,
-          date: format(evoDate, "dd/MM/yyyy", { locale: ptBR }),
+          date: evoDate ? format(evoDate, "dd/MM/yyyy", { locale: ptBR }) : "—",
           evolutions: [],
         });
       }
@@ -521,7 +542,7 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-xs font-medium text-foreground">
-                        {format(new Date(evo.created_at), "dd/MM/yyyy", { locale: ptBR })}
+                        {safeFormat(evo.created_at, "dd/MM/yyyy")}
                       </span>
                       {isCurrent && (
                         <Badge className="text-xs px-2 py-0 h-4 bg-primary text-primary-foreground gap-1">
@@ -531,7 +552,7 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                       )}
                       {evo.status === "validated" && evo.validated_at && (
                         <span className="text-xs text-muted-foreground">
-                          Validada em {format(new Date(evo.validated_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                          Validada em {safeFormat(evo.validated_at, "dd/MM/yyyy HH:mm")}
                         </span>
                       )}
                       {evo.created_by_name && (
