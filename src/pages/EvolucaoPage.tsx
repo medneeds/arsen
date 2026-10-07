@@ -260,7 +260,11 @@ const EvolucaoPage = () => {
   const [utiWeightKg] = useState<string>("");
   const [weightLoaded] = useState(true);
 
-  const hasPatient = patient.name.trim() !== "";
+  // hasPatient ancora no patientId (fonte da verdade), nao so no patientName da
+  // URL: uma navegacao que passa patientId sem patientName (ou com o nome ainda
+  // resolvendo via livePatient) NAO deve cair na tela "Nenhum paciente
+  // selecionado". O nome aparece quando livePatient/ids resolverem.
+  const hasPatient = !!initialPatientId || patient.name.trim() !== "";
 
   // Setor monitorizado (UTI/UCI ou Sala Laranja)? Liga o enquadramento de
   // previsao de alta / monitorado. A Sala Laranja e semi-UTI (pacientes
