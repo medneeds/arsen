@@ -17,10 +17,7 @@ import {
   type Department,
 } from "@/contexts/DepartmentContext";
 import { isDepartmentLocked, LOCKED_TOOLTIP } from "@/config/lockedSectors";
-import {
-  SECTOR_ICONS,
-  SECTOR_ROUTES,
-} from "@/config/clinicalSectors";
+import { SECTOR_ROUTES } from "@/config/clinicalSectors";
 import { useSectorNavigation } from "@/hooks/useSectorNavigation";
 import { whitelabel } from "@/config/whitelabel";
 import { safeGetItem } from "@/lib/safeStorage";
@@ -147,91 +144,92 @@ export default function SectorLauncherPage() {
             Nenhum setor cadastrado para este hospital.
           </div>
         ) : (
-          nav.groups.map((grupo) => (
-            <Card
-              key={grupo.group}
-              className="border-border/60 bg-card/80 backdrop-blur-sm"
-            >
-              <CardHeader className="pb-2 pt-3 px-4">
-                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <span className="h-8 w-8 rounded-lg flex items-center justify-center bg-primary/10 flex-shrink-0">
-                    <Building2 className="h-4 w-4 text-primary" aria-hidden />
-                  </span>
-                  <span className="preserve-case">{grupo.group}</span>
-                  <span className="ml-auto text-xs font-medium text-muted-foreground tracking-wider">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 items-start">
+            {nav.groups.map((grupo) => (
+              <Card
+                key={grupo.group}
+                className="border-border/60 bg-card/80 backdrop-blur-sm"
+              >
+                <CardHeader className="pb-2 pt-3 px-3">
+                  <CardTitle className="text-sm font-medium flex items-start gap-2">
+                    <span className="h-7 w-7 rounded-lg flex items-center justify-center bg-primary/10 flex-shrink-0">
+                      <Bed className="h-4 w-4 text-primary" aria-hidden />
+                    </span>
+                    <span className="preserve-case leading-tight pt-0.5">{grupo.group}</span>
+                  </CardTitle>
+                  <p className="pl-9 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
                     {grupo.sectors.length} setores
-                  </span>
-                </CardTitle>
-              </CardHeader>
+                  </p>
+                </CardHeader>
 
-              <CardContent className="px-4 pb-4">
-                <ul className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                  {grupo.sectors.map((item) => {
-                    const setor = item.name as Department;
-                    const Icone = SECTOR_ICONS[setor] ?? Bed;
-                    const bloqueado = isDepartmentLocked(setor);
-                    const ultimo = setor === ultimoSetor && !bloqueado;
-                    const selecionado = setor === escolhido;
-                    const rotulo = item.name;
+                <CardContent className="px-3 pb-3">
+                  <ul className="grid grid-cols-2 gap-2">
+                    {grupo.sectors.map((item) => {
+                      const setor = item.name as Department;
+                      const bloqueado = isDepartmentLocked(setor);
+                      const ultimo = setor === ultimoSetor && !bloqueado;
+                      const selecionado = setor === escolhido;
+                      const rotulo = item.name;
 
-                    return (
-                      <li key={item.name}>
-                        <button
-                          type="button"
-                          disabled={bloqueado}
-                          title={bloqueado ? LOCKED_TOOLTIP : undefined}
-                          onClick={() => entrar(setor)}
-                          className={cn(
-                            "group flex w-full items-center gap-3 rounded-lg border px-3 py-3 text-left transition-all",
-                            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
-                            bloqueado
-                              ? "cursor-not-allowed border-border/40 bg-muted/30 opacity-60"
-                              : ultimo
-                                ? "border-primary/40 bg-primary/5 shadow-sm hover:shadow-md"
-                                : "border-border/60 hover:border-border hover:bg-muted/40 hover:shadow-md",
-                          )}
-                        >
-                          <span
+                      return (
+                        <li key={item.name}>
+                          <button
+                            type="button"
+                            disabled={bloqueado}
+                            title={bloqueado ? LOCKED_TOOLTIP : rotulo}
+                            onClick={() => entrar(setor)}
                             className={cn(
-                              "h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors",
+                              "group flex aspect-square w-full flex-col items-center justify-center gap-2 rounded-xl border p-2 text-center transition-all",
+                              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
                               bloqueado
-                                ? "bg-muted text-muted-foreground"
+                                ? "cursor-not-allowed border-border/40 bg-muted/30 opacity-60"
                                 : ultimo
-                                  ? "bg-primary text-primary-foreground"
-                                  : "bg-primary/10 text-primary",
+                                  ? "border-primary/50 bg-primary/5 shadow-sm hover:shadow-md"
+                                  : "border-border/60 hover:border-primary/40 hover:bg-muted/40 hover:shadow-md hover:-translate-y-0.5",
                             )}
-                            aria-hidden
                           >
-                            {selecionado ? (
-                              <Check className="h-5 w-5" />
-                            ) : Icone ? (
-                              <Icone className="h-5 w-5" />
-                            ) : null}
-                          </span>
-
-                          <span className="min-w-0 flex-1">
-                            <span className="preserve-case block truncate text-sm font-medium text-foreground">
-                              {rotulo}
+                            <span
+                              className={cn(
+                                "h-11 w-11 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors",
+                                bloqueado
+                                  ? "bg-muted text-muted-foreground"
+                                  : ultimo
+                                    ? "bg-primary text-primary-foreground"
+                                    : "bg-primary/10 text-primary group-hover:bg-primary/15",
+                              )}
+                              aria-hidden
+                            >
+                              {selecionado ? (
+                                <Check className="h-5 w-5" />
+                              ) : (
+                                <Bed className="h-5 w-5" />
+                              )}
                             </span>
-                            {ultimo && (
-                              <span className="block text-xs font-medium uppercase tracking-wider text-primary">
-                                Último plantão
+
+                            <span className="flex w-full flex-col items-center gap-0.5">
+                              <span className="preserve-case line-clamp-3 text-xs font-medium leading-tight text-foreground">
+                                {rotulo}
                               </span>
-                            )}
-                            {bloqueado && (
-                              <span className="block text-xs text-muted-foreground">
-                                Sem implantação
-                              </span>
-                            )}
-                          </span>
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </CardContent>
-            </Card>
-          ))
+                              {ultimo && (
+                                <span className="text-[10px] font-semibold uppercase tracking-wider text-primary">
+                                  Último plantão
+                                </span>
+                              )}
+                              {bloqueado && (
+                                <span className="text-[10px] text-muted-foreground">
+                                  Sem implantação
+                                </span>
+                              )}
+                            </span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         )}
 
         <p className="px-1 pb-2 text-xs text-muted-foreground">
