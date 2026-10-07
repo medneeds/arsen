@@ -550,22 +550,29 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                           Atual
                         </Badge>
                       )}
-                      {evo.status === "validated" && evo.validated_at && (
-                        <span className="text-xs text-muted-foreground">
-                          Validada em {safeFormat(evo.validated_at, "dd/MM/yyyy HH:mm")}
-                        </span>
-                      )}
-                      {evo.created_by_name && (
-                        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                          <UserIcon className="h-2.5 w-2.5" />
-                          por <strong className="text-foreground">{evo.created_by_name}</strong>
-                        </span>
-                      )}
-                      {evo.validated_by_name && (
-                        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                          <UserIcon className="h-2.5 w-2.5" />
-                          validada por <strong className="text-foreground">{evo.validated_by_name}</strong>
-                        </span>
+                      {/* Validada: so a VALIDACAO (quem validou e quando), nunca a
+                          criacao. Rascunho: so a criacao (por fulano). */}
+                      {evo.status === "validated" ? (
+                        <>
+                          {evo.validated_at && safeFormat(evo.validated_at, "dd/MM/yyyy HH:mm", "") && (
+                            <span className="text-xs text-muted-foreground">
+                              Validada em {safeFormat(evo.validated_at, "dd/MM/yyyy HH:mm")}
+                            </span>
+                          )}
+                          {evo.validated_by_name && (
+                            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                              <UserIcon className="h-2.5 w-2.5" />
+                              validada por <strong className="text-foreground">{evo.validated_by_name}</strong>
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        evo.created_by_name && (
+                          <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                            <UserIcon className="h-2.5 w-2.5" />
+                            por <strong className="text-foreground">{evo.created_by_name}</strong>
+                          </span>
+                        )
                       )}
                       {isAdmission && (
                         <Badge className="text-xs px-2 py-0 h-4 bg-released text-white gap-1 uppercase tracking-wider">
