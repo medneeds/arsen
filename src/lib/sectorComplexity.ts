@@ -98,11 +98,16 @@ export const ADMISSION_UTI_SECTORS = ["red", "yellow", "outside", "uti_01", "uti
 
 /**
  * REGRA ABSOLUTA (Artur): o fluxo SAPS 3 se aplica SOMENTE a UTI 1, UTI 2 e UCI 2.
- * Nao inclui UCI 1 (uci_01) nem Sala Vermelha/Laranja/Fora. Fonte unica do gate de
- * SAPS na admissao. (Na transferencia, requiresSaps(classification) ja equivale a
- * isto: escalada critica = destino nivel <= 2 = UTI/UCI2.)
+ * Fonte unica do gate de SAPS na admissao. (Na transferencia,
+ * requiresSaps(classification) ja equivale a isto: escalada critica = destino
+ * nivel <= 2 = UTI/UCI2.)
+ *
+ * red/yellow/outside sao codigos RESIDUAIS que significam exatamente UTI 1, UTI 2 e
+ * UCI 2 (o banco ja esta alinhado para uti_01/uti_02/uci_02, mas o frontend ainda
+ * usa os residuais em varias telas e na navegacao). Por isso os seis codigos entram
+ * aqui — os residuais sao removidos quando a migracao de codigos de setor terminar.
  */
-export const SAPS_SECTORS = ["uti_01", "uti_02", "uci_02"] as const;
+export const SAPS_SECTORS = ["uti_01", "uti_02", "uci_02", "red", "yellow", "outside"] as const;
 
 /** True apenas para os setores em que o SAPS 3 e obrigatorio (UTI 1/UTI 2/UCI 2). */
 export function sectorRequiresSaps(sector?: string | null): boolean {
