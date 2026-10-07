@@ -147,7 +147,11 @@ export default function AdmissaoPage() {
       if (!cancel) setSapsRow(row);
     })();
     return () => { cancel = true; };
-  }, [patientId, activeTab, sapsReloadTick]);
+    // Sem `activeTab` nas deps: a ficha SAPS e buscada UMA vez por internacao (no
+    // mount) e recarregada so por sapsReloadTick (apos validar/editar). Antes,
+    // activeTab disparava re-fetch a cada troca de aba — e a aba SAPS abria com o
+    // delay de uma nova busca no 1o acesso. activeTab nao e usado dentro do effect.
+  }, [patientId, sapsReloadTick]);
 
   const showSapsTab = requiresSaps || !!sapsRow;
   // Admissao D0 ja registrada? Internacao ativa COM conteudo clinico (hipotese ou
