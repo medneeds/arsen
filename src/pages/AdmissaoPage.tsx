@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Printer, ClipboardCheck, AlertTriangle, History } from "lucide-react";
+import { Printer, ClipboardCheck, AlertTriangle, History, FilePlus2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { AdmissionForm } from "@/components/admission/AdmissionForm";
@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { SapsView, type SapsRow } from "@/components/saps3/SapsView";
 import { AdmissaoReadOnlyView } from "@/components/admission/AdmissaoReadOnlyView";
+import { AdmissionConsultDialog } from "@/components/AdmissionConsultDialog";
 import Saps3Page from "@/pages/Saps3Page";
 import { printSapsDocument } from "@/lib/printSaps";
 import { usePatientLive } from "@/hooks/usePatientLive";
@@ -162,8 +163,11 @@ export default function AdmissaoPage() {
   const admissionDone =
     (livePatient?.internmentStatus as unknown as string | null) === "ativa" &&
     (((livePatient?.diagnoses?.length ?? 0) > 0) || ((livePatient?.medicalHistory?.length ?? 0) > 0));
-  // Consulta read-only da admissao anterior (opcional) — nao e mais o default.
-  const [showPrevious, setShowPrevious] = useState(false);
+  // Admissao ja validada abre em READ-ONLY por padrao (consulta + impressao).
+  // A nova admissao de via fica atras de um botao explicito (modoNovaVia).
+  const [modoNovaVia, setModoNovaVia] = useState(false);
+  // Dialogo de consulta/impressao da admissao validada (reusa printAdmissionNormaZero).
+  const [consultOpen, setConsultOpen] = useState(false);
   const sapsValidada = sapsRow?.status === "validada";
 
   // Paciente para o Cockpit do trilho direito — mesma harmonizacao dos demais
@@ -280,44 +284,67 @@ export default function AdmissaoPage() {
             // Historico. Quando ja ha admissao previa, mostramos um aviso discreto e
             // o seed (seedAdmissionFromHistory, interno ao form) pre-preenche a nova.
             <div className="space-y-3">
-              {admissionDone && (
-                <div className="rounded-lg border border-warning-border bg-warning-soft/40 px-3 py-2.5 flex flex-wrap items-center gap-x-2 gap-y-1.5 print:hidden">
-                  <AlertTriangle className="h-4 w-4 shrink-0 text-warning-on-soft" />
-                  <span className="text-xs text-warning-on-soft">
-                    Paciente já admitido — esta é uma <strong>nova admissão de via</strong>; a anterior permanece no histórico.
-                  </span>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => setShowPrevious((s) => !s)}
-                    className="ml-auto h-7 gap-1 text-xs text-warning-on-soft hover:text-warning-on-soft"
-                  >
-                    <History className="h-3.5 w-3.5" />
-                    {showPrevious ? "Ocultar admissão anterior" : "Ver admissão anterior"}
-                  </Button>
-                </div>
+              {admissionDone && !modoNovaVia ? (
+                // Admissao JA validada: abre em READ-ONLY (consulta) + impressao.
+                // A nova admissao de via fica atras de um botao explicito.
+                <>
+                  <div className="rounded-lg border border-border bg-card px-3 py-2.5 flex flex-wrap items-center gap-x-2 gap-y-1.5 print:hidden">
+                    <ClipboardCheck className="h-4 w-4 shrink-0 text-released" />
+                    <span className="text-xs text-muted-foreground">
+                      Admissão já validada — <strong>somente leitura</strong>.
+                    </span>
+                    <div className="ml-auto flex items-center gap-2">
+                      <Button size="sm" variant="outline" onClick={() => setConsultOpen(true)} className="h-7 gap-1 text-xs">
+                        <Printer className="h-3.5 w-3.5" /> Imprimir admissão
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => setModoNovaVia(true)} className="h-7 gap-1 text-xs">
+                        <FilePlus2 className="h-3.5 w-3.5" /> Nova admissão de via
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="rounded-lg border bg-card p-4">
+                    <AdmissaoReadOnlyView internacaoId={patientId} />
+                  </div>
+                </>
+              ) : (
+                <>
+                  {admissionDone && (
+                    <div className="rounded-lg border border-warning-border bg-warning-soft/40 px-3 py-2.5 flex flex-wrap items-center gap-x-2 gap-y-1.5 print:hidden">
+                      <AlertTriangle className="h-4 w-4 shrink-0 text-warning-on-soft" />
+                      <span className="text-xs text-warning-on-soft">
+                        <strong>Nova admissão de via</strong> — a admissão anterior permanece no histórico.
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setModoNovaVia(false)}
+                        className="ml-auto h-7 gap-1 text-xs text-warning-on-soft hover:text-warning-on-soft"
+                      >
+                        <History className="h-3.5 w-3.5" /> Ver admissão validada
+                      </Button>
+                    </div>
+                  )}
+                  <div className="rounded-lg border bg-card overflow-hidden">
+                    <AdmissionForm
+                      embedded
+                      patient={patient}
+                      sapsRow={sapsRow}
+                      onOpenSaps={() => setActiveTab("saps")}
+                      onClose={() => navigate(returnTo)}
+                      onSuccess={() => toast.success("Admissão hospitalar registrada. Módulos clínicos liberados.")}
+                    />
+                  </div>
+                </>
               )}
-              {admissionDone && showPrevious && (
-                <div className="rounded-lg border bg-card p-4">
-                  <h2 className="mb-3 text-sm font-semibold tracking-tight text-foreground">
-                    Admissão anterior (D0) — consulta
-                  </h2>
-                  <AdmissaoReadOnlyView internacaoId={patientId} />
-                </div>
-              )}
-              <div className="rounded-lg border bg-card overflow-hidden">
-                <AdmissionForm
-                  embedded
-                  patient={patient}
-                  sapsRow={sapsRow}
-                  onOpenSaps={() => setActiveTab("saps")}
-                  onClose={() => navigate(returnTo)}
-                  onSuccess={() => toast.success("Admissão hospitalar registrada. Módulos clínicos liberados.")}
-                />
-              </div>
             </div>
           )}
         </div>
+
+        <AdmissionConsultDialog
+          open={consultOpen}
+          onOpenChange={setConsultOpen}
+          patient={patient}
+        />
 
         {/* Cockpit no trilho direito — igual a Evolucao/Prescricao */}
         <PatientCockpit patient={cockpitPatient} />
