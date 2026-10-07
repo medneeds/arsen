@@ -896,23 +896,17 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
     if (seededKeyRef.current === draftKey) return; // ja tentou para este prontuario
     seededKeyRef.current = draftKey;
 
-    // PRIORIDADE rascunho > seed: havendo rascunho, os demais campos NAO sao
-    // semeados (rascunho vence). EXCECAO: a HDA e recuperada mesmo havendo
-    // rascunho. A chave do rascunho e por pessoa (registryId) e persiste entre
-    // sessoes; um rascunho antigo salvo SEM HDA (anterior a historia existir)
-    // bloqueava o seed inteiro e deixava a historia admissional vazia para
-    // sempre. O guard por campo (prev.trim()) preserva HDA ja digitada.
-    let hasDraft = false;
-    try { hasDraft = !!localStorage.getItem(draftKey); } catch { /* localStorage indisponivel */ }
-
+    // Aproveitamento POR CAMPO: preenche SOMENTE campos ainda vazios, via guard
+    // funcional (prev.trim() ? prev : seed). Rascunho/digitacao vencem campo a
+    // campo, e TODO campo vazio e recuperado da admissao D0 — inclusive havendo
+    // rascunho. (Antes um gate deixava passar so a HDA, entao hipoteses,
+    // antecedentes e previsao de alta nao eram aproveitados sobre um rascunho.)
     let cancelled = false;
     (async () => {
       const seed = await seedAdmissionFromHistory(patient.id);
       if (cancelled || Object.keys(seed).length === 0) return;
       // Preenche so o que veio e so se o campo ainda estiver vazio.
-      // HDA primeiro: e recuperada mesmo havendo rascunho (vide nota acima).
       if (seed.hda) setHda(prev => (prev.trim() ? prev : seed.hda!));
-      if (hasDraft) { setSeededFromHistory(true); return; }
       if (seed.planItems?.length) setPlanItems(prev => (prev.length ? prev : seed.planItems!));
       if (seed.hypothesesItems?.length) setHypothesesItems(prev => (prev.length ? prev : seed.hypothesesItems!));
       if (seed.antecedentesItems?.length) setAntecedentesItems(prev => (prev.length ? prev : seed.antecedentesItems!));
@@ -925,6 +919,17 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
       if (seed.complementares) setComplementares(prev => (prev.trim() ? prev : seed.complementares!));
       if (seed.muc) setMuc(prev => (prev.trim() ? prev : seed.muc!));
       if (seed.allergies) setAllergies(prev => (prev.trim() ? prev : seed.allergies!));
+      // Previsao de alta: reaproveita o HORIZONTE (D+N) da admissao, recalculando
+      // a data a partir de hoje — a data absoluta antiga ja estaria vencida numa
+      // nova admissao de via. So substitui enquanto estiver no default (D+5).
+      if (seed.dischargeLabel) {
+        const mDias = /D\s*\+\s*(\d+)/i.exec(seed.dischargeLabel);
+        const n = mDias ? parseInt(mDias[1], 10) : NaN;
+        if (Number.isFinite(n)) {
+          setPredictionDays(prev => (prev === "5" ? String(n) : prev));
+          setPredictionDate(prev => (prev === toIsoDate(daysFromToday(5)) ? toIsoDate(daysFromToday(n)) : prev));
+        }
+      }
       // Exame fisico por topico (coluna evolucoes.exame_fisico da admissao).
       if (seed.physGeneral) setPhysGeneral(prev => (prev.trim() ? prev : seed.physGeneral!));
       if (seed.physCv) setPhysCv(prev => (prev.trim() ? prev : seed.physCv!));
@@ -1253,6 +1258,28 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
       if (interErr) {
         console.error("internacoes update failed:", interErr);
         throw new Error(`Falha ao gravar admissão na internação: ${interErr.message}`);
+      }
+
+      // #21-B: alergias da admissao alimentam o cadastro (pacientes.alergias), que
+      // o cabecalho dos modulos le e edita. Grava SO quando o cadastro ainda nao
+      // tem alergia registrada — nao sobrescreve historico; edicoes futuras no
+      // cabecalho persistem por conta propria (ultima alteracao vence). Best-effort.
+      const alergiasAdm = allergies.trim();
+      if (alergiasAdm) {
+        try {
+          const { data: iRow } = await supabase
+            .from("internacoes")
+            .select("paciente:pacientes(id, alergias)")
+            .eq("id", patient.id)
+            .maybeSingle();
+          const pac = (iRow as { paciente?: { id?: string; alergias?: string | null } } | null)?.paciente;
+          const atual = (pac?.alergias ?? "").trim();
+          if (pac?.id && !atual) {
+            await supabase.from("pacientes").update({ alergias: alergiasAdm } as never).eq("id", pac.id);
+          }
+        } catch (e) {
+          console.warn("[Admissao] falha ao gravar alergias no cadastro (nao fatal):", e);
+        }
       }
 
       const imcLine = imc ? ` | IMC ${imc.value} (${imc.label})` : "";
