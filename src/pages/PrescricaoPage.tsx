@@ -6539,11 +6539,10 @@ const PrescricaoPage = () => {
           : `ALTA VIGILÂNCIA + CONTROLADO (${newItem.controlledList ?? '344'}). ${docLabel ?? 'Receita controlada'} será gerada na impressão. Aplicando modelo MAV...`,
         duration: 5000,
       });
-      // Auto-abre o guia MAV apenas no caminho da categoria MAV
-      // (não dispara quando a medicação é selecionada via "Todas")
-      if (!fromGlobalSearch) {
-        setTimeout(() => setHighAlertGuideOpen(true), 1100);
-      }
+      // NAO auto-abre o guia MAV ao adicionar o item. O assistente de MAV abre
+      // SO pelo botao dedicado (Assistente de MAV), no padrao dos demais
+      // assistentes. Selecionar um item de alta vigilancia apenas o adiciona
+      // e sinaliza (toast), sem popup.
     } else if (isMAV) {
       // ── Apenas MAV (insulinas, anticoagulantes, eletrólitos, BNM, aminas) ──
       toast.success(`ADICIONADO — ${med.name}`, {
@@ -6553,9 +6552,7 @@ const PrescricaoPage = () => {
         duration: 4500,
         style: { background: 'hsl(0 84% 60%)', color: 'white' },
       });
-      if (!fromGlobalSearch) {
-        setTimeout(() => setHighAlertGuideOpen(true), 1100);
-      }
+      // Sem auto-open do guia MAV — abre so pelo botao dedicado (ver acima).
     } else if (isControlled) {
       // ── Apenas Portaria 344 (benzo VO, Z-drugs, metilfenidato, tramadol, etc.) ──
       toast.warning(`ADICIONADO — ${med.name}`, {
