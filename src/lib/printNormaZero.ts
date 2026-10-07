@@ -81,6 +81,94 @@ export const generateDocCode = (prefix: string = "DOC"): string => {
   return `${prefix}-${d}-${t}`;
 };
 
+/** Dados de identificacao do paciente para o cabecalho padrao. Todos opcionais. */
+export interface PatientHeaderInfo {
+  name?: string | null;
+  socialName?: string | null;
+  bed?: string | null;
+  sector?: string | null;
+  record?: string | null;
+  atendimento?: string | null;
+  /** Data de nascimento: ISO (yyyy-mm-dd) ou ja em dd/mm/aaaa. */
+  birthDate?: string | null;
+  age?: string | null;
+  sex?: string | null;
+  cpf?: string | null;
+  cns?: string | null;
+  motherName?: string | null;
+  address?: string | null;
+  phone?: string | null;
+  doctorName?: string | null;
+  cid?: string | null;
+  allergies?: string | null;
+}
+
+const hdrEsc = (s: unknown) =>
+  String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+const hdrBirth = (d?: string | null) => {
+  if (!d) return "";
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(d).trim());
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : String(d);
+};
+
+/**
+ * Cabecalho de identificacao do paciente PADRAO Norma Zero — grade compacta
+ * multi-coluna, UNICA para todos os documentos (admissao, evolucao, atestado,
+ * relatorio, termo, alta, ATM, SAPS, CVC). Renderiza SO os campos informados
+ * (4 pares por linha); Paciente em destaque, Endereco em linha propria e
+ * Alergias em faixa destacada. Centraliza a diagramacao antes dispersa (cada
+ * gerador montava o proprio cabecalho com layout e campos diferentes).
+ */
+export function buildPatientHeaderNZ(p: PatientHeaderInfo): string {
+  const cellS = "border:0.5px solid #94a3b8;padding:3px 6px;font-size:7.5pt;line-height:1.3;vertical-align:top";
+  const labelS = `${cellS};font-weight:700;font-size:6.5pt;background:#f1f5f9;color:#334155;text-transform:uppercase;letter-spacing:0.3px`;
+  const name = p.socialName ? `${p.name || ""} (NOME SOCIAL: ${p.socialName})` : (p.name || "—");
+
+  const pairs: [string, string][] = [];
+  const add = (k: string, v?: string | null) => {
+    const t = (v ?? "").toString().trim();
+    if (t) pairs.push([k, t]);
+  };
+  add("Leito", p.bed);
+  add("Setor", p.sector);
+  add("Prontuario", p.record);
+  add("No Atendimento", p.atendimento ? "#" + String(p.atendimento).trim() : "");
+  add("Nascimento", hdrBirth(p.birthDate));
+  add("Idade / Sexo", [p.age, p.sex].map((x) => (x ?? "").toString().trim()).filter(Boolean).join(" • "));
+  add("CPF", p.cpf);
+  add("CNS", p.cns);
+  add("CID-10", p.cid);
+  add("Medico", p.doctorName);
+  add("Mae", p.motherName);
+  add("Telefone", p.phone);
+
+  let rows = "";
+  for (let i = 0; i < pairs.length; i += 4) {
+    rows += "<tr>" + pairs.slice(i, i + 4)
+      .map(([k, v]) => `<td style="${labelS}">${hdrEsc(k)}</td><td style="${cellS}">${hdrEsc(v)}</td>`)
+      .join("") + "</tr>";
+  }
+  const addr = (p.address ?? "").toString().trim();
+  const addrRow = addr ? `<tr><td style="${labelS}">Endereco</td><td style="${cellS}" colspan="7">${hdrEsc(addr)}</td></tr>` : "";
+  const alg = (p.allergies ?? "").toString().trim();
+  const algRow = alg
+    ? `<tr><td style="${labelS};color:#991b1b">ALERGIAS</td><td style="${cellS};font-weight:700;color:#991b1b;background:#fef2f2" colspan="7">${hdrEsc(alg)}</td></tr>`
+    : "";
+
+  return `
+    <table style="width:100%;border-collapse:collapse;margin-bottom:6pt;page-break-inside:avoid">
+      <tbody>
+        <tr>
+          <td style="${labelS}">Paciente</td>
+          <td style="${cellS};font-weight:800;font-size:9pt;letter-spacing:-0.01em" colspan="7">${hdrEsc(name)}</td>
+        </tr>
+        ${rows}
+        ${addrRow}
+        ${algRow}
+      </tbody>
+    </table>`;
+}
+
 /** CSS base do timbrado Norma Zero — compartilhado por todos os documentos */
 export const normaZeroBaseStyles = (orientation: "portrait" | "landscape" = "portrait") => `
   @page {
