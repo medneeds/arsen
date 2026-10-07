@@ -918,6 +918,19 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
       if (seed.antecedentesItems?.length) setAntecedentesItems(prev => (prev.length ? prev : seed.antecedentesItems!));
       if (seed.cidPrimary) setCidPrimary(prev => (prev.trim() ? prev : seed.cidPrimary!));
       if (seed.cidSecondary) setCidSecondary(prev => (prev.trim() ? prev : seed.cidSecondary!));
+      // Exames complementares (lab), MUC, Alergias — desmembrados da admissao D0.
+      if (seed.complementares) setComplementares(prev => (prev.trim() ? prev : seed.complementares!));
+      if (seed.muc) setMuc(prev => (prev.trim() ? prev : seed.muc!));
+      if (seed.allergies) setAllergies(prev => (prev.trim() ? prev : seed.allergies!));
+      // Exame fisico por topico (coluna evolucoes.exame_fisico da admissao).
+      if (seed.physGeneral) setPhysGeneral(prev => (prev.trim() ? prev : seed.physGeneral!));
+      if (seed.physCv) setPhysCv(prev => (prev.trim() ? prev : seed.physCv!));
+      if (seed.physResp) setPhysResp(prev => (prev.trim() ? prev : seed.physResp!));
+      if (seed.physAbd) setPhysAbd(prev => (prev.trim() ? prev : seed.physAbd!));
+      if (seed.physNeuro) setPhysNeuro(prev => (prev.trim() ? prev : seed.physNeuro!));
+      if (seed.physExt) setPhysExt(prev => (prev.trim() ? prev : seed.physExt!));
+      if (seed.physSkin) setPhysSkin(prev => (prev.trim() ? prev : seed.physSkin!));
+      if (seed.physOther) setPhysOther(prev => (prev.trim() ? prev : seed.physOther!));
       if (seed.paSys) setPaSys(prev => (prev.trim() ? prev : seed.paSys!));
       if (seed.paDia) setPaDia(prev => (prev.trim() ? prev : seed.paDia!));
       if (seed.fc) setFc(prev => (prev.trim() ? prev : seed.fc!));
