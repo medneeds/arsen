@@ -97,6 +97,19 @@ export type AdmissionMode = "uti" | "enfermaria" | "emergencia";
 export const ADMISSION_UTI_SECTORS = ["red", "yellow", "outside", "uti_01", "uti_02", "uci_02"] as const;
 
 /**
+ * REGRA ABSOLUTA (Artur): o fluxo SAPS 3 se aplica SOMENTE a UTI 1, UTI 2 e UCI 2.
+ * Nao inclui UCI 1 (uci_01) nem Sala Vermelha/Laranja/Fora. Fonte unica do gate de
+ * SAPS na admissao. (Na transferencia, requiresSaps(classification) ja equivale a
+ * isto: escalada critica = destino nivel <= 2 = UTI/UCI2.)
+ */
+export const SAPS_SECTORS = ["uti_01", "uti_02", "uci_02"] as const;
+
+/** True apenas para os setores em que o SAPS 3 e obrigatorio (UTI 1/UTI 2/UCI 2). */
+export function sectorRequiresSaps(sector?: string | null): boolean {
+  return !!sector && (SAPS_SECTORS as readonly string[]).includes(sector);
+}
+
+/**
  * Deriva o modo de admissao a partir do codigo de setor.
  *   - UTI/UCI (ADMISSION_UTI_SECTORS) -> "uti"
  *   - Sala Vermelha (sala_vermelha)   -> "emergencia"

@@ -15,7 +15,7 @@ import { AdmissaoReadOnlyView } from "@/components/admission/AdmissaoReadOnlyVie
 import Saps3Page from "@/pages/Saps3Page";
 import { printSapsDocument } from "@/lib/printSaps";
 import { usePatientLive } from "@/hooks/usePatientLive";
-import { admissionModeForSector } from "@/lib/sectorComplexity";
+import { sectorRequiresSaps } from "@/lib/sectorComplexity";
 import type { Patient } from "@/types/patient";
 const SAPS_SELECT =
   "id, status, pending_since, validado_em, validado_por, respostas, escore_box1, escore_box2, escore_box3, escore_total, " +
@@ -100,9 +100,10 @@ export default function AdmissaoPage() {
   // Forca o refetch da sapsRow apos o embute salvar/validar (onEmbeddedDone).
   const [sapsReloadTick, setSapsReloadTick] = useState(0);
   // Exige SAPS = via de Cuidados Intensivos (mesma fonte de verdade do isUti da
-  // admissao). Antes a lista fixa ["red","yellow","outside"] nao cobria os codigos
-  // uti_01/uti_02/uci_02 — a aba SAPS sumia em UTI quando a ficha nao era achada.
-  const requiresSaps = admissionModeForSector(patient.sector) === "uti";
+  // REGRA ABSOLUTA: SAPS 3 so se aplica a UTI 1, UTI 2 e UCI 2 (sectorRequiresSaps).
+  // NAO em Sala Vermelha/Laranja/Fora nem UCI 1 — antes o gate usava o modo de
+  // admissao UTI (admissionModeForSector), que era mais amplo.
+  const requiresSaps = sectorRequiresSaps(patient.sector);
 
   useEffect(() => {
     if (!patientId) { setSapsRow(null); return; }
