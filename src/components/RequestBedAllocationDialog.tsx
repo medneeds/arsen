@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { sectorLabelFromCode } from "@/lib/hospitalSectors";
 import { Bed, Send, User, MapPin, ClipboardList, Eye, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -148,7 +149,7 @@ export function RequestBedAllocationDialog({
         confirmLabel="Enviar pedido"
         summary={[
           { icon: User, label: "Paciente", value: patient.name },
-          { icon: Bed, label: "Leito atual", value: `${patient.bedNumber || "—"} • ${patient.sector || "—"}` },
+          { icon: Bed, label: "Leito atual", value: `${patient.bedNumber || "—"} • ${patient.sector ? sectorLabelFromCode(patient.sector) : "—"}` },
           { icon: MapPin, label: "Setor solicitado", value: selectedSector || "—" },
         ]}
         consequences={[

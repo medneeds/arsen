@@ -39,7 +39,7 @@ export function usePatientNirRequest(patientId: string | null) {
     const { data } = await supabase
       .from("solicitacoes_leito")
       .select(
-        "id, status, setor_solicitado_id, motivo_rejeicao, criado_em, atualizado_em",
+        "id, status, setor_solicitado_id, setor_solicitado:setores(nome), motivo_rejeicao, criado_em, atualizado_em",
       )
       .eq("internacao_id", patientId)
       .order("criado_em", { ascending: false })
@@ -49,7 +49,7 @@ export function usePatientNirRequest(patientId: string | null) {
       const next: PatientNirRequest = {
         id: r.id,
         status: r.status,
-        requestedSector: r.setor_solicitado_id,
+        requestedSector: r.setor_solicitado?.nome ?? r.setor_solicitado_id,
         requestedBed: null, // MIGRAÇÃO: sem coluna em solicitacoes_leito
         rejectionReason: r.motivo_rejeicao,
         requestingDoctorName: null, // MIGRAÇÃO: sem coluna em solicitacoes_leito

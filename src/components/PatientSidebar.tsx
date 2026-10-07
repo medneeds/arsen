@@ -19,6 +19,7 @@ import {
   AlertDialogDescription, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { sectorLabelFromCode } from "@/lib/hospitalSectors";
 
 interface PatientSidebarProps {
   patient: Patient | null;
@@ -121,7 +122,10 @@ export function PatientSidebar({ patient, open, onOpenChange }: PatientSidebarPr
   const relevantExams = parseTextArray(patient.relevantExams);
   const pendencies = parseTextArray(patient.pendencies);
   const schedule = parseTextArray(patient.schedule);
-  const sector = sectorLabels[patient.sector] || sectorLabels.outside;
+  // Label canônico p/ QUALQUER setor (o mapa local só tem 4 códigos e caía no
+  // rótulo errado "UCI 2" p/ os demais). Mantém só a classe de estilo do mapa.
+  const sectorStyle = sectorLabels[patient.sector] || { label: "", className: "bg-muted text-muted-foreground border-border" };
+  const sector = { label: sectorLabelFromCode(patient.sector), className: sectorStyle.className };
   const clinicalStatus = patient.clinicalStatus ? clinicalStatusLabels[patient.clinicalStatus] : null;
 
   return (

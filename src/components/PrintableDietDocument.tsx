@@ -7,6 +7,7 @@ import { useRef } from "react";
 
 // Import logos from whitelabel config
 import { whitelabel } from "@/config/whitelabel";
+import { sectorLabelFromCode } from "@/lib/hospitalSectors";
 
 interface PrintableDietDocumentProps {
   patient: Patient;
@@ -18,14 +19,6 @@ interface PrintableDietDocumentProps {
   crm: string;
   onClose: () => void;
 }
-const sectorLabels: Record<string, string> = {
-  red: "UTI 1",
-  yellow: "UTI 2",
-  blue: "UCI 1",
-  outside: "UCI 2",
-  ucc: "UCC"
-};
-
 export function PrintableDietDocument({
   patient,
   dietRoute,
@@ -40,7 +33,7 @@ export function PrintableDietDocument({
   const currentDate = new Date();
   const formattedDate = format(currentDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
   const formattedTime = format(currentDate, "HH:mm");
-  const sectorLabel = sectorLabels[patient.sector] || patient.sector;
+  const sectorLabel = sectorLabelFromCode(patient.sector);
 
   const handlePrint = () => {
     const printContent = printRef.current;

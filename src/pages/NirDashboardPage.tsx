@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { sectorLabelFromCode } from "@/lib/hospitalSectors";
 import { useSearchParams } from "react-router-dom";
 import { 
   Building2, ArrowLeftRight, Globe, BedDouble, ClipboardPlus, 
@@ -786,7 +787,7 @@ export default function NirDashboardPage() {
                     <div className="min-w-0">
                       <p className="patient-id text-sm font-medium truncate">{r.patient_name}</p>
                       <p className="text-xs text-muted-foreground truncate">
-                        {r.origin_sector || "—"} → {r.destination_sector || "—"} · {r.priority || "s/ prioridade"}
+                        {r.origin_sector ? sectorLabelFromCode(r.origin_sector) : "—"} → {r.destination_sector || "—"} · {r.priority || "s/ prioridade"}
                       </p>
                     </div>
                     <SlaBadge startAt={r.created_at} thresholds={[60, 120, 180]} compact />

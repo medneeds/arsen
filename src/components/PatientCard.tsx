@@ -81,6 +81,7 @@ import { BedReleasePreAdmissionDialog } from "./BedReleasePreAdmissionDialog";
 import { SignalInternalTransferDialog } from "./SignalInternalTransferDialog";
 import { OperationalRelocationDialog } from "./OperationalRelocationDialog";
 import { DischargeStatusRibbon } from "./DischargeStatusRibbon";
+import { sectorLabelFromCode } from "@/lib/hospitalSectors";
 
 // Helper function to format date input as DD/MM/YYYY
 const formatDateInput = (value: string): string => {
@@ -1333,14 +1334,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
     }[requestedSector] || 'sector-blue';
     
     // Map sector to display name
-    const sectorDisplayName = {
-      'red': 'Sala de Cuidados Especiais',
-      'yellow': 'Observação Amarela',
-      'blue': 'Observação Azul',
-      'Sala de Cuidados Especiais': 'Sala de Cuidados Especiais',
-      'Observação Amarela': 'Observação Amarela',
-      'Observação Azul': 'Observação Azul',
-    }[requestedSector] || requestedSector;
+    const sectorDisplayName = sectorLabelFromCode(requestedSector);
     
     const statusConfigs = {
       pending: {

@@ -5,6 +5,7 @@ import {
   FC, PAS, TEMPERATURA, BILIRRUBINA, CREATININA, LEUCOCITOS, PLAQUETAS, PH, OXIGENACAO,
 } from "@/lib/saps3";
 import type { SapsRow } from "@/components/saps3/SapsView";
+import { sectorLabelFromCode } from "@/lib/hospitalSectors";
 
 // Faixa gravada (ex.: "lt120") -> rotulo PT (saps3.ts). Fallback para o codigo.
 const labelFrom = (faixas: { id: string; rotulo: string }[], code?: string | null): string => {
@@ -92,7 +93,7 @@ export function printSapsDocument(row: SapsRow, id: PrintSapsIdentity = {}) {
   const ident = [
     field("Paciente", id.patientName ?? ""),
     field("Leito", id.patientBed ?? ""),
-    field("Setor", id.patientSector ?? ""),
+    field("Setor", id.patientSector ? sectorLabelFromCode(id.patientSector) : ""),
   ].join("");
 
   w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Ficha SAPS 3 — ${esc(id.patientName ?? "")}</title>

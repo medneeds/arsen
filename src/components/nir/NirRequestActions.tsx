@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { sectorLabelFromCode } from "@/lib/hospitalSectors";
 import { supabase } from "@/integrations/supabase/client";
 import { useHospital } from "@/contexts/HospitalContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -145,7 +146,7 @@ export function NirRequestActions({ requests, typeFilter, defaultRequestType }: 
                       )}
                     </div>
                     <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground flex-wrap">
-                      {req.origin_sector && <span>De: {req.origin_sector}</span>}
+                      {req.origin_sector && <span>De: {sectorLabelFromCode(req.origin_sector)}</span>}
                       {req.destination_sector && <span>→ {req.destination_sector}</span>}
                       {req.cid_primary && <span>· CID {req.cid_primary}</span>}
                     </div>

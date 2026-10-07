@@ -4,18 +4,12 @@ import { X, Download } from "lucide-react";
 import { formatAgeDisplay } from "@/utils/ageDisplay";
 import { useRef } from "react";
 import { whitelabel, getConfidentialityFooter } from "@/config/whitelabel";
+import { sectorLabelFromCode } from "@/lib/hospitalSectors";
 
 interface PrintPatientPreviewDialogProps {
   patient: Patient;
   onClose: () => void;
 }
-
-const sectorLabels = {
-  red: "UTI 1",
-  yellow: "UTI 2",
-  blue: "UCI 1",
-  outside: "UCI 2"
-};
 
 const sectorColors = {
   red: {
@@ -267,7 +261,7 @@ export function PrintPatientPreviewDialog({ patient, onClose }: PrintPatientPrev
                     Caso Clínico Completo
                   </h1>
                   <div style={{ fontSize: '7pt', color: '#6b7280', marginTop: '2px' }}>
-                    {sectorLabels[patient.sector]} • Leito {patient.bedNumber}
+                    {sectorLabelFromCode(patient.sector)} • Leito {patient.bedNumber}
                   </div>
                 </div>
                 <div className="bed-badge" style={{ 

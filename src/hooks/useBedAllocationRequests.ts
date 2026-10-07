@@ -85,7 +85,7 @@ function mapRequest(row: any): BedAllocationRequest {
     id: row.id,
     patient_id: row.internacao_id,
     requested_by: row.solicitado_por ?? "",
-    requested_sector: row.setor_solicitado_id ?? "",
+    requested_sector: row.setor_solicitado?.nome ?? row.setor_solicitado_id ?? "",
     requested_bed: null, // MIGRAÇÃO: sem coluna
     status: row.status,
     rejection_reason: row.motivo_rejeicao ?? null,
@@ -120,6 +120,7 @@ export function useBedAllocationRequests() {
         .from("solicitacoes_leito")
         .select(`
           *,
+          setor_solicitado:setores(nome),
           internacao:internacoes(
             id, hipotese_diagnostica, historia_clinica, exames_relevantes, pendencias,
             leito:leitos(numero),

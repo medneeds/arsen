@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { sectorLabelFromCode } from "@/lib/hospitalSectors";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -230,7 +231,7 @@ export function PatientOpsTab() {
                     <div className="flex gap-2 mt-1 text-muted-foreground text-xs">
                       <span className="font-mono">{p.bed_number ?? "—"}</span>
                       <span>·</span>
-                      <span className="truncate">{p.sector ?? "—"}</span>
+                      <span className="truncate">{p.sector ? sectorLabelFromCode(p.sector) : "—"}</span>
                     </div>
                     <div className="flex gap-2 mt-1">
                       <Badge variant="secondary" className="text-xs font-mono">{p.admission_status ?? "sem status"}</Badge>
@@ -272,7 +273,7 @@ export function PatientOpsTab() {
                   <section>
                     <h4 className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Identidade & leito</h4>
                     <div className="rounded-md border border-border bg-muted/20 p-2 space-y-1">
-                      <div><span className="text-muted-foreground">Leito:</span> <span className="font-mono">{inspection.patient?.bed_number ?? "—"}</span> · <span className="font-mono">{inspection.patient?.sector ?? "—"}</span></div>
+                      <div><span className="text-muted-foreground">Leito:</span> <span className="font-mono">{inspection.patient?.bed_number ?? "—"}</span> · <span className="font-mono">{inspection.patient?.sector ? sectorLabelFromCode(inspection.patient.sector) : "—"}</span></div>
                       <div><span className="text-muted-foreground">Prontuário:</span> <span className="font-mono">{inspection.patient?.medical_record ?? "—"}</span></div>
                       <div><span className="text-muted-foreground">Status:</span> <Badge variant="secondary" className="text-xs font-mono ml-1">{inspection.patient?.admission_status ?? "—"}</Badge> {inspection.patient?.is_vacant && <Badge variant="outline" className="text-xs ml-1">vago</Badge>}</div>
                       <div><span className="text-muted-foreground">Registry ID:</span> <span className="font-mono text-xs">{inspection.patient?.patient_registry_id ?? "—"}</span></div>
@@ -294,7 +295,7 @@ export function PatientOpsTab() {
                               <Badge variant={t.status === "pending" ? "default" : t.status === "cancelled" ? "outline" : "secondary"} className="text-xs">
                                 {t.status}
                               </Badge>
-                              <span className="text-xs">{t.source_sector} <ArrowRightLeft className="h-2.5 w-2.5 inline mx-1" /> {t.target_sector_label ?? t.target_sector_code}</span>
+                              <span className="text-xs">{sectorLabelFromCode(t.source_sector)} <ArrowRightLeft className="h-2.5 w-2.5 inline mx-1" /> {t.target_sector_label ?? sectorLabelFromCode(t.target_sector_code)}</span>
                               <span className="ml-auto text-xs text-muted-foreground">{fmt(t.signaled_at)}</span>
                             </div>
                             {t.status === "pending" && (
@@ -395,7 +396,7 @@ export function PatientOpsTab() {
                             className={`w-full text-left px-2 py-1 text-xs hover:bg-muted/40 flex items-center gap-2 ${selectedBedId === b.id ? "bg-released-soft" : ""}`}
                           >
                             <span className="font-mono w-14">{b.bed_number ?? "—"}</span>
-                            <span className="text-muted-foreground truncate flex-1">{b.sector ?? "—"}</span>
+                            <span className="text-muted-foreground truncate flex-1">{b.sector ? sectorLabelFromCode(b.sector) : "—"}</span>
                             {selectedBedId === b.id && <Badge variant="outline" className="text-xs border-released text-released-on-soft">selecionado</Badge>}
                           </button>
                         ))}
@@ -416,7 +417,7 @@ export function PatientOpsTab() {
                           action: "fix_place_patient_in_bed",
                           params: { sourcePatientId: inspection.patient.id, targetPatientId: selectedBedId },
                           title: "Colocar paciente em leito",
-                          description: `Move ${inspection.patient.name} para ${bed?.sector ?? "—"} · Leito ${bed?.bed_number ?? "—"}. Preserva histórico clínico e libera a linha de origem.`,
+                          description: `Move ${inspection.patient.name} para ${bed?.sector ? sectorLabelFromCode(bed.sector) : "—"} · Leito ${bed?.bed_number ?? "—"}. Preserva histórico clínico e libera a linha de origem.`,
                           requiresReason: true,
                         });
                       }}
@@ -458,7 +459,7 @@ export function PatientOpsTab() {
                         {inspection.movements.map((m) => (
                           <div key={m.id} className="flex items-center gap-2 text-xs border-b border-border/40 py-1">
                             <span className="font-mono">{m.movement_type}</span>
-                            <span className="text-muted-foreground truncate flex-1">{m.destination ?? m.patient_sector ?? "—"}</span>
+                            <span className="text-muted-foreground truncate flex-1">{m.destination ?? (m.patient_sector ? sectorLabelFromCode(m.patient_sector) : "—")}</span>
                             <Badge variant="outline" className="text-xs">{m.release_status}</Badge>
                             <span className="text-muted-foreground">{fmt(m.created_at)}</span>
                           </div>

@@ -865,7 +865,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
                       )}
                     </div>
                     <p className="text-xs text-foreground/80 leading-tight mt-1 preserve-case">
-                      Setor <strong>{nirRequest.requestedSector}</strong>
+                      Setor <strong>{sectorLabelFromCode(nirRequest.requestedSector)}</strong>
                       {nirRequest.requestedBed ? ` • Leito ${nirRequest.requestedBed}` : ""}
                     </p>
                     {nirRequest.status === "rejected" && nirRequest.rejectionReason && (
