@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, ReactNode, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { safeSetItem } from "@/lib/safeStorage";
+import { useAuth } from "@/contexts/AuthContext";
 
 export interface State {
   id: string;
@@ -38,6 +39,8 @@ const STORAGE_KEY_HOSPITAL = "selected_hospital_id";
 const DEFAULT_STATE: State = { id: "default", name: "Brasil", abbreviation: "BR" };
 
 export function HospitalProvider({ children }: { children: ReactNode }) {
+  // Reage à sessão: a query de `hospitais` depende de RLS (sessão autenticada).
+  const { user } = useAuth();
   const [currentState, setCurrentState] = useState<State | null>(DEFAULT_STATE);
   const [currentHospital, setCurrentHospitalState] = useState<HospitalUnit | null>(null);
   const [states, setStates] = useState<State[]>([]);
@@ -97,10 +100,20 @@ export function HospitalProvider({ children }: { children: ReactNode }) {
     safeSetItem(STORAGE_KEY_STATE, DEFAULT_STATE.id);
   }, []);
 
+  // BUGFIX (primeiro login): antes buscava hospitais 1x no mount — que ocorre no
+  // LOAD do app (o provider envolve a página de login), ANTES da sessão existir.
+  // A query caía na RLS sem sessão e voltava vazia → currentHospital ficava null
+  // e o mapa/painel giravam pra sempre, só destravando no reload (sessão já
+  // persistida). Agora rebusca QUANDO o usuário autentica (user.id muda de null
+  // para um id). Sem sessão, não há o que buscar — não deixa o loading preso.
   useEffect(() => {
-    fetchStatesAndHospitals();
+    if (user) {
+      fetchStatesAndHospitals();
+    } else {
+      setIsLoading(false);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [user?.id]);
 
   // Memoizado: criado inline, o objeto era novo a cada render e os 70
   // consumidores de useHospital re-renderizavam junto sem motivo.
