@@ -386,8 +386,6 @@ const RequisicaoUnificadaPage = () => {
   const [requests, setRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
-  const [allProcedureRequests, setAllProcedureRequests] = useState<any[]>([]);
-  const [loadingAllProcedures, setLoadingAllProcedures] = useState(false);
 
   // Cockpit (right rail) — same pattern as Evolução / Prescrição
   const cockpitPatient = useCockpitPatient();
@@ -501,7 +499,6 @@ const RequisicaoUnificadaPage = () => {
   useEffect(() => {
     if (unitId && stateId) {
       fetchRequests();
-      if (activeCategory === "procedimento") fetchAllProcedures();
     }
   }, [unitId, stateId, activeCategory, formPatientId]);
 
@@ -540,13 +537,12 @@ const RequisicaoUnificadaPage = () => {
     }
   };
 
-  const fetchAllProcedures = async () => {
-    // MIGRAÇÃO: a aba "todos os procedimentos da unidade" não tem equivalente no
-    // schema novo — solicitacoes_exame não possui coluna de hospital/unidade
-    // (pendura só em internacao_id). Degradado para lista vazia.
-    setAllProcedureRequests([]);
-    setLoadingAllProcedures(false);
-  };
+  // A aba "Solicitados/Laudos" de Procedimento usa o MESMO pipeline das demais
+  // categorias (fetchRequests -> requests -> scopedRequests), escopado pelo
+  // paciente em contexto. A tentativa anterior de listar "todos os procedimentos
+  // da unidade" era impossivel no schema novo (solicitacoes_exame so pendura em
+  // internacao_id, sem coluna de unidade) e ficou stub-ada em lista vazia — o que
+  // fazia o historico de procedimentos nunca persistir na aba Solicitados.
 
   // ── AUTORIA: resolve o solicitante (nome + CRM) a partir de solicitado_por ──
   // Coleta os ids presentes nas requisicoes carregadas, dedup/sem nulos, e
@@ -608,14 +604,10 @@ const RequisicaoUnificadaPage = () => {
     [scopedRequests, search]
   );
 
-  const allPendingProcedures = useMemo(() =>
-    allProcedureRequests.filter(r => r.status === "pending" || r.status === "in_progress"),
-    [allProcedureRequests]
-  );
-  const allCompletedProcedures = useMemo(() =>
-    allProcedureRequests.filter(r => r.status === "completed"),
-    [allProcedureRequests]
-  );
+  // Derivadas do pipeline paciente-escopado (ver nota em fetchRequests): para
+  // Procedimento, requests ja vem filtrado por categoria="procedimento".
+  const allPendingProcedures = pendingRequests;
+  const allCompletedProcedures = completedRequests;
 
   const toggleItem = (item: string) => {
     // Etapa 3 — bloqueio educativo: na categoria Imagem, exame de alta
@@ -865,7 +857,6 @@ const RequisicaoUnificadaPage = () => {
       if (error) throw error;
       toast.success("Requisição cancelada");
       fetchRequests();
-      if (activeCategory === "procedimento") fetchAllProcedures();
     } catch {
       toast.error("Não foi possível cancelar");
     }
@@ -1061,7 +1052,7 @@ const RequisicaoUnificadaPage = () => {
                 setFormPatientBed(p.bed_number || "");
                 setFormPatientSector(toSectorCode(p.sector));
               }}
-              onProcedureRegistered={() => { fetchAllProcedures(); setActiveSubTab("solicitados"); }}
+              onProcedureRegistered={() => { fetchRequests(); setActiveSubTab("solicitados"); }}
             />
             {/* OPME — complementar ao laudo */}
             <div className="border rounded-lg p-3 bg-muted/20">
@@ -1080,9 +1071,9 @@ const RequisicaoUnificadaPage = () => {
             </div>
           </TabsContent>
 
-          {/* ── Aba: Solicitados (todos os pacientes da unidade) ── */}
+          {/* ── Aba: Solicitados (procedimentos do paciente em contexto) ── */}
           <TabsContent value="solicitados" className="mt-4 space-y-3">
-            {loadingAllProcedures ? (
+            {loading ? (
               <SectionLoader message="Carregando solicitações" subMessage="" size="sm" />
             ) : allPendingProcedures.length === 0 ? (
               <EmptyState icon={FileText} message="Nenhum procedimento solicitado" />
@@ -1095,9 +1086,9 @@ const RequisicaoUnificadaPage = () => {
             )}
           </TabsContent>
 
-          {/* ── Aba: Laudos (todos os concluídos da unidade) ── */}
+          {/* ── Aba: Laudos (procedimentos concluidos do paciente em contexto) ── */}
           <TabsContent value="resultados" className="mt-4 space-y-3">
-            {loadingAllProcedures ? (
+            {loading ? (
               <SectionLoader message="Carregando" subMessage="" size="sm" />
             ) : allCompletedProcedures.length === 0 ? (
               <EmptyState icon={CheckCircle2} message="Nenhum item em &quot;Laudos&quot;" />
