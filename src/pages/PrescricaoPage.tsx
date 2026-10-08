@@ -131,7 +131,7 @@ import { usePatientCid } from "@/hooks/usePatientCid";
 import { TevProtocolDialog } from "@/components/TevProtocolDialog";
 import { HighAlertGuideDialog } from "@/components/HighAlertGuideDialog";
 import { InsulinTherapyDialog, SlidingEditor } from "@/components/prescription/InsulinTherapyDialog";
-import { isInsulinMedication, describeInsulinPlan, type InsulinPlan } from "@/lib/insulinTherapy";
+import { describeInsulinPlan, type InsulinPlan } from "@/lib/insulinTherapy";
 import { fuzzySearch } from "@/lib/fuzzySearch";
 import { useMedicationFavorites } from "@/hooks/useMedicationFavorites";
 import { useQuickPrescriptionTemplates, type QuickPrescriptionTemplate, type QuickTemplateItem } from "@/hooks/useQuickPrescriptionTemplates";
@@ -6498,14 +6498,11 @@ const PrescricaoPage = () => {
       setAtmStatusOpen(true);
       return;
     }
-    // Insulinas: abrem o Assistente de Insulinoterapia (pop-up dentro de Medicações)
-    // O item só é incorporado à prescrição após o usuário concluir o wizard.
-    if (isInsulinMedication(med.name)) {
-      setPendingInsulinMed(med);
-      setEditingInsulinItemId(null);
-      setInsulinDialogOpen(true);
-      return;
-    }
+    // Insulina entra como ITEM PADRAO de prescricao (insulina + quantidade +
+    // diluente + vazao + recomendacoes), como os demais medicamentos — NAO forca
+    // mais o Assistente de Insulinoterapia. O assistente segue disponivel como
+    // OPCAO (botao do assistente / "editar esquema"), para quem quiser o calculo
+    // guiado. NPH: um item por horario/dose; ajustes finos em recomendacoes.
     const newItem = createItem(med);
 
     // === Diferenciação regulatória (MAV / Portaria 344 / ambos) ===
