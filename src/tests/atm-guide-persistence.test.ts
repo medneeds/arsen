@@ -453,6 +453,119 @@ assert(
 );
 
 // ══════════════════════════════════════════════════════════════════
+// BLOCO 7 — Snapshot imutavel da 1a via (#40): 2a via identica
+// ══════════════════════════════════════════════════════════════════
+
+section("BLOCO 7 — Snapshot da 1a via: reimpressao verbatim identica");
+
+interface GuideSnapshot {
+  medication: string;
+  dose?: string;
+  route?: string;
+  posology?: string;
+  startDate?: string;
+  plannedDuration?: string;
+  justification?: string;
+  infectionSite?: string;
+  cultureCollected?: string;
+  cultureResult?: string;
+  ccihApproval?: string;
+  ccihNotes?: string;
+}
+
+// Espelha handleAntimicrobialConfirm: monta o snapshot a partir do entry emitido.
+function buildSnapshot(e: AntimicrobialEntry): GuideSnapshot {
+  return {
+    medication: e.medication,
+    dose: e.dose,
+    route: e.route,
+    posology: e.posology,
+    startDate: e.startDate,
+    plannedDuration: e.plannedDuration,
+    justification: e.justification,
+    infectionSite: e.infectionSite,
+    cultureCollected: e.cultureCollected,
+    cultureResult: e.cultureResult,
+    ccihApproval: e.ccihApproval,
+    ccihNotes: e.ccihNotes,
+  };
+}
+
+const snap = buildSnapshot(entryVancomicina);
+
+assert(
+  "snapshot carrega justificativa da 1a via",
+  snap.justification === entryVancomicina.justification,
+);
+assert(
+  "snapshot carrega cultura e antibiograma",
+  snap.cultureCollected === "sim" && snap.cultureResult === entryVancomicina.cultureResult,
+);
+assert(
+  "snapshot carrega classe CCIH (antes descartada na 2a via)",
+  snap.ccihApproval === "restrito_ccih",
+);
+
+// 2a via usa o snapshot verbatim, mesmo se o item for editado depois.
+const itemEditadoAposEmissao = { ...prescItems[0], dose: "750mg", atbPlannedDays: "14", atbGuideSnapshot: snap };
+const segundaVia = itemEditadoAposEmissao.atbGuideSnapshot;
+
+assert(
+  "2a via (snapshot) mantem a dose da 1a via mesmo com item editado",
+  segundaVia.dose === "500mg" && itemEditadoAposEmissao.dose === "750mg",
+  `snapshot.dose=${segundaVia.dose} item.dose=${itemEditadoAposEmissao.dose}`,
+);
+assert(
+  "2a via (snapshot) mantem a duracao da 1a via mesmo com item editado",
+  segundaVia.plannedDuration === "7" && itemEditadoAposEmissao.atbPlannedDays === "14",
+);
+
+// ══════════════════════════════════════════════════════════════════
+// BLOCO 8 — Extensao de ATB (#41): atualiza guia + corpo + justificativa
+// ══════════════════════════════════════════════════════════════════
+
+section("BLOCO 8 — Extensao: snapshot, duracao e justificativa atualizados");
+
+// Espelha onExtendItem: a extensao e uma acao de guia.
+function extend(item: { atbPlannedDays?: string; atbJustification?: string; atbGuideSnapshot?: GuideSnapshot }, newDays: number, justification: string) {
+  const prevDays = item.atbPlannedDays || "?";
+  const note = `Extensão de ${prevDays} para ${newDays} dias — ${justification}`;
+  const updatedSnapshot = item.atbGuideSnapshot
+    ? { ...item.atbGuideSnapshot, plannedDuration: String(newDays), justification: [item.atbGuideSnapshot.justification, note].filter(Boolean).join("\n") }
+    : item.atbGuideSnapshot;
+  return {
+    ...item,
+    atbPlannedDays: String(newDays),
+    atbJustification: [item.atbJustification, note].filter(Boolean).join("\n"),
+    atbGuideSnapshot: updatedSnapshot,
+  };
+}
+
+const baseParaExtender = { atbPlannedDays: "7", atbJustification: entryVancomicina.justification, atbGuideSnapshot: buildSnapshot(entryVancomicina) };
+const estendido = extend(baseParaExtender, 14, "Melhora clinica parcial; completar ciclo para bacteremia por MRSA.");
+
+assert(
+  "extensao atualiza a duracao no corpo (atbPlannedDays)",
+  estendido.atbPlannedDays === "14",
+);
+assert(
+  "extensao atualiza a duracao no snapshot da guia",
+  estendido.atbGuideSnapshot?.plannedDuration === "14",
+);
+assert(
+  "extensao registra a justificativa no snapshot da guia",
+  (estendido.atbGuideSnapshot?.justification ?? "").includes("Extensão de 7 para 14 dias"),
+);
+assert(
+  "extensao registra a justificativa no corpo (atbJustification)",
+  (estendido.atbJustification ?? "").includes("Extensão de 7 para 14 dias"),
+);
+assert(
+  "extensao preserva a justificativa clinica original no snapshot",
+  (estendido.atbGuideSnapshot?.justification ?? "").includes("Sepse por MRSA confirmada"),
+);
+
+// ══════════════════════════════════════════════════════════════════
 // RESULTADO FINAL
 // ══════════════════════════════════════════════════════════════════
 

@@ -143,7 +143,8 @@ interface Props {
     justification?: string; cultureCollected?: string; cultureResult?: string;
     reconSolvent?: string; reconVolume?: string;
     reconFinalDiluent?: string; reconFinalVolume?: string;
-    reconInfusionTime?: string;
+    reconInfusionTime?: string; reconSource?: string; reconNotes?: string;
+    ccihApproval?: string; ccihNotes?: string;
   }>) => void;
   mode?: 'review' | 'prescribe';
   patientId?: string;
@@ -709,7 +710,10 @@ export function AntimicrobialGuideDialog({
       justification: e.justification, cultureCollected: e.cultureCollected, cultureResult: e.cultureResult,
       reconSolvent: e.reconSolvent, reconVolume: e.reconVolume,
       reconFinalDiluent: e.reconFinalDiluent, reconFinalVolume: e.reconFinalVolume,
-      reconInfusionTime: e.reconInfusionTime,
+      reconInfusionTime: e.reconInfusionTime, reconSource: e.reconSource, reconNotes: e.reconNotes,
+      // CCIH: classe/obs da guia emitida — vao para o snapshot da 1a via (#40),
+      // para a 2a via sair identica (antes eram descartados na reimpressao).
+      ccihApproval: e.ccihApproval, ccihNotes: e.ccihNotes,
     })));
     // Feedback à farmácia: para cada ATB anexado, grava se o médico manteve
     // ou editou a sugestão de reconstituição. Falha silenciosa.

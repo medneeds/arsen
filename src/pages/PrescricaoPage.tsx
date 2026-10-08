@@ -125,6 +125,7 @@ import { getInfusionProfile, applyInfusionProfileDefaults } from "@/lib/ivInfusi
 import { MedicationFlagChips } from "@/components/MedicationFlagChips";
 import { AntimicrobialGuideDialog } from "@/components/AntimicrobialGuideDialog";
 import { AtmStatusDialog } from "@/components/AtmStatusDialog";
+import type { AtmPrintEntry } from "@/lib/printAtmGuide";
 import { useUnifiedMedicationCatalog, invalidateMedicationCatalog } from "@/hooks/useUnifiedMedicationCatalog";
 import { PsychotropicFormDialog, isPsychotropicMedication } from "@/components/PsychotropicFormDialog";
 import { usePatientCid } from "@/hooks/usePatientCid";
@@ -254,6 +255,14 @@ interface PrescriptionItem {
   atbJustification?: string;
   atbCultureCollected?: string;  // "sim" | "nao"
   atbCultureResult?: string;
+  /**
+   * Snapshot IMUTAVEL da Guia ATM emitida (1a via). A 2a via (reimpressao) usa
+   * este snapshot verbatim para sair IDENTICA a 1a, sem reconstruir do estado
+   * atual do item (que pode ter sido editado depois). Preenchido em
+   * handleAntimicrobialConfirm; atualizado SO por acoes de guia (ex.: extensao de
+   * tratamento). Serializa no blob JSON de prescricoes.itens (sem migration).
+   */
+  atbGuideSnapshot?: AtmPrintEntry;
   nutConsistency?: string;    // IDDSI / textura (oral)
   nutAccess?: string;         // NPT: CVC / PICC / Periférico
   nutComposition?: string;    // NPT: composição resumida
@@ -6670,7 +6679,8 @@ const PrescricaoPage = () => {
     justification?: string; cultureCollected?: string; cultureResult?: string;
     reconSolvent?: string; reconVolume?: string;
     reconFinalDiluent?: string; reconFinalVolume?: string;
-    reconInfusionTime?: string;
+    reconInfusionTime?: string; reconSource?: string; reconNotes?: string;
+    ccihApproval?: string; ccihNotes?: string;
   }>) => {
     const antimicrobialOptions = UNIFIED_CATALOG['antimicrobial'] || [];
     const newItems: PrescriptionItem[] = confirmedEntries.map(entry => {
@@ -6745,6 +6755,33 @@ const PrescricaoPage = () => {
       base.atbJustification = entry.justification || '';
       base.atbCultureCollected = entry.cultureCollected || 'nao';
       base.atbCultureResult = entry.cultureResult || '';
+
+      // Snapshot IMUTAVEL da 1a via emitida (#40): fonte unica para a 2a via sair
+      // identica. Espelha os dados da Guia ATM (entry), nao o item transformado —
+      // e o que foi, de fato, para a 1a via. ccihApproval/ccihNotes/recon* incluidos
+      // porque a 2a via antes os descartava e saia diferente da 1a.
+      base.atbGuideSnapshot = {
+        medication: entry.medication,
+        presentation: entry.presentation,
+        dose: entry.dose,
+        route: entry.route,
+        posology: entry.posology,
+        startDate: base.atbStartDate,
+        plannedDuration: entry.plannedDuration,
+        justification: entry.justification,
+        infectionSite: entry.infectionSite,
+        cultureCollected: entry.cultureCollected,
+        cultureResult: entry.cultureResult,
+        ccihApproval: entry.ccihApproval,
+        ccihNotes: entry.ccihNotes,
+        reconSolvent: entry.reconSolvent,
+        reconVolume: entry.reconVolume,
+        reconFinalDiluent: entry.reconFinalDiluent,
+        reconFinalVolume: entry.reconFinalVolume,
+        reconInfusionTime: entry.reconInfusionTime,
+        reconSource: entry.reconSource,
+        reconNotes: entry.reconNotes,
+      };
 
       // Migração Guia ATM → corpo da prescrição (NÃO sobrescrever campos já preenchidos)
       // RECONSTITUIÇÃO (solvente + volume do frasco-ampola) — o guia grava em
@@ -10693,6 +10730,7 @@ const PrescricaoPage = () => {
             atbJustification: i.atbJustification,
             atbCultureCollected: i.atbCultureCollected,
             atbCultureResult: i.atbCultureResult,
+            atbGuideSnapshot: i.atbGuideSnapshot,
           }))
         }
         onSuspendItem={(id) => {
@@ -10711,21 +10749,26 @@ const PrescricaoPage = () => {
               || user?.email
               || '';
             const doctorCrm = digitalSignature?.crm || currentDoctor.crm || '';
-            // Dose legível: usa buildSolutoToken para reconstruir "1 FA (500.000UI)"
-            // quando dose está vazio mas quantity+presentation têm a info.
+            // #40: 2a via = snapshot IMUTAVEL da 1a via, verbatim. Item legado
+            // (sem snapshot) cai no fallback reconstruindo do estado atual, agora
+            // ja incluindo justificativa/cultura (antes saiam em branco).
             const doseLabel = buildSolutoTokenLabeled(it) || it.dose || '';
+            const entry: AtmPrintEntry = it.atbGuideSnapshot ?? {
+              medication: it.name,
+              presentation: it.presentation,
+              dose: doseLabel,
+              route: it.route,
+              posology: it.posology,
+              startDate: it.atbStartDate,
+              plannedDuration: it.atbPlannedDays,
+              infectionSite: it.atbInfectionSite,
+              justification: it.atbJustification,
+              cultureCollected: it.atbCultureCollected,
+              cultureResult: it.atbCultureResult,
+            };
             await printAtmGuide({
               patient,
-              entries: [{
-                medication: it.name,
-                presentation: it.presentation,
-                dose: doseLabel,
-                route: it.route,
-                posology: it.posology,
-                startDate: it.atbStartDate,
-                plannedDuration: it.atbPlannedDays,
-                infectionSite: it.atbInfectionSite,
-              }],
+              entries: [entry],
               doctorName,
               doctorCrm,
               hospitalName: currentHospital?.name,
@@ -10748,7 +10791,8 @@ const PrescricaoPage = () => {
             const doctorCrm = digitalSignature?.crm || currentDoctor.crm || '';
             await printAtmGuide({
               patient,
-              entries: its.map(it => ({
+              // #40: cada ATB usa seu snapshot imutavel; legado cai no fallback.
+              entries: its.map((it): AtmPrintEntry => it.atbGuideSnapshot ?? ({
                 medication: it.name,
                 presentation: it.presentation,
                 dose: buildSolutoTokenLabeled(it) || it.dose || '',
@@ -10757,6 +10801,9 @@ const PrescricaoPage = () => {
                 startDate: it.atbStartDate,
                 plannedDuration: it.atbPlannedDays,
                 infectionSite: it.atbInfectionSite,
+                justification: it.atbJustification,
+                cultureCollected: it.atbCultureCollected,
+                cultureResult: it.atbCultureResult,
               })),
               doctorName,
               doctorCrm,
@@ -10785,14 +10832,29 @@ const PrescricaoPage = () => {
           setItems(prev => prev.map(it => {
             if (it.id !== itemId) return it;
             const prevDays = it.atbPlannedDays || '?';
+            const dateStr = new Date().toLocaleDateString('pt-BR');
             const note = `Extensão de ${prevDays} para ${newPlannedDays} dias — ${justification}`;
+            // #41: a extensao e uma ACAO DE GUIA — atualiza o snapshot (nova duracao
+            // + justificativa) para a proxima 2a via refletir a extensao; atualiza o
+            // corpo (day-line recalcula de atbPlannedDays) e registra a justificativa
+            // em atbJustification (CCIH) e em instructions (auditoria).
+            const updatedSnapshot: AtmPrintEntry | undefined = it.atbGuideSnapshot
+              ? {
+                  ...it.atbGuideSnapshot,
+                  plannedDuration: String(newPlannedDays),
+                  justification: [it.atbGuideSnapshot.justification, `[${dateStr}] ${note}`]
+                    .filter(Boolean)
+                    .join('\n'),
+                }
+              : it.atbGuideSnapshot;
             return {
               ...it,
               atbPlannedDays: String(newPlannedDays),
-              // Registra a justificativa na observação do item para auditoria
+              atbJustification: [it.atbJustification, note].filter(Boolean).join('\n'),
+              atbGuideSnapshot: updatedSnapshot,
               instructions: it.instructions
-                ? `${it.instructions}\n[${new Date().toLocaleDateString('pt-BR')}] ${note}`
-                : `[${new Date().toLocaleDateString('pt-BR')}] ${note}`,
+                ? `${it.instructions}\n[${dateStr}] ${note}`
+                : `[${dateStr}] ${note}`,
             };
           }));
           toast.success(`Tratamento estendido para ${newPlannedDays} dias`);

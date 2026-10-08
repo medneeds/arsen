@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import type { AtmPrintEntry } from "@/lib/printAtmGuide";
 
 export interface AtmStatusItem {
   id: string;
@@ -36,6 +37,8 @@ export interface AtmStatusItem {
   atbJustification?: string;
   atbCultureCollected?: string;
   atbCultureResult?: string;
+  /** Snapshot imutavel da 1a via emitida — usado verbatim na reimpressao (2a via). */
+  atbGuideSnapshot?: AtmPrintEntry;
 }
 
 interface Props {
