@@ -104,7 +104,11 @@ export default function AdmissaoPage() {
   // REGRA ABSOLUTA: SAPS 3 so se aplica a UTI 1, UTI 2 e UCI 2 (sectorRequiresSaps).
   // NAO em Sala Vermelha/Laranja/Fora nem UCI 1 — antes o gate usava o modo de
   // admissao UTI (admissionModeForSector), que era mais amplo.
-  const requiresSaps = sectorRequiresSaps(patient.sector);
+  // Gate robusto: alem do setor vindo nos params (patient.sector), considera o
+  // setor resolvido do livePatient. Se a navegacao trouxer o codigo de setor em
+  // forma divergente (ex.: rotulo em vez de codigo), o dado vivo ainda garante o
+  // SAPS para UTI 1/UTI 2/UCI 2.
+  const requiresSaps = sectorRequiresSaps(patient.sector) || sectorRequiresSaps(livePatient?.sector);
 
   useEffect(() => {
     if (!patientId) { setSapsRow(null); return; }
@@ -166,6 +170,13 @@ export default function AdmissaoPage() {
   // Admissao ja validada abre em READ-ONLY por padrao (consulta + impressao).
   // A nova admissao de via fica atras de um botao explicito (modoNovaVia).
   const [modoNovaVia, setModoNovaVia] = useState(false);
+  // Validacao recem-concluida: o livePatient (usePatientLive) nao reflete a
+  // validacao no mesmo instante, so apos refetch/refresh — o que fazia o modo
+  // leitura NAO aparecer logo apos validar (risco de o medico achar que falhou e
+  // readmitir). Este flag liga o read-only IMEDIATAMENTE no onSuccess; o
+  // AdmissaoReadOnlyView busca os dados recem-gravados no banco ao montar.
+  const [justValidated, setJustValidated] = useState(false);
+  const admissionReadOnly = admissionDone || justValidated;
   // Dialogo de consulta/impressao da admissao validada (reusa printAdmissionNormaZero).
   const [consultOpen, setConsultOpen] = useState(false);
   const sapsValidada = sapsRow?.status === "validada";
@@ -284,7 +295,7 @@ export default function AdmissaoPage() {
             // Historico. Quando ja ha admissao previa, mostramos um aviso discreto e
             // o seed (seedAdmissionFromHistory, interno ao form) pre-preenche a nova.
             <div className="space-y-3">
-              {admissionDone && !modoNovaVia ? (
+              {admissionReadOnly && !modoNovaVia ? (
                 // Admissao JA validada: abre em READ-ONLY (consulta) + impressao.
                 // A nova admissao de via fica atras de um botao explicito.
                 <>
@@ -313,7 +324,7 @@ export default function AdmissaoPage() {
                 </>
               ) : (
                 <>
-                  {admissionDone && (
+                  {admissionReadOnly && (
                     <div className="rounded-lg border border-warning-border bg-warning-soft/40 px-3 py-2.5 flex flex-wrap items-center gap-x-2 gap-y-1.5 print:hidden">
                       <AlertTriangle className="h-4 w-4 shrink-0 text-warning-on-soft" />
                       <span className="text-xs text-warning-on-soft">
@@ -336,7 +347,14 @@ export default function AdmissaoPage() {
                       sapsRow={sapsRow}
                       onOpenSaps={() => setActiveTab("saps")}
                       onClose={() => navigate(returnTo)}
-                      onSuccess={() => toast.success("Admissão hospitalar registrada. Módulos clínicos liberados.")}
+                      onSuccess={() => {
+                        // Liga o modo leitura NA HORA (sem esperar o refetch do
+                        // livePatient) e sai do modo "nova via", para o validador
+                        // ver o documento validado imediatamente apos validar.
+                        setJustValidated(true);
+                        setModoNovaVia(false);
+                        toast.success("Admissão hospitalar registrada. Módulos clínicos liberados.");
+                      }}
                     />
                   </div>
                 </>
