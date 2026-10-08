@@ -131,12 +131,39 @@ export function AdmissaoReadOnlyView({ internacaoId }: Props) {
   const vs = d0?.vs ?? {};
   const pe = d0?.pe ?? {};
 
+  // Estrutura clinica (nao SOAP): usa as chaves estruturadas gravadas na admissao
+  // (__cid_primary/secondary, __diagnostic_hypotheses, historia_clinica,
+  // antecedentes, conduta_inicial) na ordem do impresso. Os blocos SOAP crus
+  // (objective/assessment) eram concatenacoes que duplicavam antropometria/SSVV/CID
+  // e foram removidos daqui — a estrutura segue a realidade dos campos do sistema.
+  const cidPrimary = (soap.__cid_primary as string) || "";
+  const cidSecondary = (soap.__cid_secondary as string) || "";
+  const hipoteses = (hist?.hipotese_diagnostica as string) || (soap.__diagnostic_hypotheses as string) || "";
+  const antecedentes = Array.isArray(soap.antecedentes)
+    ? (soap.antecedentes as string[]).filter(Boolean).join("\n")
+    : "";
+
   return (
     <div className="space-y-5">
-      <Group title="História / Subjetivo">
-        <Field label="História da doença atual" value={hist?.historia_clinica || soap.subjective} />
-        <Field label="Objetivo" value={soap.objective} />
-      </Group>
+      {(cidPrimary || cidSecondary || hipoteses) && (
+        <Group title="Diagnóstico">
+          <Field label="CID primário" value={cidPrimary} />
+          <Field label="CID secundário" value={cidSecondary} />
+          <Field label="Hipóteses diagnósticas" value={hipoteses} />
+        </Group>
+      )}
+
+      {(hist?.historia_clinica || soap.subjective) && (
+        <Group title="História admissional">
+          <Field label="História da doença atual" value={hist?.historia_clinica || soap.subjective} />
+        </Group>
+      )}
+
+      {antecedentes && (
+        <Group title="Antecedentes">
+          <Field label="Antecedentes (AMP)" value={antecedentes} />
+        </Group>
+      )}
 
       <VitalsLine
         items={[
@@ -149,22 +176,21 @@ export function AdmissaoReadOnlyView({ internacaoId }: Props) {
         ]}
       />
 
-      <Group title="Exame físico">
-        <Field label="Geral" value={pe.general} />
-        <Field label="Cardiovascular" value={pe.cardiovascular} />
-        <Field label="Respiratório" value={pe.respiratory} />
-        <Field label="Abdome" value={pe.abdomen} />
-        <Field label="Extremidades" value={pe.extremities} />
-      </Group>
+      {(pe.general || pe.cardiovascular || pe.respiratory || pe.abdomen || pe.extremities) && (
+        <Group title="Exame físico">
+          <Field label="Geral" value={pe.general} />
+          <Field label="Cardiovascular" value={pe.cardiovascular} />
+          <Field label="Respiratório" value={pe.respiratory} />
+          <Field label="Abdome" value={pe.abdomen} />
+          <Field label="Extremidades" value={pe.extremities} />
+        </Group>
+      )}
 
-      <Group title="Diagnóstico / Avaliação">
-        <Field label="Hipótese diagnóstica" value={hist?.hipotese_diagnostica} />
-        <Field label="Avaliação" value={soap.assessment} />
-      </Group>
-
-      <Group title="Plano terapêutico">
-        <Field label="Conduta inicial" value={soap.plan || hist?.conduta_inicial} />
-      </Group>
+      {(hist?.conduta_inicial || soap.plan) && (
+        <Group title="Plano terapêutico">
+          <Field label="Conduta inicial" value={hist?.conduta_inicial || soap.plan} />
+        </Group>
+      )}
 
       {d0?.createdByName && (
         <p className="flex items-center gap-1 text-xs text-muted-foreground">
