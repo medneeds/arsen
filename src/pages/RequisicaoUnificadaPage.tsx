@@ -804,7 +804,15 @@ const RequisicaoUnificadaPage = () => {
       resetRequestFields();
       setActiveSubTab("solicitados");
       fetchRequests();
-      if (createdRow) void printSavedRequisition(createdRow, printCtx);
+      // Abre o MESMO pop-up de opções da lista "Solicitados", mas so DEPOIS que o
+      // PasswordConfirmDialog fechar de fato. Sem o atraso, o modal de opcoes
+      // (injetado no DOM) aparecia enquanto o dialogo de senha ainda estava na tela
+      // (overlay + focus-trap do Radix em animacao de saida) e saia parcial/atras —
+      // era preciso fechar e reabrir pela lista. O atraso cobre a animacao de saida.
+      if (createdRow) {
+        const row = createdRow;
+        setTimeout(() => { void printSavedRequisition(row, printCtx); }, 280);
+      }
     } catch (err: any) {
       console.error("[Requisicoes] handleSubmitRequest falhou:", err);
       const msg = err?.message || err?.error_description || err?.details || "Erro desconhecido";
