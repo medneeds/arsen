@@ -6162,6 +6162,16 @@ const PrescricaoPage = () => {
   // "esta busca específica já terminou de rodar?", true por padrão quando
   // não há paciente carregado (nada a esperar).
   const [fallbackDataReady, setFallbackDataReady] = useState(true);
+  // Sinal REATIVO da hidratacao de alergias (o ref nao dispara re-render) — usado
+  // pelo skeleton do cabecalho. Timeout de seguranca garante que o cabecalho nunca
+  // fique preso no skeleton mesmo se algum fetch nao resolver.
+  const [allergiesHydrated, setAllergiesHydrated] = useState(false);
+  const [headerLoadTimedOut, setHeaderLoadTimedOut] = useState(false);
+  useEffect(() => {
+    setHeaderLoadTimedOut(false);
+    const t = setTimeout(() => setHeaderLoadTimedOut(true), 2500);
+    return () => clearTimeout(t);
+  }, [urlPatientIdForRecord]);
   useEffect(() => {
     if (!urlPatientIdForRecord) { setFallbackDataReady(true); return; }
     let cancelled = false;
@@ -8355,6 +8365,10 @@ const PrescricaoPage = () => {
   // Fonte única: patients.uti_allergies (lista, separada por \n). Aqui exibimos como string
   // com vírgulas para edição amigável e convertemos nos dois sentidos.
   const allergiesPatientId = searchParams.get('patientId');
+  // Sinal REATIVO para o skeleton do cabecalho (o render so aparece quando
+  // identidade + alergias carregaram; timeout de seguranca evita travar).
+  const patientHeaderReady =
+    (!identifiersLoading && (allergiesHydrated || !allergiesPatientId)) || headerLoadTimedOut;
   // CID-10 primário do paciente (puxado da admissão) — usado pelo receituário Portaria 344
   const { cidPrimary: admissionCidPrimary } = usePatientCid(allergiesPatientId);
   const lastSyncedAllergiesRef = useRef<string | null>(null); // formato canônico (\n)
@@ -8392,6 +8406,7 @@ const PrescricaoPage = () => {
       if (allergiesHydratedRef.current && remoteCanonical === (lastSyncedAllergiesRef.current ?? '')) return;
       lastSyncedAllergiesRef.current = remoteCanonical;
       allergiesHydratedRef.current = true;
+      setAllergiesHydrated(true);
       const display = canonicalToDisplay(remoteCanonical);
       setPatient(prev => (prev.allergies === display ? prev : { ...prev, allergies: display }));
     };
@@ -8409,7 +8424,7 @@ const PrescricaoPage = () => {
         allergiesPacienteIdRef.current = (data as any).paciente_id ?? null;
         applyRemote((data as any)?.paciente?.alergias as string | null);
       } else {
-        allergiesHydratedRef.current = true; // libera write mesmo sem registro inicial
+        allergiesHydratedRef.current = true; setAllergiesHydrated(true); // libera write mesmo sem registro inicial
       }
       // Realtime na tabela de cadastro (pacientes), filtrada pelo paciente_id resolvido.
       if (allergiesPacienteIdRef.current) {
@@ -8784,8 +8799,18 @@ const PrescricaoPage = () => {
           }
         />
 
+        {/* Skeleton do cabecalho clinico ate os dados (peso/alergias/identidade)
+            estarem prontos — evita o load parcial (sensacao de travado). */}
+        {!patientHeaderReady && (
+          <div className="flex items-center gap-2 flex-wrap px-2 sm:px-3 py-2 sm:border-t sm:border-border/40 animate-pulse">
+            <div className="h-7 w-24 rounded-md bg-muted/60" />
+            <div className="h-7 w-40 rounded-md bg-muted/60" />
+            <div className="h-7 w-16 rounded-md bg-muted/60" />
+            <span className="text-xs text-muted-foreground">Carregando dados do paciente…</span>
+          </div>
+        )}
         {/* Row 1 — Clinical context (peso, alergias, calendário, dose/kg, templates). A tecla ? abre os atalhos. */}
-        <div className="flex items-center gap-2 flex-wrap px-2 sm:px-3 py-2 sm:border-t sm:border-border/40">
+        <div className={cn("flex items-center gap-2 flex-wrap px-2 sm:px-3 py-2 sm:border-t sm:border-border/40", !patientHeaderReady && "hidden")}>
           {/* Peso — rotulo e valor numa UNIDADE unica (o numero faz parte da
               marcacao do peso, "abraçado" pelo mesmo contorno). */}
           <div className={cn(
