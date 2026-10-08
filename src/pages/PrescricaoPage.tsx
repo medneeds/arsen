@@ -1025,7 +1025,11 @@ function MedicationAutocomplete({
 // --- Global Prescription Search with Category Filters ---
 // Categorias com pop-up dedicado disparam o pop-up ao clicar no chip;
 // demais categorias filtram a busca digitada (comportamento clássico).
-const POPUP_CATEGORIES: ReadonlyArray<PrescriptionCategory> = ['antimicrobial', 'high_alert', 'care', 'nutrition'];
+// 'care' NAO e mais popup na busca: o chip Cuidados passa a FILTRAR a busca,
+// listando os itens do Assistente de Cuidados (CARE_OPTIONS) — antes esses itens
+// so apareciam diluidos em "Todas". O Assistente de Cuidados segue acessivel pelo
+// autocomplete por categoria (onAssistantClick -> setCareCatalogOpen).
+const POPUP_CATEGORIES: ReadonlyArray<PrescriptionCategory> = ['antimicrobial', 'high_alert', 'nutrition'];
 
 export interface GlobalPrescriptionSearchHandle {
   focus: () => void;
