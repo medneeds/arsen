@@ -183,7 +183,12 @@ export const printEvolution = async (
 
   // Estilos da tabela de paciente — idêntico ao PrintablePrescription
   const cellS = "border:0.5px solid #94a3b8;padding:3px 6px;font-size:7.5pt;line-height:1.3;vertical-align:top";
-  const labelS = `${cellS};font-weight:700;font-size:6.5pt;background:#f1f5f9;color:#334155;text-transform:uppercase;letter-spacing:0.3px`;
+  // Rotulos sao strings curtas e fixas: nunca devem quebrar em 2 linhas
+  // (picotava "Setor / Unidade", "No Atendimento", "Data de Nasc."). nowrap.
+  const labelS = `${cellS};font-weight:700;font-size:6.5pt;background:#f1f5f9;color:#334155;text-transform:uppercase;letter-spacing:0.3px;white-space:nowrap`;
+  // Valores curtos (leito, setor, prontuario, atendimento, datas) tambem nowrap
+  // para nao quebrar "UTI 1" em duas linhas; nome e alergias continuam podendo quebrar.
+  const cellNoWrap = `${cellS};white-space:nowrap`;
 
   const patientHeader = `
     <table id="patient-header-repeat" style="width:100%;border-collapse:collapse;margin-bottom:4pt;page-break-inside:avoid">
@@ -196,19 +201,19 @@ export const printEvolution = async (
         </tr>
         <tr>
           <td style="${labelS}">Leito</td>
-          <td style="${cellS};font-weight:700">${escape(ctx?.patientBed || evo.patient_bed || "—")}</td>
+          <td style="${cellNoWrap};font-weight:700">${escape(ctx?.patientBed || evo.patient_bed || "—")}</td>
           <td style="${labelS}">Setor / Unidade</td>
-          <td style="${cellS};font-weight:600">${escape(getSectorDisplayLabel(ctx?.patientSector || evo.patient_sector) || "—")}</td>
+          <td style="${cellNoWrap};font-weight:600">${escape(getSectorDisplayLabel(ctx?.patientSector || evo.patient_sector) || "—")}</td>
           <td style="${labelS}">Prontuário</td>
-          <td style="${cellS};font-weight:700">${escape(ctx?.patientRecord || "—")}</td>
+          <td style="${cellNoWrap};font-weight:700">${escape(ctx?.patientRecord || "—")}</td>
           <td style="${labelS}">Nº Atendimento</td>
-          <td style="${cellS};font-weight:700">${ctx?.patientAtendimento ? "#" + escape(ctx.patientAtendimento) : "—"}</td>
+          <td style="${cellNoWrap};font-weight:700">${ctx?.patientAtendimento ? "#" + escape(ctx.patientAtendimento) : "—"}</td>
         </tr>
         <tr>
           <td style="${labelS}">Data de Nasc.</td>
-          <td style="${cellS}">${escape(birthDisplay)}${patientAge ? ` (${patientAge})` : ''}</td>
+          <td style="${cellNoWrap}">${escape(birthDisplay)}${patientAge ? ` (${patientAge})` : ''}</td>
           <td style="${labelS}">Adm. no setor</td>
-          <td style="${cellS}" colspan="3">${escape(formatBirthDateBR(sectorAdmDate))}</td>
+          <td style="${cellNoWrap}" colspan="3">${escape(formatBirthDateBR(sectorAdmDate))}</td>
           <td style="${labelS};color:#dc2626;font-size:6pt">⚠ ALERGIAS</td>
           <td style="${cellS};font-weight:700;color:#991b1b;background:#fef2f2;font-size:7.5pt">${escape(patientAllergies)}</td>
         </tr>
