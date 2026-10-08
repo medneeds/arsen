@@ -40,7 +40,9 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
   return (
     <div className="space-y-2">
       <div className="text-[11px] font-semibold uppercase tracking-wider text-primary border-b border-border/60 pb-0.5">{title}</div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">{children}</div>
+      {/* Um topico por LINHA (coluna unica): a quebra em 2 colunas picotava a
+          leitura (ex.: HDA longa ao lado de um campo curto). Continuidade melhor. */}
+      <div className="flex flex-col gap-y-2">{children}</div>
     </div>
   );
 }

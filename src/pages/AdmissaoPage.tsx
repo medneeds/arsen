@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Printer, ClipboardCheck, AlertTriangle, History, FilePlus2 } from "lucide-react";
+import { Printer, ClipboardCheck, AlertTriangle, History, FilePlus2, Gauge } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { AdmissionForm } from "@/components/admission/AdmissionForm";
@@ -294,6 +294,11 @@ export default function AdmissaoPage() {
                       Admissão já validada — <strong>somente leitura</strong>.
                     </span>
                     <div className="ml-auto flex items-center gap-2">
+                      {showSapsTab && (
+                        <Button size="sm" variant="outline" onClick={() => setActiveTab("saps")} className="h-7 gap-1 text-xs">
+                          <Gauge className="h-3.5 w-3.5" /> Ficha SAPS 3
+                        </Button>
+                      )}
                       <Button size="sm" variant="outline" onClick={() => setConsultOpen(true)} className="h-7 gap-1 text-xs">
                         <Printer className="h-3.5 w-3.5" /> Imprimir admissão
                       </Button>

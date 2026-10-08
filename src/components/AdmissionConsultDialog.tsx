@@ -487,7 +487,7 @@ export function AdmissionConsultDialog({ open, onOpenChange, patient, onChanged 
           {/* Footer */}
           <DialogFooter className="px-6 py-4 border-t bg-muted/70 gap-2 sm:justify-between">
             <Button variant="outline" onClick={handlePrint} disabled={!d0} className="gap-2">
-              <Printer className="h-4 w-4" /> Imprimir (Norma Zero)
+              <Printer className="h-4 w-4" /> Imprimir
             </Button>
             <div className="flex gap-2">
               <Button
