@@ -132,6 +132,8 @@ export const printEvolution = async (
   let patientAntecedentes: string[] = [];
   let patientAllergies: string = "—";
   let patientAge: string | null = null;
+  // Data de admissao NO SETOR (data_admissao_uti; fallback data_entrada).
+  let sectorAdmDate: string | null = null;
 
   // Declarado aqui (antes do uso) para evitar TDZ no bloco de fetch acima.
   const soapAntecedentes: string[] = Array.isArray((evo.soap_data as any)?.antecedentes)
@@ -148,10 +150,12 @@ export const printEvolution = async (
       // DEGRADADO: coluna `age` não existe em pacientes → idade só via data_nascimento.
       const { data: iRow } = await supabase
         .from("internacoes")
-        .select("paciente:pacientes(comorbidades, alergias, data_nascimento)")
+        .select("data_admissao_uti, data_entrada, paciente:pacientes(comorbidades, alergias, data_nascimento)")
         .eq("id", (evo as any).patient_id)
         .maybeSingle();
 
+      const ir = iRow as { data_admissao_uti?: string | null; data_entrada?: string | null } | null;
+      sectorAdmDate = ir?.data_admissao_uti || ir?.data_entrada || null;
       const pRow = (iRow as any)?.paciente ?? null;
       if (pRow) {
         if (soapAntecedentes.length === 0 && pRow.comorbidades?.trim()) {
@@ -203,8 +207,8 @@ export const printEvolution = async (
         <tr>
           <td style="${labelS}">Data de Nasc.</td>
           <td style="${cellS}">${escape(birthDisplay)}${patientAge ? ` (${patientAge})` : ''}</td>
-          <td style="${labelS}">Médico</td>
-          <td style="${cellS}" colspan="3">${escape(doctorName)}</td>
+          <td style="${labelS}">Adm. no setor</td>
+          <td style="${cellS}" colspan="3">${escape(formatBirthDateBR(sectorAdmDate))}</td>
           <td style="${labelS};color:#dc2626;font-size:6pt">⚠ ALERGIAS</td>
           <td style="${cellS};font-weight:700;color:#991b1b;background:#fef2f2;font-size:7.5pt">${escape(patientAllergies)}</td>
         </tr>
