@@ -105,31 +105,31 @@ export function PatientIdentityHeader({
   const isCockpit = variant === "cockpit";
 
   return (
-    <div className={cn("w-full", className)}>
+    <div className={cn("relative w-full", className)}>
       {isCockpit ? (
         <>
-          {/* Cockpit: nome limpo como elemento principal; dados em blocos compactos. */}
-          <div className="flex items-start gap-2">
-            {pinControl && (
-              <button
-                type="button"
-                onClick={pinControl.onToggle}
-                title={pinControl.pinned ? "Desafixar (recolhe ao tirar o mouse)" : "Fixar painel aberto"}
-                aria-pressed={pinControl.pinned}
-                className={cn(
-                  "mt-0.5 shrink-0 inline-flex items-center justify-center h-6 w-6 rounded-md transition-colors",
-                  pinControl.pinned
-                    ? "text-primary bg-primary/10"
-                    : "text-muted-foreground hover:text-primary hover:bg-primary/10",
-                )}
-              >
-                <Pin className={cn("h-3.5 w-3.5", pinControl.pinned && "fill-current")} />
-              </button>
-            )}
-            <h3 className="patient-id min-w-0 flex-1 text-lg font-semibold leading-snug text-foreground break-words">
-              {displayName}
-            </h3>
-          </div>
+          {/* Pin discreto e curvado no canto superior esquerdo, FORA do fluxo do
+              nome — libera a largura para o nome e o alinha com os chips abaixo. */}
+          {pinControl && (
+            <button
+              type="button"
+              onClick={pinControl.onToggle}
+              title={pinControl.pinned ? "Desafixar (recolhe ao tirar o mouse)" : "Fixar painel aberto"}
+              aria-pressed={pinControl.pinned}
+              className={cn(
+                "absolute -left-2 -top-2 z-10 inline-flex h-6 w-6 items-center justify-center rounded-full border shadow-sm transition-colors",
+                pinControl.pinned
+                  ? "border-primary/30 bg-primary/10 text-primary"
+                  : "border-border bg-card text-muted-foreground hover:border-primary/30 hover:bg-primary/10 hover:text-primary",
+              )}
+            >
+              <Pin className={cn("h-3 w-3", pinControl.pinned && "fill-current")} />
+            </button>
+          )}
+          {/* Nome: caixa alta, fonte menor e harmonizada, largura total. */}
+          <h3 className="patient-id w-full text-sm font-semibold uppercase leading-tight tracking-tight text-foreground break-words">
+            {displayName}
+          </h3>
           <div className="mt-2 flex flex-wrap gap-1.5 preserve-case">
             <InfoChip>{age ?? "Idade não informada"}</InfoChip>
             <InfoChip>{sector || "Setor —"}</InfoChip>
