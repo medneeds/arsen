@@ -6172,7 +6172,7 @@ const PrescricaoPage = () => {
       // uti_admission_date (sem coluna equivalente). alergias vem do cadastro.
       const { data } = await supabase
         .from('internacoes')
-        .select('data_entrada, paciente:pacientes(data_nascimento, alergias)')
+        .select('data_entrada, data_admissao_uti, paciente:pacientes(data_nascimento, alergias)')
         .eq('id', urlPatientIdForRecord)
         .maybeSingle();
       if (cancelled) return;
@@ -6203,6 +6203,13 @@ const PrescricaoPage = () => {
           }
           if ((!prev.admissionDate || !prev.admissionDate.trim()) && admissionDate) {
             next.admissionDate = String(admissionDate).slice(0, 10);
+            changed = true;
+          }
+          // Data de admissao NO SETOR (data_admissao_uti; fallback = admissao hospitalar).
+          const utiAdm = (data as { data_admissao_uti?: string | null } | null)?.data_admissao_uti;
+          const setorAdm = utiAdm || admissionDate;
+          if ((!prev.utiAdmissionDate || !prev.utiAdmissionDate.trim()) && setorAdm) {
+            next.utiAdmissionDate = String(setorAdm).slice(0, 10);
             changed = true;
           }
           if ((!prev.allergies || !prev.allergies.trim()) && pacAlergias) {
@@ -11706,13 +11713,13 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
             <td style={cellStyle}>{patient.weight ? `${patient.weight}kg` : '—'}</td>
             <td style={headerCellStyle}>Sexo</td>
             <td style={cellStyle}>{formatSexCode(patient.sex)}</td>
-            <td style={headerCellStyle}>Admissão</td>
-            <td style={cellStyle}>{safeFormatPatientDate(patient.admissionDate)}</td>
+            <td style={headerCellStyle}>Adm. no setor</td>
+            <td style={cellStyle}>{safeFormatPatientDate(patient.utiAdmissionDate || patient.admissionDate)}</td>
           </tr>
           <tr>
             <td style={headerCellStyle}>Nascimento</td>
             <td style={cellStyle}>{safeFormatPatientDate(patient.birthDate)}</td>
-            <td style={headerCellStyle}>Unidade</td>
+            <td style={headerCellStyle}>Setor</td>
             <td style={cellStyle}>{patient.unit || '—'}</td>
             <td style={headerCellStyle}>Atendimento</td>
             <td style={cellStyle}>{patient.encounterCode ? `#${patient.encounterCode}` : '—'}</td>
