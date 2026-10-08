@@ -255,7 +255,7 @@ function TimelineRow({
         {doc.authorName ? (
           <p className="mt-0.5 inline-flex items-center gap-1 text-xs text-muted-foreground">
             <UserIcon className="h-3 w-3" />
-            assinado por {doc.authorName}{doc.authorCrm ? ` · CRM ${doc.authorCrm}` : ""}
+            por {doc.authorName}{doc.authorCrm ? ` · CRM ${doc.authorCrm}` : ""}
           </p>
         ) : null}
       </button>

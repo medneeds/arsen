@@ -150,7 +150,7 @@ export function usePatientDocuments({
       // (registry/encounter/setor/arquivado descontinuados — sem coluna).
       const evolQuery = supabase
         .from("evolucoes")
-        .select("id, status, criado_em, data_hora")
+        .select("id, status, criado_em, data_hora, soap, profissional_id")
         .eq("internacao_id", validId)
         .order("criado_em", { ascending: false })
         .limit(50);
@@ -252,7 +252,10 @@ export function usePatientDocuments({
           status: normalizeStatus(r.status),
           rawStatus: r.status,
           createdAt: r.criado_em,
-          authorName: null, // MIGRAÇÃO: sem coluna created_by_name
+          // Autor da evolucao: validador (preferencial) ou criador, lidos do soap
+          // (__validated_by_name / __created_by_name). Fallback por profissional_id
+          // na resolucao em lote abaixo.
+          authorName: (r.soap?.__validated_by_name as string) || (r.soap?.__created_by_name as string) || null,
           patientSector: null, // MIGRAÇÃO: sem coluna
           patientBed: null, // MIGRAÇÃO: sem coluna
           source: "clinical_evolutions",
@@ -341,6 +344,46 @@ export function usePatientDocuments({
           raw: r,
         });
       });
+
+      // ── AUTORIA centralizada ──────────────────────────────────────────────
+      // Todo documento emitido mostra quem o validou/solicitou/assinou. Resolve o
+      // profissional (nome + CRM) dos docs sem nome embutido, numa unica query:
+      //   exames (solicitacoes_exame) -> solicitado_por
+      //   evolucoes                   -> profissional_id (fallback; soap ja cobre a maioria)
+      //   altas/boletim               -> assinado_por
+      //   cultura                     -> solicitado_por (quando houver)
+      const resolveAuthorId = (d: PatientDocument): string | null => {
+        if (d.authorName) return null;
+        const raw = (d.raw ?? {}) as Record<string, unknown>;
+        return (
+          (raw.solicitado_por as string) ||
+          (raw.profissional_id as string) ||
+          (raw.assinado_por as string) ||
+          (raw.concluido_por as string) ||
+          null
+        );
+      };
+      const idsToResolve = Array.from(
+        new Set(list.map(resolveAuthorId).filter(Boolean) as string[]),
+      );
+      if (idsToResolve.length > 0) {
+        const { data: profs } = await supabase
+          .from("profissionais")
+          .select("id, nome, numero_conselho")
+          .in("id", idsToResolve);
+        const pmap = new Map<string, { nome?: string | null; crm?: string | null }>();
+        ((profs ?? []) as { id: string; nome?: string | null; numero_conselho?: string | null }[])
+          .forEach((p) => pmap.set(p.id, { nome: p.nome, crm: p.numero_conselho }));
+        for (const d of list) {
+          if (d.authorName) continue;
+          const id = resolveAuthorId(d);
+          const prof = id ? pmap.get(id) : undefined;
+          if (prof) {
+            d.authorName = prof.nome ?? null;
+            d.authorCrm = d.authorCrm ?? prof.crm ?? null;
+          }
+        }
+      }
 
       list.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
       setDocs(list);
