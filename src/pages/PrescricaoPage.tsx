@@ -2034,7 +2034,7 @@ function CombinedItemsBlock({
                     <Input
                       value={sub.quantity || ''}
                       onChange={e => updateSub(sub.id, 'quantity', e.target.value)}
-                      className="h-6 text-xs w-12 text-center"
+                      className="h-6 text-xs w-16 text-center"
                       placeholder="1"
                     />
                     <Input
@@ -3123,7 +3123,9 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                       }
                     }}
                     className="h-6 text-xs bg-card border-border px-2 text-center focus-visible:ring-1 focus-visible:ring-primary"
-                    style={{ width: `${Math.max(2.75, (String(item.quantity || '').length || 1) * 0.7 + 1.5)}ch`, minWidth: '3rem' }}
+                    /* Largura acomoda 3-4 digitos + o spinner do type=number (que
+                       antes espremia valores como 100/1000). */
+                    style={{ width: `${Math.max(3.75, (String(item.quantity || '').length || 1) * 0.72 + 2.6)}ch`, minWidth: '3.75rem' }}
                     placeholder="1"
                     title={item.quantityUnit ? `Quantidade em ${item.quantityUnit}` : 'Quantidade'}
                   />
