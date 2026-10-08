@@ -94,10 +94,12 @@ export function AllergiesChipInput({
   return (
     <div
       className={cn(
-        // Sem borda no container: os chips internos ja tem contorno proprio —
-        // a borda do container criava um contorno DUPLO. Mantem so o leve bg de
-        // estado (vazio/sem relato/alergia) para sinalizar sem o anel redundante.
-        "flex items-center gap-1 min-h-7 px-2 py-1 rounded-md bg-background transition-colors",
+        // Contorno CONTINUO com o rotulo "Alergias": o container usa a mesma borda
+        // do CONTEXT_CHIP e recebe rounded-l-none via className, de modo que rotulo
+        // (border-r-0) + valor formam UMA caixa so. O "Sem relato" interno segue sem
+        // borda propria (evita caixa-dentro-de-caixa). bg de estado sinaliza vazio/
+        // sem relato/alergia.
+        "flex items-center gap-1 min-h-7 px-2 py-1 rounded-md border border-border bg-background transition-colors",
         empty
           ? "bg-warning-soft/30"
           : isSemRelato
