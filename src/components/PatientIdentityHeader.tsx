@@ -126,8 +126,13 @@ export function PatientIdentityHeader({
               <Pin className={cn("h-3 w-3", pinControl.pinned && "fill-current")} />
             </button>
           )}
-          {/* Nome: caixa alta, fonte menor e harmonizada, largura total. */}
-          <h3 className="patient-id w-full text-sm font-semibold uppercase leading-tight tracking-tight text-foreground break-words">
+          {/* Nome: caixa alta, fonte menor e harmonizada, largura total. Quando ha
+              pino, so a PRIMEIRA linha recua (text-indent) para nao ficar sob o
+              pino do canto; linhas quebradas e os chips abaixo seguem em x=0. */}
+          <h3
+            className="patient-id w-full text-sm font-semibold uppercase leading-tight tracking-tight text-foreground break-words"
+            style={pinControl ? { textIndent: "1.75rem" } : undefined}
+          >
             {displayName}
           </h3>
           <div className="mt-2 flex flex-wrap gap-1.5 preserve-case">
