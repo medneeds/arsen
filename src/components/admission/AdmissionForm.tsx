@@ -1174,6 +1174,15 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
   const buildPrintPayload = async () => {
     // Leito/setor ATUAIS (após relocações), com fallback para snapshot da prop.
     const live = await resolveCurrentBedSector(patient.id);
+    // Data de admissao NO SETOR (editavel na Edicao Avancada). Fallback: data de
+    // entrada hospitalar quando a do setor ainda nao foi registrada.
+    let sectorAdmissionDate: string | null = null;
+    try {
+      const { data: iRow } = await supabase
+        .from("internacoes").select("data_admissao_uti, data_entrada").eq("id", patient.id).maybeSingle();
+      const r = iRow as { data_admissao_uti?: string | null; data_entrada?: string | null } | null;
+      sectorAdmissionDate = r?.data_admissao_uti || r?.data_entrada || null;
+    } catch { /* best-effort */ }
     return {
       patient: {
         name: patient.name,
@@ -1206,6 +1215,10 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
       vitals: { pa, fc, fr, spo2, tax, dx },
       exam: { general: physGeneral, cv: physCv, resp: physResp, abd: physAbd, ext: physExt, neuro: physNeuro },
       plan, cidPrimary, cidSecondary,
+      hypotheses: hypothesesItems,
+      complementares: richHtmlToPlainText(complementares).trim() || undefined,
+      scales: { glasgowTotal, glasgowEye, glasgowVerbal, glasgowMotor, sedoanalgesia, rass },
+      sectorAdmissionDate,
       dischargePredictionLabel,
       // Mapeia os widgets novos para os campos que o template do impresso ja
       // consome (admissionReason/devices/culturesAtb), sem alterar o template.
@@ -1214,6 +1227,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
       // SOAP/JSON (sem linha propria no impresso por ora).
       uti: isUti ? {
         admissionReason: utiJustificativa ? utiJustificativaLabel : "",
+        vasoativo: simNao(utiVasoativo),
         originSector,
         devices: admDevices.map(d => formatDeviceLabel(d)).filter(Boolean).join("; "),
         culturesAtb: [
@@ -1276,11 +1290,24 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
       // patient_registry_id NÃO têm coluna → degradados (só ficam no impresso e
       // no JSON da evolução). parseDiagnosesText mantido para normalizar hipóteses.
       const parsedDiagnoses = parseDiagnosesText(diagnosticHypotheses);
+      // Data de admissao NO SETOR: registra na validacao da admissao UTI quando
+      // ainda nao houver (NAO sobrescreve a existente). Garante que a data exista
+      // para o impresso e para a sincronizacao.
+      let dataAdmissaoSetor: string | null = null;
+      if (isUti) {
+        try {
+          const { data: cur } = await supabase
+            .from("internacoes").select("data_admissao_uti").eq("id", patient.id).maybeSingle();
+          const existing = (cur as { data_admissao_uti?: string | null } | null)?.data_admissao_uti ?? null;
+          dataAdmissaoSetor = existing || now;
+        } catch { dataAdmissaoSetor = now; }
+      }
       const { error: interErr } = await supabase
         .from("internacoes")
         .update({
           queixa_principal: hda.split("\n")[0]?.slice(0, 200) || null,
           historia_clinica: hda || null,
+          ...(isUti && dataAdmissaoSetor ? { data_admissao_uti: dataAdmissaoSetor } : {}),
           hipotese_diagnostica:
             parsedDiagnoses.length > 0
               ? parsedDiagnoses.join("\n")
