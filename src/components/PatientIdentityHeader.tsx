@@ -129,12 +129,15 @@ export function PatientIdentityHeader({
           {/* Nome: caixa alta, fonte menor e harmonizada, largura total. Quando ha
               pino, so a PRIMEIRA linha recua (text-indent) para nao ficar sob o
               pino do canto; linhas quebradas e os chips abaixo seguem em x=0. */}
-          <h3
-            className="patient-id w-full text-sm font-semibold uppercase leading-tight tracking-tight text-foreground break-words"
-            style={pinControl ? { textIndent: "1.75rem" } : undefined}
-          >
-            {displayName}
-          </h3>
+          <div className="flex items-start gap-1">
+            <h3
+              className="patient-id min-w-0 flex-1 text-sm font-semibold uppercase leading-tight tracking-tight text-foreground break-words"
+              style={pinControl ? { textIndent: "1.75rem" } : undefined}
+            >
+              {displayName}
+            </h3>
+            <CopyNameButton value={name} />
+          </div>
           <div className="mt-2 flex flex-wrap gap-1.5 preserve-case">
             <InfoChip>{age ?? "Idade não informada"}</InfoChip>
             <InfoChip>{sector || "Setor —"}</InfoChip>
@@ -149,9 +152,12 @@ export function PatientIdentityHeader({
           {/* ===== Linha 1: Nome + Idade · Setor · Leito ===== */}
           <div className="mb-2 flex items-start justify-between gap-2">
             <div className="min-w-0 flex-1">
-              <h3 className="patient-id font-semibold leading-tight text-foreground truncate text-base">
-                {displayName}
-              </h3>
+              <div className="flex items-start gap-1">
+                <h3 className="patient-id min-w-0 flex-1 font-semibold leading-tight text-foreground truncate text-base">
+                  {displayName}
+                </h3>
+                <CopyNameButton value={name} />
+              </div>
               <p className="text-muted-foreground mt-1 preserve-case text-xs">
                 {age ?? "—"} • {sector || "—"} • Leito{" "}
                 <span className="font-medium text-foreground">{bed}</span>
@@ -272,6 +278,24 @@ export function PatientIdentityHeader({
         </div>
       )}
     </div>
+  );
+}
+
+/** Botao compacto para copiar o nome do paciente — ao lado do nome, mesmo
+ *  comportamento do copiar de Prontuario/Atendimento. */
+function CopyNameButton({ value }: { value?: string | null }) {
+  const v = (value || "").trim();
+  if (!v || v === "—") return null;
+  return (
+    <button
+      type="button"
+      onClick={() => copyValue(v, "Nome")}
+      title="Copiar nome"
+      aria-label="Copiar nome do paciente"
+      className="mt-0.5 shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+    >
+      <Copy className="h-3 w-3" />
+    </button>
   );
 }
 
