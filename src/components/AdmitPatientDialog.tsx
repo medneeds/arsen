@@ -160,6 +160,10 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
   const [sapsPrompt, setSapsPrompt] = useState<
     { internacaoId: string; patientName: string; bed: string; sectorCode: string } | null
   >(null);
+  // Pop-up pos-alocacao em setor SEM SAPS: sugere seguir direto para a admissao.
+  const [admitPrompt, setAdmitPrompt] = useState<
+    { internacaoId: string; patientName: string; bed: string; sectorCode: string } | null
+  >(null);
 
   // MIGRAÇÃO: estados da sincronização PIS → patient_registry removidos (tabela morta).
 
@@ -317,7 +321,9 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
       // Alocação (leito → paciente → internação → leito ocupado → pré-admissão
       // admitida) vive em src/lib/alocarPreAdmissao.ts, compartilhada com o SAPS 3.
       const registradoPor = await resolveProfissionalId(user?.id);
-      const { avisoLeito } = await alocarPreAdmissaoNoLeito({
+      const patientNameDireto = fullData.patient_name;
+      const sectorCodeDireto = selectedSector;
+      const { internacaoId, avisoLeito } = await alocarPreAdmissaoNoLeito({
         preAdmissao: fullData,
         sectorCode: selectedSector,
         bed: finalBed,
@@ -326,7 +332,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
         registradoPor,
       });
 
-      toast({ title: "Paciente PRÉ-ADMITIDO", description: `${fullData.patient_name} → Leito ${finalBed}. Conclua a admissão hospitalar pelo Painel Clínico.` });
+      toast({ title: "Paciente PRÉ-ADMITIDO", description: `${patientNameDireto} → Leito ${finalBed}.` });
       if (avisoLeito) toast({ title: "Atenção: leito não marcado", description: avisoLeito, variant: "destructive" });
       onOpenChange(false);
       onSuccess();
@@ -336,6 +342,11 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
       setFullData(null);
       setExtraBedRequested(false);
       setSectorFullAlert(false);
+      // Setor SEM SAPS: sugere seguir direto para a admissao (pop-up), no lugar do
+      // antigo "conclua pelo Painel Clinico".
+      if (internacaoId) {
+        setAdmitPrompt({ internacaoId, patientName: patientNameDireto, bed: finalBed, sectorCode: sectorCodeDireto });
+      }
     } catch (err: any) {
       toast({ title: "Erro na admissão", description: err.message, variant: "destructive" });
     } finally {
@@ -348,6 +359,16 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
     if (!sapsPrompt) return;
     const { internacaoId, patientName, bed, sectorCode } = sapsPrompt;
     setSapsPrompt(null);
+    navigate(
+      `/admissao?patientId=${internacaoId}&patientName=${encodeURIComponent(patientName)}&patientBed=${encodeURIComponent(bed)}&patientSector=${sectorCode}`
+    );
+  };
+
+  // Pop-up pos-alocacao (setor SEM SAPS) — "Seguir para admissao": vai direto a /admissao.
+  const handleAdmitNow = () => {
+    if (!admitPrompt) return;
+    const { internacaoId, patientName, bed, sectorCode } = admitPrompt;
+    setAdmitPrompt(null);
     navigate(
       `/admissao?patientId=${internacaoId}&patientName=${encodeURIComponent(patientName)}&patientBed=${encodeURIComponent(bed)}&patientSector=${sectorCode}`
     );
@@ -827,6 +848,31 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
           </AlertDialogCancel>
           <AlertDialogAction onClick={handleSapsNow}>
             Preencher agora
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+
+    {/* Pop-up pos-alocacao em setor SEM SAPS: sugere seguir direto para a admissao. */}
+    <AlertDialog open={!!admitPrompt} onOpenChange={(o) => { if (!o) setAdmitPrompt(null); }}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="flex items-center gap-2">
+            <Activity className="h-5 w-5 text-primary" />
+            Seguir para a admissão?
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            {admitPrompt?.patientName} foi alocado no leito {admitPrompt?.bed}. Você pode seguir
+            agora para a admissão (preencher, validar e imprimir) ou concluí-la depois pelo Painel
+            Clínico.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={() => setAdmitPrompt(null)}>
+            Depois
+          </AlertDialogCancel>
+          <AlertDialogAction onClick={handleAdmitNow}>
+            Seguir para admissão
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
