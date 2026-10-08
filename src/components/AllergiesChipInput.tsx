@@ -110,10 +110,9 @@ export function AllergiesChipInput({
       {isSemRelato ? (
         <span
           className={cn(
-            baseChip,
-            // "Sem relato" em caixa normal e fonte menor (nao e alerta — e o
-            // estado tranquilo; nao precisa gritar como os chips de alergia real).
-            "border-released/40 bg-released/10 text-released-on-soft normal-case text-[10px]",
+            // Sem contorno proprio: o fundo verde do container ja sinaliza — aqui
+            // fica so o texto compacto (otimiza o layout, sem caixa-dentro-de-caixa).
+            "inline-flex items-center gap-1 text-[10px] font-medium text-released-on-soft normal-case",
           )}
         >
           <ShieldCheck className="h-2.5 w-2.5" />
