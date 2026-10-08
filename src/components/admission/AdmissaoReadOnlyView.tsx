@@ -34,6 +34,27 @@ function Field({ label, value }: { label: string; value?: unknown }) {
   );
 }
 
+/** Sinais vitais em UMA linha, so os preenchidos, separados por "|" — mais
+ *  compacto que um campo por linha para numeros curtos (PA, FC, FR, SpO2...). */
+function VitalsLine({ items }: { items: { label: string; value?: unknown }[] }) {
+  const filled = items.filter((x) => String(x.value ?? "").trim());
+  if (filled.length === 0) return null;
+  return (
+    <div className="space-y-2">
+      <div className="text-[11px] font-semibold uppercase tracking-wider text-primary border-b border-border/60 pb-0.5">Sinais vitais</div>
+      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm">
+        {filled.map((x, i) => (
+          <span key={x.label} className="inline-flex items-baseline gap-1">
+            {i > 0 && <span className="mr-1 text-muted-foreground/40">|</span>}
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{x.label}</span>
+            <span className="text-foreground">{String(x.value).trim()}</span>
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function Group({ title, children }: { title: string; children: React.ReactNode }) {
   const arr = Array.isArray(children) ? children : [children];
   if (!arr.some(Boolean)) return null;
@@ -117,14 +138,16 @@ export function AdmissaoReadOnlyView({ internacaoId }: Props) {
         <Field label="Objetivo" value={soap.objective} />
       </Group>
 
-      <Group title="Sinais vitais">
-        <Field label="PA" value={vs.pa} />
-        <Field label="FC" value={vs.fc} />
-        <Field label="FR" value={vs.fr} />
-        <Field label="SpO₂" value={vs.spo2} />
-        <Field label="Temperatura" value={vs.temp} />
-        <Field label="Dextro" value={vs.dx} />
-      </Group>
+      <VitalsLine
+        items={[
+          { label: "PA", value: vs.pa },
+          { label: "FC", value: vs.fc },
+          { label: "FR", value: vs.fr },
+          { label: "SpO₂", value: vs.spo2 },
+          { label: "Temp", value: vs.temp },
+          { label: "Dextro", value: vs.dx },
+        ]}
+      />
 
       <Group title="Exame físico">
         <Field label="Geral" value={pe.general} />
