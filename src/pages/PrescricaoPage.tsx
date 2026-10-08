@@ -941,6 +941,9 @@ function MedicationAutocomplete({
   const [query, setQuery] = useState("");
   const [focused, setFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  // Cancela o blur agendado ao re-focar (evita o dropdown sumir com um timer
+  // stale — mesmo padrao do GlobalPrescriptionSearch).
+  const blurTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const favCount = getFavoriteCount ?? (() => 0);
   const accent = getCategoryFieldAccent(category);
 
@@ -964,8 +967,8 @@ function MedicationAutocomplete({
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            onFocus={() => setFocused(true)}
-            onBlur={() => setTimeout(() => setFocused(false), 200)}
+            onFocus={() => { if (blurTimer.current) { clearTimeout(blurTimer.current); blurTimer.current = null; } setFocused(true); }}
+            onBlur={() => { blurTimer.current = setTimeout(() => setFocused(false), 200); }}
             placeholder={placeholder}
             className={cn(
               "pl-8 bg-background/60 h-7 text-xs transition-colors",
@@ -1059,6 +1062,15 @@ const GlobalPrescriptionSearch = React.forwardRef<GlobalPrescriptionSearchHandle
   // 'all' = busca em todas; categoria normal = filtra busca; chips com pop-up disparam o pop-up sem alterar este estado
   const [selectedCat, setSelectedCat] = useState<PrescriptionCategory | 'all'>('all');
   const inputRef = useRef<HTMLInputElement>(null);
+  // Timer do blur: ao clicar num chip de segmento, o input desfoca e agenda
+  // esconder o dropdown em 200ms; o re-foco precisa CANCELAR esse timer, senao
+  // ele dispara depois e some a lista mesmo com o input focado (bug "catalogo
+  // some, so refresh resolve"). Guardamos o id para poder cancelar.
+  const blurTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const openDropdown = () => {
+    if (blurTimer.current) { clearTimeout(blurTimer.current); blurTimer.current = null; }
+    setFocused(true);
+  };
   React.useImperativeHandle(ref, () => ({
     focus: () => inputRef.current?.focus(),
   }));
@@ -1085,6 +1097,9 @@ const GlobalPrescriptionSearch = React.forwardRef<GlobalPrescriptionSearchHandle
     // Toggle: clicar de novo no chip ativo volta para "Todas"
     setSelectedCat(prev => (prev === cat ? 'all' : cat));
     inputRef.current?.focus();
+    // Garante o dropdown aberto e cancela qualquer blur pendente do clique no chip
+    // (se o input ja estava focado, o onFocus nao re-dispara — por isso forcamos).
+    openDropdown();
   };
 
   const handleSelect = (med: MedicationEntry) => {
@@ -1146,8 +1161,8 @@ const GlobalPrescriptionSearch = React.forwardRef<GlobalPrescriptionSearchHandle
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            onFocus={() => setFocused(true)}
-            onBlur={() => setTimeout(() => setFocused(false), 200)}
+            onFocus={openDropdown}
+            onBlur={() => { blurTimer.current = setTimeout(() => setFocused(false), 200); }}
             placeholder={
               selectedCat === 'all'
                 ? "Buscar em todas as categorias..."
