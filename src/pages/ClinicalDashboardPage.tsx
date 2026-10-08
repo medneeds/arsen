@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { resolveSectorCode } from "@/config/sectorCoverage";
 import { MainLayout } from "@/components/MainLayout";
+import { whitelabel } from "@/config/whitelabel";
+import { ArsenMark } from "@/components/brand/ArsenMark";
+import socorraoLogo from "@/assets/socorrao1-logo.png";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -252,6 +255,48 @@ const ClinicalDashboardPage = () => {
             </Button>
           }
         />
+
+        {/* ─── Identidade institucional — guarda-chuva dos blocos ──────────────
+            Hospital (Socorrao I / HMDM) a esquerda + identidade do Arsen (sistema)
+            a direita. Tokens de tema => legivel em dark e light; a logo fica num
+            chip branco para contrastar nos dois modos. */}
+        <section className="relative overflow-hidden rounded-xl border border-border bg-gradient-to-br from-primary/[0.06] via-card to-card">
+          <div className="pointer-events-none absolute inset-y-0 right-0 w-1/3 bg-gradient-to-l from-primary/[0.05] to-transparent" />
+          <div className="relative flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+            <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-white p-1.5 shadow-sm ring-1 ring-border/60">
+                <img
+                  src={socorraoLogo}
+                  alt={whitelabel.institution.hospitalLogoAlt}
+                  className="h-full w-full object-contain"
+                />
+              </div>
+              <div className="min-w-0">
+                <p className="truncate text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                  {whitelabel.institution.prefeitura} · {whitelabel.institution.secretaria}
+                </p>
+                <h1 className="truncate text-base font-semibold leading-tight text-foreground sm:text-lg">
+                  {whitelabel.institution.hospitalFullName}
+                </h1>
+                <p className="truncate text-xs text-muted-foreground">
+                  Painel clínico{activeSectorLabel ? ` · ${activeSectorLabel}` : ""}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex shrink-0 items-center gap-3 self-start sm:self-auto">
+              <span className="hidden h-10 w-px bg-border sm:block" />
+              <div className="flex items-center gap-2">
+                <ArsenMark size={26} variant="compact" className="text-primary" />
+                <div className="leading-tight">
+                  <p className="text-sm font-semibold tracking-[0.15em] text-foreground">ARSEN</p>
+                  <p className="text-[10px] text-muted-foreground">{whitelabel.platform.slogan}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <AnimatePresence mode="wait">
           {isLoading ? (
             <motion.div
