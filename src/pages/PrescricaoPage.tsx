@@ -1828,6 +1828,19 @@ function intervalToPhases(interval?: string): number {
   return m ? m.phases : 1;
 }
 
+/**
+ * Posologia PONTUAL (dose sem continuidade) — NAO renova na virada das 05h.
+ * Regra (Artur): "Agora", "Dose unica" e "Dose de ataque" sao pontuais; vao para
+ * o historico do dia (ficam consultaveis), mas NAO persistem para o plantao
+ * seguinte. SOS/ACM/Continuo e os intervalos (X/Xh) SAO aprazados -> renovam.
+ * "Dose de ataque" aparece como posologia "Dose unica" (mais comum) ou "Ataque".
+ */
+function isPontualPosology(posology?: string): boolean {
+  const p = (posology || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+  if (!p) return false;
+  return p === "agora" || p.includes("unica") || p.includes("ataque");
+}
+
 function HydrationFields({
   item,
   onUpdate,
@@ -7592,8 +7605,14 @@ const PrescricaoPage = () => {
             return false;
           }
 
-          // Cruzou 05h — renova para o plantão atual
-          const renewableItems = sourceItems.filter((it) => it.status === 'active' && !it.isExtra);
+          // Cruzou 05h — renova para o plantão atual.
+          // So o que e APRAZADO/continuo persiste. Pontuais (Agora / Dose unica /
+          // Ataque) NAO renovam — ficaram no historico do dia anterior (prescricao
+          // salva), mas nao entram no novo plantao. SOS/ACM/Continuo e intervalos
+          // X/Xh renovam normalmente. (Regra confirmada por Artur.)
+          const renewableItems = sourceItems.filter(
+            (it) => it.status === 'active' && !it.isExtra && !isPontualPosology(it.posology),
+          );
           const renewedItems: PrescriptionItem[] = renewableItems.map((it) => ({
             ...it,
             id: crypto.randomUUID(),
