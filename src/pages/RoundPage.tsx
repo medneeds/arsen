@@ -26,6 +26,7 @@ interface PatientOption {
   bed_number: string;
   age: string | null;
   diagnoses: string | null;
+  record: string | null;
 }
 
 interface ResponseState {
@@ -104,7 +105,7 @@ export default function RoundPage() {
   // hospital/estado/UTI e leito-vago foram removidos (degradado); a "internação
   // ativa" é aproximada por data_alta IS NULL. Idade vem de pacientes.data_nascimento.
   const INTERNACAO_OPTION_SELECT = `id, hipotese_diagnostica,
-      paciente:pacientes(nome_completo, nome_social, data_nascimento),
+      paciente:pacientes(nome_completo, nome_social, data_nascimento, prontuario),
       leito:leitos(numero),
       setor:setores(nome, tipo)`;
 
@@ -118,6 +119,7 @@ export default function RoundPage() {
       bed_number: r.leito?.numero || "",
       age: formatAge(pac.data_nascimento) || null,
       diagnoses: r.hipotese_diagnostica || null,
+      record: pac.prontuario || null,
     };
   };
 
@@ -464,6 +466,7 @@ export default function RoundPage() {
                     bed_number: manualPatient.bed_number || "-",
                     age: manualPatient.age || null,
                     diagnoses: manualPatient.diagnoses || null,
+                    record: null,
                   });
                 }} className="text-xs">
                   Iniciar Round
@@ -687,6 +690,8 @@ export default function RoundPage() {
           patientSector={selectedPatient.id.startsWith("manual_") ? selectedPatient.sector : getSectorLabel(selectedPatient.sector)}
           patientBed={selectedPatient.bed_number}
           patientAge={selectedPatient.age}
+          patientRecord={selectedPatient.record}
+          diagnosis={selectedPatient.diagnoses}
           roundDate={roundDate}
           responses={responses}
           goals={goals}
