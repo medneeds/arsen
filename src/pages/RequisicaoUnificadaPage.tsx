@@ -2626,6 +2626,9 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
   const [cidPrimary, setCidPrimary] = useState("");
   // HTML do laudo aguardando a etapa pos-envio. null = nada pendente.
   const [apacPrintHtml, setApacPrintHtml] = useState<string | null>(null);
+  // Linha criada da solicitacao de procedimento — permite imprimir a GUIA (alem do
+  // Laudo APAC) na etapa pos-validacao, usando o mesmo caminho da lista Solicitados.
+  const [apacCreatedRow, setApacCreatedRow] = useState<Record<string, unknown> | null>(null);
   const [cidSecondary, setCidSecondary] = useState("");
   const [cidAssociated, setCidAssociated] = useState("");
   const [observations, setObservations] = useState("");
@@ -2680,6 +2683,28 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
             return admParts.join("\n");
           });
         }
+
+        // CID da admissao: internacoes nao tem coluna de CID; o codigo cadastrado
+        // na admissao fica no soap da evolucao de admissao (__cid_primary/
+        // __cid_secondary). Puxa de la para pre-selecionar o CID na guia do
+        // procedimento — seed sincronizado com a admissao. Nao sobrescreve o que o
+        // medico ja tenha digitado.
+        try {
+          const { data: evos } = await supabase
+            .from("evolucoes")
+            .select("soap, data_hora")
+            .eq("internacao_id", validPid)
+            .order("data_hora", { ascending: false });
+          const adm = ((evos ?? []) as { soap?: Record<string, unknown> }[])
+            .find((e) => (e.soap as { __evolution_type?: string } | undefined)?.__evolution_type === "admission");
+          const s = (adm?.soap ?? {}) as { __cid_primary?: unknown; __cid_secondary?: unknown };
+          if (!cancelled && s.__cid_primary) {
+            setCidPrimary((prev) => (prev.trim() ? prev : String(s.__cid_primary)));
+          }
+          if (!cancelled && s.__cid_secondary) {
+            setCidSecondary((prev) => (prev.trim() ? prev : String(s.__cid_secondary)));
+          }
+        } catch { /* seed de CID silencioso */ }
 
         const r = (internacao as any).paciente || null;
         if (!r || cancelled) return;
@@ -2742,14 +2767,14 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
   // do que foi de fato impresso.
   const registrarProcedimento = async (
     apacData: Parameters<typeof buildApacHtml>[0],
-  ): Promise<boolean> => {
+  ): Promise<Record<string, unknown> | null> => {
     // MIGRAÇÃO: exige internacao_id (uuid real) — solicitacoes_exame pendura nele.
     const internacaoId = asUuidOrNull(patientId);
     if (!internacaoId) {
       toast.error("Não foi possível registrar a solicitação", {
         description: "Paciente sem internação vinculada.",
       });
-      return false;
+      return null;
     }
     try {
       // MIGRAÇÃO: grava direto em solicitacoes_exame (helper mira tabela morta).
@@ -2757,7 +2782,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
       // document_payload (kind:"apac"). Sem o snapshot, a reimpressão do Laudo
       // APAC pelo histórico (RequestCard) não fica disponível.
       const solicitadoPor = await resolveProfissionalId(user?.id);
-      const { error } = await supabase.from("solicitacoes_exame").insert({
+      const { data: createdRow, error } = await supabase.from("solicitacoes_exame").insert({
         internacao_id: internacaoId,
         categoria: "procedimento", // taxonomia preservada
         itens: selectedProcedures.map(p => ({ name: p.code ? `${p.name} (${p.code})` : p.name })),
@@ -2766,15 +2791,15 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
         indicacao_clinica: null, // o laudo APAC já contempla o procedimento no corpo
         observacoes: "[PROCEDIMENTO — Laudo APAC gerado]",
         solicitado_por: solicitadoPor,
-      });
+      }).select("*").single();
       if (error) throw error;
       onProcedureRegistered?.();
-      return true;
+      return (createdRow as Record<string, unknown>) ?? null;
     } catch (err) {
       toast.error("Não foi possível registrar a solicitação", {
         description: err instanceof Error ? err.message : "Erro desconhecido. O laudo não foi impresso.",
       });
-      return false;
+      return null;
     }
   };
 
@@ -2835,8 +2860,9 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
     // Grava PRIMEIRO. Se falhar, nada é impresso — laudo no papel sem
     // contrapartida no sistema é o furo de rastreabilidade que este trabalho
     // veio fechar.
-    const ok = await registrarProcedimento(apacData);
-    if (!ok) return;
+    const createdRow = await registrarProcedimento(apacData);
+    if (!createdRow) return;
+    setApacCreatedRow(createdRow);
 
     /*
       O ato terminou aqui: a requisicao foi ENVIADA. A impressao vira um passo
@@ -3297,11 +3323,23 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
         */}
         <PostValidationPrintDialog
           open={!!apacPrintHtml}
-          onOpenChange={(v) => { if (!v) setApacPrintHtml(null); }}
+          onOpenChange={(v) => { if (!v) { setApacPrintHtml(null); setApacCreatedRow(null); } }}
           documentLabel="Requisição"
           validatedAt={new Date()}
-          note="O laudo APAC pode ser impresso agora ou reemitido depois pela aba de solicitações."
-          onPrint={() => { if (apacPrintHtml) openPrintWindow(apacPrintHtml, "Preparando Laudo APAC…"); }}
+          note="Escolha o que imprimir — Laudo APAC e/ou Guia de requisição. Ambos podem ser reemitidos depois pela aba de solicitações."
+          options={[
+            { id: "apac", label: "Laudo APAC", description: "Documento do procedimento (padrão SUS)", defaultChecked: true },
+            { id: "guia", label: "Guia de requisição", description: "Guia interna da solicitação" },
+          ]}
+          onPrint={(ids) => {
+            if (ids.includes("apac") && apacPrintHtml) openPrintWindow(apacPrintHtml, "Preparando Laudo APAC…");
+            if (ids.includes("guia") && apacCreatedRow) {
+              void printSavedRequisition(
+                apacCreatedRow as { solicitado_por?: string | null },
+                { patientName: apacPatientName, patientBed, patientSector },
+              );
+            }
+          }}
         />
 
         {/* Validação obrigatória para TC — executa envio automaticamente após confirmar */}
