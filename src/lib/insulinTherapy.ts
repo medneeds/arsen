@@ -312,12 +312,12 @@ export function describeInsulinPlan(plan: InsulinPlan): { headline: string; line
       break;
     }
     case 'nph_fixed': {
+      // NPH FIXA (Artur): so as DOSES FIXAS com horarios, exatamente como lancadas.
+      // A conduta de hipoglicemia (HGT < 70) NAO entra aqui — ela vive na rotina de
+      // cuidados/ajuste glicemico, nao no esquema de NPH. Ajustes vao em "Obs"
+      // (recomendacoes), impressas logo abaixo.
       headline = 'NPH Fixa';
       (plan.nphDoses ?? []).forEach(d => lines.push(formatDose(d)));
-      // Varredura 16/07/2026: NPH tem risco real de hipoglicemia (inclusive
-      // noturna) e nunca teve conduta impressa — mesmo padrão dos outros
-      // esquemas SC (basal_bolus, sliding), antes exclusivo deles.
-      lines.push(`HGT < 70 → ${plan.hypoglycemiaProtocol?.trim() || DEFAULT_HYPO_PROTOCOL}`);
       break;
     }
     case 'iv_continuous': {

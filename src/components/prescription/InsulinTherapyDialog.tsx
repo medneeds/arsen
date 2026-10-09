@@ -195,8 +195,10 @@ export function InsulinTherapyDialog({
         {/* ───── STEP 2: parâmetros ───── */}
         {step === 2 && (
           <div className="space-y-4">
-            {/* Peso & meta — sempre visíveis */}
-            <div className="grid grid-cols-2 gap-3">
+            {/* Peso & meta. NPH FIXA nao usa peso (doses fixas lancadas a mao) -> o
+                campo de peso fica oculto nesse esquema. */}
+            <div className={cn("grid gap-3", plan.scheme === 'nph_fixed' ? "grid-cols-1" : "grid-cols-2")}>
+              {plan.scheme !== 'nph_fixed' && (
               <div>
                 <Label className="text-xs">Peso (kg)</Label>
                 <Input
@@ -205,12 +207,12 @@ export function InsulinTherapyDialog({
                   onChange={e => updatePlan({ weightKg: e.target.value ? Number(e.target.value) : undefined })}
                   onBlur={() => {
                     if (plan.scheme === 'basal_bolus') recalcBasalBolus();
-                    if (plan.scheme === 'nph_fixed') recalcNph();
                     if (plan.scheme === 'sliding' && !plan.slidingRows?.length) updatePlan({ slidingRows: suggestSlidingByWeight(plan.weightKg) });
                   }}
                   placeholder="ex.: 70"
                 />
               </div>
+              )}
               <div>
                 <Label className="text-xs">Meta glicêmica</Label>
                 <Select value={plan.glycemicTarget} onValueChange={v => updatePlan({ glycemicTarget: v })}>
@@ -232,19 +234,19 @@ export function InsulinTherapyDialog({
               <SlidingEditor plan={plan} onChange={updatePlan} />
             )}
             {plan.scheme === 'nph_fixed' && (
-              <NphFixedEditor plan={plan} onChange={updatePlan} onRecalc={recalcNph} />
+              <NphFixedEditor plan={plan} onChange={updatePlan} />
             )}
             {plan.scheme === 'iv_continuous' && (
               <IvContinuousEditor plan={plan} onChange={updatePlan} onApplyProtocol={applyIvProtocol} />
             )}
 
             <div>
-              <Label className="text-xs">Observações para enfermagem</Label>
+              <Label className="text-xs">Recomendações / observações para enfermagem</Label>
               <Textarea
                 rows={2}
                 value={plan.notes ?? ''}
                 onChange={e => updatePlan({ notes: e.target.value })}
-                placeholder="ex.: suspender NPH se NPO; HGT extra se sintomas de hipoglicemia"
+                placeholder="ex.: suspender NPH se NPO; horários conforme refeições; ajustes finos do esquema"
               />
             </div>
           </div>
@@ -493,21 +495,22 @@ export function SlidingEditor({
   );
 }
 
-function NphFixedEditor({ plan, onChange, onRecalc }: { plan: InsulinPlan; onChange: (p: Partial<InsulinPlan>) => void; onRecalc: () => void }) {
+function NphFixedEditor({ plan, onChange }: { plan: InsulinPlan; onChange: (p: Partial<InsulinPlan>) => void }) {
+  // NPH FIXA simplificada (Artur): so as DOSES FIXAS com horarios que o medico
+  // lanca — sem peso, sem recalculo por kg, e SEM conduta de hipoglicemia aqui
+  // (isso vive na rotina de cuidados/ajuste, nao no esquema de NPH). Ajustes finos
+  // vao no campo de recomendacoes. O que for lancado aqui reflete no impresso.
   return (
     <div className="space-y-3 rounded-lg border border-border/50 p-3 bg-card/40">
-      <div className="flex items-center justify-between">
-        <Label className="text-xs font-medium">NPH fixa (2/3 manhã + 1/3 noite)</Label>
-        <Button size="sm" variant="secondary" onClick={onRecalc}>RECALCULAR</Button>
-      </div>
+      <Label className="text-xs font-medium">NPH fixa — doses e horários</Label>
       <DoseList
         title=""
         doses={plan.nphDoses ?? []}
         onChange={(doses) => onChange({ nphDoses: doses })}
       />
-      <HypoglycemiaProtocolField plan={plan} onChange={onChange} />
       <p className="text-xs text-muted-foreground">
-        SBD: iniciar 0,2 U/kg/dia, ajustar conforme HGT pré-refeição. Considerar bedtime se hiperglicemia matinal.
+        Lance as doses fixas com os horários (ex.: 2/3 pela manhã, 1/3 à noite).
+        Ajustes e observações vão no campo de recomendações abaixo.
       </p>
     </div>
   );
