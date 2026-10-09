@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, User as UserIcon } from "lucide-react";
+import { richHtmlToPlainText } from "@/components/ui/rich-text-editor";
+import { formatDeviceLabel } from "@/lib/devicesCatalog";
 
 /**
  * Visao READ-ONLY inline da admissao (D0) ja registrada — mostrada na aba
@@ -191,6 +193,32 @@ export function AdmissaoReadOnlyView({ internacaoId }: Props) {
           <Field label="Conduta inicial" value={hist?.conduta_inicial || soap.plan} />
         </Group>
       )}
+
+      {(() => {
+        // Cuidados intensivos (UTI) — campos ESTRUTURADOS da admissao de UTI/UCI2.
+        const utiJust = (soap.__uti_justificativa ?? {}) as { codigo?: string; outro?: string };
+        const justificativaUti = (utiJust.outro || "").trim() || (utiJust.codigo || "").trim();
+        const vasoativo = typeof soap.__uti_vasoativo === "boolean" ? (soap.__uti_vasoativo ? "Sim" : "Não") : "";
+        const devices = Array.isArray(soap.devices)
+          ? (soap.devices as { label: string; detail?: string }[]).map(formatDeviceLabel).filter(Boolean).join("; ")
+          : "";
+        const culturas = richHtmlToPlainText(soap.culturesHtml as string | undefined);
+        const antibioticos = richHtmlToPlainText(soap.antibioticos as string | undefined);
+        const sofa = soap.__uti_sofa as { total?: unknown } | undefined;
+        const sofaTotal = sofa && sofa.total != null ? String(sofa.total) : "";
+        const hasUti = justificativaUti || vasoativo || devices || culturas || antibioticos || sofaTotal;
+        if (!hasUti) return null;
+        return (
+          <Group title="Cuidados intensivos (UTI)">
+            <Field label="Justificativa de admissão UTI" value={justificativaUti} />
+            <Field label="Droga vasoativa" value={vasoativo} />
+            <Field label="Dispositivos invasivos" value={devices} />
+            <Field label="Culturas" value={culturas} />
+            <Field label="Antibióticos em curso" value={antibioticos} />
+            <Field label="SOFA (total)" value={sofaTotal} />
+          </Group>
+        );
+      })()}
 
       {d0?.createdByName && (
         <p className="flex items-center gap-1 text-xs text-muted-foreground">
