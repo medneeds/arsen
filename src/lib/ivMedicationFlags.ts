@@ -147,7 +147,7 @@ const RECONSTITUTION: Array<{ rx: RegExp } & ReconstitutionDefault> = [
     notes: 'Risco de flebite — preferir acesso de bom calibre ou central.',
   },
   {
-    rx: /piperacilina[\s-]?tazobactam|tazocin/i, required: true,
+    rx: /piperacilina\s*[+/-]?\s*tazobactam|tazocin|pip[\s.+/-]*tazo/i, required: true,
     solvent: 'AD ou SF 0,9%', volumeMl: '20',
     finalDiluent: 'SF 0,9%', finalVolumeMl: '100',
     infusionTimeMin: '30',
@@ -208,7 +208,7 @@ const RECONSTITUTION: Array<{ rx: RegExp } & ReconstitutionDefault> = [
     source: 'ANVISA',
   },
   {
-    rx: /ceftolozano[\s-]?tazobactam|zerbaxa/i, required: true,
+    rx: /ceftolozano\s*[+/-]?\s*tazobactam|zerbaxa/i, required: true,
     solvent: 'AD ou SF 0,9%', volumeMl: '10',
     finalDiluent: 'SF 0,9%', finalVolumeMl: '100',
     infusionTimeMin: '60',
@@ -486,7 +486,7 @@ const RECONSTITUTION: Array<{ rx: RegExp } & ReconstitutionDefault> = [
     notes: 'Frasco-ampola requer reconstituição com 100 mL SF antes de transferir para bolsa.',
   },
   {
-    rx: /sulbactam[\s-]*durlobactam|xacduro/i, required: true,
+    rx: /sulbactam\s*[+/-]?\s*durlobactam|xacduro/i, required: true,
     solvent: 'AD', volumeMl: '20',
     finalDiluent: 'SF 0,9%', finalVolumeMl: '100',
     infusionTimeMin: '180',
