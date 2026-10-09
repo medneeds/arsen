@@ -10,7 +10,6 @@ import { PatientQuickSearch } from "@/components/PatientQuickSearch";
 import { usePatientSearchNavigation } from "@/hooks/usePatientSearchNavigation";
 
 import { useAuth } from "@/contexts/AuthContext";
-import { useHospital } from "@/contexts/HospitalContext";
 import {
   useDepartment,
   DEPARTMENT_TO_SECTOR,
@@ -20,6 +19,8 @@ import { isDepartmentLocked, LOCKED_TOOLTIP } from "@/config/lockedSectors";
 import { SECTOR_ROUTES } from "@/config/clinicalSectors";
 import { useSectorNavigation } from "@/hooks/useSectorNavigation";
 import { whitelabel } from "@/config/whitelabel";
+import { ArsenMark } from "@/components/brand/ArsenMark";
+import socorraoCross from "@/assets/socorrao-cross-logo.png";
 import { safeGetItem } from "@/lib/safeStorage";
 import { cn } from "@/lib/utils";
 
@@ -37,7 +38,6 @@ import { cn } from "@/lib/utils";
 export default function SectorLauncherPage() {
   const navigate = useNavigate();
   const { loading: authLoading, signOut, user } = useAuth();
-  const { currentHospital } = useHospital();
   const { setCurrentDepartment } = useDepartment();
   const [escolhido, setEscolhido] = useState<Department | null>(null);
   // Setores DIRETO DO BANCO NOVO (alas → setores), agrupados por ala — mesma
@@ -99,33 +99,52 @@ export default function SectorLauncherPage() {
           }}
         >
           <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="min-w-0">
-              <p className="text-xs sm:text-xs font-medium uppercase tracking-wide text-primary-foreground/70">
-                {saudacao}
-                {primeiroNome ? `, ${primeiroNome}` : ""}
-              </p>
-              <h1 className="preserve-case mt-1 text-xl sm:text-2xl font-medium tracking-tight text-primary-foreground">
-                Onde você vai atuar hoje?
-              </h1>
-              <span className="mt-3 inline-flex max-w-full items-center gap-2 rounded-md border border-white/20 bg-white/15 px-3 py-1 text-xs sm:text-xs font-medium text-primary-foreground backdrop-blur">
-                <Building2 className="h-3.5 w-3.5 flex-shrink-0" aria-hidden />
-                <span className="truncate">
-                  {currentHospital?.name ?? whitelabel.institution.hospitalName}
+            {/* Identidade do hospital: simbolo (cross, transparente) + nome por
+                extenso. Band navy e sempre escuro -> texto em branco FIXO. */}
+            <div className="flex min-w-0 items-start gap-3 sm:gap-4">
+              <img
+                src={socorraoCross}
+                alt={whitelabel.institution.hospitalLogoAlt}
+                className="h-12 w-12 shrink-0 object-contain drop-shadow-sm"
+              />
+              <div className="min-w-0">
+                <p className="text-xs font-medium uppercase tracking-wide text-white/70">
+                  {saudacao}
+                  {primeiroNome ? `, ${primeiroNome}` : ""}
+                </p>
+                <h1 className="preserve-case mt-0.5 text-xl sm:text-2xl font-medium tracking-tight text-white">
+                  Onde você vai atuar hoje?
+                </h1>
+                <span className="mt-2 inline-flex max-w-full items-center gap-2 rounded-md border border-white/25 bg-white/15 px-3 py-1 text-xs font-medium text-white backdrop-blur">
+                  <Building2 className="h-3.5 w-3.5 flex-shrink-0" aria-hidden />
+                  <span className="truncate">
+                    {whitelabel.institution.hospitalFullName}
+                  </span>
                 </span>
-              </span>
+              </div>
             </div>
 
-            <div className="flex items-center gap-2 shrink-0">
-              <ThemeToggle onDark />
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => signOut()}
-                className="h-9 bg-white/10 text-primary-foreground border border-white/20 backdrop-blur hover:bg-white/20 hover:text-primary-foreground"
-              >
-                <LogOut className="h-4 w-4 mr-2" aria-hidden />
-                Sair
-              </Button>
+            <div className="flex flex-col items-end gap-3">
+              <div className="flex items-center gap-2 shrink-0">
+                <ThemeToggle onDark />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => signOut()}
+                  className="h-8 bg-white/15 text-white border border-white/30 backdrop-blur hover:bg-white/25 hover:text-white"
+                >
+                  <LogOut className="h-4 w-4 mr-2" aria-hidden />
+                  Sair
+                </Button>
+              </div>
+              {/* Identidade do Arsen (sistema) sob o guarda-chuva do hospital. */}
+              <div className="hidden items-center gap-2 sm:flex">
+                <ArsenMark size={22} variant="compact" className="text-white" />
+                <div className="text-right leading-tight">
+                  <p className="text-xs font-semibold tracking-[0.15em] text-white">ARSEN</p>
+                  <p className="text-[10px] text-white/70">{whitelabel.platform.slogan}</p>
+                </div>
+              </div>
             </div>
           </div>
         </header>

@@ -3,7 +3,7 @@ import { resolveSectorCode } from "@/config/sectorCoverage";
 import { MainLayout } from "@/components/MainLayout";
 import { whitelabel } from "@/config/whitelabel";
 import { ArsenMark } from "@/components/brand/ArsenMark";
-import socorraoLogo from "@/assets/socorrao1-logo.png";
+import socorraoLogo from "@/assets/socorrao-cross-logo.png";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -264,13 +264,12 @@ const ClinicalDashboardPage = () => {
           <div className="pointer-events-none absolute inset-y-0 right-0 w-1/3 bg-gradient-to-l from-primary/[0.05] to-transparent" />
           <div className="relative flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
             <div className="flex min-w-0 items-center gap-3 sm:gap-4">
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-white p-1.5 shadow-sm ring-1 ring-border/60">
-                <img
-                  src={socorraoLogo}
-                  alt={whitelabel.institution.hospitalLogoAlt}
-                  className="h-full w-full object-contain"
-                />
-              </div>
+              {/* So o simbolo (cross), fundo transparente — sem caixa branca. */}
+              <img
+                src={socorraoLogo}
+                alt={whitelabel.institution.hospitalLogoAlt}
+                className="h-12 w-12 shrink-0 object-contain"
+              />
               <div className="min-w-0">
                 <p className="truncate text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
                   {whitelabel.institution.prefeitura} · {whitelabel.institution.secretaria}

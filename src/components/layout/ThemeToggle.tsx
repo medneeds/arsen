@@ -30,7 +30,9 @@ export function ThemeToggle({ onDark = false }: { onDark?: boolean }) {
       className={cn(
         "h-8 w-8 shadow-sm transition-colors",
         onDark
-          ? "bg-white/10 text-primary-foreground border-white/25 hover:bg-white/20 hover:text-primary-foreground"
+          // Band navy e SEMPRE escuro (independe do tema) -> branco FIXO, nao
+          // text-primary-foreground (que inverte no dark e sumia o icone).
+          ? "bg-white/15 text-white border-white/30 hover:bg-white/25 hover:text-white"
           : "bg-background text-foreground border-border hover:bg-muted hover:text-primary",
       )}
     >
