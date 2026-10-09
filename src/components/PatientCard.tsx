@@ -2197,18 +2197,44 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                             • Sem sinalização → abre orientação didática com bloqueio duro
                               direcionando ao Painel Clínico (sem atalho excepcional). */}
                         {onReleasePreAdmissionBed && (role === 'admin' || role === 'medico') && (() => {
-                          const isPostOutcome = patient.admissionStatus === 'alta_dada' || patient.admissionStatus === 'obito';
+                          const isAlta = patient.admissionStatus === 'alta_dada';
+                          const isObito = patient.admissionStatus === 'obito';
                           const isInternal = patient.admissionStatus === 'transferencia_interna_pendente';
-                          const isSignaled = isInternal || patient.admissionStatus === 'transferencia_externa_pendente';
-                          const sub = isPostOutcome
-                            ? 'Pós-alta/óbito — confirmação por senha, encerra o atendimento'
-                            : isInternal
-                              ? 'Transferência interna — preserva o atendimento (mesmo nº)'
-                              : isSignaled
-                                ? 'Conclui a sinalização feita no Painel Clínico'
-                                : 'Bloqueado — sinalize a movimentação no Painel Clínico';
-                          const tone = isSignaled ? 'emerald' : 'amber';
+                          const isExternal = patient.admissionStatus === 'transferencia_externa_pendente';
+                          const isPostOutcome = isAlta || isObito;
+                          const isSignaled = isInternal || isExternal;
                           const isDisabled = !isSignaled && !isPostOutcome;
+                          // Cada desfecho tem rotulo, descricao e TOM proprios — alta, obito e
+                          // transferencia nao se misturam no botao (reduz a confusao de UX e
+                          // deixa claro QUAL fluxo encerra o atendimento). O registro do desfecho
+                          // ja foi feito na sinalizacao do Painel Clinico; aqui so se libera o leito.
+                          const cfg = isAlta
+                            ? { label: 'Desalocar por alta', sub: 'Alta assinada — encerra o atendimento', tone: 'emerald' as const }
+                            : isObito
+                              ? { label: 'Desalocar por óbito', sub: 'Óbito registrado — encerra o atendimento', tone: 'slate' as const }
+                              : isInternal
+                                ? { label: 'Transferir leito', sub: 'Transferência interna — preserva o atendimento (mesmo nº)', tone: 'sky' as const }
+                                : isExternal
+                                  ? { label: 'Desalocar por transf. externa', sub: 'Transferência externa — encerra o atendimento', tone: 'emerald' as const }
+                                  : { label: 'Desalocar leito', sub: 'Bloqueado — sinalize a movimentação no Painel Clínico', tone: 'amber' as const };
+                          const toneBox: Record<string, string> = {
+                            emerald: 'bg-released-soft group-hover/item:bg-released',
+                            slate: 'bg-muted group-hover/item:bg-muted-foreground/20',
+                            sky: 'bg-primary/10 group-hover/item:bg-primary/20',
+                            amber: 'bg-warning-soft group-hover/item:bg-warning',
+                          };
+                          const toneText: Record<string, string> = {
+                            emerald: 'text-released-on-soft',
+                            slate: 'text-foreground',
+                            sky: 'text-primary',
+                            amber: 'text-warning-on-soft',
+                          };
+                          const toneHover: Record<string, string> = {
+                            emerald: 'hover:border-released-border/60 hover:bg-gradient-to-r hover:from-released-soft hover:to-transparent focus:bg-released-soft',
+                            slate: 'hover:border-border hover:bg-gradient-to-r hover:from-muted hover:to-transparent focus:bg-muted',
+                            sky: 'hover:border-primary/40 hover:bg-gradient-to-r hover:from-primary/10 hover:to-transparent focus:bg-primary/10',
+                            amber: 'hover:border-warning-border/60 hover:bg-gradient-to-r hover:from-warning-soft hover:to-transparent focus:bg-warning-soft',
+                          };
                           return (
                             <DropdownMenuItem
                               disabled={isDisabled}
@@ -2225,31 +2251,23 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                                 "group/item flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium border border-transparent transition-all duration-200",
                                 isDisabled
                                   ? "cursor-not-allowed opacity-50"
-                                  : "cursor-pointer hover:translate-x-0.5 hover:shadow-sm",
-                                !isDisabled && (tone === 'emerald'
-                                  ? "hover:border-released-border/60 hover:bg-gradient-to-r hover:from-released-soft hover:to-transparent focus:bg-released-soft"
-                                  : "hover:border-warning-border/60 hover:bg-gradient-to-r hover:from-warning-soft hover:to-transparent focus:bg-warning-soft")
+                                  : cn("cursor-pointer hover:translate-x-0.5 hover:shadow-sm", toneHover[cfg.tone]),
                               )}
                             >
                               <div className={cn(
                                 "flex h-7 w-7 items-center justify-center rounded-md transition-colors",
-                                tone === 'emerald'
-                                  ? "bg-released-soft group-hover/item:bg-released"
-                                  : "bg-warning-soft group-hover/item:bg-warning"
+                                toneBox[cfg.tone],
                               )}>
-                                {tone === 'emerald'
-                                  ? <CheckCircle2 className="h-3.5 w-3.5 text-released-on-soft" />
-                                  : <UserMinus className="h-3.5 w-3.5 text-warning-on-soft" />}
+                                {isObito
+                                  ? <UserMinus className={cn("h-3.5 w-3.5", toneText[cfg.tone])} />
+                                  : <CheckCircle2 className={cn("h-3.5 w-3.5", toneText[cfg.tone])} />}
                               </div>
                               <div className="flex flex-col items-start min-w-0">
-                                <span className={cn(
-                                  "leading-tight",
-                                  tone === 'emerald' ? "text-released-on-soft" : "text-warning-on-soft"
-                                )}>
-                                  {isInternal ? 'Transferir leito' : 'Desalocar leito'}
+                                <span className={cn("leading-tight", toneText[cfg.tone])}>
+                                  {cfg.label}
                                 </span>
                                 <span className="text-xs font-normal text-muted-foreground leading-tight">
-                                  {sub}
+                                  {cfg.sub}
                                 </span>
                               </div>
                             </DropdownMenuItem>
