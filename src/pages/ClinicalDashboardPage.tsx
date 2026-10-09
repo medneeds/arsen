@@ -3,7 +3,7 @@ import { resolveSectorCode } from "@/config/sectorCoverage";
 import { MainLayout } from "@/components/MainLayout";
 import { whitelabel } from "@/config/whitelabel";
 import { ArsenMark } from "@/components/brand/ArsenMark";
-import socorraoLogo from "@/assets/socorrao-cross-logo.png";
+import socorraoLogo from "@/assets/hmdm-mark.png";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

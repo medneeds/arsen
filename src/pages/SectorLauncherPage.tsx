@@ -20,7 +20,7 @@ import { SECTOR_ROUTES } from "@/config/clinicalSectors";
 import { useSectorNavigation } from "@/hooks/useSectorNavigation";
 import { whitelabel } from "@/config/whitelabel";
 import { ArsenMark } from "@/components/brand/ArsenMark";
-import socorraoCross from "@/assets/socorrao-cross-logo.png";
+import socorraoCross from "@/assets/hmdm-mark.png";
 import { safeGetItem } from "@/lib/safeStorage";
 import { cn } from "@/lib/utils";
 
@@ -98,14 +98,15 @@ export default function SectorLauncherPage() {
               "linear-gradient(110deg, hsl(var(--primary)) 0%, hsl(210 70% 22%) 55%, hsl(210 75% 18%) 100%)",
           }}
         >
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            {/* Identidade do hospital: simbolo (cross, transparente) + nome por
-                extenso. Band navy e sempre escuro -> texto em branco FIXO. */}
-            <div className="flex min-w-0 items-start gap-3 sm:gap-4">
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+            {/* Identidade do hospital: simbolo transparente (mesmo mark da sidebar),
+                MAIOR e centralizado verticalmente entre a saudacao e a pilula. Band
+                navy e sempre escuro -> texto em branco FIXO, logo sem caixa. */}
+            <div className="flex min-w-0 items-center gap-3 sm:gap-4">
               <img
                 src={socorraoCross}
                 alt={whitelabel.institution.hospitalLogoAlt}
-                className="h-12 w-12 shrink-0 object-contain drop-shadow-sm"
+                className="h-16 w-16 shrink-0 object-contain drop-shadow"
               />
               <div className="min-w-0">
                 <p className="text-xs font-medium uppercase tracking-wide text-white/70">
@@ -137,12 +138,12 @@ export default function SectorLauncherPage() {
                   Sair
                 </Button>
               </div>
-              {/* Identidade do Arsen (sistema) sob o guarda-chuva do hospital. */}
-              <div className="hidden items-center gap-2 sm:flex">
-                <ArsenMark size={22} variant="compact" className="text-white" />
-                <div className="text-right leading-tight">
-                  <p className="text-xs font-semibold tracking-[0.15em] text-white">ARSEN</p>
-                  <p className="text-[10px] text-white/70">{whitelabel.platform.slogan}</p>
+              {/* Identidade do Arsen (sistema): marca + nome + slogan, lockup limpo. */}
+              <div className="hidden items-center gap-2.5 sm:flex">
+                <ArsenMark size={30} variant="compact" className="text-white" />
+                <div className="text-left leading-tight">
+                  <p className="text-sm font-semibold tracking-[0.2em] text-white">ARSEN</p>
+                  <p className="text-[10px] tracking-wide text-white/75">{whitelabel.platform.slogan}</p>
                 </div>
               </div>
             </div>
