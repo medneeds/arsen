@@ -53,7 +53,7 @@ const DocumentosPacientePage = () => {
   const hasPatient = !!patientName;
 
   const cockpitPatient = useCockpitPatient();
-  const { docs, loading } = usePatientDocuments({
+  const { docs, loading, refetch } = usePatientDocuments({
     patientId,
     patientName,
     hospitalUnitId: currentHospital?.id,
@@ -161,8 +161,34 @@ const DocumentosPacientePage = () => {
     } else if (doc.source === "boletim_cirurgico") {
       // raw e a linha crua de altas — printBoletimCirurgico mapeia internamente.
       await printBoletimCirurgico(doc.raw, { hospitalName: currentHospital?.name });
+    } else if (doc.source === "exam_requests") {
+      // 2a via de solicitacao (lab, imagem, APAC, hemocomponente, SAT, cultura):
+      // monta o pedido como a lista de Requisicoes (paciente + autor) e usa o
+      // mesmo despachante de impressao dela.
+      try {
+        const [{ normalizeSolicitacao, applyAuthor }, pages, guide, { getSectorDisplayLabel }] = await Promise.all([
+          import("@/lib/solicitacaoNormalize"),
+          import("@/pages/RequisicaoUnificadaPage"),
+          import("@/lib/printRequisitionWithGasometriaPrompt"),
+          import("@/utils/bedNaming"),
+        ]);
+        const req = applyAuthor(
+          normalizeSolicitacao(doc.raw, { patientName, patientBed, patientSector }),
+          doc.authorName ? { id: "", nome: doc.authorName, crm: doc.authorCrm ?? null } : null,
+        );
+        if (req.category === "hemocomponente" || req.category === "sat") {
+          await pages.printTerapeuticoRequest(req, getSectorDisplayLabel);
+        } else if (req.category === "procedimento") {
+          await pages.printProcedimentoRequest(req, getSectorDisplayLabel);
+        } else {
+          await guide.printRequisitionGuideWithGasometriaPrompt(req, getSectorDisplayLabel);
+        }
+      } catch (err) {
+        console.error("[Documentos] reimpressao de solicitacao falhou:", err);
+        toast.error("Não foi possível reimprimir a solicitação");
+      }
     }
-  }, [currentHospital]);
+  }, [currentHospital, patientName, patientBed, patientSector]);
 
   const handleOpenDoc = useCallback((doc: PatientDocument) => {
     // Roteia para a página apropriada com base na origem
@@ -309,7 +335,7 @@ const DocumentosPacientePage = () => {
       {/* Dialog: Solicitação de Hemocomponentes */}
       <HemocomponentRequestDialog
         open={hemoOpen}
-        onOpenChange={setHemoOpen}
+        onOpenChange={(v) => { setHemoOpen(v); if (!v) void refetch(); }}
         patientId={patientId || null}
         patientName={patientName}
         patientBed={patientBed}
@@ -319,7 +345,7 @@ const DocumentosPacientePage = () => {
       {/* Dialog: Solicitação de SAT / IGHAT */}
       <SatRequestDialog
         open={satOpen}
-        onOpenChange={setSatOpen}
+        onOpenChange={(v) => { setSatOpen(v); if (!v) void refetch(); }}
         patientId={patientId || null}
         patientName={patientName}
         patientBed={patientBed}
@@ -329,7 +355,7 @@ const DocumentosPacientePage = () => {
       {/* Dialog: Solicitação de Cultura (microbiológica) */}
       <CultureRequestDialog
         open={cultureOpen}
-        onOpenChange={setCultureOpen}
+        onOpenChange={(v) => { setCultureOpen(v); if (!v) void refetch(); }}
         patientId={patientId || null}
         patientName={patientName}
         patientBed={patientBed}

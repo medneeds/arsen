@@ -88,6 +88,13 @@ function isApacItem(items: any[]): boolean {
   });
 }
 
+/** solicitacoes_exame.categoria que tem acordeao proprio (nao e laboratorio). */
+const SPECIAL_CATEGORY_TYPE: Record<string, DocumentType> = {
+  hemocomponente: "hemoderivado",
+  sat: "sat",
+  cultura: "cultura",
+};
+
 interface UsePatientDocumentsOpts {
   patientId?: string | null;
   patientName?: string | null;
@@ -201,8 +208,11 @@ export function usePatientDocuments({
       // MIGRAÇÃO: source mantido "exam_requests" (shape exportado estável).
       // DEGRADADO: authorName/patientSector/patientBed sem coluna → null/undefined.
       (examRes.data || []).forEach((r: any) => {
-        const isApac = r.categoria === "apac" || isApacItem(r.itens);
-        const type: DocumentType = isApac
+        // Categorias com campo proprio na aba Docs (antes caiam em "lab").
+        const isApac = r.categoria === "apac" || (!SPECIAL_CATEGORY_TYPE[r.categoria] && isApacItem(r.itens));
+        const type: DocumentType = SPECIAL_CATEGORY_TYPE[r.categoria]
+          ? SPECIAL_CATEGORY_TYPE[r.categoria]
+          : isApac
           ? "apac"
           : r.categoria === "imagem"
           ? "imagem"

@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Activity, Clock, Droplet, FileCheck, FileSignature, FileText, Microscope, NotebookPen, Plus, Printer,
+  Activity, ChevronDown, ChevronUp, Clock, Droplet, FileCheck, FileSignature, FileText, Microscope, NotebookPen, Plus, Printer,
   ScanLine, Scissors, ScrollText, Stethoscope, Syringe, TestTubes, User as UserIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -95,7 +95,19 @@ export function PatientDocumentsPanel({
     return map;
   }, [docs]);
 
-  const timeline = useMemo(() => docs.slice(0, timelineLimit), [docs, timelineLimit]);
+  // "Últimos documentos": recolhível, mostra os mais recentes e, em "Ver mais",
+  // todos em ordem cronológica de solicitação (mais novo primeiro). As linhas
+  // acompanham `docs`, que o hook atualiza em tempo real.
+  const [timelineOpen, setTimelineOpen] = useState(true);
+  const [showAll, setShowAll] = useState(false);
+  const ordered = useMemo(
+    () => [...docs].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1)),
+    [docs],
+  );
+  const timeline = useMemo(
+    () => (showAll ? ordered : ordered.slice(0, timelineLimit)),
+    [ordered, showAll, timelineLimit],
+  );
 
   if (loading) {
     return (
@@ -112,25 +124,55 @@ export function PatientDocumentsPanel({
       {/* TIMELINE GERAL (5 últimos) */}
       {!hideTimeline && timeline.length > 0 && (
         <section className="rounded-lg border border-border/60 bg-card/50">
-          <header className="flex items-center justify-between px-4 py-3 border-b border-border/40">
+          <button
+            type="button"
+            onClick={() => setTimelineOpen((v) => !v)}
+            aria-expanded={timelineOpen}
+            className={cn(
+              "w-full flex items-center justify-between gap-2 px-4 py-3 text-left hover:bg-muted/30 transition-colors rounded-t-lg",
+              timelineOpen && "border-b border-border/40",
+            )}
+          >
             <div className="flex items-center gap-2">
               <Clock className="h-3.5 w-3.5 text-primary" />
               <h3 className="text-xs font-medium tracking-wide text-foreground/80">
                 Últimos documentos
               </h3>
             </div>
-            <span className="text-xs text-muted-foreground">{docs.length} no total</span>
-          </header>
-          <ul className="divide-y divide-border/40">
-            {timeline.map((doc) => (
-              <TimelineRow
-                key={`${doc.source}-${doc.id}`}
-                doc={doc}
-                onOpen={onOpenDoc}
-                onPrint={onPrintDoc}
-              />
-            ))}
-          </ul>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">{docs.length} no total</span>
+              {timelineOpen
+                ? <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" />
+                : <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />}
+            </div>
+          </button>
+          {timelineOpen && (
+            <>
+              <ul className="divide-y divide-border/40">
+                {timeline.map((doc) => (
+                  <TimelineRow
+                    key={`${doc.source}-${doc.id}`}
+                    doc={doc}
+                    onOpen={onOpenDoc}
+                    onPrint={onPrintDoc}
+                  />
+                ))}
+              </ul>
+              {docs.length > timelineLimit && (
+                <div className="border-t border-border/40 px-4 py-2 text-center">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs"
+                    onClick={() => setShowAll((v) => !v)}
+                  >
+                    {showAll ? "Ver menos" : "Ver mais"}
+                  </Button>
+                </div>
+              )}
+            </>
+          )}
         </section>
       )}
 
