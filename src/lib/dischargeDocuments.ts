@@ -130,7 +130,13 @@ const dischargeExtraStyles = `
   .dz-section-title { font-size: 9pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5pt; color: #475569; margin: 10pt 0 4pt; padding-bottom: 2pt; border-bottom: 1pt solid #0054A6; }
 `;
 
-function buildBody(type: DischargeDocType, p: DischargeDocPayload): string {
+/**
+ * Qual bloco do formulario imprimir. Sem valor, imprime o documento completo
+ * (comportamento original). Cada bloco imprime a identificacao + so a sua parte.
+ */
+export type DischargePrintBlock = "summary" | "followup" | "family";
+
+function buildBody(type: DischargeDocType, p: DischargeDocPayload, only?: DischargePrintBlock): string {
   const isDeath = type === "obito";
 
   const idGrid = `
@@ -154,14 +160,24 @@ function buildBody(type: DischargeDocType, p: DischargeDocPayload): string {
     ${field("Intercorrências / complicações", p.complications)}
   `;
 
-  const dischargeBlocks = `
-    <div class="dz-section-title">Plano de alta</div>
+  const dischargeSummaryPart = `
     ${field("Sumário de alta", p.discharge_summary)}
     ${field("Plano e orientações de alta", p.orientations)}
     ${field("Prescrição de alta", p.prescription)}
+  `;
+  const dischargeFollowupPart = `
     ${field("Restrições", p.restrictions)}
     ${field("Retorno / contrarreferência", [p.return_date, p.return_specialty, p.referral].filter(Boolean).join(" • "))}
   `;
+  const dischargeBlocks = `
+    <div class="dz-section-title">Plano de alta</div>
+    ${dischargeSummaryPart}
+    ${dischargeFollowupPart}
+  `;
+  // Impressao de um bloco so: o titulo da secao aparece apenas se houver conteudo.
+  const followupOnly = dischargeFollowupPart.trim()
+    ? `<div class="dz-section-title">Retorno e restrições</div>${dischargeFollowupPart}`
+    : "";
 
   const deathBlocks = `
     <div class="dz-section-title">Óbito</div>
@@ -205,12 +221,22 @@ function buildBody(type: DischargeDocType, p: DischargeDocPayload): string {
     `
     : "";
 
+  if (only === "summary") {
+    const summaryTail = isDeath
+      ? deathBlocks
+      : `<div class="dz-section-title">Plano de alta</div>${dischargeSummaryPart}`;
+    return `${idGrid}${clinicalCommon}${summaryTail}`;
+  }
+  if (only === "followup") return `${idGrid}${followupOnly}`;
+  if (only === "family") return `${idGrid}${familyBlocks}`;
+
   return `${idGrid}${clinicalCommon}${isDeath ? deathBlocks : dischargeBlocks}${familyBlocks}`;
 }
 
 export async function printDischargeDocument(
   type: DischargeDocType,
   payload: DischargeDocPayload,
+  only?: DischargePrintBlock,
 ) {
   const title = DISCHARGE_DOC_LABELS[type];
   const sectorDisplay = getSectorDisplayLabel(payload.patient_sector);
@@ -247,7 +273,7 @@ export async function printDischargeDocument(
     sectorLabel,
     hospitalName: payload.hospital_name,
     docCodePrefix: DISCHARGE_DOC_PREFIX[type],
-    bodyHtml: buildBody(type, payload),
+    bodyHtml: buildBody(type, payload, only),
     signatures,
     logoDataUrl,
     orientation: "portrait",

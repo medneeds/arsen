@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Printer, Skull, Home, FileSignature, NotebookPen, Loader2 } from "lucide-react";
+import { Printer, Skull, Home, NotebookPen, Loader2, ChevronDown, ChevronUp, Save } from "lucide-react";
 import { ReceituarioForm } from "@/components/ReceituarioForm";
 import { useReceituario } from "@/hooks/useReceituario";
 import { useLatestEvolution } from "@/hooks/useLatestEvolution";
@@ -23,7 +23,15 @@ import {
   type DischargeDocPayload,
   DISCHARGE_DOC_LABELS,
   printDischargeDocument,
+  type DischargePrintBlock,
 } from "@/lib/dischargeDocuments";
+import {
+  type DraftBlock,
+  draftFields,
+  getDraftStorage,
+  loadDraft,
+  saveDraft,
+} from "@/lib/dischargeDraft";
 
 export interface DischargeDocFormProps {
   type: DischargeDocType;
@@ -53,6 +61,7 @@ export function DischargeDocumentForm({ type, initial, onChange, patientId, hosp
     discharge_type: "melhorado",
     death_type: "natural",
     ...initial,
+    ...restoredDraftValues(patientId, type),
   }) as DischargeDocPayload);
 
   const setField = <K extends keyof DischargeDocPayload>(k: K, v: DischargeDocPayload[K]) =>
@@ -100,6 +109,38 @@ export function DischargeDocumentForm({ type, initial, onChange, patientId, hosp
     });
   }, [form, type]);
 
+  const summaryDone = useMemo(
+    () => REQUIRED_BY_TYPE[type]
+      .filter((k) => !String(k).startsWith("signed_"))
+      .every((k) => String(form[k] ?? "").trim().length > 2),
+    [form, type],
+  );
+  const hasAny = (keys: (keyof DischargeDocPayload)[]) =>
+    keys.some((k) => String(form[k] ?? "").trim().length > 0);
+  const followupFilled = hasAny(draftFields(type, "followup"));
+  const familyFilled = hasAny(draftFields(type, "family"));
+
+  // Avisa uma unica vez quando um rascunho local foi aplicado ao abrir.
+  useEffect(() => {
+    if (Object.keys(restoredDraftValues(patientId, type)).length > 0) {
+      toast.info("Rascunho local restaurado", { description: "Revise antes de confirmar a sinalização." });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const saveBlockDraft = (block: DraftBlock) => {
+    if (!patientId) {
+      toast.error("Sem internação vinculada — não é possível guardar o rascunho.");
+      return;
+    }
+    const ok = saveDraft(getDraftStorage(), patientId, type, block, form);
+    if (ok) toast.success("Rascunho guardado neste navegador", { description: "Vale por 24h e não substitui a confirmação da sinalização." });
+    else toast.error("Não foi possível guardar o rascunho neste navegador.");
+  };
+
+  const printBlock = (block: DischargePrintBlock) =>
+    printDischargeDocument(type, { ...form, signed_at: form.signed_at || new Date().toISOString() }, block);
+
   useEffect(() => {
     onChange(form, isComplete);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -123,150 +164,168 @@ export function DischargeDocumentForm({ type, initial, onChange, patientId, hosp
         </span>
       </div>
 
-      {/* Common */}
-      <div className="grid grid-cols-2 gap-2">
-        <Field label={isDeath ? "Data/hora do óbito *" : "Data/hora da alta *"}>
-          <Input
-            type="datetime-local"
-            className="h-8 text-xs"
-            value={isDeath ? form.death_date_time || "" : form.discharge_date || ""}
-            onChange={(e) => setField(isDeath ? "death_date_time" : "discharge_date", e.target.value)}
-          />
-        </Field>
-        {!isDeath && (
-          <Field label="Data de admissão">
+      {/* Bloco 1 — sumario (alta) / relatorio (obito), ate antes do receituario */}
+      <Block
+        title={isDeath ? "Relatório de óbito" : "Sumário de alta"}
+        required
+        status={summaryDone ? "ok" : "pending"}
+        defaultOpen
+        onSaveDraft={() => saveBlockDraft("summary")}
+        onPrint={() => printBlock("summary")}
+      >
+        <div className="grid grid-cols-2 gap-2">
+          <Field label={isDeath ? "Data/hora do óbito *" : "Data/hora da alta *"}>
             <Input
-              type="date"
+              type="datetime-local"
               className="h-8 text-xs"
-              value={form.admission_date ? form.admission_date.slice(0, 10) : ""}
-              onChange={(e) => setField("admission_date", e.target.value)}
-              placeholder="dd/mm/aaaa"
+              value={isDeath ? form.death_date_time || "" : form.discharge_date || ""}
+              onChange={(e) => setField(isDeath ? "death_date_time" : "discharge_date", e.target.value)}
             />
           </Field>
-        )}
-        {isDeath ? (
-          <Field label="Local do óbito">
-            <Input
-              className="h-8 text-xs uppercase tracking-wider"
-              value={form.death_place || ""}
-              onChange={(e) => setField("death_place", upper(e.target.value))}
-              placeholder="LEITO / SETOR / CC"
-            />
-          </Field>
-        ) : (
-          <Field label="Tipo de alta">
-            <Select value={form.discharge_type || "melhorado"} onValueChange={(v) => setField("discharge_type", v)}>
-              <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="melhorado">Melhorado</SelectItem>
-                <SelectItem value="curado">Curado</SelectItem>
-                <SelectItem value="inalterado">Inalterado</SelectItem>
-                <SelectItem value="a_pedido">A pedido</SelectItem>
-                <SelectItem value="transferencia">Transferência</SelectItem>
-              </SelectContent>
-            </Select>
-          </Field>
-        )}
-      </div>
-
-      <Field label="Diagnóstico de admissão">
-        <Textarea rows={2} className="text-xs" value={form.admission_diagnosis || ""}
-          onChange={(e) => setField("admission_diagnosis", upper(e.target.value))} />
-      </Field>
-
-      <Field label="Diagnósticos finais (CID + descrição) *">
-        <Textarea rows={2} className="text-xs" value={form.final_diagnoses || ""}
-          onChange={(e) => setField("final_diagnoses", upper(e.target.value))}
-          placeholder="EX: I50.0 - INSUFICIÊNCIA CARDÍACA CONGESTIVA" />
-      </Field>
-
-      <div className="space-y-1">
-        <div className="flex items-center justify-between gap-2">
-          <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-            {isDeath ? "Resumo da evolução até o óbito *" : "Resumo da evolução / quadro clínico *"}
-          </Label>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-6 px-2 text-xs gap-1 text-primary hover:text-primary"
-            onClick={handleFillFromEvolution}
-            disabled={evolutionLoading}
-            title="Preencher com a última evolução clínica registrada"
-          >
-            {evolutionLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <NotebookPen className="h-3 w-3" />}
-            Evolução
-          </Button>
+          {!isDeath && (
+            <Field label="Data de admissão">
+              <Input
+                type="date"
+                className="h-8 text-xs"
+                value={form.admission_date ? form.admission_date.slice(0, 10) : ""}
+                onChange={(e) => setField("admission_date", e.target.value)}
+                placeholder="dd/mm/aaaa"
+              />
+            </Field>
+          )}
+          {isDeath ? (
+            <Field label="Local do óbito">
+              <Input
+                className="h-8 text-xs uppercase tracking-wider"
+                value={form.death_place || ""}
+                onChange={(e) => setField("death_place", upper(e.target.value))}
+                placeholder="LEITO / SETOR / CC"
+              />
+            </Field>
+          ) : (
+            <Field label="Tipo de alta">
+              <Select value={form.discharge_type || "melhorado"} onValueChange={(v) => setField("discharge_type", v)}>
+                <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="melhorado">Melhorado</SelectItem>
+                  <SelectItem value="curado">Curado</SelectItem>
+                  <SelectItem value="inalterado">Inalterado</SelectItem>
+                  <SelectItem value="a_pedido">A pedido</SelectItem>
+                  <SelectItem value="transferencia">Transferência</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+          )}
         </div>
-        <Textarea rows={3} className="text-xs" value={form.evolution_summary || ""}
-          onChange={(e) => setField("evolution_summary", upper(e.target.value))} />
-      </div>
 
-      <div className="grid grid-cols-2 gap-2">
-        <Field label="Procedimentos realizados">
-          <Textarea rows={2} className="text-xs" value={form.procedures || ""}
-            onChange={(e) => setField("procedures", upper(e.target.value))} />
+        <Field label="Diagnóstico de admissão">
+          <Textarea rows={2} className="text-xs" value={form.admission_diagnosis || ""}
+            onChange={(e) => setField("admission_diagnosis", upper(e.target.value))} />
         </Field>
-        <Field label="Intercorrências">
-          <Textarea rows={2} className="text-xs" value={form.complications || ""}
-            onChange={(e) => setField("complications", upper(e.target.value))} />
-        </Field>
-      </div>
 
-      {isDeath ? (
-        <>
-          <Field label="Resumo do óbito / relatório livre *">
-            <Textarea rows={8} className="text-xs" value={form.death_summary || ""}
-              onChange={(e) => setField("death_summary", upper(e.target.value))}
-              placeholder="DESCREVA LIVREMENTE O RELATÓRIO DO ÓBITO: HISTÓRICO CLÍNICO RELEVANTE, EVOLUÇÃO ATÉ O ÓBITO, MANOBRAS REALIZADAS, HORÁRIO DA CONSTATAÇÃO E DEMAIS OBSERVAÇÕES." />
-          </Field>
-          <div className="grid grid-cols-3 gap-2">
-            <Field label="Tipo de morte">
-              <Select value={form.death_type || "natural"} onValueChange={(v) => setField("death_type", v)}>
-                <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="natural">Natural</SelectItem>
-                  <SelectItem value="violenta">Violenta / Externa</SelectItem>
-                  <SelectItem value="indeterminada">Indeterminada</SelectItem>
-                </SelectContent>
-              </Select>
-            </Field>
-            <Field label="Necropsia">
-              <Select value={form.necropsy || "nao_indicada"} onValueChange={(v) => setField("necropsy", v)}>
-                <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="nao_indicada">Não indicada</SelectItem>
-                  <SelectItem value="indicada">Indicada</SelectItem>
-                  <SelectItem value="realizada">Realizada</SelectItem>
-                  <SelectItem value="iml">Encaminhado IML</SelectItem>
-                </SelectContent>
-              </Select>
-            </Field>
-            <Field label="Nº Declaração de Óbito">
-              <Input className="h-8 text-xs" value={form.do_number || ""}
-                onChange={(e) => setField("do_number", e.target.value)} />
-            </Field>
+        <Field label="Diagnósticos finais (CID + descrição) *">
+          <Textarea rows={2} className="text-xs" value={form.final_diagnoses || ""}
+            onChange={(e) => setField("final_diagnoses", upper(e.target.value))}
+            placeholder="EX: I50.0 - INSUFICIÊNCIA CARDÍACA CONGESTIVA" />
+        </Field>
+
+        <div className="space-y-1">
+          <div className="flex items-center justify-between gap-2">
+            <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+              {isDeath ? "Resumo da evolução até o óbito *" : "Resumo da evolução / quadro clínico *"}
+            </Label>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-6 px-2 text-xs gap-1 text-primary hover:text-primary"
+              onClick={handleFillFromEvolution}
+              disabled={evolutionLoading}
+              title="Preencher com a última evolução clínica registrada"
+            >
+              {evolutionLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <NotebookPen className="h-3 w-3" />}
+              Evolução
+            </Button>
           </div>
-          <Field label="Família notificada por">
-            <Input className="h-8 text-xs uppercase tracking-wider" value={form.notified_family || ""}
-              onChange={(e) => setField("notified_family", upper(e.target.value))}
-              placeholder="NOME DO PROFISSIONAL E HORÁRIO" />
+          <Textarea rows={3} className="text-xs" value={form.evolution_summary || ""}
+            onChange={(e) => setField("evolution_summary", upper(e.target.value))} />
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          <Field label="Procedimentos realizados">
+            <Textarea rows={2} className="text-xs" value={form.procedures || ""}
+              onChange={(e) => setField("procedures", upper(e.target.value))} />
           </Field>
-        </>
-      ) : (
-        <>
-          <Field label="Sumário de alta * (síntese clínica do internamento — diferente das orientações ao paciente)">
-            <Textarea rows={4} className="text-xs" value={form.discharge_summary || ""}
-              onChange={(e) => setField("discharge_summary", upper(e.target.value))}
-              placeholder="MOTIVO DA INTERNAÇÃO, EVOLUÇÃO, EXAMES RELEVANTES, TRATAMENTOS REALIZADOS, CONDIÇÃO CLÍNICA NA ALTA" />
+          <Field label="Intercorrências">
+            <Textarea rows={2} className="text-xs" value={form.complications || ""}
+              onChange={(e) => setField("complications", upper(e.target.value))} />
           </Field>
-          <Field label="Orientações ao paciente / cuidador na alta *">
-            <Textarea rows={3} className="text-xs" value={form.orientations || ""}
-              onChange={(e) => setField("orientations", upper(e.target.value))}
-              placeholder="CUIDADOS DOMICILIARES, SINAIS DE ALERTA, USO DE MEDICAÇÕES, RETORNO" />
-          </Field>
+        </div>
+
+        {isDeath ? (
+          <>
+            <Field label="Resumo do óbito / relatório livre *">
+              <Textarea rows={8} className="text-xs" value={form.death_summary || ""}
+                onChange={(e) => setField("death_summary", upper(e.target.value))}
+                placeholder="DESCREVA LIVREMENTE O RELATÓRIO DO ÓBITO: HISTÓRICO CLÍNICO RELEVANTE, EVOLUÇÃO ATÉ O ÓBITO, MANOBRAS REALIZADAS, HORÁRIO DA CONSTATAÇÃO E DEMAIS OBSERVAÇÕES." />
+            </Field>
+            <div className="grid grid-cols-3 gap-2">
+              <Field label="Tipo de morte">
+                <Select value={form.death_type || "natural"} onValueChange={(v) => setField("death_type", v)}>
+                  <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="natural">Natural</SelectItem>
+                    <SelectItem value="violenta">Violenta / Externa</SelectItem>
+                    <SelectItem value="indeterminada">Indeterminada</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field label="Necropsia">
+                <Select value={form.necropsy || "nao_indicada"} onValueChange={(v) => setField("necropsy", v)}>
+                  <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="nao_indicada">Não indicada</SelectItem>
+                    <SelectItem value="indicada">Indicada</SelectItem>
+                    <SelectItem value="realizada">Realizada</SelectItem>
+                    <SelectItem value="iml">Encaminhado IML</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field label="Nº Declaração de Óbito">
+                <Input className="h-8 text-xs" value={form.do_number || ""}
+                  onChange={(e) => setField("do_number", e.target.value)} />
+              </Field>
+            </div>
+            <Field label="Família notificada por">
+              <Input className="h-8 text-xs uppercase tracking-wider" value={form.notified_family || ""}
+                onChange={(e) => setField("notified_family", upper(e.target.value))}
+                placeholder="NOME DO PROFISSIONAL E HORÁRIO" />
+            </Field>
+          </>
+        ) : (
+          <>
+            <Field label="Sumário de alta * (síntese clínica do internamento — diferente das orientações ao paciente)">
+              <Textarea rows={4} className="text-xs" value={form.discharge_summary || ""}
+                onChange={(e) => setField("discharge_summary", upper(e.target.value))}
+                placeholder="MOTIVO DA INTERNAÇÃO, EVOLUÇÃO, EXAMES RELEVANTES, TRATAMENTOS REALIZADOS, CONDIÇÃO CLÍNICA NA ALTA" />
+            </Field>
+            <Field label="Orientações ao paciente / cuidador na alta *">
+              <Textarea rows={3} className="text-xs" value={form.orientations || ""}
+                onChange={(e) => setField("orientations", upper(e.target.value))}
+                placeholder="CUIDADOS DOMICILIARES, SINAIS DE ALERTA, USO DE MEDICAÇÕES, RETORNO" />
+            </Field>
+          </>
+        )}
+      </Block>
+
+      {!isDeath && (
+        <Block
+          title="Receituário de alta"
+          status="optional"
+          defaultOpen
+          hint="Medicamentos e orientações gerais. Tem Salvar e Imprimir próprios."
+        >
           <div>
-            <label className="text-xs font-medium text-muted-foreground block mb-1">Receituário de alta</label>
             <ReceituarioForm
               type="alta"
               patientName={form.patient_name}
@@ -279,6 +338,16 @@ export function DischargeDocumentForm({ type, initial, onChange, patientId, hosp
               onSave={async (data) => !!(await saveReceituario(data))}
             />
           </div>
+        </Block>
+      )}
+
+      {!isDeath && (
+        <Block
+          title="Retorno e restrições"
+          status={followupFilled ? "filled" : "optional"}
+          onSaveDraft={() => saveBlockDraft("followup")}
+          onPrint={() => printBlock("followup")}
+        >
           <div className="grid grid-cols-2 gap-2">
             <Field label="Retorno (data)">
               <Input type="date" className="h-8 text-xs" value={form.return_date || ""}
@@ -293,100 +362,97 @@ export function DischargeDocumentForm({ type, initial, onChange, patientId, hosp
             <Textarea rows={2} className="text-xs" value={form.restrictions || ""}
               onChange={(e) => setField("restrictions", upper(e.target.value))} />
           </Field>
-        </>
+        </Block>
       )}
 
-      {/* Comunicação à família — OPCIONAL */}
-      <div className="space-y-2 pt-2 border-t">
-        <div className="flex items-center gap-2">
-          <FileSignature className="h-3.5 w-3.5 text-primary" />
-          <span className="text-xs uppercase tracking-wider font-medium">
-            Comunicação à família
-          </span>
-          <span className="text-xs uppercase tracking-wider text-muted-foreground">(opcional)</span>
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <Field label="Familiar comunicado">
-            <Input className="h-8 text-xs uppercase tracking-wider" value={form.family_contact_name || ""}
-              onChange={(e) => setField("family_contact_name", upper(e.target.value))}
-              placeholder="NOME COMPLETO" />
-          </Field>
-          <Field label="Grau de parentesco">
-            <Select value={form.family_contact_relation || ""} onValueChange={(v) => setField("family_contact_relation", v)}>
-              <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="SELECIONE" /></SelectTrigger>
-              <SelectContent>
-                {RELATION_OPTIONS.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </Field>
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <Field label="Telefone">
-            <Input className="h-8 text-xs" value={form.family_contact_phone || ""}
-              onChange={(e) => setField("family_contact_phone", e.target.value)}
-              placeholder="(00) 00000-0000" />
-          </Field>
-          <Field label="E-mail">
-            <Input type="email" className="h-8 text-xs" value={form.family_contact_email || ""}
-              onChange={(e) => setField("family_contact_email", e.target.value.toLowerCase())} />
-          </Field>
-        </div>
-        <div className="grid grid-cols-3 gap-2">
-          <Field label="Modo">
-            <Select value={form.family_communication_mode || ""} onValueChange={(v) => setField("family_communication_mode", v)}>
-              <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="SELECIONE" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="PRESENCIAL">Presencial</SelectItem>
-                <SelectItem value="TELEFONE">Telefone</SelectItem>
-                <SelectItem value="VIDEOCHAMADA">Videochamada</SelectItem>
-                <SelectItem value="MENSAGEM">Mensagem / WhatsApp</SelectItem>
-              </SelectContent>
-            </Select>
-          </Field>
-          <Field label="Comunicado por">
-            <Input className="h-8 text-xs uppercase tracking-wider" value={form.family_communication_by || ""}
-              onChange={(e) => setField("family_communication_by", upper(e.target.value))}
-              placeholder="PROFISSIONAL" />
-          </Field>
-          <Field label="Data/hora">
-            <Input type="datetime-local" className="h-8 text-xs"
-              value={form.family_communication_at || ""}
-              onChange={(e) => setField("family_communication_at", e.target.value)} />
-          </Field>
-        </div>
-        <Field label="Grau de satisfação na comunicação médica">
-          <div className="flex gap-1">
-            {[1,2,3,4,5].map((n) => {
-              const selected = form.family_satisfaction === String(n);
-              return (
-                <button
-                  key={n}
-                  type="button"
-                  onClick={() => setField("family_satisfaction", String(n))}
-                  className={cn(
-                    "flex-1 h-8 text-xs rounded-md border font-medium transition-colors",
-                    selected
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-background hover:bg-muted border-border text-muted-foreground"
-                  )}
-                  aria-label={`Nota ${n}`}
-                >
-                  {n}
-                </button>
-              );
-            })}
+      <Block
+        title="Comunicação à família"
+        status={familyFilled ? "filled" : "optional"}
+        onSaveDraft={() => saveBlockDraft("family")}
+        onPrint={() => printBlock("family")}
+      >
+          <div className="grid grid-cols-2 gap-2">
+            <Field label="Familiar comunicado">
+              <Input className="h-8 text-xs uppercase tracking-wider" value={form.family_contact_name || ""}
+                onChange={(e) => setField("family_contact_name", upper(e.target.value))}
+                placeholder="NOME COMPLETO" />
+            </Field>
+            <Field label="Grau de parentesco">
+              <Select value={form.family_contact_relation || ""} onValueChange={(v) => setField("family_contact_relation", v)}>
+                <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="SELECIONE" /></SelectTrigger>
+                <SelectContent>
+                  {RELATION_OPTIONS.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </Field>
           </div>
-          <div className="flex justify-between text-xs uppercase tracking-wider text-muted-foreground mt-1">
-            <span>Muito insatisfeito</span>
-            <span>Muito satisfeito</span>
+          <div className="grid grid-cols-2 gap-2">
+            <Field label="Telefone">
+              <Input className="h-8 text-xs" value={form.family_contact_phone || ""}
+                onChange={(e) => setField("family_contact_phone", e.target.value)}
+                placeholder="(00) 00000-0000" />
+            </Field>
+            <Field label="E-mail">
+              <Input type="email" className="h-8 text-xs" value={form.family_contact_email || ""}
+                onChange={(e) => setField("family_contact_email", e.target.value.toLowerCase())} />
+            </Field>
           </div>
-        </Field>
-        <Field label="Observações da comunicação">
-          <Textarea rows={2} className="text-xs" value={form.family_communication_notes || ""}
-            onChange={(e) => setField("family_communication_notes", upper(e.target.value))}
-            placeholder="REAÇÕES, DÚVIDAS, ENCAMINHAMENTOS" />
-        </Field>
-      </div>
+          <div className="grid grid-cols-3 gap-2">
+            <Field label="Modo">
+              <Select value={form.family_communication_mode || ""} onValueChange={(v) => setField("family_communication_mode", v)}>
+                <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="SELECIONE" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="PRESENCIAL">Presencial</SelectItem>
+                  <SelectItem value="TELEFONE">Telefone</SelectItem>
+                  <SelectItem value="VIDEOCHAMADA">Videochamada</SelectItem>
+                  <SelectItem value="MENSAGEM">Mensagem / WhatsApp</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field label="Comunicado por">
+              <Input className="h-8 text-xs uppercase tracking-wider" value={form.family_communication_by || ""}
+                onChange={(e) => setField("family_communication_by", upper(e.target.value))}
+                placeholder="PROFISSIONAL" />
+            </Field>
+            <Field label="Data/hora">
+              <Input type="datetime-local" className="h-8 text-xs"
+                value={form.family_communication_at || ""}
+                onChange={(e) => setField("family_communication_at", e.target.value)} />
+            </Field>
+          </div>
+          <Field label="Grau de satisfação na comunicação médica">
+            <div className="flex gap-1">
+              {[1,2,3,4,5].map((n) => {
+                const selected = form.family_satisfaction === String(n);
+                return (
+                  <button
+                    key={n}
+                    type="button"
+                    onClick={() => setField("family_satisfaction", String(n))}
+                    className={cn(
+                      "flex-1 h-8 text-xs rounded-md border font-medium transition-colors",
+                      selected
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-background hover:bg-muted border-border text-muted-foreground"
+                    )}
+                    aria-label={`Nota ${n}`}
+                  >
+                    {n}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="flex justify-between text-xs uppercase tracking-wider text-muted-foreground mt-1">
+              <span>Muito insatisfeito</span>
+              <span>Muito satisfeito</span>
+            </div>
+          </Field>
+          <Field label="Observações da comunicação">
+            <Textarea rows={2} className="text-xs" value={form.family_communication_notes || ""}
+              onChange={(e) => setField("family_communication_notes", upper(e.target.value))}
+              placeholder="REAÇÕES, DÚVIDAS, ENCAMINHAMENTOS" />
+          </Field>
+      </Block>
 
       {/* Sign */}
       <div className="grid grid-cols-2 gap-2 pt-2 border-t">
@@ -410,6 +476,93 @@ export function DischargeDocumentForm({ type, initial, onChange, patientId, hosp
         <Printer className="h-3.5 w-3.5" /> Pré-visualizar / imprimir Norma Zero
       </Button>
     </div>
+  );
+}
+
+/** Rascunho local (24h) dos blocos, aplicado por cima do estado inicial. */
+function restoredDraftValues(patientId: string | null | undefined, type: DischargeDocType): Partial<DischargeDocPayload> {
+  if (!patientId) return {};
+  const storage = getDraftStorage();
+  const out: Partial<DischargeDocPayload> = {};
+  for (const block of ["summary", "followup", "family"] as DraftBlock[]) {
+    const rec = loadDraft(storage, patientId, type, block);
+    if (rec) Object.assign(out, rec.values);
+  }
+  return out;
+}
+
+type BlockStatus = "ok" | "pending" | "filled" | "optional";
+
+const BLOCK_STATUS: Record<BlockStatus, { label: string; cls: string }> = {
+  ok: { label: "Pronto", cls: "bg-released/10 text-released-on-soft" },
+  pending: { label: "Preencher campos *", cls: "bg-warning/10 text-warning" },
+  filled: { label: "Preenchido", cls: "bg-released/10 text-released-on-soft" },
+  optional: { label: "Opcional", cls: "bg-muted text-muted-foreground" },
+};
+
+/**
+ * Bloco recolhivel do formulario de alta: cabecalho com estado + seta, conteudo
+ * e (quando houver) rodape com Salvar rascunho / Imprimir do proprio bloco.
+ */
+function Block({
+  title, status, required, defaultOpen = false, hint, onSaveDraft, onPrint, children,
+}: {
+  title: string;
+  status: BlockStatus;
+  required?: boolean;
+  defaultOpen?: boolean;
+  hint?: string;
+  onSaveDraft?: () => void;
+  onPrint?: () => void;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  const st = BLOCK_STATUS[status];
+  return (
+    <section className="rounded-lg border border-border/70 bg-card overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className={cn(
+          "w-full flex items-center gap-2 px-3 py-2.5 text-left hover:bg-muted/40 transition-colors",
+          open && "border-b border-border/60",
+        )}
+      >
+        <span className="text-xs uppercase tracking-wider font-semibold text-foreground">
+          {title}{required && <span className="text-destructive"> *</span>}
+        </span>
+        <span className={cn("ml-auto text-xs uppercase tracking-wider px-2 py-0.5 rounded-full", st.cls)}>
+          {st.label}
+        </span>
+        {open
+          ? <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" />
+          : <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />}
+      </button>
+      {/* Sempre montado (so escondido): recolher nao pode perder o que esta
+          digitado no ReceituarioForm, que guarda os itens no proprio estado. */}
+      {(
+        <div className={cn("p-3 space-y-3", !open && "hidden")}>
+          {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+          {children}
+          {(onSaveDraft || onPrint) && (
+            <div className="flex justify-end gap-2 pt-2 border-t border-border/50">
+              {onSaveDraft && (
+                <Button type="button" variant="outline" size="sm" className="h-8 text-xs gap-2" onClick={onSaveDraft}
+                  title="Guarda neste navegador (24h). Só vira registro ao confirmar a sinalização.">
+                  <Save className="h-3.5 w-3.5" /> Salvar rascunho
+                </Button>
+              )}
+              {onPrint && (
+                <Button type="button" variant="outline" size="sm" className="h-8 text-xs gap-2" onClick={onPrint}>
+                  <Printer className="h-3.5 w-3.5" /> Imprimir
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </section>
   );
 }
 

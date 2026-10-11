@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { normalizeDiagnosisText } from "@/lib/diagnosesText";
 
 /**
  * Busca o diagnóstico registrado NO MOMENTO DA ADMISSÃO ("Hipóteses
@@ -30,7 +31,7 @@ export function useAdmissionDiagnosis(
       .select("hipotese_diagnostica")
       .eq("id", patientId)
       .maybeSingle();
-    setDiagnosis((data as any)?.hipotese_diagnostica || null);
+    setDiagnosis(normalizeDiagnosisText((data as any)?.hipotese_diagnostica) || null);
     setLoading(false);
   }, [patientId]);
 

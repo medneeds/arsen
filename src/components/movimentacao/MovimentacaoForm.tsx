@@ -51,6 +51,7 @@ import {
   toAltaTipoDb,
 } from "@/lib/dischargeDocuments";
 import { sectorLabelFromCode } from "@/lib/hospitalSectors";
+import { clearDrafts, getDraftStorage } from "@/lib/dischargeDraft";
 
 // MIGRAÇÃO: profissional_id (profissionais.id) ≠ auth.uid — resolvido via profissionais.user_id.
 async function resolveProfissionalId(userId: string | null | undefined): Promise<string | null> {
@@ -537,6 +538,8 @@ export function MovimentacaoForm({
       });
 
       setConfirmOpen(false);
+      // Sinalizacao confirmada: o rascunho local dos blocos nao serve mais.
+      if (requiredDocType && patient.id) clearDrafts(getDraftStorage(), patient.id);
       onSuccess?.();
       // Captura ANTES do reset (que reseta subtype/destination) — o pop-up
       // didático usa esses dados depois que o wizard já foi resetado. Aqui a
@@ -924,7 +927,7 @@ export function MovimentacaoForm({
         {step === "form" && (
           <div className="flex flex-col gap-2 pt-2">
             {requiredDocType && dischargeChecklist.blocking.length > 0 && (
-              <div className="flex items-start gap-2 p-2 rounded-md bg-warning/10 border border-warning/30 text-xs text-warning-foreground">
+              <div className="flex items-start gap-2 p-2 rounded-md bg-warning/10 border border-warning/30 text-xs text-warning-on-soft">
                 <AlertTriangle className="h-3.5 w-3.5 text-warning mt-1 shrink-0" />
                 <span>
                   Há {dischargeChecklist.blocking.length} pendência(s) obrigatória(s). Você poderá ver o detalhe ao clicar em <strong>Revisar e confirmar</strong>.
