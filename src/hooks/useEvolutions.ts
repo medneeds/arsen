@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { resolveProfissionalNome } from "@/lib/resolvePatientHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -249,7 +250,7 @@ export function useEvolutions(
       return null;
     }
     try {
-      const doctorName = user.user_metadata?.full_name || "Dr. Carlos Eduardo Mendes";
+      const doctorName = (await resolveProfissionalNome(user.id)) || user.user_metadata?.full_name || user.email || "Médico Assistente";
       const profissionalId = await resolveProfissionalId(user.id);
       if (!profissionalId) {
         toast.error("Profissional não encontrado para o usuário atual");
@@ -437,7 +438,7 @@ export function useEvolutions(
   const validateEvolution = async (id: string) => {
     if (!user) return false;
     try {
-      const doctorName = user.user_metadata?.full_name || "Dr. Carlos Eduardo Mendes";
+      const doctorName = (await resolveProfissionalNome(user.id)) || user.user_metadata?.full_name || user.email || "Médico Assistente";
       // MIGRAÇÃO: validated_at/validated_by/validated_by_name não têm coluna →
       // preservados no JSON `soap`.
       const { data: existing } = await supabase

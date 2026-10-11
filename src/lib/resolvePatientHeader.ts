@@ -92,6 +92,28 @@ export async function resolveCurrentPatientName(
   }
 }
 
+/**
+ * Nome do profissional logado conforme `profissionais.nome` (fonte oficial do
+ * cadastro). `user_metadata.full_name` nem sempre existe, e cair em e-mail ou
+ * em nome fixo gravava/imprimia assinatura errada. Retorna null se nao achar.
+ */
+export async function resolveProfissionalNome(
+  userId: string | null | undefined,
+): Promise<string | null> {
+  if (!userId) return null;
+  try {
+    const { data } = await supabase
+      .from("profissionais")
+      .select("nome")
+      .eq("user_id", userId)
+      .maybeSingle();
+    const nome = (data as { nome?: string | null } | null)?.nome;
+    return typeof nome === "string" && nome.trim() ? nome.trim() : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function resolvePatientHeader(
   patientId: string | null | undefined,
   fallbackName: string | null | undefined,

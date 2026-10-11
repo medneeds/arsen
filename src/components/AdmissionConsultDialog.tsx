@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { printAdmissionNormaZero } from "@/lib/printAdmission";
-import { resolveCurrentBedSector, resolveCurrentPatientName } from "@/lib/resolvePatientHeader";
+import { resolveCurrentBedSector, resolveCurrentPatientName, resolveProfissionalNome } from "@/lib/resolvePatientHeader";
 import { pickPrintName } from "@/lib/printPatientName";
 import { usePatientIdentifiers } from "@/hooks/usePatientIdentifiers";
 
@@ -275,7 +275,7 @@ export function AdmissionConsultDialog({ open, onOpenChange, patient, onChanged 
     if (!adendoText.trim()) { toast.error("Descreva o adendo"); return; }
     setSavingAdendo(true);
     try {
-      const doctor = user.user_metadata?.full_name || user.email || "Médico Assistente";
+      const doctor = (await resolveProfissionalNome(user.id)) || user.user_metadata?.full_name || user.email || "Médico Assistente";
       const now = new Date().toISOString();
       // MIGRAÇÃO: clinical_evolutions → evolucoes. Adendo = nova evolução com
       // soap.parent_id apontando para o D0. Campos dedicados no JSON `soap` (`__`).

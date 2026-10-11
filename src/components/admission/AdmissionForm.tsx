@@ -40,7 +40,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { printAdmissionNormaZero } from "@/lib/printAdmission";
-import { resolveCurrentBedSector, resolveCurrentPatientName } from "@/lib/resolvePatientHeader";
+import { resolveCurrentBedSector, resolveCurrentPatientName, resolveProfissionalNome } from "@/lib/resolvePatientHeader";
 import { pickPrintName } from "@/lib/printPatientName";
 import { admissionModeForSector, isSurgicalSector, type AdmissionMode } from "@/lib/sectorComplexity";
 import { parseDiagnosesText } from "@/lib/diagnosesText";
@@ -1174,9 +1174,10 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
 
   const buildPrintPayload = async () => {
     // Leito/setor ATUAIS (após relocações), com fallback para snapshot da prop.
-    const [live, liveName] = await Promise.all([
+    const [live, liveName, liveDoctor] = await Promise.all([
       resolveCurrentBedSector(patient.id),
       resolveCurrentPatientName(patient.id),
+      resolveProfissionalNome(user?.id),
     ]);
     // Data de admissao NO SETOR (editavel na Edicao Avancada). Fallback: data de
     // entrada hospitalar quando a do setor ainda nao foi registrada.
@@ -1213,7 +1214,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
         phone: identifiers.registry?.phone || null,
       },
       hospitalName: currentHospital?.name,
-      doctorName: user?.user_metadata?.full_name || user?.email || "Médico Assistente",
+      doctorName: liveDoctor || user?.user_metadata?.full_name || user?.email || "Médico Assistente",
       isUti,
       hda, amp, muc, allergies, weight, height, imc,
       vitals: { pa, fc, fr, spo2, tax, dx },
@@ -1282,7 +1283,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
 
     setSubmitting(true);
     try {
-      const doctorName = user.user_metadata?.full_name || user.email || "Médico Assistente";
+      const doctorName = (await resolveProfissionalNome(user.id)) || user.user_metadata?.full_name || user.email || "Médico Assistente";
       const now = new Date().toISOString();
       // MIGRAÇÃO: profissional_id ≠ auth.uid.
       const profissionalId = await resolveProfissionalId(user.id);
