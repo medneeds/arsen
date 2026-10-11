@@ -23,7 +23,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { printAdmissionNormaZero } from "@/lib/printAdmission";
-import { resolveCurrentBedSector } from "@/lib/resolvePatientHeader";
+import { resolveCurrentBedSector, resolveCurrentPatientName } from "@/lib/resolvePatientHeader";
+import { pickPrintName } from "@/lib/printPatientName";
 import { usePatientIdentifiers } from "@/hooks/usePatientIdentifiers";
 
 interface Props {
@@ -226,10 +227,13 @@ export function AdmissionConsultDialog({ open, onOpenChange, patient, onChanged 
     const ass: string = soap.assessment || "";
     const planTxt: string = soap.plan || history?.initial_conduct || "";
     // Leito/setor ATUAIS (após relocações), com fallback para snapshot da prop.
-    const live = await resolveCurrentBedSector(patient.id);
+    const [live, liveName] = await Promise.all([
+      resolveCurrentBedSector(patient.id),
+      resolveCurrentPatientName(patient.id),
+    ]);
     void printAdmissionNormaZero({
       patient: {
-        name: patient.name,
+        name: pickPrintName(liveName, identifiers.registry?.fullName, patient.name),
         bed: live.bed || patient.bed,
         sector: live.sector || patient.sector,
         age: identifiers.registry?.age || patient.age,
@@ -257,7 +261,7 @@ export function AdmissionConsultDialog({ open, onOpenChange, patient, onChanged 
       isUti,
       hda: history?.clinical_history || subj || "",
       vitals: { pa: vs.pa, fc: vs.fc, fr: vs.fr, spo2: vs.spo2, tax: vs.temp, dx: vs.dx },
-      exam: { general: pe.general, cv: pe.cardiovascular, resp: pe.respiratory, abd: pe.abdomen, ext: pe.extremities },
+      exam: { general: pe.general, cv: pe.cardiovascular, resp: pe.respiratory, abd: pe.abdomen, ext: pe.extremities, neuro: pe.neurological, skin: pe.skin, other: pe.other },
       plan: planTxt,
       cidPrimary: history?.cid_primary || "",
       cidSecondary: history?.cid_secondary || undefined,

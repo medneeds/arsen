@@ -40,7 +40,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { printAdmissionNormaZero } from "@/lib/printAdmission";
-import { resolveCurrentBedSector } from "@/lib/resolvePatientHeader";
+import { resolveCurrentBedSector, resolveCurrentPatientName } from "@/lib/resolvePatientHeader";
+import { pickPrintName } from "@/lib/printPatientName";
 import { admissionModeForSector, isSurgicalSector, type AdmissionMode } from "@/lib/sectorComplexity";
 import { parseDiagnosesText } from "@/lib/diagnosesText";
 import { calcDIH } from "@/lib/dihCalc";
@@ -1173,7 +1174,10 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
 
   const buildPrintPayload = async () => {
     // Leito/setor ATUAIS (após relocações), com fallback para snapshot da prop.
-    const live = await resolveCurrentBedSector(patient.id);
+    const [live, liveName] = await Promise.all([
+      resolveCurrentBedSector(patient.id),
+      resolveCurrentPatientName(patient.id),
+    ]);
     // Data de admissao NO SETOR (editavel na Edicao Avancada). Fallback: data de
     // entrada hospitalar quando a do setor ainda nao foi registrada.
     let sectorAdmissionDate: string | null = null;
@@ -1185,7 +1189,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
     } catch { /* best-effort */ }
     return {
       patient: {
-        name: patient.name,
+        name: pickPrintName(liveName, identifiers.registry?.fullName, patient.name),
         bed: live.bed || patient.bed,
         sector: live.sector || patient.sector,
         age: identifiers.registry?.age || patient.age,
@@ -1213,7 +1217,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
       isUti,
       hda, amp, muc, allergies, weight, height, imc,
       vitals: { pa, fc, fr, spo2, tax, dx },
-      exam: { general: physGeneral, cv: physCv, resp: physResp, abd: physAbd, ext: physExt, neuro: physNeuro },
+      exam: { general: physGeneral, cv: physCv, resp: physResp, abd: physAbd, ext: physExt, neuro: physNeuro, skin: physSkin, other: physOther },
       plan, cidPrimary, cidSecondary,
       hypotheses: hypothesesItems,
       complementares: richHtmlToPlainText(complementares).trim() || undefined,

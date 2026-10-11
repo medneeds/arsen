@@ -70,6 +70,28 @@ export async function resolveCurrentBedSector(
   }
 }
 
+/**
+ * Lê o nome ATUAL do paciente (pacientes.nome_completo) da internação, direto
+ * do banco. Usado na impressão para não depender do nome capturado na URL ao
+ * abrir a tela. Retorna null se a consulta falhar ou o nome estiver vazio.
+ */
+export async function resolveCurrentPatientName(
+  patientId: string | null | undefined,
+): Promise<string | null> {
+  if (!patientId) return null;
+  try {
+    const { data } = await supabase
+      .from("internacoes")
+      .select("paciente:pacientes(nome_completo)")
+      .eq("id", patientId)
+      .maybeSingle();
+    const nome = (data as { paciente?: { nome_completo?: string | null } | null } | null)?.paciente?.nome_completo;
+    return typeof nome === "string" && nome.trim() ? nome.trim() : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function resolvePatientHeader(
   patientId: string | null | undefined,
   fallbackName: string | null | undefined,

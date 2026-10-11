@@ -1,4 +1,5 @@
 import { buildNormaZeroDocument, openPrintWindow, prepareLogo } from "@/lib/printNormaZero";
+import { stripDischargeDays } from "@/lib/dischargeLabel";
 import { getSectorDisplayLabel } from "@/utils/bedNaming";
 
 export interface AdmissionPrintInput {
@@ -27,7 +28,7 @@ export interface AdmissionPrintInput {
   height?: string;
   imc?: { value: string; label: string } | null;
   vitals: { pa?: string; fc?: string; fr?: string; spo2?: string; tax?: string; dx?: string };
-  exam: { general?: string; cv?: string; resp?: string; abd?: string; ext?: string; neuro?: string };
+  exam: { general?: string; cv?: string; resp?: string; abd?: string; ext?: string; neuro?: string; skin?: string; other?: string };
   plan: string;
   cidPrimary: string;
   cidSecondary?: string;
@@ -155,12 +156,12 @@ export async function printAdmissionNormaZero(d: AdmissionPrintInput) {
     ${section("Sinais vitais", row("SSVV admissionais", vitalsLine))}
     ${section("Exame físico",
       row("Estado geral", d.exam.general) + row("Cardiovascular", d.exam.cv) + row("Respiratório", d.exam.resp) +
-      row("Abdome", d.exam.abd) + row("Extremidades", d.exam.ext) + row("Neurológico", d.exam.neuro))}
+      row("Abdome", d.exam.abd) + row("Extremidades", d.exam.ext) + row("Neurológico", d.exam.neuro) + row("Pele / Feridas", d.exam.skin) + row("Outros", d.exam.other))}
     ${section("Antropometria", row("Antropometria", antrop))}
     ${section("Escalas", row("Escala neurológica", scalesStr))}
     ${section("Exames complementares", row("Complementares", d.complementares))}
     ${section("Plano terapêutico", row("Conduta", d.plan))}
-    ${section("Previsão de alta", row("Previsão de alta", d.dischargePredictionLabel))}
+    ${section("Previsão de alta", row("Previsão de alta", stripDischargeDays(d.dischargePredictionLabel)))}
     ${d.isUti ? section("Justificativa de admissão (UTI/UCI)", row("Motivo", d.uti?.admissionReason) + row("Droga vasoativa", d.uti?.vasoativo)) : ""}
     ${d.isUti ? section("Dispositivos invasivos", row("Dispositivos", d.uti?.devices)) : ""}
     ${d.isUti ? section("Culturas / Antibióticos", row("Culturas / ATB", d.uti?.culturesAtb)) : ""}
