@@ -51,7 +51,7 @@ import { CVCChecklistDialog } from "./CVCChecklistDialog";
 import { PatientRoundPrintDialog } from "./PatientRoundPrintDialog";
 import { MedicalRecordEditDialog } from "./MedicalRecordEditDialog";
 import { Printer } from "lucide-react";
-import { PatientIdentityHeader, InfoChip } from "./PatientIdentityHeader";
+import { PatientIdentityHeader } from "./PatientIdentityHeader";
 import { parseClinicalList } from "@/lib/clinicalList";
 import { SuspendDischargeDialog } from "./SuspendDischargeDialog";
 import { CancelTransferSignalDialog } from "./CancelTransferSignalDialog";
@@ -492,14 +492,10 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
             // Fixar painel: pino a esquerda do nome (so na cockpit fixa).
             pinControl={variant === "fixed" ? { pinned, onToggle: () => setPinned((v) => !v) } : undefined}
             // Admissao e tempo de internacao: blocos junto da identificacao.
-            metaChips={
-              <>
-                <InfoChip label="Admissão" value={formatDate(patient.admissionDate)} />
-                <InfoChip label="Internação">
-                  <StayDays admissionDate={patient.admissionDate} />
-                </InfoChip>
-              </>
-            }
+            metaCells={[
+              { label: "Admissão", value: formatDate(patient.admissionDate) },
+              { label: "Internação", value: <StayDays admissionDate={patient.admissionDate} /> },
+            ]}
             // "Ver dados do prontuario" abre o dialogo de ver+editar (centraliza), no
             // lugar do painel inline read-only + botao "Editar" separado.
             onViewFullData={() => setRecordEditOpen(true)}

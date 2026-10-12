@@ -39,9 +39,9 @@ export interface PatientIdentityHeaderProps {
   /** Controle de "fixar painel": quando fornecido, renderiza um pino compacto a
    *  ESQUERDA do nome (cockpit fixa). Fixado, o painel não recolhe ao tirar o mouse. */
   pinControl?: { pinned: boolean; onToggle: () => void };
-  /** Chips extras (ex.: Admissão / Internação), renderizados logo abaixo dos dados
-   *  de identificação e antes do botão "Ver dados do prontuário". Só na variante cockpit. */
-  metaChips?: React.ReactNode;
+  /** Células extras da grade (ex.: Admissão / Internação), depois de Prontuário e
+   *  Atendimento e antes da linha "Ver dados do prontuário". Só na variante cockpit. */
+  metaCells?: Array<{ label: string; value: React.ReactNode }>;
   /** Quando fornecido, o botão "Ver dados do prontuário" chama isto (abrir o
    *  dialogo que mostra os dados completos + edicao) em vez de expandir o painel
    *  inline read-only. Centraliza ver+editar numa superficie so. */
@@ -78,7 +78,7 @@ export function PatientIdentityHeader({
   showFullDetailsToggle = true,
   alwaysExpanded = false,
   pinControl,
-  metaChips,
+  metaCells,
   onViewFullData,
 }: PatientIdentityHeaderProps) {
   const { namesHidden } = usePrivacy();
@@ -104,86 +104,68 @@ export function PatientIdentityHeader({
 
   const isCockpit = variant === "cockpit";
 
+  const toggleLabel = onViewFullData ? "Ver dados do prontuário" : (showFullId ? "Ocultar dados completos" : "Ver dados do prontuário");
+  const showToggle = showFullDetailsToggle && !alwaysExpanded;
+
+  // Grade unica, SEMPRE em 2 colunas iguais (mesmo corte em todas as linhas).
+  const cells: IdCell[] = [
+    { label: "Setor", value: sector || "—" },
+    { label: "Leito", value: bed },
+    { label: "Prontuário", value: prontuario, copy: true, mono: true },
+    { label: "Atendimento", value: atendimento, copy: true, mono: true },
+    ...(isCockpit && metaCells ? metaCells.map((c) => ({ label: c.label, value: c.value })) : []),
+  ];
+
   return (
     <div className={cn("relative w-full", className)}>
-      {isCockpit ? (
-        <>
-          {/* Pin discreto e curvado no canto superior esquerdo, FORA do fluxo do
-              nome — libera a largura para o nome e o alinha com os chips abaixo. */}
-          {pinControl && (
-            <button
-              type="button"
-              onClick={pinControl.onToggle}
-              title={pinControl.pinned ? "Desafixar (recolhe ao tirar o mouse)" : "Fixar painel aberto"}
-              aria-pressed={pinControl.pinned}
-              className={cn(
-                "absolute -left-2 -top-2 z-10 inline-flex h-6 w-6 items-center justify-center rounded-full border shadow-sm transition-colors",
-                pinControl.pinned
-                  ? "border-primary/30 bg-primary/10 text-primary"
-                  : "border-border bg-card text-muted-foreground hover:border-primary/30 hover:bg-primary/10 hover:text-primary",
-              )}
-            >
-              <Pin className={cn("h-3 w-3", pinControl.pinned && "fill-current")} />
-            </button>
+      {/* Pino discreto no canto superior esquerdo (so cockpit fixa), fora do fluxo do nome. */}
+      {isCockpit && pinControl && (
+        <button
+          type="button"
+          onClick={pinControl.onToggle}
+          title={pinControl.pinned ? "Desafixar (recolhe ao tirar o mouse)" : "Fixar painel aberto"}
+          aria-pressed={pinControl.pinned}
+          className={cn(
+            "absolute -left-2 -top-2 z-10 inline-flex h-6 w-6 items-center justify-center rounded-full border shadow-sm transition-colors",
+            pinControl.pinned
+              ? "border-primary/30 bg-primary/10 text-primary"
+              : "border-border bg-card text-muted-foreground hover:border-primary/30 hover:bg-primary/10 hover:text-primary",
           )}
-          {/* Nome: caixa alta, fonte menor e harmonizada, largura total. Quando ha
-              pino, so a PRIMEIRA linha recua (text-indent) para nao ficar sob o
-              pino do canto; linhas quebradas e os chips abaixo seguem em x=0. */}
-          <div className="flex items-start gap-1">
-            <h3
-              className="patient-id min-w-0 flex-1 text-sm font-semibold uppercase leading-tight tracking-tight text-foreground break-words"
-              style={pinControl ? { textIndent: "1.75rem" } : undefined}
-            >
-              {displayName}
-            </h3>
-            <CopyNameButton value={name} />
-          </div>
-          <div className="mt-2 flex flex-wrap gap-1.5 preserve-case">
-            <InfoChip>{age ?? "Idade não informada"}</InfoChip>
-            <InfoChip>{sector || "Setor —"}</InfoChip>
-            <InfoChip label="Leito" value={bed} />
-            <CopyChip label="Prontuário" value={prontuario} />
-            <CopyChip label="Atendimento" value={atendimento} />
-          </div>
-          {metaChips && <div className="mt-1.5 flex flex-wrap gap-1.5 preserve-case">{metaChips}</div>}
-        </>
-      ) : (
-        <>
-          {/* ===== Linha 1: Nome + Idade · Setor · Leito ===== */}
-          <div className="mb-2 flex items-start justify-between gap-2">
-            <div className="min-w-0 flex-1">
-              <div className="flex items-start gap-1">
-                <h3 className="patient-id min-w-0 flex-1 font-semibold leading-tight text-foreground truncate text-base">
-                  {displayName}
-                </h3>
-                <CopyNameButton value={name} />
-              </div>
-              <p className="text-muted-foreground mt-1 preserve-case text-xs">
-                {age ?? "—"} • {sector || "—"} • Leito{" "}
-                <span className="font-medium text-foreground">{bed}</span>
-              </p>
-            </div>
-          </div>
-
-          {/* ===== Linha 2: Prontuário + Atendimento ===== */}
-          <div className="grid gap-1 grid-cols-1 sm:grid-cols-2">
-            <IdRow label="Prontuário" value={prontuario} mono />
-            <IdRow label="Atendimento" value={atendimento} mono />
-          </div>
-        </>
+        >
+          <Pin className={cn("h-3 w-3", pinControl.pinned && "fill-current")} />
+        </button>
       )}
 
-      {/* ===== Painel "Ver dados do prontuário" ===== */}
-      {showFullDetailsToggle && !alwaysExpanded && (
-        <>
+      {/* Nome + idade logo abaixo. Com pino, so a primeira linha do nome recua. */}
+      <div className="flex items-start gap-1">
+        <h3
+          className={cn(
+            "patient-id min-w-0 flex-1 font-semibold leading-tight text-foreground break-words",
+            isCockpit ? "text-sm uppercase tracking-tight" : "text-base",
+          )}
+          style={isCockpit && pinControl ? { textIndent: "1.75rem" } : undefined}
+        >
+          {displayName}
+        </h3>
+        <CopyNameButton value={name} />
+      </div>
+      <p className="mt-1 mb-2 text-xs text-muted-foreground preserve-case">{age ?? "Idade não informada"}</p>
+
+      <div className="overflow-hidden rounded-sm border border-border bg-background/60 preserve-case">
+        <div className="grid grid-cols-2">
+          {cells.map((c, i) => (
+            <IdGridCell key={c.label} cell={c} index={i} />
+          ))}
+        </div>
+        {showToggle && (
           <button
             type="button"
             onClick={onViewFullData ? onViewFullData : () => setShowFullId((v) => !v)}
-            className="mt-2 w-full inline-flex items-center justify-between gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-md border border-border/50 hover:bg-muted/40"
+            className="flex w-full items-center justify-between gap-1 border-t border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
           >
             <span className="inline-flex items-center gap-2">
               <IdCard className="h-3 w-3" />
-              {onViewFullData ? "Ver dados do prontuário" : (showFullId ? "Ocultar dados completos" : "Ver dados do prontuário")}
+              {toggleLabel}
             </span>
             {/* Sem onViewFullData: expande o painel inline (chevron). Com
                 onViewFullData: abre o dialogo (ver + editar), sem chevron. */}
@@ -191,40 +173,16 @@ export function PatientIdentityHeader({
               <ChevronDown className={cn("h-3 w-3 transition-transform", showFullId && "rotate-180")} />
             )}
           </button>
-          {!onViewFullData && showFullId && (
-            <div className="mt-2 rounded-md border border-border/60 bg-background/60 p-3 space-y-2 text-xs">
-              <FullIdRow label="Nome social" value={registry?.socialName} />
-              <FullIdRow label="CPF" value={registry?.cpf} mono />
-              <FullIdRow label="CNS" value={registry?.cns} mono />
-              <FullIdRow label="Nascimento" value={formatDate(registry?.birthDate || undefined)} />
-              <FullIdRow label="Sexo" value={registry?.sex} />
-              <FullIdRow label="Tipo sanguíneo" value={registry?.bloodType} />
-              <FullIdRow label="Mãe" value={registry?.motherName} />
-              <FullIdRow label="Telefone" value={registry?.phone} />
-              <FullIdRow
-                label="Endereço"
-                value={
-                  [registry?.address, registry?.neighborhood, registry?.city, registry?.state]
-                    .filter(Boolean)
-                    .join(", ") || null
-                }
-              />
-              <FullIdRow label="Alergias" value={registry?.allergies} />
-              <FullIdRow label="Comorbidades" value={registry?.comorbidities} />
-              {registry?.isUnidentified && (
-                <div className="text-xs uppercase tracking-wider font-medium text-warning inline-flex items-center gap-1">
-                  <ShieldAlert className="h-3 w-3" />
-                  Paciente não identificado · {registry.unidentifiedCode || "—"}
-                </div>
-              )}
-              {patientId && (
-                <div className="pt-1 border-t border-border/40 text-xs text-muted-foreground/80 font-mono break-all">
-                  ID interno: {patientId}
-                </div>
-              )}
-            </div>
-          )}
-        </>
+        )}
+      </div>
+      {showToggle && !onViewFullData && showFullId && (
+        <div className="mt-2 rounded-md border border-border/60 bg-background/60 p-3 space-y-2 text-xs">
+          <FullIdRow label="Nome social" value={registry?.socialName} />
+          <FullIdRow label="CPF" value={registry?.cpf} mono />
+          <FullIdRow label="CNS" value={registry?.cns} mono />
+          <FullIdRow label="Nascimento" value={formatDate(registry?.birthDate || undefined)} />
+          <FullIdRow label="Sexo" value={registry?.sex} />
+        </div>
       )}
 
       {/* Painel completo sempre aberto (usado em telas onde a revisão cadastral é prioritária) */}
@@ -299,72 +257,49 @@ function CopyNameButton({ value }: { value?: string | null }) {
   );
 }
 
-const chipBase =
-  "inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/40 px-2 py-0.5 text-xs leading-5 text-foreground";
-
-/** Bloco compacto de informação. Texto simples ou rótulo + valor. */
-export function InfoChip({
-  label,
-  value,
-  children,
-}: {
-  label?: string;
-  value?: string | null;
-  children?: React.ReactNode;
-}) {
-  return (
-    <span className={chipBase}>
-      {label && <span className="text-muted-foreground">{label}</span>}
-      {value !== undefined ? <span className="font-medium tabular-nums">{value || "—"}</span> : children}
-    </span>
-  );
+interface IdCell {
+  label: string;
+  value?: React.ReactNode;
+  /** Mostra o botao de copiar (valor texto). */
+  copy?: boolean;
+  mono?: boolean;
 }
 
-/** Bloco com valor copiável (prontuário / atendimento). Vazio vira "—" sem botão. */
-function CopyChip({ label, value }: { label: string; value?: string | null }) {
-  if (!value) {
-    return (
-      <span className={chipBase}>
-        <span className="text-muted-foreground">{label}</span>
-        <span className="text-muted-foreground/60">—</span>
-      </span>
-    );
-  }
+/** Celula da grade de identificacao: rotulo pequeno em cima, valor embaixo; divisores finos. */
+function IdGridCell({ cell, index }: { cell: IdCell; index: number }) {
+  const text = typeof cell.value === "string" ? cell.value : null;
+  const has = text ? text.trim() !== "" && text !== "—" : cell.value != null;
   return (
-    <button
-      type="button"
-      onClick={() => copyValue(value, label)}
-      title={`Copiar ${label}`}
-      aria-label={`Copiar ${label} ${value}`}
-      className={cn(chipBase, "group cursor-pointer hover:bg-muted/70 transition-colors")}
+    <div
+      className={cn(
+        "min-w-0 px-3 py-2",
+        index % 2 === 1 && "border-l border-border",
+        index >= 2 && "border-t border-border",
+      )}
     >
-      <span className="text-muted-foreground">{label}</span>
-      <span className="font-medium tabular-nums">{value}</span>
-      <Copy className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity" />
-    </button>
-  );
-}
-
-function IdRow({ label, value, mono }: { label: string; value?: string | null; mono?: boolean }) {
-  const has = !!value;
-  return (
-    <div className="group flex items-center justify-between gap-2 text-[11px]">
-      <span className="text-muted-foreground uppercase tracking-wide text-[10px]">{label}</span>
-      <span className="flex items-center gap-1 min-w-0">
-        <span className={cn("truncate font-medium text-[11px]", has ? "text-foreground" : "text-muted-foreground/60", mono && "font-mono")}>
-          {value || "—"}
+      <div className="text-[10px] font-semibold uppercase leading-none tracking-wider text-muted-foreground">{cell.label}</div>
+      <div className="mt-1 flex items-center justify-between gap-1">
+        <span
+          className={cn(
+            "min-w-0 font-semibold tabular-nums leading-tight",
+            cell.mono ? "font-mono text-xs" : "text-[13px]",
+            has ? "text-foreground" : "text-muted-foreground/60",
+          )}
+        >
+          {has ? cell.value : "—"}
         </span>
-        {has && (
+        {cell.copy && has && text && (
           <button
             type="button"
-            onClick={() => copyValue(value, label)}
-            className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md hover:bg-muted/60"
-            title={`Copiar ${label}`}
+            onClick={() => copyValue(text, cell.label)}
+            title={`Copiar ${cell.label}`}
+            aria-label={`Copiar ${cell.label} ${text}`}
+            className="shrink-0 rounded p-0.5 text-muted-foreground/70 transition-colors hover:bg-muted/60 hover:text-foreground"
           >
-            <Copy className="h-3 w-3 text-muted-foreground" />
+            <Copy className="h-3 w-3" />
           </button>
         )}
-      </span>
+      </div>
     </div>
   );
 }
