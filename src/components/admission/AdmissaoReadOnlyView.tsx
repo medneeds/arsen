@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2, User as UserIcon } from "lucide-react";
 import { richHtmlToPlainText } from "@/components/ui/rich-text-editor";
 import { formatDeviceLabel } from "@/lib/devicesCatalog";
+import { parseMaybeJsonArray } from "@/lib/admissionSoapNormalizer";
 
 /**
  * Visao READ-ONLY inline da admissao (D0) ja registrada — mostrada na aba
@@ -25,13 +26,26 @@ interface D0 {
   dataHora?: string | null;
 }
 
-function Field({ label, value }: { label: string; value?: unknown }) {
+/** Texto -> linhas: aceita array serializado (["a","b"]) ou texto com quebras de linha. */
+function toLines(raw: unknown): string[] {
+  const t = String(raw ?? "").trim();
+  if (!t) return [];
+  return parseMaybeJsonArray(t) ?? t.split("\n").map((l) => l.trim()).filter(Boolean);
+}
+
+function Field({ label, value, lines, hideLabel }: { label: string; value?: unknown; lines?: string[]; hideLabel?: boolean }) {
   const v = String(value ?? "").trim();
-  if (!v) return null;
+  if (lines ? lines.length === 0 : !v) return null;
   return (
     <div className="min-w-0">
-      <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</div>
-      <div className="text-sm text-foreground whitespace-pre-wrap break-words">{v}</div>
+      {!hideLabel && <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</div>}
+      {lines ? (
+        <div className="flex flex-col gap-y-0.5 text-sm text-foreground break-words">
+          {lines.map((l, i) => <div key={i}>{l}</div>)}
+        </div>
+      ) : (
+        <div className="text-sm text-foreground whitespace-pre-wrap break-words">{v}</div>
+      )}
     </div>
   );
 }
@@ -142,28 +156,28 @@ export function AdmissaoReadOnlyView({ internacaoId }: Props) {
   const cidSecondary = (soap.__cid_secondary as string) || "";
   const hipoteses = (hist?.hipotese_diagnostica as string) || (soap.__diagnostic_hypotheses as string) || "";
   const antecedentes = Array.isArray(soap.antecedentes)
-    ? (soap.antecedentes as string[]).filter(Boolean).join("\n")
-    : "";
+    ? (soap.antecedentes as string[]).filter(Boolean).flatMap((a) => toLines(a))
+    : [];
 
   return (
-    <div className="space-y-5">
-      {(cidPrimary || cidSecondary || hipoteses) && (
+    <div className="space-y-8">
+      {(cidPrimary || cidSecondary || toLines(hipoteses).length > 0) && (
         <Group title="Diagnóstico">
           <Field label="CID primário" value={cidPrimary} />
           <Field label="CID secundário" value={cidSecondary} />
-          <Field label="Hipóteses diagnósticas" value={hipoteses} />
+          <Field label="Hipóteses diagnósticas" lines={toLines(hipoteses)} />
         </Group>
       )}
 
       {(hist?.historia_clinica || soap.subjective) && (
         <Group title="História admissional">
-          <Field label="História da doença atual" value={hist?.historia_clinica || soap.subjective} />
+          <Field label="História da doença atual" hideLabel value={hist?.historia_clinica || soap.subjective} />
         </Group>
       )}
 
-      {antecedentes && (
+      {antecedentes.length > 0 && (
         <Group title="Antecedentes">
-          <Field label="Antecedentes (AMP)" value={antecedentes} />
+          <Field label="Antecedentes (AMP)" lines={antecedentes} />
         </Group>
       )}
 
@@ -190,7 +204,7 @@ export function AdmissaoReadOnlyView({ internacaoId }: Props) {
 
       {(hist?.conduta_inicial || soap.plan) && (
         <Group title="Plano terapêutico">
-          <Field label="Conduta inicial" value={hist?.conduta_inicial || soap.plan} />
+          <Field label="Conduta inicial" hideLabel value={hist?.conduta_inicial || soap.plan} />
         </Group>
       )}
 
