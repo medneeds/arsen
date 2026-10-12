@@ -317,9 +317,9 @@ export function PrintableCultureRequest({
           <tr>
             <td style={cellBase} colSpan={4}>
               <div style={{ fontWeight: 700, marginBottom: 4 }}>Culturas solicitadas com TSA:</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+              <div style={{ columnCount: 2, columnGap: 24 }}>
                 {items.map((it) => (
-                  <div key={it.key} style={{ display: "flex", alignItems: "center", fontSize: "8.5pt" }}>
+                  <div key={it.key} style={{ display: "flex", alignItems: "center", fontSize: "8.5pt", marginBottom: 3, breakInside: "avoid" }}>
                     <Checkbox checked={it.checked} />
                     <span>{it.label}</span>
                     {it.sampleField && (
@@ -530,7 +530,9 @@ export async function printCultureRequest(
     table.nz.cult .sig-name { font-weight:700; font-size:8.5pt; margin-top:1pt; }
     table.nz.cult .sub { margin-top:3pt; font-size:8.5pt; }
     table.nz.cult .culturas-title { font-weight:700; margin-bottom:3pt; }
-    table.nz.cult .culturas-list .item-row { display:flex; align-items:center; font-size:8.5pt; padding:1.5pt 0; }
+    /* Opcoes em duas colunas (folha unica): coluna 1 completa antes da 2 */
+    table.nz.cult .culturas-list { column-count:2; column-gap:18pt; }
+    table.nz.cult .culturas-list .item-row { display:flex; align-items:center; font-size:8.5pt; padding:1.5pt 0; break-inside:avoid; }
     .cb { display:inline-block; width:8pt; height:8pt; border:1pt solid #0a1628; margin-right:5pt; vertical-align:middle; }
     .cb.on { background:#0a1628; }
     .fill { display:inline-block; border-bottom:1pt solid #0a1628; padding:0 3pt; min-width:60pt; }
@@ -548,6 +550,7 @@ export async function printCultureRequest(
     .duo table.nz.cult td.note { font-size:6pt; padding:2pt 4pt; }
     .duo table.nz.cult td.sig-cell { padding-top:12pt; }
     .duo table.nz.cult .sig-line { margin-top:8pt; font-size:6.5pt; }
+    .duo table.nz.cult .culturas-list { column-count:1; }
     .duo table.nz.cult .culturas-list .item-row { font-size:7pt; padding:0.5pt 0; }
     .duo .cb { width:6.5pt; height:6.5pt; margin-right:3pt; }
 
