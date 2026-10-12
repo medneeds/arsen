@@ -97,51 +97,38 @@ export function SapsPendingAlert({
     navigate(`/saps3?${params.toString()}`);
   };
 
+  const tone = elapsed.over ? "text-critical-on-soft" : "text-warning-on-soft";
+  // Uma linha so (quebra sozinha em tela estreita): titulo + tempo + prazo + botao.
   return (
     <div
       className={cn(
-        "rounded-lg border-l-4 p-3 mb-3 shadow-sm flex items-center gap-3 print:hidden animate-pulse-slow",
+        "rounded-lg border-l-4 px-3 py-1.5 mb-2 shadow-sm flex items-center gap-2.5 print:hidden animate-pulse-slow",
         elapsed.over
           ? "border-critical bg-critical-soft"
-          : elapsed.criticalSoon
-          ? "border-warning bg-warning-soft"
           : "border-warning bg-warning-soft",
         className,
       )}
       role="alert"
     >
-      <AlertTriangle
-        className={cn(
-          "h-5 w-5 shrink-0",
-          elapsed.over ? "text-critical-on-soft" : elapsed.criticalSoon ? "text-warning-on-soft" : "text-warning-on-soft",
-        )}
-      />
-      <div className="flex-1 min-w-0">
-        <p className={cn(
-          "text-sm font-medium",
-          elapsed.over ? "text-critical-on-soft" : "text-warning-on-soft",
-        )}>
+      <AlertTriangle className={cn("h-3.5 w-3.5 shrink-0", tone)} />
+      <p className="flex-1 min-w-0 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs leading-tight">
+        <span className={cn("font-semibold", tone)}>
           SAPS 3 PENDENTE — {patientName ?? "Paciente"}
-        </p>
-        <p className="text-xs text-muted-foreground flex items-center gap-3 mt-1">
-          <span className="inline-flex items-center gap-1">
-            <Clock className="h-3 w-3" /> Pendente há {elapsed.label}
-          </span>
-          <span className={cn(
-            "inline-flex items-center gap-1 font-medium",
-            elapsed.over ? "text-critical-on-soft" : elapsed.criticalSoon ? "text-warning-on-soft" : "text-warning-on-soft",
-          )}>
-            {elapsed.over ? "Prazo de 24h vencido — fluxo será travado" : `Faltam ${elapsed.remaining} (limite 24h)`}
-          </span>
-        </p>
-      </div>
+        </span>
+        <span className="text-muted-foreground inline-flex items-center gap-1">
+          <Clock className="h-2.5 w-2.5" /> Pendente há {elapsed.label}
+        </span>
+        <span className={cn("font-medium", tone)}>
+          {elapsed.over ? "Prazo de 24h vencido — fluxo será travado" : `Faltam ${elapsed.remaining} (limite 24h)`}
+        </span>
+      </p>
       <Button
         size="sm"
         variant={elapsed.over ? "destructive" : "default"}
         onClick={handleComplete}
-        className="shrink-0 gap-2"
+        className="shrink-0 gap-1.5 h-7 px-3 text-xs"
       >
-        <ClipboardList className="h-4 w-4" />
+        <ClipboardList className="h-3 w-3" />
         Completar SAPS 3
       </Button>
     </div>
