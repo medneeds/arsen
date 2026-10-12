@@ -17,8 +17,8 @@ const MODULE_TABS = [
   { label: "Requisições", path: "/requisicoes", icon: FileText },
   { label: "Monitoramento", path: "/monitoramento", icon: Activity },
   { label: "Docs", path: "/documentos", icon: FolderOpen },
-  { label: "Histórico", path: "/historico-paciente", icon: Clock },
   { label: "Movimentação", path: "/movimentar", icon: ArrowLeftRight },
+  { label: "Histórico", path: "/historico-paciente", icon: Clock },
 ];
 
 interface ClinicalModuleTabsProps {
