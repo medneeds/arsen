@@ -25,6 +25,24 @@ export interface SolicitacaoContext {
   patientSector?: string;
 }
 
+/**
+ * Snapshot do impresso (formulario completo de hemocomponente etc.). O banco novo
+ * nao tem a coluna document_payload; o snapshot viaja dentro de `itens` (jsonb),
+ * em itens[n].document_payload = { kind, data } — o mesmo recurso que o SAT usa
+ * para guardar os dados do ferimento. Itens sem snapshot (solicitacoes antigas)
+ * devolvem null e a impressao cai na guia.
+ */
+export function extractDocumentPayload(itens: unknown): { kind?: string; data?: unknown } | null {
+  if (!Array.isArray(itens)) return null;
+  for (const it of itens) {
+    const dp = it && typeof it === "object" ? (it as { document_payload?: unknown }).document_payload : null;
+    if (dp && typeof dp === "object" && typeof (dp as { kind?: unknown }).kind === "string") {
+      return dp as { kind?: string; data?: unknown };
+    }
+  }
+  return null;
+}
+
 // MIGRAÇÃO: solicitacoes_exame só tem internacao_id + campos clínicos — não há
 // colunas de paciente/unidade/documento/solicitante. Normaliza a linha nova
 // para o shape legado que RequestCard e os builders de impressão consomem
@@ -54,7 +72,8 @@ export function normalizeSolicitacao(row: any, ctx: SolicitacaoContext) {
     solicitado_por: row.solicitado_por ?? null,
     requested_by_name: "",
     requested_by_crm: null as string | null,
-    document_payload: null, // MIGRAÇÃO: sem coluna → reimpressão de snapshot indisponível
+    // MIGRAÇÃO: sem coluna document_payload — o snapshot vem de itens[n].document_payload.
+    document_payload: extractDocumentPayload(row.itens),
     patient_registry_id: null, // MIGRAÇÃO: sem coluna no schema novo
   };
 }

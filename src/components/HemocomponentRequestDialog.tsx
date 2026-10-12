@@ -273,12 +273,24 @@ export function HemocomponentRequestDialog({
       return null;
     }
     try {
-      const items = (data.components || []).map((c) => ({
+      // Snapshot do formulario completo (impresso diferenciado da hemoterapia):
+      // sem coluna document_payload no banco novo, viaja em itens[0] (jsonb) e
+      // e lido de volta por normalizeSolicitacao para reimprimir a folha.
+      const snapshot = {
+        kind: "hemocomponente" as const,
+        data: {
+          ...data,
+          patient_id: internacaoId,
+          created_at: data.created_at || new Date().toISOString(),
+        },
+      };
+      const items = (data.components || []).map((c, idx) => ({
         name: COMPONENT_LABELS[c.key],
         key: c.key,
         quantity: (c as any).quantity || null,
         attributes: (c as any).attributes || null,
         lab_justification: (c as any).lab_justification || null,
+        ...(idx === 0 ? { document_payload: snapshot } : {}),
       }));
       const solicitadoPor = await resolveProfissionalId(user?.id);
       const payload: any = {

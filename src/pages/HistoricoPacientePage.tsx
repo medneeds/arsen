@@ -26,6 +26,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { getSectorDisplayLabel } from "@/utils/bedNaming";
 import { buildNormaZeroDocument, openPrintWindow, prepareLogo } from "@/lib/printNormaZero";
 import { resolveHeaderPatient } from "@/lib/headerPatient";
+import { extractDocumentPayload } from "@/lib/solicitacaoNormalize";
 import { PatientIdentityBar } from "@/components/PatientIdentityBar";
 import { SapsView, type SapsRow } from "@/components/saps3/SapsView";
 import { printSapsDocument } from "@/lib/printSaps";
@@ -720,7 +721,8 @@ export default function HistoricoPacientePage() {
           .eq("id", rawId)
           .maybeSingle();
         if (!sol) { alert("Requisição não encontrada."); setPrintingId(null); return; }
-        const data = { ...(sol as any), items: (sol as any).itens, category: (sol as any).categoria };
+        const solRow = sol as any;
+        const data = { ...solRow, items: solRow.itens, category: solRow.categoria, document_payload: extractDocumentPayload(solRow.itens) };
         // Reaproveita os mesmos despachantes de impressão da Requisição
         // Unificada — mesmo tratamento de gasometria (Lab), do laudo
         // formal quando existe document_payload real (Procedimento), e do

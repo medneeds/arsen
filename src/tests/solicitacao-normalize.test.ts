@@ -71,3 +71,16 @@ test("applyAuthor nao altera o pedido original (imutavel)", () => {
   applyAuthor(base, autor);
   assert.strictEqual(base.requested_by_name, "");
 });
+
+import { extractDocumentPayload } from "../lib/solicitacaoNormalize.ts";
+test("snapshot do impresso viaja em itens[n].document_payload e e lido de volta", () => {
+  const snap = { kind: "hemocomponente", data: { patient_name: "X", components: [{ key: "hemacias", lab_hb: "6.8" }] } };
+  const itens = [{ name: "Conc. de Hemácias", key: "hemacias", document_payload: snap }, { name: "Plaquetas", key: "plaquetas" }];
+  assert.deepEqual(extractDocumentPayload(itens), snap);
+  assert.equal(extractDocumentPayload([{ name: "Hemograma" }]), null);
+  assert.equal(extractDocumentPayload(null), null);
+  assert.equal(extractDocumentPayload([null, "texto", { document_payload: { data: 1 } }]), null);
+  const req = normalizeSolicitacao({ id: "1", internacao_id: "i", categoria: "hemocomponente", itens, prioridade: "rotina", status: "pendente", criado_em: "2026-10-12T00:00:00Z" }, {});
+  assert.deepEqual(req.document_payload, snap);
+  assert.equal(normalizeSolicitacao({ id: "2", internacao_id: "i", categoria: "laboratorio", itens: ["HEMOGRAMA"], criado_em: "2026-10-12T00:00:00Z" }, {}).document_payload, null);
+});
