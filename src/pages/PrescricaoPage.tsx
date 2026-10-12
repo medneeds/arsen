@@ -8848,17 +8848,13 @@ const PrescricaoPage = () => {
           className="px-3 pt-3 pb-2"
           rightSlot={
             <>
-              <p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground leading-tight">
-                Prescrição Médica Diária
-              </p>
-              <div className="flex items-center justify-end gap-2 mt-1 flex-wrap">
-                {currentPrescriptionId && (
+              {currentPrescriptionId && (
+                <div className="flex items-center justify-end gap-2 flex-wrap">
                   <Badge variant="outline" className="text-xs h-4 px-2 text-primary border-primary/30">
                     Salva
                   </Badge>
-                )}
-                <span className="text-xs text-muted-foreground font-mono">{prescriptionDate}</span>
-              </div>
+                </div>
+              )}
               {(createdByProfessional || digitalSignature) && (
                 <div className="flex flex-col items-end gap-0.5 mt-1">
                   {createdByProfessional && (
