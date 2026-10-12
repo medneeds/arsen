@@ -92,59 +92,32 @@ export function PatientIdentityBar({ patientId, patientRegistryId, rightSlot, cl
           <p className="text-base font-semibold text-foreground uppercase tracking-wide leading-tight truncate">
             {name}
           </p>
-          <div className="flex items-center gap-2 flex-wrap mt-1">
-            {!registryOnly && sector && (
-              <span className="px-2 py-1 rounded-md bg-muted text-foreground text-xs font-medium">
-                {sector}
-              </span>
-            )}
-            {registryOnly ? (
-              <>
-                {age && (
-                  <span className="px-2 py-1 rounded-md bg-muted text-muted-foreground text-xs font-medium">
-                    {age}
-                  </span>
-                )}
-                {birthDate && (
-                  <>
-                    <span className="text-muted-foreground/40 text-xs">·</span>
-                    <span className="text-xs text-muted-foreground">{formatBirth(birthDate)}</span>
-                  </>
-                )}
-                {prontuario && (
-                  <>
-                    <span className="text-muted-foreground/40 text-xs">·</span>
-                    <span className="text-xs text-muted-foreground font-mono">Pront. {prontuario}</span>
-                  </>
-                )}
-              </>
-            ) : (
-              <>
-                {ageLabel && (
-                  <span className="px-2 py-1 rounded-md bg-muted text-foreground text-xs font-medium">
-                    {ageLabel}
-                  </span>
-                )}
-                {birthDate && (
-                  <>
-                    <span className="text-muted-foreground/40 text-xs">·</span>
-                    <LabeledValue label="Data de nascimento" value={formatBirth(birthDate)} />
-                  </>
-                )}
-                {prontuario && (
-                  <>
-                    <span className="text-muted-foreground/40 text-xs">·</span>
-                    <LabeledValue label="Prontuário" value={prontuario} />
-                  </>
-                )}
-                {atendimento && (
-                  <>
-                    <span className="text-muted-foreground/40 text-xs">·</span>
-                    <LabeledValue label="Atendimento" value={atendimento} />
-                  </>
-                )}
-              </>
-            )}
+          {/* Informacoes separadas por divisores finos (mesmo estilo da linha de abas
+              do cabecalho): sem caixinhas e sem "·". Cada item e um segmento. */}
+          <div className="flex items-stretch flex-wrap mt-1.5 gap-y-1">
+            {(registryOnly
+              ? [
+                  age && <span key="age" className="text-xs font-semibold text-foreground">{age}</span>,
+                  birthDate && <span key="birth" className="text-xs text-foreground">{formatBirth(birthDate)}</span>,
+                  prontuario && <span key="pront" className="text-xs text-muted-foreground font-mono">Pront. {prontuario}</span>,
+                ]
+              : [
+                  sector && <span key="sector" className="text-xs font-semibold text-foreground">{sector}</span>,
+                  ageLabel && <span key="age" className="text-xs font-semibold text-foreground">{ageLabel}</span>,
+                  birthDate && <LabeledValue key="birth" label="Data de nascimento" value={formatBirth(birthDate)} />,
+                  prontuario && <LabeledValue key="pront" label="Prontuário" value={prontuario} />,
+                  atendimento && <LabeledValue key="atend" label="Atendimento" value={atendimento} />,
+                ]
+            )
+              .filter(Boolean)
+              .map((seg, i) => (
+                <div
+                  key={i}
+                  className={cn("flex items-center px-3", i === 0 ? "pl-0" : "border-l border-border")}
+                >
+                  {seg}
+                </div>
+              ))}
           </div>
         </div>
       </div>

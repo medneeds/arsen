@@ -8846,6 +8846,11 @@ const PrescricaoPage = () => {
         <PatientIdentityBar
           patientId={urlPatientIdForRecord}
           className="px-3 pt-3 pb-2"
+          rightSlot={
+            <p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground leading-tight">
+              PRESCRIÇÃO
+            </p>
+          }
         />
 
         {/* Skeleton do cabecalho clinico ate os dados (peso/alergias/identidade)

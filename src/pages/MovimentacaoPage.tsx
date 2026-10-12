@@ -92,7 +92,7 @@ export default function MovimentacaoPage() {
   return (
     <div className="print:p-2">
       {/* Shell institucional harmonizado — mesmo cabecalho/abas dos demais modulos */}
-      <ClinicalHeader moduleLabel="Sinalização" />
+      <ClinicalHeader moduleLabel="Movimentação" />
 
       <div className="flex print:block">
         <div className="flex-1 min-w-0 p-3 sm:p-4">
@@ -102,7 +102,7 @@ export default function MovimentacaoPage() {
             className="print:hidden rounded-lg border border-border bg-card/60 px-3 py-3 mb-3"
             rightSlot={
               <p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground leading-tight">
-                SINALIZAÇÃO
+                MOVIMENTAÇÃO
               </p>
             }
           />
