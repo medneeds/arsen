@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { errorMessage } from "@/lib/errorMessage";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -143,7 +144,7 @@ export function useBoletimCirurgico(
       setBoletins((data ?? []).map((r) => mapBoletimRow(r, patientName)));
     } catch (err) {
       toast.error("Nao foi possivel carregar boletins cirurgicos", {
-        description: err instanceof Error ? err.message : String(err),
+        description: errorMessage(err),
       });
     } finally {
       setLoading(false);
@@ -210,7 +211,7 @@ export function useBoletimCirurgico(
       return row?.id ?? null;
     } catch (err) {
       toast.error("Nao foi possivel salvar boletim cirurgico", {
-        description: err instanceof Error ? err.message : String(err),
+        description: errorMessage(err),
       });
       return null;
     }
