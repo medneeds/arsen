@@ -27,6 +27,7 @@ import { useHospital } from "@/contexts/HospitalContext";
 import { supabase } from "@/integrations/supabase/client";
 import { asUuidOrNull } from "@/lib/utils";
 import { buildNormaZeroDocument, openPrintWindow, prepareLogo } from "@/lib/printNormaZero";
+import { resolveHeaderPatient } from "@/lib/headerPatient";
 import { resolvePatientHeader, resolveCurrentBedSector } from "@/lib/resolvePatientHeader";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -264,15 +265,9 @@ export function CVCChecklistDialog({
       : format(new Date(), "dd/MM/yyyy");
 
     const body = `
-<div class="cvc-section">Identificação do Paciente</div>
+<div class="cvc-section">Procedimento</div>
 <div class="cvc-fr">
-  <div class="cvc-f"><label>Nome</label><span>${esc(resolvedName)}</span></div>
-  <div class="cvc-f" style="max-width:130px;"><label>Data de Nascimento</label><span>${esc(dataNascimento || "—")}</span></div>
   <div class="cvc-f" style="max-width:130px;"><label>Data do Procedimento</label><span>${esc(dataFormatada)}</span></div>
-</div>
-<div class="cvc-fr">
-  <div class="cvc-f" style="max-width:100px;"><label>Leito</label><span>${esc(resolvedBed || "—")}</span></div>
-  <div class="cvc-f" style="max-width:160px;"><label>Setor</label><span>${esc(getSectorDisplayLabel(resolvedSector) || resolvedSector || "—")}</span></div>
   <div class="cvc-f"><label>Flags</label><span style="font-size:8pt;">${esc(flagsAtivos)}</span></div>
 </div>
 ${obs ? `<div class="cvc-box"><strong>OBS:</strong> ${esc(obs)}</div>` : ""}
@@ -331,8 +326,22 @@ ${justificativa ? `<div class="cvc-section">Justificativa de Não Cumprimento</d
 @page { margin: 14mm 14mm 18mm 14mm; }`;
 
     const logo = await prepareLogo();
+    // A identificacao do paciente vive no cabecalho padronizado (modelo assistencial).
+    const headerPatient = await resolveHeaderPatient(patientId, {
+      name: resolvedName,
+      bed: resolvedBed,
+      sector: getSectorDisplayLabel(resolvedSector) || resolvedSector,
+      birthDate: dataNascimento,
+    });
     const html = buildNormaZeroDocument({
       title: "Checklist de Inserção de CVC — Bundle de Segurança",
+      standardHeader: {
+        model: "assistencial",
+        title: "Checklist de inserção de CVC",
+        complement: "Bundle de segurança · CCIH",
+        emission: "",
+        patient: headerPatient,
+      },
       subtitle: "CCIH — Protocolo de Prevenção de IPCS",
       sectorLabel: getSectorDisplayLabel(resolvedSector) || resolvedSector
         ? `Dispositivos — ${getSectorDisplayLabel(resolvedSector) || resolvedSector}`

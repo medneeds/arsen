@@ -147,3 +147,17 @@ test("assistencial com includeRegistry mostra CPF, CNS, telefone e endereco quan
   const sem = buildHeaderLayout({ model: "assistencial", title: "x", emission: "e", patient: { ...pac, cpf: "123" } });
   assert.equal(find(sem, "CPF"), undefined);
 });
+
+test("variante compacta (2 vias): mesmo conteudo, fontes e logo menores", () => {
+  const l = buildHeaderLayout({ model: "assistencial", title: "Requisicao", emission: "e", patient: { ...pac, allergies: "Dipirona" } });
+  const normal = renderHeaderHtml(l, brand);
+  const compact = renderHeaderHtml(l, brand, "all", { compact: true });
+  for (const txt of ["Requisicao", "Dipirona", "Alergias", "Emissão"]) {
+    assert.ok(normal.includes(txt) && compact.includes(txt), txt);
+  }
+  assert.ok(normal.includes("width:40px;height:40px"));
+  assert.ok(compact.includes("width:28px;height:28px"));
+  assert.ok(compact.length !== normal.length);
+  // O padrao nao muda: sem opcoes sai igual ao modo normal.
+  assert.equal(renderHeaderHtml(l, brand, "all", {}), normal);
+});

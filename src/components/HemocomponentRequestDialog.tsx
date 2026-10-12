@@ -217,8 +217,9 @@ export function HemocomponentRequestDialog({
 
   const previewData = useMemo<HemocomponentRequestData>(() => ({
     ...data,
+    patient_id: asUuidOrNull(patientId),
     created_at: data.created_at || new Date().toISOString(),
-  }), [data]);
+  }), [data, patientId]);
 
   const toggleSector = (key: SectorKey, checked: boolean) => {
     setData((d) => ({

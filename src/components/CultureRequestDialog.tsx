@@ -219,9 +219,10 @@ export function CultureRequestDialog({
 
   const previewData = useMemo<CultureRequestData>(() => ({
     ...data,
+    patient_id: asUuidOrNull(patientId),
     items: buildItems(),
     created_at: data.created_at || new Date().toISOString(),
-  }), [data, selection]);
+  }), [data, selection, patientId]);
 
   const age = ageInYears(data.patient_birth_date);
   const isMinor = age !== null && age < 18;
@@ -301,7 +302,7 @@ export function CultureRequestDialog({
     setPrintChoiceOpen(false);
     await persistRequest();
     printCultureRequest(
-      { ...data, items: buildItems(), created_at: new Date().toISOString() },
+      { ...data, patient_id: asUuidOrNull(patientId), items: buildItems(), created_at: new Date().toISOString() },
       undefined,
       { duplicate },
     );

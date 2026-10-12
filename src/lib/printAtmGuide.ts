@@ -3,7 +3,7 @@
 // (reprint of an already validated antibiotic in course).
 import { format } from "date-fns";
 import { buildNormaZeroDocument, openPrintWindow, prepareLogo } from "@/lib/printNormaZero";
-import { isSemAlergia } from "@/lib/allergyStatus";
+import { resolveHeaderPatient, fmtIsoDate } from "@/lib/headerPatient";
 
 export interface AtmPrintEntry {
   medication: string;
@@ -42,6 +42,8 @@ export interface AtmPrintPatient {
   allergies: string;
   unit: string;
   birthDate?: string;
+  /** Id da internacao — completa o cabecalho com cadastro (atendimento, nome social, admissao no setor). */
+  patientId?: string | null;
 }
 
 const RESTRICTION_LABEL: Record<string, string> = {
@@ -70,23 +72,11 @@ export function buildAtmBodyHtml({
 }) {
   return `
     ${reprint ? `<div style="text-align:right;font-size:7pt;color:#b91c1c;font-weight:700;margin-bottom:4px;">2ª VIA / REIMPRESSÃO</div>` : ''}
-    <h2 class="nz-section">1. IDENTIFICAÇÃO DO PACIENTE</h2>
+    <h2 class="nz-section">1. MÉDICO PRESCRITOR</h2>
     <table class="nz">
       <tbody>
         <tr>
-          <th style="width:14%">Paciente</th><td style="width:36%"><strong>${esc(patient.name)}</strong></td>
-          <th style="width:10%">Leito</th><td style="width:14%"><strong>${esc(patient.bed)}</strong></td>
-          <th style="width:12%">Prontuário</th><td><strong>${esc(patient.record)}</strong></td>
-        </tr>
-        <tr>
-          <th>Idade</th><td>${esc(patient.age)}</td>
-          <th>Peso</th><td>${patient.weight ? esc(patient.weight) + 'kg' : '—'}</td>
-          <th>Alergias</th>
-          <td><strong style="color:${patient.allergies && !isSemAlergia(patient.allergies) ? '#dc2626' : 'inherit'}">${esc(patient.allergies || 'Sem relato')}</strong></td>
-        </tr>
-        <tr>
-          <th>Data nascimento</th><td>${patient.birthDate ? esc(patient.birthDate.split('-').reverse().join('/')) : '—'}</td>
-          <th>Médico</th><td colspan="3">${esc(doctorName)}${doctorCrm ? ` — CRM ${esc(doctorCrm)}` : ''}</td>
+          <th style="width:14%">Médico</th><td>${esc(doctorName)}${doctorCrm ? ` — CRM ${esc(doctorCrm)}` : ''}</td>
         </tr>
       </tbody>
     </table>
@@ -165,8 +155,27 @@ export async function printAtmGuide({
   if (valid.length === 0) return;
   const today = format(new Date(), "dd/MM/yyyy");
   const logoData = await prepareLogo();
+  // A identificacao do paciente vive no cabecalho padronizado (modelo assistencial).
+  const headerPatient = await resolveHeaderPatient(patient.patientId, {
+    name: patient.name,
+    bed: patient.bed,
+    sector: patient.unit,
+    record: patient.record,
+    birthDate: fmtIsoDate(patient.birthDate),
+    age: patient.age,
+    sex: patient.sex,
+    weight: patient.weight ? `${patient.weight}kg` : '',
+    allergies: patient.allergies,
+  });
   const html = buildNormaZeroDocument({
     title: reprint ? "GUIA DE USO DE ANTIMICROBIANOS — 2ª VIA" : "GUIA DE USO DE ANTIMICROBIANOS",
+    standardHeader: {
+      model: "assistencial",
+      title: "Guia de uso de antimicrobianos",
+      complement: reprint ? "2ª via · CCIH" : "CCIH",
+      emission: "",
+      patient: headerPatient,
+    },
     subtitle: hospitalName ? `${hospitalName} — Comissão de Controle de Infecção Hospitalar (CCIH)` : "Comissão de Controle de Infecção Hospitalar (CCIH)",
     sectorLabel: `CCIH · ${patient.unit || 'Unidade'}`,
     hospitalName: hospitalName || '',

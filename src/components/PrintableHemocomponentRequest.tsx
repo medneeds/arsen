@@ -46,6 +46,8 @@ export type AdminSchedule = "8_8h" | "continuo";
 
 export interface HemocomponentRequestData {
   // Identificação do paciente
+  /** Id da internacao — completa o cabecalho com o cadastro (atendimento, alergias...). */
+  patient_id?: string | null;
   patient_name: string;
   patient_social_name?: string | null;
   patient_birth_date?: string | null; // ISO YYYY-MM-DD
@@ -105,6 +107,10 @@ interface PrintableHemocomponentRequestProps {
 
 /* Catálogo dos setores agrupados — sincronizado com hospitalSectors.ts */
 import { HOSPITAL_SECTOR_GROUPS } from "@/lib/hospitalSectors";
+import { resolveHeaderPatient } from "@/lib/headerPatient";
+import { useHeaderPatient } from "@/hooks/useHeaderPatient";
+import { DocumentHeader } from "@/components/DocumentHeader";
+import type { HeaderPatient } from "@/lib/documentHeaderLayout";
 const SECTOR_GROUPS: Array<{
   title: string;
   items: Array<{ key: SectorKey; label: string }>;
@@ -220,6 +226,22 @@ function isSexMasc(s?: string | null) {
   return /^m/i.test(String(s || ""));
 }
 
+/** Identificacao base do cabecalho padronizado a partir do que o formulario ja tem. */
+function hemoHeaderBase(request: HemocomponentRequestData, sectorName: string): HeaderPatient {
+  const birth = request.patient_birth_date ? fmtDate(request.patient_birth_date) : "";
+  const weight = String(request.patient_weight ?? "").trim();
+  return {
+    name: (request.patient_name || "").toUpperCase(),
+    socialName: request.patient_social_name,
+    bed: request.patient_bed,
+    sector: sectorName,
+    record: request.patient_record,
+    birthDate: birth,
+    sex: isSexFem(request.patient_sex) ? "Feminino" : isSexMasc(request.patient_sex) ? "Masculino" : request.patient_sex,
+    weight: /^\d+([.,]\d+)?$/.test(weight) ? `${weight}kg` : weight,
+  };
+}
+
 /* ───────────────────────── Pré-visualização React ───────────────────────── */
 
 export function PrintableHemocomponentRequest({
@@ -235,6 +257,9 @@ export function PrintableHemocomponentRequest({
   const createdAt = new Date(request.created_at);
   const createdStr = format(createdAt, "dd/MM/yyyy", { locale: ptBR });
   const createdTime = format(createdAt, "HH:mm", { locale: ptBR });
+
+  // Cabecalho padronizado (modelo assistencial) — mesma fonte da impressao.
+  const headerPatient = useHeaderPatient(request.patient_id, hemoHeaderBase(request, sectorName));
 
   // 🔒 Norma Zero — bloqueia a geração se identificação estiver incompleta.
   // Especialmente crítico aqui: erro de identificação numa transfusão de
@@ -260,27 +285,13 @@ export function PrintableHemocomponentRequest({
         border: `1px solid ${lineSoft}`,
       }}
     >
-      <NormaZeroPrintHeader
-        documentLabel="Solicitação Hemocomponentes"
-        documentCode={docCode}
-        documentSubtitle={createdStr}
+      <DocumentHeader
+        model="assistencial"
+        title="Solicitação de sangue / hemocomponentes"
+        emission={format(new Date(), "dd/MM/yyyy HH:mm:ss")}
         width="100%"
+        patient={headerPatient}
       />
-
-      {/* Título principal */}
-      <div
-        style={{
-          textAlign: "center",
-          margin: "8px 0 0",
-          fontSize: "12pt",
-          fontWeight: 800,
-          textTransform: "uppercase",
-          letterSpacing: "0.6px",
-          color: ink,
-        }}
-      >
-        Solicitação de Sangue / Hemocomponentes
-      </div>
 
       {/* TABELA ÚNICA — grade de 12 colunas (sincroniza com o PDF) */}
       <table style={{ ...tableStyle, tableLayout: "fixed" }}>
@@ -844,8 +855,17 @@ export async function printHemocomponentRequest(
   `;
 
   const logoDataUrl = await prepareLogo();
+  // Cabecalho padronizado (modelo assistencial); a faixa "Identificacao do Paciente"
+  // do formulario (ABO/RH, sexo, peso, diagnostico) permanece no corpo.
+  const headerPatient = await resolveHeaderPatient(request.patient_id, hemoHeaderBase(request, sectorName));
   const html = buildNormaZeroDocument({
     title: "Solicitação de Sangue / Hemocomponentes",
+    standardHeader: {
+      model: "assistencial",
+      title: "Solicitação de sangue / hemocomponentes",
+      emission: "",
+      patient: headerPatient,
+    },
     subtitle: `Emitida em ${createdStr} às ${createdTime}`,
     sectorLabel: sectorName || "Assistência Hospitalar",
     docCodePrefix: "REQ-HEMO",

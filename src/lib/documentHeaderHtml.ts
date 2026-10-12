@@ -38,13 +38,20 @@ export const HEADER_STYLE = {
 } as const;
 
 const S = HEADER_STYLE;
-const cell = `border:${S.cellBorder};padding:3px 6px;font-size:7.5pt;line-height:1.3;vertical-align:top`;
-const labelCell = `${cell};font-weight:700;font-size:6.2pt;background:${S.labelBg};color:${S.labelInk};text-transform:uppercase;letter-spacing:0.3px;white-space:nowrap`;
+/** Tamanhos do cabecalho: normal (folha inteira) e compacto (2 vias lado a lado, paisagem). */
+const SIZES = {
+  normal: { cell: "3px 6px", val: "7.5pt", lab: "6.2pt", name: "8.6pt", sub: "6.5pt", logo: 40, line1: "6.5pt", line3: "10pt", emLab: "6pt", emVal: "9pt", band: "8.6pt", bandPad: "5px 9px", cmp: "7pt", gap: "10px", emW: "120px", bar: 3, after: "6pt" },
+  compact: { cell: "1.5px 3px", val: "6pt", lab: "5pt", name: "7pt", sub: "5pt", logo: 28, line1: "5pt", line3: "7.5pt", emLab: "4.5pt", emVal: "6.5pt", band: "7pt", bandPad: "3px 6px", cmp: "5pt", gap: "6px", emW: "78px", bar: 2.5, after: "4pt" },
+} as const;
+type Sz = (typeof SIZES)[keyof typeof SIZES];
 
-function valueStyle(c: HeaderCell): string {
-  let st = cell;
+const cellOf = (z: Sz) => `border:${S.cellBorder};padding:${z.cell};font-size:${z.val};line-height:1.3;vertical-align:top`;
+const labelCellOf = (z: Sz) => `${cellOf(z)};font-weight:700;font-size:${z.lab};background:${S.labelBg};color:${S.labelInk};text-transform:uppercase;letter-spacing:0.3px;white-space:nowrap`;
+
+function valueStyle(c: HeaderCell, z: Sz): string {
+  let st = cellOf(z);
   if (c.strong) st += ";font-weight:700";
-  if (c.label === "Paciente") st += ";font-weight:800;font-size:8.6pt;letter-spacing:-0.01em";
+  if (c.label === "Paciente") st += `;font-weight:800;font-size:${z.name};letter-spacing:-0.01em`;
   if (c.tone === "allergyOk") st += `;color:${S.allergyOkInk};background:${S.allergyOkBg}`;
   if (c.tone === "allergyAlert") st += `;color:${S.allergyAlertInk};background:${S.allergyAlertBg}`;
   return st;
@@ -56,10 +63,12 @@ function valueStyle(c: HeaderCell): string {
  */
 export type HeaderPart = "all" | "top" | "grid";
 
-export function renderHeaderHtml(layout: HeaderLayout, brand: HeaderBrand, part: HeaderPart = "all"): string {
+export function renderHeaderHtml(layout: HeaderLayout, brand: HeaderBrand, part: HeaderPart = "all", opts: { compact?: boolean } = {}): string {
+  const z: Sz = opts.compact ? SIZES.compact : SIZES.normal;
+  const labelCell = labelCellOf(z);
   const logo = brand.logoSrc
-    ? `<img src="${esc(brand.logoSrc)}" alt="" style="width:40px;height:40px;object-fit:contain;flex-shrink:0"/>`
-    : `<div style="width:40px;height:40px;background:${brand.colors.blue};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:8pt;border-radius:6px;flex-shrink:0">${esc(brand.abbr ?? "")}</div>`;
+    ? `<img src="${esc(brand.logoSrc)}" alt="" style="width:${z.logo}px;height:${z.logo}px;object-fit:contain;flex-shrink:0"/>`
+    : `<div style="width:${z.logo}px;height:${z.logo}px;background:${brand.colors.blue};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:8pt;border-radius:6px;flex-shrink:0">${esc(brand.abbr ?? "")}</div>`;
   const c = brand.colors;
   const rows = layout.rows
     .map(
@@ -69,35 +78,35 @@ export function renderHeaderHtml(layout: HeaderLayout, brand: HeaderBrand, part:
           .map((cl) => {
             const lab = `<td style="${labelCell}${cl.alertLabel ? `;color:${S.allergyLabelInk}` : ""}">${esc(cl.label)}</td>`;
             const span = cl.span && cl.span > 1 ? ` colspan="${cl.span}"` : "";
-            const sub = cl.sub ? `<div style="font-size:6.5pt;font-weight:400;color:${S.labelInk};margin-top:1px">${esc(cl.sub)}</div>` : "";
-            return `${lab}<td style="${valueStyle(cl)}"${span}>${esc(cl.value)}${sub}</td>`;
+            const sub = cl.sub ? `<div style="font-size:${z.sub};font-weight:400;color:${S.labelInk};margin-top:1px">${esc(cl.sub)}</div>` : "";
+            return `${lab}<td style="${valueStyle(cl, z)}"${span}>${esc(cl.value)}${sub}</td>`;
           })
           .join("") +
         "</tr>",
     )
     .join("");
   const complement = layout.complement
-    ? `<span style="position:absolute;right:9px;top:50%;transform:translateY(-50%);font-size:7pt;letter-spacing:0.4px;text-transform:uppercase;opacity:0.92">${esc(layout.complement)}</span>`
+    ? `<span style="position:absolute;right:9px;top:50%;transform:translateY(-50%);font-size:${z.cmp};letter-spacing:0.4px;text-transform:uppercase;opacity:0.92">${esc(layout.complement)}</span>`
     : "";
   const table = layout.rows.length
-    ? `<table style="width:100%;border-collapse:collapse;margin-bottom:6pt;page-break-inside:avoid"><tbody>${rows}</tbody></table>`
+    ? `<table style="width:100%;border-collapse:collapse;margin-bottom:${z.after};page-break-inside:avoid"><tbody>${rows}</tbody></table>`
     : "";
   if (part === "grid") return `<div class="dh-root" style="font-family:'Helvetica Neue','Segoe UI',Inter,Arial,sans-serif;color:#1e293b">${table}</div>`;
   const showGrid = part === "all" && layout.rows.length > 0;
   return `<div class="dh-root" style="font-family:'Helvetica Neue','Segoe UI',Inter,Arial,sans-serif;color:#1e293b">
-  <div style="display:flex;align-items:center;gap:10px;padding-bottom:4px">${logo}
+  <div style="display:flex;align-items:center;gap:${z.gap};padding-bottom:4px">${logo}
     <div style="flex:1;text-align:center">
-      <div style="font-size:6.5pt;font-weight:600;color:${S.inkSoft};letter-spacing:0.5px;text-transform:uppercase">${esc(brand.line1)} · ${esc(brand.line2)}</div>
-      <div style="font-size:10pt;font-weight:800;color:${S.ink};letter-spacing:0.7px;text-transform:uppercase;margin-top:2px;line-height:1.15">${esc(brand.line3)}</div>
+      <div style="font-size:${z.line1};font-weight:600;color:${S.inkSoft};letter-spacing:0.5px;text-transform:uppercase">${esc(brand.line1)} · ${esc(brand.line2)}</div>
+      <div style="font-size:${z.line3};font-weight:800;color:${S.ink};letter-spacing:0.7px;text-transform:uppercase;margin-top:2px;line-height:1.15">${esc(brand.line3)}</div>
     </div>
-    <div style="min-width:120px;text-align:right;border-left:1px solid ${S.line};padding-left:10px">
-      <div style="font-size:6pt;color:${S.inkMuted};letter-spacing:0.8px;text-transform:uppercase;font-weight:700">Emissão</div>
-      <div style="font-size:9pt;font-weight:800;color:${S.ink};margin-top:2px;letter-spacing:0.3px">${esc(layout.emission)}</div>
+    <div style="min-width:${z.emW};text-align:right;border-left:1px solid ${S.line};padding-left:${z.gap}">
+      <div style="font-size:${z.emLab};color:${S.inkMuted};letter-spacing:0.8px;text-transform:uppercase;font-weight:700">Emissão</div>
+      <div style="font-size:${z.emVal};font-weight:800;color:${S.ink};margin-top:2px;letter-spacing:0.3px">${esc(layout.emission)}</div>
     </div>
   </div>
-  <div style="display:flex;height:3px"><div style="flex:1;background:${c.red}"></div><div style="flex:1;background:${c.orange}"></div><div style="flex:1;background:${c.yellow}"></div><div style="flex:1;background:${c.green}"></div><div style="flex:1;background:${c.blue}"></div></div>
-  <div style="background:${S.band};color:#fff;position:relative;text-align:center;padding:5px 9px;margin-top:4px;margin-bottom:${showGrid ? "0" : "6px"}">
-    <b style="font-size:8.6pt;letter-spacing:0.9px;text-transform:uppercase">${esc(layout.title)}</b>${complement}
+  <div style="display:flex;height:${z.bar}px"><div style="flex:1;background:${c.red}"></div><div style="flex:1;background:${c.orange}"></div><div style="flex:1;background:${c.yellow}"></div><div style="flex:1;background:${c.green}"></div><div style="flex:1;background:${c.blue}"></div></div>
+  <div style="background:${S.band};color:#fff;position:relative;text-align:center;padding:${z.bandPad};margin-top:4px;margin-bottom:${showGrid ? "0" : "6px"}">
+    <b style="font-size:${z.band};letter-spacing:0.9px;text-transform:uppercase">${esc(layout.title)}</b>${complement}
   </div>
   ${showGrid ? table : ""}
 </div>`;

@@ -89,7 +89,11 @@ import {
   openPrintWindow,
   prepareLogo,
   generateDocCode,
+  buildStandardHeaderHtml,
 } from "@/lib/printNormaZero";
+import { resolveHeaderPatient } from "@/lib/headerPatient";
+import { useHeaderPatient } from "@/hooks/useHeaderPatient";
+import { DocumentHeader } from "@/components/DocumentHeader";
 import {
   NormaZeroPrintHeader,
   NormaZeroPrintFooter,
@@ -268,10 +272,26 @@ export function PrintableRequisitionGuide({
     return () => { alive = false; };
   }, [request.patient_birth_date, (request as any).patient_medical_record, (request as any).patient_encounter_code, request.patient_registry_id, request.patient_id]);
 
+  // Cabecalho padronizado (modelo documental): o que a tela ja tem, completado
+  // pelo cadastro (sexo, CPF, CNS...) — mesma fonte da impressao.
+  const previewAge = ageInYears(resolvedBirth);
+  const headerPatient = useHeaderPatient(request.patient_id, {
+    name: request.patient_name,
+    bed: request.patient_bed,
+    sector: sectorLabel
+      ? sectorLabel(request.patient_sector || null)
+      : getSectorDisplayLabel(request.patient_sector) || request.patient_sector || "",
+    record: resolvedRecord || (identifiersResolving ? "carregando…" : ""),
+    atendimento: resolvedEncounter || (identifiersResolving ? "carregando…" : ""),
+    birthDate: resolvedBirth ? fmtBirthDate(resolvedBirth) : (identifiersResolving ? "carregando…" : ""),
+    age: previewAge !== null ? `${previewAge} anos` : (identifiersResolving ? "carregando…" : ""),
+  });
+
   // Roteamento: se a requisição é predominantemente de cultura microbiológica,
   // usa o layout hospitalar dedicado (estrutura tabular tipo formulário).
   if (isCultureRequest(items)) {
     const cultureData: CultureRequestData = {
+      patient_id: request.patient_id,
       patient_name: request.patient_name,
       patient_sector: request.patient_sector,
       patient_bed: request.patient_bed,
@@ -330,100 +350,18 @@ export function PrintableRequisitionGuide({
       }}
       className="text-foreground"
     >
-      <NormaZeroPrintHeader
-        documentLabel={`Guia · ${categoryLabel}`}
-        documentCode={docCode}
-        documentSubtitle={createdStr}
+      <DocumentHeader
+        model="documental"
+        title={`Guia de requisição — ${categoryLabel}`}
+        emission={format(new Date(), "dd/MM/yyyy HH:mm:ss")}
         width="100%"
+        patient={headerPatient}
       />
 
-      {/* Doc-bar — setor · prioridade */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          background: "#eef2f7",
-          border: `1px solid ${lineSoft}`,
-          borderRadius: "3px",
-          padding: "5px 10px",
-          fontSize: "8pt",
-          color: inkSoft,
-          marginBottom: "8px",
-        }}
-      >
-        <span>
-          <strong style={{ color: ink }}>Setor emitente:</strong>{" "}
-          {sectorName || "Assistência Hospitalar"}
-        </span>
-        <span
-          style={{
-            ...priorityStyle,
-            padding: "2px 10px",
-            borderRadius: "3px",
-            fontWeight: 700,
-            fontSize: "8pt",
-            letterSpacing: "0.4px",
-          }}
-        >
-          {priorityLabel}
-        </span>
-      </div>
-
-      {/* Título principal */}
-      <div style={{ textAlign: "center", margin: "6px 0 4px" }}>
-        <div
-          style={{
-            fontSize: "13pt",
-            fontWeight: 800,
-            letterSpacing: "0.6px",
-            textTransform: "uppercase",
-            color: ink,
-          }}
-        >
-          Guia de Requisição — {categoryLabel}
-        </div>
-        <div style={{ fontSize: "8pt", color: inkSoft, marginTop: "2px" }}>
-          Solicitada em {createdStr}
-        </div>
-      </div>
-
-      {/* Identificação */}
-      <div style={sectionStyle}>Identificação</div>
+      {/* Solicitação */}
+      <div style={sectionStyle}>Solicitação</div>
       <table style={tableStyle}>
         <tbody>
-          <tr>
-            <th style={{ ...thStyle, width: "18%" }}>Paciente</th>
-            <td style={{ ...tdStyle, fontWeight: 700 }} colSpan={3}>
-              {request.patient_name}
-            </td>
-          </tr>
-          <tr style={{ background: tableZebra }}>
-            <th style={thStyle}>Setor</th>
-            <td style={tdStyle}>{sectorName || "—"}</td>
-            <th style={{ ...thStyle, width: "14%" }}>Leito</th>
-            <td style={{ ...tdStyle, width: "18%" }}>
-              {request.patient_bed || "—"}
-            </td>
-          </tr>
-          <tr>
-            <th style={thStyle}>Nº Prontuário</th>
-            <td style={{ ...tdStyle, fontFamily: "'JetBrains Mono', ui-monospace, monospace", fontWeight: 600 }}>
-              {resolvedRecord || (identifiersResolving ? "carregando…" : "—")}
-            </td>
-            <th style={thStyle}>Nº Atendimento</th>
-            <td style={{ ...tdStyle, fontFamily: "'JetBrains Mono', ui-monospace, monospace", fontWeight: 600 }}>
-              {resolvedEncounter || (identifiersResolving ? "carregando…" : "—")}
-            </td>
-          </tr>
-          <tr>
-            <th style={thStyle}>Data Nasc.</th>
-            <td style={tdStyle}>{resolvedBirth ? fmtBirthDate(resolvedBirth) : (identifiersResolving ? "carregando…" : "—")}</td>
-            <th style={thStyle}>Idade</th>
-            <td style={tdStyle}>
-              {ageInYears(resolvedBirth) !== null ? `${ageInYears(resolvedBirth)} anos` : (identifiersResolving ? "carregando…" : "—")}
-            </td>
-          </tr>
           <tr>
             <th style={thStyle}>Solicitante</th>
             <td style={tdStyle}>{request.requested_by_name || "—"}</td>
@@ -708,18 +646,12 @@ export async function buildRequisitionGuideHtml(
         : "")
     : "";
 
+  // Paciente (nome, leito, prontuario, nascimento...) vive no cabecalho padronizado;
+  // aqui ficam so os dados proprios do pedido.
   const identificationRows = isParecer
-    ? `<tr><th>Paciente</th><td colspan="3" style="font-weight:700">${esc(request.patient_name)}</td></tr>
-       <tr><th>Setor</th><td>${esc(sectorName || "—")}</td><th style="width:14%">Leito</th><td style="width:18%">${esc(request.patient_bed || "—")}</td></tr>
-       <tr><th>Nº Prontuário</th><td style="font-family:monospace;font-weight:600">${esc(medicalRecord || "—")}</td><th>Nº Atendimento</th><td style="font-family:monospace;font-weight:600">${esc(encounterCode || "—")}</td></tr>
-       <tr><th>Nasc.</th><td>${esc(fmtBirthDate(birthDate))}</td><th>Idade</th><td>${ageY !== null ? `${ageY} anos` : "—"}</td></tr>
-       <tr><th>Solicitante</th><td>${esc(request.requested_by_name || "—")}</td><th>Solicitação</th><td>${esc(createdStr)}</td></tr>
+    ? `<tr><th>Solicitante</th><td>${esc(request.requested_by_name || "—")}</td><th>Solicitação</th><td>${esc(createdStr)}</td></tr>
        <tr><th>Especialidade</th><td colspan="3">${esc(parecerSpecialtyLabel || "—")}</td></tr>`
-    : `<tr><th>Paciente</th><td colspan="3" style="font-weight:700">${esc(request.patient_name)}</td></tr>
-       <tr><th>Setor</th><td>${esc(sectorName || "—")}</td><th style="width:14%">Leito</th><td style="width:18%">${esc(request.patient_bed || "—")}</td></tr>
-       <tr><th>Nº Prontuário</th><td style="font-family:monospace;font-weight:600">${esc(medicalRecord || "—")}</td><th>Nº Atendimento</th><td style="font-family:monospace;font-weight:600">${esc(encounterCode || "—")}</td></tr>
-       <tr><th>Nasc.</th><td>${esc(fmtBirthDate(birthDate))}</td><th>Idade</th><td>${ageY !== null ? `${ageY} anos` : "—"}</td></tr>
-       <tr><th>Solicitante</th><td>${esc(request.requested_by_name || "—")}</td><th>Solicitação</th><td>${esc(createdStr)}</td></tr>
+    : `<tr><th>Solicitante</th><td>${esc(request.requested_by_name || "—")}</td><th>Solicitação</th><td>${esc(createdStr)}</td></tr>
        <tr><th>Categoria</th><td>${esc(categoryLabel)}</td><th>Prioridade</th><td><span class="prio-badge" style="${prioStyle}">${esc(prioLabel)}</span></td></tr>
        ${scheduledInfo ? `<tr><th>Agendamento</th><td colspan="3">${esc(scheduledInfo)}</td></tr>` : ""}`;
 
@@ -792,7 +724,7 @@ export async function buildRequisitionGuideHtml(
     : "";
 
   const bodyHtml = `
-    <h2 class="nz-section">Identificação</h2>
+    <h2 class="nz-section">Solicitação</h2>
     <table class="nz"><tbody>${identificationRows}</tbody></table>
     ${justificationBlock}
     ${solicitanteSignBlock}
@@ -816,8 +748,25 @@ export async function buildRequisitionGuideHtml(
     .req-num { min-width:14pt; font-size:8.5pt; font-weight:600; color:#0a1628; text-align:right; flex-shrink:0; }
   `;
 
+  // Identificacao do paciente no cabecalho padronizado (modelo documental).
+  const headerPatient = await resolveHeaderPatient(request.patient_id, {
+    name: request.patient_name,
+    bed: request.patient_bed,
+    sector: sectorName,
+    record: medicalRecord,
+    atendimento: encounterCode,
+    birthDate: birthDate ? fmtBirthDate(birthDate) : "",
+    age: ageY !== null ? `${ageY} anos` : "",
+  });
+
   return buildNormaZeroDocument({
     title: `Guia de Requisição — ${categoryLabel}`,
+    standardHeader: {
+      model: "documental",
+      title: `Guia de requisição — ${categoryLabel}`,
+      emission: "",
+      patient: headerPatient,
+    },
     subtitle: `Solicitada em ${createdStr}`,
     sectorLabel: sectorName || "Assistência Hospitalar",
     docCodePrefix: docPrefix,
@@ -865,6 +814,7 @@ export async function printRequisitionGuide(
   if (isCultureRequest(items)) {
     return printCultureRequest(
       {
+        patient_id: request.patient_id,
         patient_name: request.patient_name,
         patient_sector: request.patient_sector,
         patient_bed: request.patient_bed,
@@ -1153,44 +1103,24 @@ export async function printRequisitionGuide(
   // ── Modo compacto: 2 vias lado a lado (paisagem), inspirado no layout de culturas ──
   if (opts?.compactDuo) {
     const { otherItems, otherLabel = "Exames Laboratoriais", gasoLabel = "Gasometria" } = opts.compactDuo;
-    const inst = (whitelabel as any).print?.institutionalHeader || {};
-    const colors = (whitelabel as any).theme?.institutionalColors || {};
     const docNoDuo = generateDocCode("REQ-LAB");
-    const nowDuo = new Date();
-    const dateStrDuo = nowDuo.toLocaleDateString("pt-BR");
-    const timeStrDuo = nowDuo.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 
-    const logoBlockDuo = logoDataUrl
-      ? `<img class="mini-logo" src="${logoDataUrl}" alt="logo" />`
-      : `<div class="mini-logo" style="display:flex;align-items:center;justify-content:center;background:#0054A6;color:#fff;font-weight:700;font-size:9pt;border-radius:4px">HM</div>`;
-
-    const cruzColors = [
-      colors.red || "#E53935",
-      colors.orange || "#FB8C00",
-      colors.yellow || "#FDD835",
-      colors.green || "#43A047",
-      colors.blue || "#0054A6",
-    ];
-    const cruzBar = `<div class="mini-cruz-bar">${cruzColors.map((c) => `<div style="background:${c}"></div>`).join("")}</div>`;
-
-    const miniHeader = `
-      <div class="mini-header">
-        <div class="mini-header-inner">
-          ${logoBlockDuo}
-          <div class="mini-h-text">
-            <div class="mini-h-line1">${escapeHtml(inst.line1 || "")}</div>
-            <div class="mini-h-line2">${escapeHtml(inst.line2 || "")}</div>
-            <div class="mini-h-line3">${escapeHtml(inst.line3 || "")}</div>
-          </div>
-        </div>
-        ${cruzBar}
-        <div class="mini-doc-bar">
-          <span><b>Doc:</b> ${docNoDuo}</span>
-          <span><b>Setor:</b> ${escapeHtml(sectorName || "Assistência Hospitalar")}</span>
-          <span><b>Emissão:</b> ${dateStrDuo} ${timeStrDuo}</span>
-        </div>
-      </div>
-    `;
+    // Cabecalho padronizado compacto (modelo assistencial), repetido em cada via.
+    const duoPatient = await resolveHeaderPatient(request.patient_id, {
+      name: request.patient_name,
+      bed: request.patient_bed,
+      sector: sectorName,
+      record: medicalRecord,
+      atendimento: encounterCode,
+      birthDate: birthDate ? fmtBirthDate(birthDate) : "",
+      age: ageY !== null ? `${ageY} anos` : "",
+    });
+    const miniHeader = buildStandardHeaderHtml(
+      { model: "assistencial", title: "Requisição laboratorial", emission: "", patient: duoPatient },
+      logoDataUrl,
+      "all",
+      { compact: true },
+    );
 
     const priorityCssLocal = PRIORITY_BADGE_CSS[request.priority] || PRIORITY_BADGE_CSS.rotina;
     const priorityLabelLocal = PRIORITY_LABELS[request.priority] || (request.priority || "").toUpperCase();
@@ -1198,26 +1128,6 @@ export async function printRequisitionGuide(
     const idBlock = `
       <table class="mini-id">
         <tbody>
-          <tr>
-            <th>Paciente</th>
-            <td colspan="3" class="pid-strong">${escapeHtml(request.patient_name)}</td>
-          </tr>
-          <tr>
-            <th>Setor</th><td>${escapeHtml(sectorName || "—")}</td>
-            <th>Leito</th><td>${escapeHtml(request.patient_bed || "—")}</td>
-          </tr>
-          <tr>
-            <th>Prontuário</th>
-            <td style="font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:600">${escapeHtml(medicalRecord || "—")}</td>
-            <th>Nº Atendimento</th>
-            <td style="font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:600">${escapeHtml(encounterCode || "—")}</td>
-          </tr>
-          <tr>
-            <th>Data Nasc.</th>
-            <td>${escapeHtml(fmtBirthDate(birthDate))}</td>
-            <th>Idade</th>
-            <td>${ageY !== null ? ageY + " anos" : "—"}</td>
-          </tr>
           <tr>
             <th>Solicitante</th>
             <td>${escapeHtml(request.requested_by_name || "—")}</td>
@@ -1246,9 +1156,8 @@ export async function printRequisitionGuide(
 
     const oneVia = (viaLabel: string, its: any[], sectionLabel: string) => `
       <div class="via">
-        <div class="via-tag">${escapeHtml(viaLabel)}</div>
+        <div class="via-tag">${escapeHtml(viaLabel)} · ${docNoDuo}</div>
         ${miniHeader}
-        <div class="mini-title">Requisição Laboratorial</div>
         ${idBlock}
         ${renderItems(its, sectionLabel)}
         <div class="mini-sig">
@@ -1272,17 +1181,6 @@ export async function printRequisitionGuide(
       .duo .via { padding: 0 4pt; }
       .duo .via-tag { font-size:7pt; font-weight:700; color:#0054A6; text-transform:uppercase; letter-spacing:0.5pt; margin-bottom:2pt; text-align:right; }
 
-      .mini-header { border-bottom: 2pt solid #0054A6; padding-bottom: 3pt; margin-bottom: 4pt; }
-      .mini-header-inner { display:grid; grid-template-columns: 34px 1fr; align-items:center; gap:6pt; }
-      .mini-logo { height: 32px; width: 32px; object-fit: contain; }
-      .mini-h-text { text-align:center; }
-      .mini-h-line1, .mini-h-line2 { font-size:5.5pt; font-weight:600; color:#475569; text-transform:uppercase; line-height:1.15; }
-      .mini-h-line3 { font-size:7.5pt; font-weight:700; color:#0a1628; margin-top:1pt; line-height:1.15; }
-      .mini-cruz-bar { display:flex; height:2.5pt; margin-top:3pt; border-radius:1.5pt; overflow:hidden; }
-      .mini-cruz-bar > div { flex:1; }
-      .mini-doc-bar { display:flex; justify-content:space-between; background:#f1f5f9; border:0.5pt solid #cbd5e1; padding:2pt 5pt; font-size:6pt; margin-top:3pt; border-radius:2pt; }
-      .mini-doc-bar b { color:#0a1628; }
-      .mini-title { font-size:9pt; margin:3pt 0 3pt; color:#0a1628; text-align:center; text-transform:uppercase; font-weight:800; letter-spacing:0.3pt; }
 
       table.mini-id { width:100%; border-collapse:collapse; font-size:7pt; border:0.5pt solid #1e293b; margin-bottom:4pt; }
       table.mini-id th, table.mini-id td { border:0.5pt solid #1e293b; padding:2pt 4pt; color:#0a1628; vertical-align:middle; }

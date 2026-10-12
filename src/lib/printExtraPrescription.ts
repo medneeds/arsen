@@ -11,7 +11,7 @@ import { buildNutritionParts, buildHydrationLine } from "@/lib/nutritionHydratio
 import { assembleInhalationInstruction } from "@/lib/inhalationInstruction";
 import { buildAtbLineParts } from "@/lib/atbLine";
 import { describeInsulinPlan, type InsulinPlan } from "@/lib/insulinTherapy";
-import { isSemAlergia } from "@/lib/allergyStatus";
+import { resolveHeaderPatient, fmtIsoDate } from "@/lib/headerPatient";
 
 
 export interface ExtraPrintItem {
@@ -102,6 +102,15 @@ export interface ExtraPrintPatient {
   record?: string;
   weight?: string;
   allergies?: string;
+  sex?: string;
+  socialName?: string;
+  motherName?: string;
+  /** Numero de atendimento. */
+  atendimento?: string;
+  /** Admissao no setor (ISO ou dd/mm/aaaa). */
+  sectorAdmission?: string;
+  /** Id da internacao — completa o cabecalho com o cadastro quando algo faltar. */
+  patientId?: string | null;
 }
 
 const formatBirthDate = (value?: string | null): string => {
@@ -323,32 +332,10 @@ export async function printExtraPrescription(opts: ExtraPrintOptions) {
   const bodyHtml = `
     <table class="nz" style="margin-bottom:8pt;border:1pt solid #e2e8f0;border-radius:3pt;overflow:hidden">
       <tr>
-        <th style="width:25%">Paciente</th>
-        <td>${escape(patient.name) || "—"}</td>
-        <th style="width:15%">Leito</th>
-        <td>${escape(patient.bed) || "—"}</td>
+        <th style="width:25%">Vínculo</th>
+        <td style="font-weight:600;color:#0054A6">${escape(parentRef)}</td>
       </tr>
-      <tr>
-        <th>Idade</th>
-        <td>${escape(patient.age) || "—"}</td>
-        <th>Data de Nascimento</th>
-        <td>${escape(formatBirthDate(patient.birthDate)) || "—"}</td>
-      </tr>
-      <tr>
-        <th>Peso</th>
-        <td>${escape(patient.weight) || "—"}</td>
-        <th>Prontuário</th>
-        <td>${escape(patient.record) || "—"}</td>
-      </tr>
-      <tr>
-        <th>Alergias</th>
-        <td colspan="3" style="${patient.allergies && !isSemAlergia(patient.allergies) ? "color:#b91c1c;font-weight:600" : ""}">${escape(patient.allergies) || "Sem relato"}</td>
-      </tr>
-      <tr>
-        <th>Vínculo</th>
-        <td colspan="3" style="font-weight:600;color:#0054A6">${escape(parentRef)}</td>
-      </tr>
-      ${categoryLabel ? `<tr><th>Tipo</th><td colspan="3"><span style="background:#fff7ed;color:#9a3412;font-size:8pt;font-weight:700;padding:1pt 6pt;border-radius:3pt;border:0.5pt solid #fdba74">${escape(categoryLabel)}</span></td></tr>` : ""}
+      ${categoryLabel ? `<tr><th>Tipo</th><td><span style="background:#fff7ed;color:#9a3412;font-size:8pt;font-weight:700;padding:1pt 6pt;border-radius:3pt;border:0.5pt solid #fdba74">${escape(categoryLabel)}</span></td></tr>` : ""}
     </table>
 
     <h2 class="nz-section">Itens Extras Prescritos (${items.length})</h2>
@@ -370,8 +357,31 @@ export async function printExtraPrescription(opts: ExtraPrintOptions) {
     </div>
   `;
 
+  // A identificacao do paciente vive no cabecalho padronizado (modelo assistencial).
+  const headerPatient = await resolveHeaderPatient(patient.patientId, {
+    name: patient.name,
+    socialName: patient.socialName,
+    bed: patient.bed,
+    sector: patient.unit,
+    record: patient.record,
+    atendimento: patient.atendimento,
+    birthDate: formatBirthDate(patient.birthDate),
+    age: patient.age,
+    sex: patient.sex,
+    weight: /^\d+([.,]\d+)?$/.test((patient.weight ?? "").trim()) ? `${patient.weight!.trim()}kg` : patient.weight,
+    sectorAdmission: fmtIsoDate(patient.sectorAdmission),
+    allergies: patient.allergies,
+    motherName: patient.motherName,
+  });
+
   const html = buildNormaZeroDocument({
     title: "Prescrição Extra — Anexo",
+    standardHeader: {
+      model: "assistencial",
+      title: "Prescrição médica — Anexo extra",
+      emission: "",
+      patient: headerPatient,
+    },
     subtitle: categoryLabel || "Itens avulsos do plantão",
     sectorLabel,
     hospitalName,

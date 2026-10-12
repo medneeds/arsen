@@ -15,6 +15,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   buildNormaZeroDocument,
+  buildStandardHeaderHtml,
   openPrintWindow,
   prepareLogo,
   generateDocCode,
@@ -26,12 +27,17 @@ import {
   NormaZeroBlockedDocument,
 } from "@/components/NormaZeroPrintHeader";
 import { whitelabel } from "@/config/whitelabel";
+import { resolveHeaderPatient } from "@/lib/headerPatient";
+import { useHeaderPatient } from "@/hooks/useHeaderPatient";
+import { DocumentHeader } from "@/components/DocumentHeader";
 
 
 /* ───────────────────────── Tipos & catálogos ───────────────────────── */
 
 export interface CultureRequestData {
   patient_name: string;
+  /** Id da internacao — completa o cabecalho com o cadastro (sexo, atendimento, endereco...). */
+  patient_id?: string | null;
   patient_social_name?: string | null;
   patient_birth_date?: string | null; // ISO YYYY-MM-DD
   patient_cns?: string | null;
@@ -235,6 +241,19 @@ export function PrintableCultureRequest({
   const age = ageInYears(request.patient_birth_date);
   const isMinor = age !== null && age < 18;
 
+  // Cabecalho padronizado (modelo documental) — mesma fonte da impressao.
+  const headerPatient = useHeaderPatient(request.patient_id, {
+    name: (request.patient_name || "").toUpperCase(),
+    socialName: request.patient_social_name,
+    bed: request.patient_bed,
+    sector: sectorName,
+    record: request.patient_record,
+    birthDate: request.patient_birth_date ? fmtDate(request.patient_birth_date) : "",
+    cpf: request.patient_cpf,
+    cns: request.patient_cns,
+    motherName: request.mother_name,
+  });
+
   // 🔒 Norma Zero — bloqueia a geração se identificação estiver incompleta.
   // Layout não exibe "sexo", então esse campo é excluído da checagem.
   const missingFields = getNormaZeroMissingFields({
@@ -258,65 +277,17 @@ export function PrintableCultureRequest({
         border: `1px solid ${lineSoft}`,
       }}
     >
-      <NormaZeroPrintHeader
-        documentLabel="Solicitação de Cultura"
-        documentCode={docCode}
-        documentSubtitle={createdStr}
+      <DocumentHeader
+        model="documental"
+        title="Solicitação de exame microbiológico"
+        emission={format(new Date(), "dd/MM/yyyy HH:mm:ss")}
         width="100%"
+        patient={headerPatient}
       />
-
-      {/* Título do formulário */}
-      <div
-        style={{
-          textAlign: "center",
-          margin: "10px 0 0",
-          fontSize: "12pt",
-          fontWeight: 800,
-          textTransform: "uppercase",
-          letterSpacing: "0.6px",
-          color: ink,
-        }}
-      >
-        Solicitação de Exame Microbiológico
-      </div>
 
       {/* TABELA ÚNICA — estrutura tipo formulário hospitalar */}
       <table style={tableStyle}>
         <tbody>
-          {/* Identificação do paciente */}
-          <tr>
-            <td style={labelCell}>Nome completo:</td>
-            <td style={valueCell} colSpan={3}>
-              {request.patient_name?.toUpperCase() || ""}
-            </td>
-          </tr>
-          <tr>
-            <td style={labelCell}>Nome social:</td>
-            <td style={valueCell} colSpan={3}>
-              {request.patient_social_name || ""}
-            </td>
-          </tr>
-          <tr>
-            <td style={labelCell}>Data de nascimento:</td>
-            <td style={valueCell}>{fmtDate(request.patient_birth_date)}</td>
-            <td style={{ ...labelCell, width: "12%" }}>CNS:</td>
-            <td style={valueCell}>{request.patient_cns || ""}</td>
-          </tr>
-          <tr>
-            <td style={labelCell}>CPF:</td>
-            <td style={valueCell} colSpan={3}>
-              {request.patient_cpf || ""}
-            </td>
-          </tr>
-          <tr>
-            <td style={labelCell}>Prontuário:</td>
-            <td style={valueCell}>{request.patient_record || ""}</td>
-            <td style={labelCell}>Setor:</td>
-            <td style={valueCell}>
-              {sectorName} {request.patient_bed ? `· Leito ${request.patient_bed}` : ""}
-            </td>
-          </tr>
-
           {/* Dados da mãe — sempre visível, com nota explicativa */}
           <tr>
             <td style={sectionRow} colSpan={4}>
@@ -504,18 +475,6 @@ export async function printCultureRequest(
   const formTable = `
     <table class="nz cult">
       <tbody>
-        <tr><th>Nome completo:</th><td colspan="3" class="bold">${escapeHtml((request.patient_name || "").toUpperCase())}</td></tr>
-        <tr><th>Nome social:</th><td colspan="3">${escapeHtml(request.patient_social_name || "")}</td></tr>
-        <tr>
-          <th>Data de nascimento:</th><td class="bold">${escapeHtml(fmtDate(request.patient_birth_date))}</td>
-          <th style="width:12%">CNS:</th><td>${escapeHtml(request.patient_cns || "")}</td>
-        </tr>
-        <tr><th>CPF:</th><td colspan="3">${escapeHtml(request.patient_cpf || "")}</td></tr>
-        <tr>
-          <th>Prontuário:</th><td class="bold">${escapeHtml(request.patient_record || "")}</td>
-          <th>Setor:</th><td class="bold">${escapeHtml(sectorName)}${request.patient_bed ? " · Leito " + escapeHtml(request.patient_bed) : ""}</td>
-        </tr>
-
         <tr><td colspan="4" class="section">Se paciente menor de 18 anos, preencher os dados da mãe</td></tr>
         <tr><th>Nome da mãe:</th><td colspan="3" class="bold">${escapeHtml((request.mother_name || "").toUpperCase())}</td></tr>
         <tr><th>Data de nascimento:</th><td colspan="3">${escapeHtml(fmtDate(request.mother_birth_date))}</td></tr>
@@ -558,49 +517,33 @@ export async function printCultureRequest(
   `;
 
   const logoDataUrl = await prepareLogo();
-  const inst = whitelabel.print.institutionalHeader;
-  const colors = whitelabel.theme.institutionalColors;
-  const hospitalFull = whitelabel.institution.hospitalFullName;
   const docNoDuo = generateDocCode("REQ-CULT");
-  const nowDuo = new Date();
-  const dateStrDuo = nowDuo.toLocaleDateString("pt-BR");
-  const timeStrDuo = nowDuo.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-  const logoBlockDuo = logoDataUrl
-    ? `<img src="${logoDataUrl}" class="mini-logo" alt="${whitelabel.institution.hospitalAbbreviation}"/>`
-    : `<div class="mini-logo" style="background:#0054A6;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;border-radius:6pt">${whitelabel.institution.hospitalAbbreviation}</div>`;
 
-  const miniHeader = `
-    <div class="mini-header">
-      <div class="mini-header-inner">
-        <div class="mini-logo-wrap">${logoBlockDuo}</div>
-        <div class="mini-h-text">
-          <div class="mini-h-line1">${inst.line1}</div>
-          <div class="mini-h-line2">${inst.line2}</div>
-          <div class="mini-h-line3">${inst.line3}</div>
-          <div class="mini-h-tag">${whitelabel.institution.address}</div>
-        </div>
-      </div>
-      <div class="mini-cruz-bar">
-        <div style="background:${colors.red}"></div>
-        <div style="background:${colors.orange}"></div>
-        <div style="background:${colors.yellow}"></div>
-        <div style="background:${colors.green}"></div>
-        <div style="background:${colors.blue}"></div>
-      </div>
-      <div class="mini-doc-bar">
-        <span><b>Doc:</b> ${docNoDuo}</span>
-        <span><b>Setor:</b> ${escapeHtml(sectorName || "Assistência Hospitalar")}</span>
-        <span><b>Emissão:</b> ${dateStrDuo} ${timeStrDuo}</span>
-      </div>
-    </div>
-  `;
+  // Identificacao do paciente no cabecalho padronizado (modelo documental).
+  const headerPatient = await resolveHeaderPatient(request.patient_id, {
+    name: (request.patient_name || "").toUpperCase(),
+    socialName: request.patient_social_name,
+    bed: request.patient_bed,
+    sector: sectorName,
+    record: request.patient_record,
+    birthDate: request.patient_birth_date ? fmtDate(request.patient_birth_date) : "",
+    cpf: request.patient_cpf,
+    cns: request.patient_cns,
+    motherName: request.mother_name,
+  });
+  const headerInput = {
+    model: "documental" as const,
+    title: "Solicitação de exame microbiológico",
+    emission: "",
+    patient: headerPatient,
+  };
+  // Cada via leva o seu proprio cabecalho (compacto).
+  const miniHeader = buildStandardHeaderHtml(headerInput, logoDataUrl, "all", { compact: true });
 
   const oneViaFull = (label: string) => `
     <div class="via">
-      <div class="via-tag">${label}</div>
+      <div class="via-tag">${label} · ${docNoDuo}</div>
       ${miniHeader}
-      <h1 class="mini-title">Solicitação de Exame Microbiológico</h1>
-      <div class="mini-subtitle">${escapeHtml(hospitalFull)} • Emitida em ${createdStr}</div>
       ${formTable}
     </div>
   `;
@@ -633,21 +576,6 @@ export async function printCultureRequest(
     .duo .via { padding: 0 4pt; }
     .duo .via-tag { font-size:7pt; font-weight:700; color:#0054A6; text-transform:uppercase; letter-spacing:0.5pt; margin-bottom:2pt; text-align:right; }
 
-    /* Mini cabeçalho institucional replicado por via */
-    .mini-header { border-bottom: 2pt solid #0054A6; padding-bottom: 3pt; margin-bottom: 4pt; }
-    .mini-header-inner { display:grid; grid-template-columns: 36px 1fr; align-items:center; gap:6pt; }
-    .mini-logo { height: 34px; width: 34px; object-fit: contain; }
-    .mini-h-text { text-align:center; }
-    .mini-h-line1, .mini-h-line2 { font-size:6pt; font-weight:600; color:#475569; letter-spacing:0.3pt; text-transform:uppercase; line-height:1.15; }
-    .mini-h-line3 { font-size:8pt; font-weight:700; color:#0a1628; margin-top:1pt; letter-spacing:0.2pt; line-height:1.15; }
-    .mini-h-tag { font-size:5.5pt; color:#64748b; font-style:italic; margin-top:1pt; line-height:1.1; }
-    .mini-cruz-bar { display:flex; height:2.5pt; margin-top:3pt; border-radius:1.5pt; overflow:hidden; }
-    .mini-cruz-bar > div { flex:1; }
-    .mini-doc-bar { display:flex; justify-content:space-between; align-items:center; background:#f1f5f9; border:0.5pt solid #cbd5e1; padding:2pt 5pt; font-size:6.5pt; margin-top:3pt; border-radius:2pt; }
-    .mini-doc-bar b { color:#0a1628; }
-    .mini-title { font-size:10pt; margin:3pt 0 1pt; color:#0a1628; text-align:center; letter-spacing:0.3pt; text-transform:uppercase; font-weight:800; }
-    .mini-subtitle { text-align:center; color:#64748b; font-size:6.5pt; margin-bottom:2pt; }
-
     /* Compactar tabela na paisagem dividida */
     .duo table.nz.cult { font-size:7pt; margin-top:2pt; }
     .duo table.nz.cult th, .duo table.nz.cult td { padding:2pt 4pt; }
@@ -674,6 +602,8 @@ export async function printCultureRequest(
 
   const html = buildNormaZeroDocument({
     title: duplicate ? "Solicitação de Exame Microbiológico — 2 vias" : "Solicitação de Exame Microbiológico",
+    // Em 2 vias o cabecalho vai dentro de cada via; o de fora fica oculto (duo-mode).
+    standardHeader: duplicate ? undefined : headerInput,
     subtitle: `Emitida em ${createdStr}${duplicate ? " · impressão em duas vias" : ""}`,
     sectorLabel: sectorName || "Assistência Hospitalar",
     docCodePrefix: "REQ-CULT",

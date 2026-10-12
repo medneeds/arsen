@@ -665,7 +665,7 @@ export function AntimicrobialGuideDialog({
     const valid = sourceEntries.filter(e => e.medication.trim());
     if (valid.length === 0) return;
     await printAtmGuide({
-      patient,
+      patient: { ...patient, patientId },
       entries: valid,
       doctorName,
       doctorCrm,

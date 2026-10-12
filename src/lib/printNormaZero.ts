@@ -247,7 +247,7 @@ export const normaZeroBaseStyles = (orientation: "portrait" | "landscape" = "por
 `;
 
 /** Cabecalho padronizado em HTML, para quem precisa repeti-lo no corpo (ex.: uma vez por via). */
-export function buildStandardHeaderHtml(input: HeaderInput, logoDataUrl?: string, part: HeaderPart = "all"): string {
+export function buildStandardHeaderHtml(input: HeaderInput, logoDataUrl?: string, part: HeaderPart = "all", opts: { compact?: boolean } = {}): string {
   const inst = whitelabel.print.institutionalHeader;
   const c = whitelabel.theme.institutionalColors;
   const now = new Date();
@@ -259,7 +259,7 @@ export function buildStandardHeaderHtml(input: HeaderInput, logoDataUrl?: string
     line2: inst.line2,
     line3: inst.line3,
     colors: { red: c.red, orange: c.orange, yellow: c.yellow, green: c.green, blue: c.blue },
-  }, part);
+  }, part, opts);
 }
 
 /** Constrói o HTML completo do documento Norma Zero */

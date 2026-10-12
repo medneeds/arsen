@@ -3927,6 +3927,11 @@ function ExtraPrescriptionDialog({
           record: patient.record,
           weight: patient.weight,
           allergies: patient.allergies,
+          sex: patient.sex,
+          socialName: patient.socialName,
+          motherName: patient.motherName,
+          atendimento: patient.encounterCode,
+          sectorAdmission: patient.utiAdmissionDate || patient.admissionDate,
         },
         items: extraItems.map(i => ({
           id: i.id,
@@ -10805,7 +10810,7 @@ const PrescricaoPage = () => {
               cultureResult: it.atbCultureResult,
             };
             await printAtmGuide({
-              patient,
+              patient: { ...patient, patientId: searchParams.get('patientId') },
               entries: [entry],
               doctorName,
               doctorCrm,
@@ -10828,7 +10833,7 @@ const PrescricaoPage = () => {
               || '';
             const doctorCrm = digitalSignature?.crm || currentDoctor.crm || '';
             await printAtmGuide({
-              patient,
+              patient: { ...patient, patientId: searchParams.get('patientId') },
               // #40: cada ATB usa seu snapshot imutavel; legado cai no fallback.
               entries: its.map((it): AtmPrintEntry => it.atbGuideSnapshot ?? ({
                 medication: it.name,
