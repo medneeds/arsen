@@ -15,6 +15,7 @@ import {
   openPrintWindow,
   prepareLogo,
 } from "@/lib/printNormaZero";
+import { resolveHeaderPatient, fmtIsoDate } from "@/lib/headerPatient";
 import {
   mapBoletimRow,
   type BoletimCirurgicoData,
@@ -51,36 +52,7 @@ function fmtDateTime(v: string | null | undefined): string | null {
 }
 
 function buildBoletimBody(data: BoletimCirurgicoData): string {
-  const leitoStr = [data.patient_bed, data.patient_sector].filter(Boolean).join(" · ");
-
-  const birthFmt = data.patient_birth_date
-    ? (() => { try { return new Date(data.patient_birth_date + "T12:00:00").toLocaleDateString("pt-BR"); } catch { return data.patient_birth_date; } })()
-    : null;
-
-  // Cabecalho padrao Arsen — mesmo layout de tabela dos demais documentos.
-  const patientLine = `
-    <table class="nz" style="margin-bottom:10pt">
-      <tbody>
-        <tr>
-          <th style="width:14%">Paciente</th>
-          <td style="width:36%"><strong>${esc((data.patient_name || "").toUpperCase())}</strong></td>
-          <th style="width:10%">Leito</th>
-          <td colspan="3"><strong>${esc(leitoStr || "—")}</strong></td>
-        </tr>
-        <tr>
-          <th>Idade</th>
-          <td>${esc(data.patient_age || "—")}</td>
-          <th>Prontuario</th>
-          <td colspan="3">${esc(data.patient_medical_record || "—")}</td>
-        </tr>
-        <tr>
-          <th>Data de nascimento</th>
-          <td>${esc(birthFmt || "—")}</td>
-          <th>Carater</th>
-          <td colspan="3">${esc(data.carater ? CARATER_LABEL[data.carater] : "—")}</td>
-        </tr>
-      </tbody>
-    </table>`;
+  // A identificacao do paciente (e o Carater) vive no cabecalho padronizado.
 
   const inicioFmt = fmtDateTime(data.data_hora_inicio);
   const fimFmt = fmtDateTime(data.data_hora_fim);
@@ -122,8 +94,7 @@ function buildBoletimBody(data: BoletimCirurgicoData): string {
     <h2 class="nz-section">${title}</h2>
     <div style="font-size:9.5pt;line-height:1.5;text-align:justify;white-space:pre-wrap;padding:4pt 2pt 8pt">${esc(value && value.trim() ? value : "—")}</div>`;
 
-  return `${patientLine}
-    ${cirurgiaTable}
+  return `${cirurgiaTable}
     ${section("Procedimento proposto", data.procedimento_proposto)}
     ${section("Procedimento realizado", data.procedimento_realizado)}
     ${section("Achados operatorios", data.achados_operatorios)}
@@ -153,11 +124,24 @@ export async function printBoletimCirurgico(
 
   const logoDataUrl = await prepareLogo();
   const bodyHtml = buildBoletimBody(data);
-  const subtitle = data.carater ? CARATER_LABEL[data.carater] : undefined;
+  const patient = await resolveHeaderPatient(data.internacao_id, {
+    name: (data.patient_name || "").toUpperCase(),
+    bed: data.patient_bed,
+    sector: data.patient_sector,
+    age: data.patient_age,
+    birthDate: fmtIsoDate(data.patient_birth_date),
+    record: data.patient_medical_record,
+  });
 
   const html = buildNormaZeroDocument({
     title: "Boletim cirurgico",
-    subtitle,
+    standardHeader: {
+      model: "documental",
+      title: "Boletim cirúrgico",
+      emission: "",
+      patient,
+      extras: [["Caráter", data.carater ? CARATER_LABEL[data.carater] : null]],
+    },
     sectorLabel: "Centro Cirurgico",
     hospitalName: opts.hospitalName || "Hospital Municipal Djalma Marques (Socorrao I)",
     docCodePrefix: "BOLCIR",

@@ -93,7 +93,6 @@ export async function printAdmissionNormaZero(d: AdmissionPrintInput) {
   };
   const birthFmt = fmtDateBr(id.birthDate);
   const sectorAdmFmt = fmtDateBr(d.sectorAdmissionDate);
-  const displayName = id.socialName ? `${d.patient.name} (NOME SOCIAL: ${id.socialName})` : d.patient.name;
 
   // Hipoteses diagnosticas (lista) e escala neurologica (Glasgow OU RASS).
   const hypothesesRows = (d.hypotheses || [])
@@ -109,44 +108,9 @@ export async function printAdmissionNormaZero(d: AdmissionPrintInput) {
           : "")
     : "";
 
-  // Cabecalho de identificacao COMPACTO (grade multi-coluna), espelhando o
-  // patientHeader de printEvolution/prescricao — aproveita a largura em vez de
-  // uma linha por campo (antes ocupava ~13 linhas; agora 5).
-  const cellS = "border:0.5px solid #94a3b8;padding:3px 6px;font-size:7.5pt;line-height:1.3;vertical-align:top";
-  const labelS = `${cellS};font-weight:700;font-size:6.5pt;background:#f1f5f9;color:#334155;text-transform:uppercase;letter-spacing:0.3px`;
-  const idadeSexo = [d.patient.age ? `${d.patient.age}` : null, id.sex || null].filter(Boolean).join(" • ") || "—";
-
+  // A identificacao do paciente vive no cabecalho padronizado (modelo assistencial
+  // com cadastro completo — a admissao e o documento de cadastro clinico).
   const bodyHtml = `
-    <h2 class="nz-section">Identificação</h2>
-    <table style="width:100%;border-collapse:collapse;margin-bottom:4pt;page-break-inside:avoid">
-      <tbody>
-        <tr>
-          <td style="${labelS}">Paciente</td>
-          <td style="${cellS};font-weight:800;font-size:9pt;letter-spacing:-0.01em" colspan="7">${displayName || "—"}</td>
-        </tr>
-        <tr>
-          <td style="${labelS}">Prontuário</td><td style="${cellS};font-weight:700">${id.prontuario || "—"}</td>
-          <td style="${labelS}">Atendimento</td><td style="${cellS};font-weight:700">${id.atendimento || "—"}</td>
-          <td style="${labelS}">Leito</td><td style="${cellS};font-weight:700">${d.patient.bed || "—"}</td>
-          <td style="${labelS}">Setor</td><td style="${cellS}">${getSectorDisplayLabel(d.patient.sector) || "—"}</td>
-        </tr>
-        <tr>
-          <td style="${labelS}">Nascimento</td><td style="${cellS}">${birthFmt || "—"}</td>
-          <td style="${labelS}">Idade / Sexo</td><td style="${cellS}">${idadeSexo}</td>
-          <td style="${labelS}">CPF</td><td style="${cellS}">${id.cpf || "—"}</td>
-          <td style="${labelS}">CNS</td><td style="${cellS}">${id.cns || "—"}</td>
-        </tr>
-        <tr>
-          <td style="${labelS}">Mãe</td><td style="${cellS}" colspan="5">${id.motherName || "—"}</td>
-          <td style="${labelS}">Telefone</td><td style="${cellS}">${id.phone || "—"}</td>
-        </tr>
-        <tr>
-          <td style="${labelS}">Endereço</td><td style="${cellS}" colspan="5">${id.address || "—"}</td>
-          <td style="${labelS}">Admissão no setor</td><td style="${cellS};font-weight:700">${sectorAdmFmt || "—"}</td>
-        </tr>
-      </tbody>
-    </table>
-
     ${section("Diagnóstico (CID-10)", row("CID primário", d.cidPrimary) + row("CID secundário", d.cidSecondary))}
     ${section("Hipóteses diagnósticas", hypothesesRows)}
     ${section("História admissional (HDA)", row("HDA", d.hda))}
@@ -169,8 +133,33 @@ export async function printAdmissionNormaZero(d: AdmissionPrintInput) {
   `;
 
   const html = buildNormaZeroDocument({
-    title: "Admissão Hospitalar — D0",
-    subtitle: d.isUti ? "UTI / UCI" : "Enfermaria",
+    title: "Admissão Hospitalar",
+    standardHeader: {
+      model: "assistencial",
+      includeRegistry: true,
+      title: "Admissão hospitalar",
+      complement: d.isUti ? "UTI / UCI" : "Enfermaria",
+      emission: "",
+      patient: {
+        name: (d.patient.name || "").toUpperCase(),
+        socialName: id.socialName,
+        bed: d.patient.bed,
+        sector: getSectorDisplayLabel(d.patient.sector) || undefined,
+        record: id.prontuario,
+        atendimento: id.atendimento,
+        birthDate: birthFmt,
+        age: d.patient.age != null ? String(d.patient.age) : undefined,
+        sex: id.sex,
+        weight: d.weight ? `${d.weight}kg` : undefined,
+        sectorAdmission: sectorAdmFmt,
+        allergies: d.allergies,
+        motherName: id.motherName,
+        cpf: id.cpf,
+        cns: id.cns,
+        phone: id.phone,
+        address: id.address,
+      },
+    },
     sectorLabel: getSectorDisplayLabel(d.patient.sector) || d.patient.sector || "—",
     hospitalName: d.hospitalName,
     docCodePrefix: "ADM",

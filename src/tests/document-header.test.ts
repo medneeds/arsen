@@ -133,3 +133,17 @@ test("rodape leva o codigo do documento e a linha do paciente", () => {
   assert.ok(f.includes("Documento: PRESC-20261011-1910"));
   assert.ok(f.includes("FULANO · 58a"));
 });
+
+test("assistencial com includeRegistry mostra CPF, CNS, telefone e endereco quando existem", () => {
+  const l = buildHeaderLayout({
+    model: "assistencial", title: "x", emission: "e", includeRegistry: true,
+    patient: { ...pac, cpf: "123", cns: "456", phone: "(98) 1", address: "RUA X" },
+  });
+  assert.equal(find(l, "CPF")?.value, "123");
+  assert.equal(find(l, "CNS")?.value, "456");
+  assert.equal(find(l, "Telefone")?.value, "(98) 1");
+  assert.equal(find(l, "Endereço")?.value, "RUA X");
+  assert.equal(find(l, "Alergias")?.tone, "allergyOk");
+  const sem = buildHeaderLayout({ model: "assistencial", title: "x", emission: "e", patient: { ...pac, cpf: "123" } });
+  assert.equal(find(sem, "CPF"), undefined);
+});

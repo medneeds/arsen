@@ -17,7 +17,9 @@ import { useCurrentDoctor } from "@/hooks/useCurrentDoctor";
 import { usePatientLive } from "@/hooks/usePatientLive";
 import { getSectorDisplayLabel } from "@/utils/bedNaming";
 import { usePatientCid } from "@/hooks/usePatientCid";
-import { buildNormaZeroDocument, openPrintWindow, prepareLogo } from "@/lib/printNormaZero";
+import { buildNormaZeroDocument, buildStandardHeaderHtml, openPrintWindow, prepareLogo } from "@/lib/printNormaZero";
+import { resolveHeaderPatient, fmtIsoDate } from "@/lib/headerPatient";
+import type { HeaderInput } from "@/lib/documentHeaderLayout";
 import { useReceituario } from "@/hooks/useReceituario";
 import { printReceituario, type ReceituarioType } from "@/lib/receituario";
 import { BLANK_RX_NOTICE, buildBlankReceituarioHtml, validateBlankReceituario } from "@/lib/receituarioBlank";
@@ -161,40 +163,10 @@ export function MedicalDocumentDialog({
     const esc = (s: string) =>
       (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br/>");
 
-    const birthFmt = patientRegistry?.birth_date
-      ? (() => { try { return new Date(patientRegistry.birth_date + "T12:00:00").toLocaleDateString("pt-BR"); } catch { return patientRegistry.birth_date; } })()
-      : null;
-
-    const leitoStr = [patientBed, displaySector].filter(Boolean).join(" · ");
-    const cidStr = cidPrimary ? cidPrimary.split(" - ").slice(0, 2).join(" — ") : null;
-
-    // Cabeçalho padrão Arsen — mesmo layout de tabela da Guia ATM e Evolução
-    const patientLine = `
-      <table class="nz" style="margin-bottom:10pt">
-        <tbody>
-          <tr>
-            <th style="width:14%">Paciente</th>
-            <td style="width:36%"><strong>${esc((patientName || "").toUpperCase())}</strong></td>
-            <th style="width:10%">Leito</th>
-            <td colspan="3"><strong>${esc(leitoStr || "—")}</strong></td>
-          </tr>
-          <tr>
-            <th>Idade</th>
-            <td>${esc(patient?.age ? String(patient.age) : "—")}</td>
-            <th>Prontuário</th>
-            <td colspan="3">${esc(patientRegistry?.medical_record || "—")}</td>
-          </tr>
-          <tr>
-            <th>Data de nascimento</th>
-            <td>${esc(birthFmt || "—")}</td>
-            <th>CID-10</th>
-            <td colspan="3">${esc(cidStr || "—")}</td>
-          </tr>
-        </tbody>
-      </table>`;
+    // A identificação do paciente e o CID vivem no cabeçalho padronizado (ver handlePrint).
 
     if (isBlankRx) {
-      return `${patientLine}${buildBlankReceituarioHtml(blankText)}`;
+      return `${buildBlankReceituarioHtml(blankText)}`;
     }
 
     if (isRx) {
@@ -210,8 +182,7 @@ export function MedicalDocumentDialog({
         ? `<div style="margin-top:8pt;padding:6pt 8pt;border:1px dashed #be123c;border-radius:4pt;font-size:8.5pt;color:#9f1239;background:#fff1f2">
              <b>Receituário de Controle Especial</b> — Portaria SVS/MS nº 344/1998. Validade: 30 dias a partir da data de emissão. Emitido em 2 (duas) vias: 1ª via retida pela farmácia, 2ª via do paciente.
            </div>` : "";
-      return `${patientLine}
-        <table class="nz">
+      return `<table class="nz">
           <thead><tr>
             <th style="width:24pt">#</th><th>Medicamento / Dose</th><th>Via</th><th>Posologia</th><th>Duração</th>
           </tr></thead>
@@ -222,8 +193,7 @@ export function MedicalDocumentDialog({
       `;
     }
 
-    return `${patientLine}
-      <div style="font-size:10pt;line-height:1.55;text-align:justify;white-space:pre-wrap;padding:4pt 2pt">${esc(body)}</div>
+    return `<div style="font-size:10pt;line-height:1.55;text-align:justify;white-space:pre-wrap;padding:4pt 2pt">${esc(body)}</div>
     `;
   };
 
@@ -298,18 +268,38 @@ export function MedicalDocumentDialog({
     const logo = await prepareLogo();
     const subtitle =
       kind === "atestado" && days ? `Afastamento de ${days} ${Number(days) === 1 ? 'dia' : 'dias'}` :
-      kind === "receituario_especial" ? "Portaria SVS/MS nº 344/1998 — 2 vias" : undefined;
+      kind === "receituario_especial" ? "Portaria SVS/MS nº 344/1998 · 2 vias" : undefined;
+    const cidStr = cidPrimary ? cidPrimary.split(" - ").slice(0, 2).join(" — ") : null;
+
+    // Cabeçalho padronizado: controle especial = modelo assistencial (um por via);
+    // demais = modelo documental. O corpo de cada documento não muda.
+    const headerPatient = await resolveHeaderPatient(patientId, {
+      name: (patientName || "").toUpperCase(),
+      bed: patientBed,
+      sector: displaySector,
+      age: patient?.age ? String(patient.age) : undefined,
+      birthDate: fmtIsoDate(patientRegistry?.birth_date),
+      record: patientRegistry?.medical_record,
+    });
+    const headerInput: HeaderInput = {
+      model: kind === "receituario_especial" ? "assistencial" : "documental",
+      title: tpl.label,
+      complement: subtitle,
+      emission: "",
+      patient: headerPatient,
+      extras: [["CID-10", cidStr]],
+    };
 
     const baseBody = buildBodyHtml();
     const bodyHtml = kind === "receituario_especial"
-      ? `<div style="border-bottom:2px dashed #94a3b8;padding-bottom:8pt;margin-bottom:8pt"><div style="font-size:8pt;color:#64748b;margin-bottom:4pt"><b>1ª VIA — FARMÁCIA</b></div>${baseBody}</div>
-         <div style="page-break-before:always"></div>
-         <div><div style="font-size:8pt;color:#64748b;margin-bottom:4pt"><b>2ª VIA — PACIENTE</b></div>${baseBody}</div>`
+      ? `<div style="border-bottom:2px dashed #94a3b8;padding-bottom:8pt;margin-bottom:8pt">${buildStandardHeaderHtml(headerInput, logo)}<div style="font-size:8pt;color:#64748b;margin-bottom:4pt"><b>1ª VIA — FARMÁCIA</b></div>${baseBody}</div>
+         <div>${buildStandardHeaderHtml(headerInput, logo)}<div style="font-size:8pt;color:#64748b;margin-bottom:4pt"><b>2ª VIA — PACIENTE</b></div>${baseBody}</div>`
       : baseBody;
 
     const html = buildNormaZeroDocument({
       title: tpl.label,
-      subtitle,
+      standardHeader: headerInput,
+      suppressTopHeader: kind === "receituario_especial",
       sectorLabel: displaySector ? `Assistência — ${displaySector}` : "Assistência Médica",
       hospitalName,
       docCodePrefix: tpl.prefix,

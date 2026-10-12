@@ -10,6 +10,8 @@ import {
   type NormaZeroSignature,
 } from "@/lib/printNormaZero";
 import { getSectorDisplayLabel } from "@/utils/bedNaming";
+import { resolveHeaderPatient, fmtIsoDate } from "@/lib/headerPatient";
+import type { HeaderInput } from "@/lib/documentHeaderLayout";
 
 export type DischargeDocType = "alta_hospitalar" | "alta_pedido" | "obito";
 
@@ -46,6 +48,8 @@ const DISCHARGE_DOC_PREFIX: Record<DischargeDocType, string> = {
 
 export interface DischargeDocPayload {
   // Identification
+  /** internacoes.id — permite completar a identificacao pelo cadastro na hora de imprimir. */
+  patient_id?: string;
   patient_name: string;
   patient_bed?: string;
   patient_sector?: string;
@@ -139,17 +143,8 @@ export type DischargePrintBlock = "summary" | "followup" | "family";
 function buildBody(type: DischargeDocType, p: DischargeDocPayload, only?: DischargePrintBlock): string {
   const isDeath = type === "obito";
 
-  const idGrid = `
-    <div class="dz-id-grid">
-      <div><span class="k">Paciente</span><b>${escapeHtml(p.patient_name)}</b></div>
-      <div><span class="k">Prontuário</span>${escapeHtml(p.patient_record || "—")}</div>
-      <div><span class="k">Atendimento</span>${escapeHtml(p.encounter_code || "—")}</div>
-      <div><span class="k">Leito / Setor</span>${escapeHtml(`${p.patient_bed || "—"} • ${getSectorDisplayLabel(p.patient_sector) || "—"}`)}</div>
-      <div><span class="k">Nascimento</span>${escapeHtml(p.patient_birth_date || "—")}</div>
-      <div><span class="k">Admissão</span>${escapeHtml(fmtDate(p.admission_date))}</div>
-      <div><span class="k">${isDeath ? "Data/Hora do Óbito" : "Alta"}</span>${escapeHtml(fmtDate(isDeath ? p.death_date_time : p.discharge_date))}</div>
-      <div><span class="k">${isDeath ? "Local do óbito" : "Tipo de alta"}</span>${escapeHtml((isDeath ? p.death_place : p.discharge_type) || "—")}</div>
-    </div>`;
+  // A identificacao do paciente (e admissao, data/hora da alta ou do obito, tipo/local)
+  // vive no cabecalho padronizado — ver buildDischargeHeader().
 
   const clinicalCommon = `
     <div class="dz-section-title">Quadro clínico</div>
@@ -225,12 +220,39 @@ function buildBody(type: DischargeDocType, p: DischargeDocPayload, only?: Discha
     const summaryTail = isDeath
       ? deathBlocks
       : `<div class="dz-section-title">Plano de alta</div>${dischargeSummaryPart}`;
-    return `${idGrid}${clinicalCommon}${summaryTail}`;
+    return `${clinicalCommon}${summaryTail}`;
   }
-  if (only === "followup") return `${idGrid}${followupOnly}`;
-  if (only === "family") return `${idGrid}${familyBlocks}`;
+  if (only === "followup") return `${followupOnly}`;
+  if (only === "family") return `${familyBlocks}`;
 
-  return `${idGrid}${clinicalCommon}${isDeath ? deathBlocks : dischargeBlocks}${familyBlocks}`;
+  return `${clinicalCommon}${isDeath ? deathBlocks : dischargeBlocks}${familyBlocks}`;
+}
+
+/** Cabecalho padronizado (modelo documental) do sumario de alta / alta a pedido / obito. */
+function buildDischargeHeader(type: DischargeDocType, p: DischargeDocPayload, patient: HeaderInput["patient"]): HeaderInput {
+  const isDeath = type === "obito";
+  return {
+    model: "documental",
+    title: DISCHARGE_DOC_LABELS[type],
+    emission: "",
+    patient,
+    extras: [
+      ["Admissão", p.admission_date ? fmtDate(p.admission_date) : null],
+      [isDeath ? "Data/hora do óbito" : "Alta", fmtDate(isDeath ? p.death_date_time : p.discharge_date) === "—" ? null : fmtDate(isDeath ? p.death_date_time : p.discharge_date)],
+      [isDeath ? "Local do óbito" : "Tipo de alta", isDeath ? p.death_place : p.discharge_type],
+    ],
+  };
+}
+
+function dischargeBasePatient(p: DischargeDocPayload) {
+  return {
+    name: p.patient_name,
+    bed: p.patient_bed,
+    sector: getSectorDisplayLabel(p.patient_sector) || undefined,
+    record: p.patient_record,
+    atendimento: p.encounter_code,
+    birthDate: fmtIsoDate(p.patient_birth_date),
+  };
 }
 
 export async function printDischargeDocument(
@@ -265,11 +287,11 @@ export async function printDischargeDocument(
 
   const logoDataUrl = await prepareLogo();
 
+  const patient = await resolveHeaderPatient(payload.patient_id, dischargeBasePatient(payload));
+
   const html = buildNormaZeroDocument({
     title,
-    subtitle: payload.patient_name
-      ? `${payload.patient_name}${payload.patient_record ? ` • Prontuário ${payload.patient_record}` : ""}`
-      : undefined,
+    standardHeader: buildDischargeHeader(type, payload, patient),
     sectorLabel,
     hospitalName: payload.hospital_name,
     docCodePrefix: DISCHARGE_DOC_PREFIX[type],
@@ -301,7 +323,7 @@ export function buildDischargeDocHTML(
   const title = DISCHARGE_DOC_LABELS[type];
   return buildNormaZeroDocument({
     title,
-    subtitle: p.patient_name,
+    standardHeader: buildDischargeHeader(type, p, dischargeBasePatient(p)),
     sectorLabel: getSectorDisplayLabel(p.patient_sector) || "Assistência hospitalar",
     hospitalName: p.hospital_name,
     docCodePrefix: DISCHARGE_DOC_PREFIX[type],

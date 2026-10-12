@@ -8,10 +8,10 @@
 
 import {
   buildNormaZeroDocument,
-  buildPatientHeaderNZ,
   openPrintWindow,
   prepareLogo,
 } from "@/lib/printNormaZero";
+import { resolveHeaderPatient, fmtIsoDate } from "@/lib/headerPatient";
 import type { DocumentoMedicoData, DocumentoMedicoType } from "@/hooks/useDocumentoMedico";
 
 const TYPE_META: Record<DocumentoMedicoType, { title: string; prefix: string }> = {
@@ -24,21 +24,9 @@ const esc = (s: string | null | undefined) =>
   (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br/>");
 
 function buildDocumentoMedicoBody(data: DocumentoMedicoData): string {
-  const cidStr = data.cid ? data.cid.split(" - ").slice(0, 2).join(" — ") : null;
-
-  // Cabecalho de identificacao PADRAO (buildPatientHeaderNZ) — unico para todos
-  // os documentos (admissao/evolucao/atestado/relatorio/termo/alta/ATM/SAPS/CVC).
-  const patientLine = buildPatientHeaderNZ({
-    name: (data.patient_name || "").toUpperCase(),
-    bed: data.patient_bed,
-    sector: data.patient_sector,
-    record: data.patient_medical_record,
-    birthDate: data.patient_birth_date,
-    age: data.patient_age,
-    cid: cidStr,
-  });
-
-  return `${patientLine}
+  // A identificacao do paciente (e o CID) agora vive no cabecalho padronizado
+  // (modelo documental); o corpo e so o texto do documento.
+  return `
     <div style="font-size:10pt;line-height:1.55;text-align:justify;white-space:pre-wrap;padding:4pt 2pt">${esc(data.body)}</div>
   `;
 }
@@ -56,10 +44,26 @@ export async function printDocumentoMedico(
   const bodyHtml = buildDocumentoMedicoBody(data);
   const { title, prefix } = TYPE_META[data.type];
   const subtitle = data.type === "atestado" && data.days ? `Afastamento de ${data.days} ${(data.days) === 1 ? 'dia' : 'dias'}` : undefined;
+  const cidStr = data.cid ? data.cid.split(" - ").slice(0, 2).join(" — ") : null;
+  const patient = await resolveHeaderPatient(data.patient_id, {
+    name: (data.patient_name || "").toUpperCase(),
+    bed: data.patient_bed,
+    sector: data.patient_sector,
+    record: data.patient_medical_record,
+    birthDate: fmtIsoDate(data.patient_birth_date),
+    age: data.patient_age,
+  });
 
   const html = buildNormaZeroDocument({
     title,
-    subtitle,
+    standardHeader: {
+      model: "documental",
+      title,
+      complement: subtitle,
+      emission: "",
+      patient,
+      extras: [["CID-10", cidStr]],
+    },
     sectorLabel: "Assistência Médica",
     hospitalName: opts.hospitalName || "Hospital Municipal Djalma Marques (Socorrão I)",
     docCodePrefix: prefix,

@@ -9,6 +9,8 @@ import type { HeaderLayout, HeaderCell } from "./documentHeaderLayout.ts";
 export interface HeaderBrand {
   /** Logo ja em data URL (ou URL absoluta). */
   logoSrc?: string;
+  /** Sigla exibida quando o logo nao carrega (ex.: HMDM). */
+  abbr?: string;
   line1: string;
   line2: string;
   line3: string;
@@ -48,10 +50,16 @@ function valueStyle(c: HeaderCell): string {
   return st;
 }
 
-export function renderHeaderHtml(layout: HeaderLayout, brand: HeaderBrand): string {
+/**
+ * part: "all" (padrao), "top" (timbrado + faixa, sem a grade) ou "grid" (so a grade do
+ * paciente — usada quando a grade precisa repetir em cada pagina via thead).
+ */
+export type HeaderPart = "all" | "top" | "grid";
+
+export function renderHeaderHtml(layout: HeaderLayout, brand: HeaderBrand, part: HeaderPart = "all"): string {
   const logo = brand.logoSrc
     ? `<img src="${esc(brand.logoSrc)}" alt="" style="width:40px;height:40px;object-fit:contain;flex-shrink:0"/>`
-    : `<div style="width:40px;height:40px;background:${brand.colors.blue};border-radius:6px;flex-shrink:0"></div>`;
+    : `<div style="width:40px;height:40px;background:${brand.colors.blue};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:8pt;border-radius:6px;flex-shrink:0">${esc(brand.abbr ?? "")}</div>`;
   const c = brand.colors;
   const rows = layout.rows
     .map(
@@ -71,6 +79,11 @@ export function renderHeaderHtml(layout: HeaderLayout, brand: HeaderBrand): stri
   const complement = layout.complement
     ? `<span style="position:absolute;right:9px;top:50%;transform:translateY(-50%);font-size:7pt;letter-spacing:0.4px;text-transform:uppercase;opacity:0.92">${esc(layout.complement)}</span>`
     : "";
+  const table = layout.rows.length
+    ? `<table style="width:100%;border-collapse:collapse;margin-bottom:6pt;page-break-inside:avoid"><tbody>${rows}</tbody></table>`
+    : "";
+  if (part === "grid") return `<div class="dh-root" style="font-family:'Helvetica Neue','Segoe UI',Inter,Arial,sans-serif;color:#1e293b">${table}</div>`;
+  const showGrid = part === "all" && layout.rows.length > 0;
   return `<div class="dh-root" style="font-family:'Helvetica Neue','Segoe UI',Inter,Arial,sans-serif;color:#1e293b">
   <div style="display:flex;align-items:center;gap:10px;padding-bottom:4px">${logo}
     <div style="flex:1;text-align:center">
@@ -83,10 +96,10 @@ export function renderHeaderHtml(layout: HeaderLayout, brand: HeaderBrand): stri
     </div>
   </div>
   <div style="display:flex;height:3px"><div style="flex:1;background:${c.red}"></div><div style="flex:1;background:${c.orange}"></div><div style="flex:1;background:${c.yellow}"></div><div style="flex:1;background:${c.green}"></div><div style="flex:1;background:${c.blue}"></div></div>
-  <div style="background:${S.band};color:#fff;position:relative;text-align:center;padding:5px 9px;margin-top:4px;margin-bottom:${layout.rows.length ? "0" : "6px"}">
+  <div style="background:${S.band};color:#fff;position:relative;text-align:center;padding:5px 9px;margin-top:4px;margin-bottom:${showGrid ? "0" : "6px"}">
     <b style="font-size:8.6pt;letter-spacing:0.9px;text-transform:uppercase">${esc(layout.title)}</b>${complement}
   </div>
-  ${layout.rows.length ? `<table style="width:100%;border-collapse:collapse;margin-bottom:6pt;page-break-inside:avoid"><tbody>${rows}</tbody></table>` : ""}
+  ${showGrid ? table : ""}
 </div>`;
 }
 

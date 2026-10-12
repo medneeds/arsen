@@ -60,6 +60,12 @@ export interface HeaderInput {
   /** Data/hora de emissao ja formatada. */
   emission: string;
   patient?: HeaderPatient | null;
+  /**
+   * Modelo assistencial que tambem mostra CPF, CNS, telefone e endereco (quando
+   * existirem) — usado na admissao, que e o documento de cadastro clinico.
+   * O modelo documental sempre os mostra.
+   */
+  includeRegistry?: boolean;
   /** Dados proprios do documento (CID, Caracter, Solicitante...). So entram se tiverem valor. */
   extras?: Array<[label: string, value: string | null | undefined]>;
 }
@@ -173,7 +179,14 @@ export function buildHeaderLayout(input: HeaderInput): HeaderLayout {
 
   // Linhas de largura total, so quando preenchidas.
   if (clean(p.motherName)) rows.push([{ label: "Nome da mãe", value: clean(p.motherName), span: 7 }]);
-  if (input.model === "documental" && clean(p.address)) rows.push([{ label: "Endereço", value: clean(p.address), span: 7 }]);
+  if (input.model === "assistencial" && input.includeRegistry) {
+    const reg: HeaderCell[] = [];
+    if (clean(p.cpf)) reg.push({ label: "CPF", value: clean(p.cpf) });
+    if (clean(p.cns)) reg.push({ label: "CNS", value: clean(p.cns) });
+    if (clean(p.phone)) reg.push({ label: "Telefone", value: clean(p.phone) });
+    rows.push(...packPairs(reg));
+  }
+  if ((input.model === "documental" || input.includeRegistry) && clean(p.address)) rows.push([{ label: "Endereço", value: clean(p.address), span: 7 }]);
   for (const [label, value] of input.extras ?? []) {
     if (clean(value)) rows.push([{ label: clean(label), value: clean(value), span: 7 }]);
   }

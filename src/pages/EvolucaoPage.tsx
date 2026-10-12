@@ -11,7 +11,8 @@ import { SectionLoader } from "@/components/SectionLoader";
 import { PatientCockpit } from "@/components/PatientCockpit";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { NormaZeroPrintHeader, generatePrintDocCode, getNormaZeroMissingFields, NormaZeroBlockedDocument } from "@/components/NormaZeroPrintHeader";
+import { NormaZeroPrintFooter, generatePrintDocCode, getNormaZeroMissingFields, NormaZeroBlockedDocument } from "@/components/NormaZeroPrintHeader";
+import { DocumentHeader } from "@/components/DocumentHeader";
 import {
   NotebookPen, Plus, Loader2, AlertTriangle, ChevronDown, Sun, Moon, Zap,
 } from "lucide-react";
@@ -859,22 +860,7 @@ const EvolucaoPage = () => {
            Nunca mostrado na tela (hidden print:block). */}
       <div className="hidden print:block" style={{ fontFamily: '"Helvetica Neue", "Segoe UI", Inter, Arial, sans-serif', color: '#1e293b', width: '186mm', margin: '0 auto', lineHeight: 1.3 }}>
         {(() => {
-          const docCode = generatePrintDocCode('EVOL');
           const printDate = format(new Date(), "dd/MM/yyyy HH:mm", { locale: ptBR });
-
-          const cellSt: React.CSSProperties = { border: '0.5px solid #94a3b8', padding: '3px 6px', fontSize: '7.5pt', lineHeight: 1.3, verticalAlign: 'top' };
-          const labelSt: React.CSSProperties = { ...cellSt, fontWeight: 700, fontSize: '6.5pt', backgroundColor: '#f1f5f9', color: '#334155', textTransform: 'uppercase', letterSpacing: '0.3px' };
-          // BUGFIX (07/08/2026): mesma correção de PrescricaoPage.tsx — a lógica
-          // antiga (`startsWith('m') ? 'Masculino' : 'Feminino'`) assumia Feminino
-          // por padrão pra qualquer valor que não começasse por 'm' (cadastro com
-          // sexo "Outro", dado legado malformado). Checagem agora é explícita.
-          const formatSexLabel = (sex?: string | null): string => {
-            if (!sex) return '—';
-            const v = sex.trim().toUpperCase();
-            if (v === 'M' || v === 'MASCULINO') return 'Masculino';
-            if (v === 'F' || v === 'FEMININO') return 'Feminino';
-            return sex.trim();
-          };
 
           const fmt = (d?: string) => {
             if (!d) return '—';
@@ -917,67 +903,28 @@ const EvolucaoPage = () => {
 
           return (
             <>
-              {/* Cabeçalho institucional Norma Zero */}
-              <NormaZeroPrintHeader
-                documentLabel="Evolução Clínica"
-                documentCode={printDate}
-                documentSubtitle={docCode}
+              {/* Cabeçalho padronizado (modelo assistencial) */}
+              <DocumentHeader
+                model="assistencial"
+                title="Evolução clínica"
+                emission={printDate}
                 width="186mm"
-                variant="compact"
+                patient={{
+                  name: patient.name,
+                  socialName: ids.registry?.socialName,
+                  bed: patient.bed,
+                  sector: patient.unit,
+                  record: headerRecord,
+                  atendimento: ids.atendimento,
+                  birthDate: fmt(headerBirthDate),
+                  age: headerAge,
+                  sex: headerSex,
+                  weight: headerWeight ? `${headerWeight}kg` : '',
+                  sectorAdmission: fmt(headerAdmissionDate),
+                  allergies: headerAllergies,
+                  motherName: ids.registry?.motherName,
+                }}
               />
-
-              {/* Tabela de dados do paciente — 3 linhas, 8 colunas */}
-              <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '6px', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-                <tbody>
-                  {/* Linha 1: Nome (destaque) */}
-                  <tr>
-                    <td style={labelSt}>Paciente</td>
-                    <td style={{ ...cellSt, fontWeight: 800, fontSize: '9pt', letterSpacing: '-0.01em' }} colSpan={7}>
-                      {patient.name || '—'}
-                    </td>
-                  </tr>
-                  {/* Linha 2: Leito / Setor / Prontuário / Atendimento */}
-                  <tr>
-                    <td style={labelSt}>Leito</td>
-                    <td style={{ ...cellSt, fontWeight: 700 }}>{patient.bed || '—'}</td>
-                    <td style={labelSt}>Setor / Unidade</td>
-                    <td style={{ ...cellSt, fontWeight: 600 }}>{patient.unit || '—'}</td>
-                    <td style={labelSt}>Prontuário</td>
-                    <td style={{ ...cellSt, fontWeight: 700 }}>{headerRecord || '—'}</td>
-                    <td style={labelSt}>Nº Atendimento</td>
-                    <td style={{ ...cellSt, fontWeight: 700 }}>{ids.atendimento ? `#${ids.atendimento}` : '—'}</td>
-                  </tr>
-                  {/* Linha 3: Idade / Nascimento / Admissão / Sexo / Peso / Alergias */}
-                  <tr>
-                    <td style={labelSt}>Idade</td>
-                    <td style={cellSt}>{headerAge || '—'}</td>
-                    <td style={labelSt}>Data de Nasc.</td>
-                    <td style={cellSt}>{fmt(headerBirthDate)}</td>
-                    <td style={labelSt}>Admissão</td>
-                    <td style={cellSt}>{fmt(headerAdmissionDate)}</td>
-                    <td style={{ ...labelSt, color: '#dc2626', fontSize: '6pt' }}>ALERGIAS</td>
-                    {(() => {
-                      const a = headerAllergies || 'Sem relato';
-                      const ok = isSemAlergia(a);
-                      return (
-                        <td style={{ ...cellSt, fontWeight: 700, color: ok ? '#166534' : '#991b1b', backgroundColor: ok ? '#f0fdf4' : '#fef2f2', fontSize: '7.5pt' }}>
-                          {a}
-                        </td>
-                      );
-                    })()}
-                  </tr>
-                  {/* Linha 4: Sexo / Peso — linha compacta complementar */}
-                  <tr>
-                    <td style={labelSt}>Sexo</td>
-                    <td style={cellSt}>{formatSexLabel(headerSex)}</td>
-                    <td style={labelSt}>Peso</td>
-                    <td style={cellSt}>{headerWeight ? `${headerWeight} kg` : '—'}</td>
-                    <td colSpan={4} style={{ ...cellSt, color: '#64748b', fontSize: '7pt', fontStyle: 'italic' }}>
-                      Documento gerado em {printDate} · {docCode}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
             </>
           );
         })()}
@@ -1031,6 +978,7 @@ const EvolucaoPage = () => {
             <div style={{ color: '#475569', fontSize: '7pt' }}>Nome · COREN</div>
           </div>
         </div>
+        <NormaZeroPrintFooter width="186mm" documentCode={generatePrintDocCode('EVOL')} />
       </div>
 
       {/* Confirmação leve antes de duplicar uma evolução */}

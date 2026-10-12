@@ -7,7 +7,9 @@
  */
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { buildNormaZeroDocument, openPrintWindow, prepareLogo } from "@/lib/printNormaZero";
+import { buildNormaZeroDocument, buildStandardHeaderHtml, openPrintWindow, prepareLogo } from "@/lib/printNormaZero";
+import { resolveHeaderPatient } from "@/lib/headerPatient";
+import type { HeaderInput } from "@/lib/documentHeaderLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { toRichHtml, richHtmlToPlainText } from "@/components/ui/rich-text-editor";
 import { getSectorDisplayLabel } from "@/utils/bedNaming";
@@ -181,45 +183,21 @@ export const printEvolution = async (
     } catch { /* falha silenciosa */ }
   }
 
-  // Estilos da tabela de paciente — idêntico ao PrintablePrescription
-  const cellS = "border:0.5px solid #94a3b8;padding:3px 6px;font-size:7.5pt;line-height:1.3;vertical-align:top";
-  // Rotulos sao strings curtas e fixas: nunca devem quebrar em 2 linhas
-  // (picotava "Setor / Unidade", "No Atendimento", "Data de Nasc."). nowrap.
-  const labelS = `${cellS};font-weight:700;font-size:6.5pt;background:#f1f5f9;color:#334155;text-transform:uppercase;letter-spacing:0.3px;white-space:nowrap`;
-  // Valores curtos (leito, setor, prontuario, atendimento, datas) tambem nowrap
-  // para nao quebrar "UTI 1" em duas linhas; nome e alergias continuam podendo quebrar.
-  const cellNoWrap = `${cellS};white-space:nowrap`;
-
-  const patientHeader = `
-    <table id="patient-header-repeat" style="width:100%;border-collapse:collapse;margin-bottom:4pt;page-break-inside:avoid">
-      <tbody>
-        <tr>
-          <td style="${labelS}">Paciente</td>
-          <td style="${cellS};font-weight:800;font-size:9pt;letter-spacing:-0.01em" colspan="7">
-            ${escape(fullName.toUpperCase())}
-          </td>
-        </tr>
-        <tr>
-          <td style="${labelS}">Leito</td>
-          <td style="${cellNoWrap};font-weight:700">${escape(ctx?.patientBed || evo.patient_bed || "—")}</td>
-          <td style="${labelS}">Setor / Unidade</td>
-          <td style="${cellNoWrap};font-weight:600">${escape(getSectorDisplayLabel(ctx?.patientSector || evo.patient_sector) || "—")}</td>
-          <td style="${labelS}">Prontuário</td>
-          <td style="${cellNoWrap};font-weight:700">${escape(ctx?.patientRecord || "—")}</td>
-          <td style="${labelS}">Nº Atendimento</td>
-          <td style="${cellNoWrap};font-weight:700">${ctx?.patientAtendimento ? "#" + escape(ctx.patientAtendimento) : "—"}</td>
-        </tr>
-        <tr>
-          <td style="${labelS}">Data de Nasc.</td>
-          <td style="${cellNoWrap}">${escape(birthDisplay)}${patientAge ? ` (${patientAge})` : ''}</td>
-          <td style="${labelS}">Adm. no setor</td>
-          <td style="${cellNoWrap}" colspan="3">${escape(formatBirthDateBR(sectorAdmDate))}</td>
-          <td style="${labelS};color:#dc2626;font-size:6pt">⚠ ALERGIAS</td>
-          <td style="${cellS};font-weight:700;color:#991b1b;background:#fef2f2;font-size:7.5pt">${escape(patientAllergies)}</td>
-        </tr>
-      </tbody>
-    </table>
-  `;
+  // Identificacao do paciente: cabecalho padronizado (modelo assistencial). Os dados
+  // que esta funcao ja buscou valem mais; o resto (sexo, peso, mae...) vem do cadastro.
+  const noAllergy = patientAllergies === "—" || patientAllergies === "SEM ALERGIAS CONHECIDAS";
+  const headerPatient = await resolveHeaderPatient(evo.patient_id, {
+    name: baseName.toUpperCase(),
+    socialName: ctx?.patientSocialName,
+    bed: ctx?.patientBed || evo.patient_bed,
+    sector: getSectorDisplayLabel(ctx?.patientSector || evo.patient_sector) || undefined,
+    record: ctx?.patientRecord,
+    atendimento: ctx?.patientAtendimento,
+    birthDate: birthDisplay === "—" ? undefined : birthDisplay,
+    age: patientAge ?? undefined,
+    sectorAdmission: sectorAdmDate ? formatBirthDateBR(sectorAdmDate) : undefined,
+    allergies: noAllergy ? undefined : patientAllergies,
+  });
 
   // ─── Buscar dados do paciente ANTES de montar o patientHeader ──────
   
@@ -434,10 +412,30 @@ export const printEvolution = async (
   // Header repetível via <thead> NATIVO: o navegador repete o thead em cada
   // página automaticamente, reservando o espaço correto — sem position:fixed
   // nem script de runtime (que causavam sobreposição do nome e sumiço de campos).
+  const evoTypeForHeader = getEvolutionType(evo);
+  const headerTitleMap: Record<string, string> = {
+    intercurrence: "Intercorrência clínica",
+    vespertina: "Evolução complementar vespertina",
+    noturna: "Evolução complementar noturna",
+    normal: "Evolução clínica",
+  };
+  const headerComplementMap: Record<string, string> = {
+    vespertina: "Turno vespertino",
+    noturna: "Turno noturno",
+  };
+  const standardHeader: HeaderInput = {
+    model: "assistencial",
+    title: headerTitleMap[evoTypeForHeader] ?? "Evolução clínica",
+    complement: headerComplementMap[evoTypeForHeader],
+    emission: "",
+    patient: headerPatient,
+  };
+  const patientGridHtml = buildStandardHeaderHtml(standardHeader, logo, "grid");
+
   const bodyHtml = `
     <table style="width:100%;border-collapse:collapse">
       <thead style="display:table-header-group">
-        <tr><td style="padding:0;border:none">${patientHeader}</td></tr>
+        <tr><td style="padding:0;border:none"><div id="patient-header-repeat">${patientGridHtml}</div></td></tr>
       </thead>
       <tbody>
         ${sectionRows}
@@ -469,7 +467,8 @@ export const printEvolution = async (
 
   const html = buildNormaZeroDocument({
     title: titleMap[evoType] ?? "Evolução Clínica",
-    subtitle: subtitleMap[evoType] ?? "Registro de evolução",
+    standardHeader,
+    standardHeaderTopOnly: true,
     sectorLabel: getSectorDisplayLabel(ctx?.patientSector || evo.patient_sector) || "Assistência Médica",
     docCodePrefix: prefixMap[evoType] ?? "EVOL",
     bodyHtml,

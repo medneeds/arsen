@@ -60,6 +60,7 @@ export function DischargeDocumentForm({ type, initial, onChange, patientId, hosp
     death_date_time: new Date().toISOString().slice(0, 16),
     discharge_type: "melhorado",
     death_type: "natural",
+    ...(patientId ? { patient_id: patientId } : {}),
     ...initial,
     ...restoredDraftValues(patientId, type),
   }) as DischargeDocPayload);

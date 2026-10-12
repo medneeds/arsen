@@ -16,6 +16,8 @@
  */
 
 import { whitelabel } from "@/config/whitelabel";
+import { buildHeaderLayout, type HeaderInput } from "@/lib/documentHeaderLayout";
+import { renderHeaderHtml, type HeaderPart } from "@/lib/documentHeaderHtml";
 import socorraoCrossLogo from "@/assets/socorrao-cross-logo.png";
 
 export interface NormaZeroSignature {
@@ -53,6 +55,18 @@ export interface NormaZeroDocOptions {
     bed?: string;
     record?: string;
   };
+  /**
+   * Cabecalho PADRONIZADO (modelos assistencial/documental). Quando presente,
+   * substitui o timbrado grande, a faixa Documento/Setor/Emissao, o titulo e o
+   * subtitulo por: timbrado compacto + EMISSAO + faixa azul com o nome do
+   * documento + grade de identificacao. O codigo do documento e a linha do
+   * paciente passam para o rodape. O corpo e as assinaturas nao mudam.
+   */
+  standardHeader?: HeaderInput;
+  /** Nao renderiza o cabecalho padronizado no topo (o corpo traz um por via). */
+  suppressTopHeader?: boolean;
+  /** Renderiza so timbrado + faixa no topo; a grade do paciente vai no corpo (ex.: thead repetido por pagina). */
+  standardHeaderTopOnly?: boolean;
 }
 
 /** Converte um asset de imagem (importado) em data URL para uso em janelas pop-up */
@@ -232,6 +246,22 @@ export const normaZeroBaseStyles = (orientation: "portrait" | "landscape" = "por
   .nz-empty { text-align: center; color: #94a3b8; font-style: italic; padding: 12pt; }
 `;
 
+/** Cabecalho padronizado em HTML, para quem precisa repeti-lo no corpo (ex.: uma vez por via). */
+export function buildStandardHeaderHtml(input: HeaderInput, logoDataUrl?: string, part: HeaderPart = "all"): string {
+  const inst = whitelabel.print.institutionalHeader;
+  const c = whitelabel.theme.institutionalColors;
+  const now = new Date();
+  const stamp = `${now.toLocaleDateString("pt-BR")} ${now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`;
+  return renderHeaderHtml(buildHeaderLayout({ ...input, emission: input.emission || stamp }), {
+    logoSrc: logoDataUrl,
+    abbr: whitelabel.institution.hospitalAbbreviation,
+    line1: inst.line1,
+    line2: inst.line2,
+    line3: inst.line3,
+    colors: { red: c.red, orange: c.orange, yellow: c.yellow, green: c.green, blue: c.blue },
+  }, part);
+}
+
 /** Constrói o HTML completo do documento Norma Zero */
 export function buildNormaZeroDocument(opts: NormaZeroDocOptions): string {
   const {
@@ -246,16 +276,23 @@ export function buildNormaZeroDocument(opts: NormaZeroDocOptions): string {
     orientation = "portrait",
     extraStyles = "",
     patientFooterInfo,
+    standardHeader,
+    suppressTopHeader,
+    standardHeaderTopOnly,
   } = opts;
 
   // Linha de identificação do paciente (rastreabilidade por folha)
-  const patientFooterLine = patientFooterInfo
+  const sh = standardHeader?.patient;
+  const footerInfo = patientFooterInfo ?? (sh
+    ? { name: sh.name ?? undefined, age: sh.age ?? undefined, birthDate: sh.birthDate ?? undefined, bed: sh.bed ?? undefined, record: sh.record ?? undefined }
+    : undefined);
+  const patientFooterLine = footerInfo
     ? [
-        patientFooterInfo.name,
-        patientFooterInfo.age,
-        patientFooterInfo.birthDate,
-        patientFooterInfo.bed ? `Leito ${patientFooterInfo.bed}` : null,
-        patientFooterInfo.record ? `Pront. ${patientFooterInfo.record}` : null,
+        footerInfo.name,
+        footerInfo.age,
+        footerInfo.birthDate,
+        footerInfo.bed ? `Leito ${footerInfo.bed}` : null,
+        footerInfo.record ? `Pront. ${footerInfo.record}` : null,
       ].filter(Boolean).join(" · ")
     : "";
 
@@ -283,11 +320,7 @@ export function buildNormaZeroDocument(opts: NormaZeroDocOptions): string {
           .join("")}</div>`
       : "";
 
-  return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
-<title>${title} — ${docNo}</title>
-<style>${normaZeroBaseStyles(orientation)}${extraStyles}</style>
-</head><body>
-<div class="nz-header">
+  const legacyTop = `<div class="nz-header">
   <div class="nz-header-inner">
     <div class="nz-logo-wrap">${logoBlock}</div>
     <div class="nz-h-text">
@@ -314,7 +347,26 @@ export function buildNormaZeroDocument(opts: NormaZeroDocOptions): string {
 </div>
 
 <h1 class="nz-title">${title}</h1>
-${subtitle ? `<div class="nz-subtitle">${hospital} • ${subtitle}</div>` : `<div class="nz-subtitle">${hospital}</div>`}
+${subtitle ? `<div class="nz-subtitle">${hospital} • ${subtitle}</div>` : `<div class="nz-subtitle">${hospital}</div>`}`;
+  const brand = {
+    logoSrc: logoDataUrl,
+    abbr: whitelabel.institution.hospitalAbbreviation,
+    line1: inst.line1,
+    line2: inst.line2,
+    line3: inst.line3,
+    colors: { red: colors.red, orange: colors.orange, yellow: colors.yellow, green: colors.green, blue: colors.blue },
+  };
+  const topHtml = standardHeader
+    ? suppressTopHeader
+      ? ""
+      : renderHeaderHtml(buildHeaderLayout({ ...standardHeader, emission: standardHeader.emission || `${dateStr} ${timeStr}` }), brand, standardHeaderTopOnly ? "top" : "all")
+    : legacyTop;
+
+  return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
+<title>${title} — ${docNo}</title>
+<style>${normaZeroBaseStyles(orientation)}${extraStyles}</style>
+</head><body>
+${topHtml}
 
 <div class="nz-body-content">
 ${bodyHtml}
@@ -324,6 +376,7 @@ ${bodyHtml}
 ${signaturesHtml}
 
 ${patientFooterLine ? `<div style="font-size:6pt;font-weight:600;color:#64748b;padding-bottom:2pt;margin-bottom:2pt;border-bottom:0.5px dotted #cbd5e1;letter-spacing:0.2px;">${patientFooterLine}</div>` : ""}
+${standardHeader ? `<div style="font-size:6pt;color:#94a3b8;margin-bottom:2pt">Documento: ${docNo}</div>` : ""}
 <div class="nz-footer">
   <div><b>${whitelabel.institution.hospitalAbbreviation}</b> — ${whitelabel.platform.fullName}</div>
   <div>${whitelabel.compliance.normaZeroCode} v${whitelabel.compliance.normaZeroVersion} • ${whitelabel.compliance.legalReferences}</div>

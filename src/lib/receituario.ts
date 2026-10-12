@@ -7,9 +7,12 @@
 
 import {
   buildNormaZeroDocument,
+  buildStandardHeaderHtml,
   openPrintWindow,
   prepareLogo,
 } from "@/lib/printNormaZero";
+import { resolveHeaderPatient } from "@/lib/headerPatient";
+import type { HeaderInput } from "@/lib/documentHeaderLayout";
 import { isBlankReceituario, buildBlankReceituarioHtml } from "@/lib/receituarioBlank";
 
 // ── Tipos ───────────────────────────────────────────────────────────────────
@@ -75,29 +78,17 @@ export const RECEITUARIO_FREQUENCIES = [
 
 // ── Impressão ────────────────────────────────────────────────────────────────
 
-const TYPE_LABELS: Record<ReceituarioType, { title: string; sectorLabel: string; docPrefix: string }> = {
+const TYPE_LABELS: Record<ReceituarioType, { title: string; sectorLabel: string; docPrefix: string; complement?: string }> = {
   alta: { title: "Receituário de Alta", sectorLabel: "Alta Hospitalar", docPrefix: "RX-ALTA" },
-  ambulatorial: { title: "Receituário Médico", sectorLabel: "Ambulatório", docPrefix: "RX-AMB" },
-  simples: { title: "Receituário Médico", sectorLabel: "Assistência Médica", docPrefix: "RECEIT" },
-  controle_especial: { title: "Receituário de Controle Especial", sectorLabel: "Assistência Médica", docPrefix: "RECCE" },
+  ambulatorial: { title: "Receituário Médico", sectorLabel: "Ambulatório", docPrefix: "RX-AMB", complement: "Receituário ambulatorial" },
+  simples: { title: "Receituário Médico", sectorLabel: "Assistência Médica", docPrefix: "RECEIT", complement: "Receituário simples" },
+  controle_especial: { title: "Receituário de Controle Especial", sectorLabel: "Assistência Médica", docPrefix: "RECCE", complement: "Portaria SVS/MS nº 344/1998 · 2 vias" },
 };
 
 function buildReceituarioBody(data: ReceituarioData): string {
   // Receituario simples em branco (sem itens, so texto): corpo e apenas o texto digitado.
   const blank = data.type === "simples" && isBlankReceituario(data.items, data.free_text);
-  const sector = data.patient_bed && data.patient_sector
-    ? `${data.patient_bed} · ${data.patient_sector}`
-    : data.patient_bed || data.patient_sector || "";
-
-  const header = `
-    <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
-      <tr>
-        <td style="padding:4px 0;font-size:11px;"><strong>Paciente:</strong> ${data.patient_name}</td>
-        ${sector ? `<td style="padding:4px 0;font-size:11px;text-align:right;"><strong>Leito/Setor:</strong> ${sector}</td>` : ""}
-      </tr>
-    </table>
-    <hr style="border:none;border-top:1px solid #cbd5e1;margin:0 0 16px;" />
-  `;
+  // A identificação do paciente e o nome do documento vivem no cabeçalho padronizado.
 
   const itemsHtml = data.items.length === 0
     ? `<p style="font-size:11px;color:#94a3b8;font-style:italic;">Nenhum medicamento registrado.</p>`
@@ -131,17 +122,9 @@ function buildReceituarioBody(data: ReceituarioData): string {
     </div>
   ` : "";
 
-  const titleSection = `
-    <div style="text-align:center;margin-bottom:18px;">
-      <div style="font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:#0f172a;border:2px solid #0f172a;display:inline-block;padding:5px 20px;border-radius:4px;">
-        ${TYPE_LABELS[data.type].title}
-      </div>
-    </div>
-  `;
+  if (blank) return buildBlankReceituarioHtml(data.free_text ?? "");
 
-  if (blank) return titleSection + header + buildBlankReceituarioHtml(data.free_text ?? "");
-
-  return titleSection + header + itemsHtml + freeTextHtml + especialNote;
+  return itemsHtml + freeTextHtml + especialNote;
 }
 
 export async function printReceituario(
@@ -150,18 +133,35 @@ export async function printReceituario(
 ): Promise<void> {
   const logoDataUrl = await prepareLogo();
   const baseBody = buildReceituarioBody(data);
-  // Controle especial sai sempre em 2 vias (farmácia + paciente) — mesma
-  // regra que já existia no MedicalDocumentDialog antes de passar a gravar.
-  const bodyHtml = data.type === "controle_especial"
-    ? `<div style="border-bottom:2px dashed #94a3b8;padding-bottom:8px;margin-bottom:8px;"><div style="font-size:8px;color:#64748b;margin-bottom:4px;"><b>1ª VIA — FARMÁCIA</b></div>${baseBody}</div>
-       <div style="page-break-before:always;"></div>
-       <div><div style="font-size:8px;color:#64748b;margin-bottom:4px;"><b>2ª VIA — PACIENTE</b></div>${baseBody}</div>`
+  const { title, sectorLabel, docPrefix, complement } = TYPE_LABELS[data.type];
+  const isControle = data.type === "controle_especial";
+
+  // Controle especial: identificação completa (modelo assistencial); os demais:
+  // modelo documental (cadastro completo, sem alergias).
+  const patient = await resolveHeaderPatient(data.patient_id, {
+    name: (data.patient_name || "").toUpperCase(),
+    bed: data.patient_bed,
+    sector: data.patient_sector,
+  });
+  const headerInput: HeaderInput = {
+    model: isControle ? "assistencial" : "documental",
+    title,
+    complement,
+    emission: "",
+    patient,
+  };
+
+  // Controle especial sai sempre em 2 vias (farmácia + paciente), na MESMA folha,
+  // cada uma com o cabeçalho padronizado completo.
+  const bodyHtml = isControle
+    ? `<div style="border-bottom:2px dashed #94a3b8;padding-bottom:8px;margin-bottom:8px;">${buildStandardHeaderHtml(headerInput, logoDataUrl)}<div style="font-size:8px;color:#64748b;margin-bottom:4px;"><b>1ª VIA — FARMÁCIA</b></div>${baseBody}</div>
+       <div>${buildStandardHeaderHtml(headerInput, logoDataUrl)}<div style="font-size:8px;color:#64748b;margin-bottom:4px;"><b>2ª VIA — PACIENTE</b></div>${baseBody}</div>`
     : baseBody;
 
-  const { title, sectorLabel, docPrefix } = TYPE_LABELS[data.type];
   const html = buildNormaZeroDocument({
     title,
-    subtitle: data.type === "controle_especial" ? "Portaria SVS/MS nº 344/1998 — 2 vias" : data.patient_name,
+    standardHeader: headerInput,
+    suppressTopHeader: isControle,
     sectorLabel,
     hospitalName: hospitalName || "Hospital Municipal Djalma Marques (Socorrão I)",
     docCodePrefix: docPrefix,

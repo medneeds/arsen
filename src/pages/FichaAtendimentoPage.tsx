@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatAge } from "@/lib/patientAge";
 import { fetchNumerosAtendimento } from "@/lib/internacaoComPaciente";
 import { getNormaZeroMissingFields, NormaZeroBlockedDocument } from "@/components/NormaZeroPrintHeader";
+import { DocumentHeader } from "@/components/DocumentHeader";
 import { useHospital } from "@/contexts/HospitalContext";
 import { toast } from "sonner";
 import { whitelabel, getInstitutionalHeaderLines } from "@/config/whitelabel";
@@ -592,152 +593,23 @@ function PrintableFicha({
         }}
       />
 
-      {/* ========== CABEÇALHO INSTITUCIONAL (Norma Zero) ========== */}
+      {/* ========== CABEÇALHO PADRONIZADO ==========
+          Timbrado + faixa com o nome do documento (sem grade: esta ficha traz a sua própria
+          seção "Identificação do Paciente", com Raça/Cor e Cidade). O nº da ficha vai na faixa. */}
       <div style={{ position: "relative", zIndex: 1 }}>
+        <DocumentHeader
+          model="semPaciente"
+          title="Ficha de atendimento"
+          complement={`Nº ${patient.fichaNumber || "—"}`}
+          emission={patient.fichaDate}
+          width="182mm"
+        />
         <div
           style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "12px",
-            paddingBottom: "8px",
-          }}
-        >
-          {/* Logo institucional */}
-          <img
-            src={socorraoCross}
-            alt={inst.hospitalLogoAlt}
-            style={{
-              width: "62px",
-              height: "62px",
-              objectFit: "contain",
-              flexShrink: 0,
-            }}
-          />
-
-          {/* Hierarquia institucional centralizada */}
-          <div style={{ flex: 1, textAlign: "center" }}>
-            <div
-              style={{
-                fontSize: "7.5pt",
-                fontWeight: 600,
-                color: inkSoft,
-                letterSpacing: "0.6px",
-                textTransform: "uppercase",
-              }}
-            >
-              {headerLines[0]}
-            </div>
-            <div
-              style={{
-                fontSize: "8pt",
-                fontWeight: 600,
-                color: inkSoft,
-                letterSpacing: "0.5px",
-                textTransform: "uppercase",
-                marginTop: "1px",
-              }}
-            >
-              {headerLines[1]}
-            </div>
-            <div
-              style={{
-                fontSize: "11pt",
-                fontWeight: 800,
-                color: ink,
-                letterSpacing: "0.8px",
-                textTransform: "uppercase",
-                marginTop: "3px",
-                lineHeight: 1.15,
-              }}
-            >
-              {headerLines[2]}
-            </div>
-            <div
-              style={{
-                fontSize: "6.5pt",
-                color: inkMuted,
-                marginTop: "3px",
-                fontStyle: "italic",
-              }}
-            >
-              {inst.address}
-            </div>
-          </div>
-
-          {/* Bloco direito — número da ficha */}
-          <div
-            style={{
-              minWidth: "120px",
-              textAlign: "right",
-              borderLeft: `1px solid ${lineSoft}`,
-              paddingLeft: "10px",
-            }}
-          >
-            <div
-              style={{
-                fontSize: "6pt",
-                color: inkMuted,
-                letterSpacing: "0.8px",
-                textTransform: "uppercase",
-                fontWeight: 700,
-              }}
-            >
-              Ficha de Atendimento
-            </div>
-            <div
-              style={{
-                fontSize: "11pt",
-                fontWeight: 800,
-                color: ink,
-                marginTop: "2px",
-                fontVariantNumeric: "tabular-nums",
-                letterSpacing: "0.5px",
-              }}
-            >
-              Nº {patient.fichaNumber || "—"}
-            </div>
-            <div
-              style={{
-                fontSize: "6.5pt",
-                color: inkSoft,
-                marginTop: "2px",
-                fontVariantNumeric: "tabular-nums",
-              }}
-            >
-              {patient.fichaDate}
-            </div>
-          </div>
-        </div>
-
-        {/* Banda colorida institucional (cruz Socorrão) */}
-        <InstitutionalBand />
-      </div>
-
-      {/* ========== TÍTULO DO DOCUMENTO ========== */}
-      <div
-        style={{
-          textAlign: "center",
-          margin: "10px 0 8px 0",
-          position: "relative",
-          zIndex: 1,
-        }}
-      >
-        <div
-          style={{
-            fontSize: "12pt",
-            fontWeight: 800,
-            color: ink,
-            letterSpacing: "2px",
-            textTransform: "uppercase",
-          }}
-        >
-          Ficha de Atendimento
-        </div>
-        <div
-          style={{
+            textAlign: "center",
             fontSize: "7pt",
             color: inkSoft,
-            marginTop: "2px",
+            margin: "0 0 8px 0",
             letterSpacing: "0.4px",
           }}
         >

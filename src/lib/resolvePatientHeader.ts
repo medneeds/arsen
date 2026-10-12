@@ -34,6 +34,8 @@ export interface ResolvedPatientHeader {
   /** Endereço (pacientes.endereco) */
   address: string | null;
   phone: string | null;
+  /** Alergias do cadastro (pacientes.alergias). */
+  allergies: string | null;
   isUnidentified: boolean;
   unidentifiedCode: string | null;
   /** MIGRAÇÃO: sem tabela de registry no schema novo (sempre null) */
@@ -136,6 +138,7 @@ export async function resolvePatientHeader(
     motherName: null,
     address: null,
     phone: null,
+    allergies: null,
     isUnidentified: false,
     unidentifiedCode: null,
     registryId: null,
@@ -187,6 +190,7 @@ export async function resolvePatientHeader(
     motherName: paciente.nome_mae || null,
     address: paciente.endereco || null,
     phone: paciente.telefone || null,
+    allergies: paciente.alergias || null,
     isUnidentified: niDetection.isUnidentified,
     unidentifiedCode: null, // MIGRAÇÃO: sem coluna de código NI
     registryId: null, // MIGRAÇÃO: sem tabela de registry
