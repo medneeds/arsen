@@ -1,3 +1,4 @@
+import { splitDischargePrediction } from "@/lib/dischargeLabel";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { Pill, Stethoscope, ClipboardList, FolderOpen, History, ClipboardCheck, Lock, CheckCircle2, AlertTriangle, Printer, ShieldCheck, Timer, ArrowLeftRight, Activity } from "lucide-react";
@@ -554,10 +555,10 @@ export default function PacienteHubPage() {
       hda: a.clinical_history || soap.subjective || "",
       vitals: { pa: vs.pa, fc: vs.fc, fr: vs.fr, spo2: vs.spo2, tax: vs.temp, dx: vs.dx },
       exam: { general: pe.general, cv: pe.cardiovascular, resp: pe.respiratory, abd: pe.abdomen, ext: pe.extremities },
-      plan: a.initial_conduct || soap.plan || "",
+      plan: splitDischargePrediction(a.initial_conduct || soap.plan).plan,
       cidPrimary: a.cid_primary || "",
       cidSecondary: a.cid_secondary,
-      dischargePredictionLabel: "—",
+      dischargePredictionLabel: splitDischargePrediction(a.initial_conduct || soap.plan).label || "—",
       sapsPending,
     });
   };

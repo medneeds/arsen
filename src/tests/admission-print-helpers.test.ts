@@ -45,3 +45,16 @@ test("vazio e nulo viram string vazia", () => {
   assert.strictEqual(stripDischargeDays(null), "");
   assert.strictEqual(stripDischargeDays(undefined), "");
 });
+
+import { splitDischargePrediction } from "../lib/dischargeLabel.ts";
+test("previsao de alta sai do plano e vira campo proprio", () => {
+  const r = splitDischargePrediction("Manter ATB\nSuporte\n\nPrevisão de alta: 21/10/2026 (D+10)");
+  assert.equal(r.plan, "Manter ATB\nSuporte");
+  assert.equal(r.label, "21/10/2026 (D+10)");
+  const semPrev = splitDischargePrediction("Manter ATB", "");
+  assert.equal(semPrev.plan, "Manter ATB");
+  assert.equal(semPrev.label, "");
+  assert.equal(splitDischargePrediction("x", "Previsao de alta: 01/01/2027").label, "01/01/2027");
+  assert.equal(splitDischargePrediction("Previsão de alta: Sem previsão").plan, "");
+  assert.equal(splitDischargePrediction(null).plan, "");
+});

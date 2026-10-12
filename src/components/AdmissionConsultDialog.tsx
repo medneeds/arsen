@@ -1,3 +1,4 @@
+import { splitDischargePrediction } from "@/lib/dischargeLabel";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -262,10 +263,10 @@ export function AdmissionConsultDialog({ open, onOpenChange, patient, onChanged 
       hda: history?.clinical_history || subj || "",
       vitals: { pa: vs.pa, fc: vs.fc, fr: vs.fr, spo2: vs.spo2, tax: vs.temp, dx: vs.dx },
       exam: { general: pe.general, cv: pe.cardiovascular, resp: pe.respiratory, abd: pe.abdomen, ext: pe.extremities, neuro: pe.neurological, skin: pe.skin, other: pe.other },
-      plan: planTxt,
+      plan: splitDischargePrediction(planTxt, ass).plan,
       cidPrimary: history?.cid_primary || "",
       cidSecondary: history?.cid_secondary || undefined,
-      dischargePredictionLabel: ass.match(/Previs[aã]o de alta:\s*([^\n]+)/i)?.[1] || "—",
+      dischargePredictionLabel: splitDischargePrediction(planTxt, ass).label || "—",
       sapsPending,
     });
   };
