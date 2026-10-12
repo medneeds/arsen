@@ -25,6 +25,7 @@ import {
 import { useNavigate, useLocation } from "react-router-dom";
 import { Home as HomeIcon } from "lucide-react";
 import { whitelabel } from "@/config/whitelabel";
+import { CLINICAL_NAV_TABS } from "@/lib/clinicalNavTabs";
 import socorraoCrossLogo from "@/assets/hmdm-mark.png";
 import { useHospitalBranding } from "@/hooks/useHospitalBranding";
 import { useEffect, useState, lazy, Suspense } from "react";
@@ -60,6 +61,14 @@ import { ChevronDown, Repeat2 } from "lucide-react";
 // Sob demanda: so abre quando o usuario troca de perfil, mas era o ULTIMO
 // ponto arrastando framer-motion (127 KB) para o pacote de entrada de toda a
 // aplicacao — baixado antes de a tela de login aparecer.
+// Atalhos do bloco "Setor Ativo": icone e nome vem do cabecalho (fonte unica).
+const SETOR_ATIVO_TABS = CLINICAL_NAV_TABS.map((t) => ({
+  title: t.short,
+  fullTitle: t.label,
+  icon: t.icon,
+  link: t.path,
+}));
+
 const ProfileSwitcherDialog = lazy(() =>
   import("@/components/auth/ProfileSwitcherDialog").then(m => ({ default: m.ProfileSwitcherDialog })));
 import { Badge } from "@/components/ui/badge";
@@ -363,7 +372,7 @@ export function AppSidebar() {
     // Equipe Multi: sidebar multiprofissional
     if (accessProfile === "multi") {
       return [
-        { title: "Mapa de Leitos", icon: BedDouble, link: "/mapa", profiles: ["multi"] },
+        { title: "Mapa de Leitos", icon: LayoutDashboard, link: "/mapa", profiles: ["multi"] },
         { title: "Equipe Multi", icon: HeartPulse, profiles: ["multi"], items: [
           { name: "Enfermagem", link: "/mapa", profiles: ["multi"], badge: "Ativo" },
           { name: "Nutrição", link: "/mapa", profiles: ["multi"], badge: "Em breve" },
@@ -383,8 +392,8 @@ export function AppSidebar() {
           ? "Coord. Enfermagem"
           : "Coord. Multi";
       return [
-        { title: "Mapa de Leitos", icon: BedDouble, link: "/mapa", profiles: [accessProfile] },
-        { title: "Painel Clínico", icon: ClipboardList, link: "/painel-clinico", profiles: [accessProfile] },
+        { title: "Mapa de Leitos", icon: LayoutDashboard, link: "/mapa", profiles: [accessProfile] },
+        { title: "Painel Clínico", icon: ClipboardCheck, link: "/painel-clinico", profiles: [accessProfile] },
         { title: coordLabel, icon: Shield, profiles: [accessProfile], items: [
           { name: "Histórico de Paciente", link: "/global-search?intent=historico", profiles: [accessProfile] },
           { name: "Round Multiprofissional", link: "/round", profiles: [accessProfile] },
@@ -644,17 +653,13 @@ export function AppSidebar() {
               {/* Modo expandido: container com os 3 botões lado a lado */}
               {!isCollapsed && (
                 <div className="flex gap-1 p-1 rounded-lg bg-muted/40 border border-border/60">
-                  {[
-                    { title: "Início", icon: HomeIcon, link: "/" },
-                    { title: "Mapa", icon: BedDouble, link: "/mapa" },
-                    ...(accessProfile === "gestor" ? [] : [{ title: "Painel", icon: ClipboardList, link: "/painel-clinico" }]),
-                  ].map((tab) => {
+                  {SETOR_ATIVO_TABS.filter((t) => !(accessProfile === "gestor" && t.link === "/painel-clinico")).map((tab) => {
                     const isActive = location.pathname === tab.link;
                     return (
                       <button
                         key={tab.link}
                         onClick={() => { safeNavigate(tab.link); if (isMobile) setOpenMobile(false); }}
-                        title={`${tab.title} — ${currentSectorLabel || currentDepartment}`}
+                        title={`${tab.fullTitle} — ${currentSectorLabel || currentDepartment}`}
                         className={cn(
                           "flex-1 flex items-center justify-center gap-1 px-2 py-2 text-xs",
                           "transition-all duration-200 rounded-md font-medium tracking-wide",
@@ -671,17 +676,13 @@ export function AppSidebar() {
                 </div>
               )}
               {/* Modo colapsado: ícones soltos, centralizados, sem container extra */}
-              {isCollapsed && [
-                { title: "Início", icon: HomeIcon, link: "/" },
-                { title: "Mapa", icon: BedDouble, link: "/mapa" },
-                ...(accessProfile === "gestor" ? [] : [{ title: "Painel", icon: ClipboardList, link: "/painel-clinico" }]),
-              ].map((tab) => {
+              {isCollapsed && SETOR_ATIVO_TABS.filter((t) => !(accessProfile === "gestor" && t.link === "/painel-clinico")).map((tab) => {
                 const isActive = location.pathname === tab.link;
                 return (
                   <button
                     key={tab.link}
                     onClick={() => { safeNavigate(tab.link); if (isMobile) setOpenMobile(false); }}
-                    title={`${tab.title} — ${currentSectorLabel || currentDepartment}`}
+                    title={`${tab.fullTitle} — ${currentSectorLabel || currentDepartment}`}
                     className={cn(
                       "h-8 w-8 flex items-center justify-center rounded-md transition-all duration-200",
                       isActive

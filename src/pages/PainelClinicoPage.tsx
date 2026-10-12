@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, Eye, ClipboardList, Clock, AlertTriangle, Pencil, Check, X, Plus, Printer, User as UserIcon} from "lucide-react";
+import { Search, Eye, ClipboardList, Clock, AlertTriangle, Pencil, Check, X, Plus, Printer} from "lucide-react";
 import { RoundSectorPrintDialog } from "@/components/RoundSectorPrintDialog";
 import { PassagemPlantaoDialog } from "@/components/PassagemPlantaoDialog";
 import { DischargeStatusRibbon } from "@/components/DischargeStatusRibbon";
@@ -31,7 +31,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { PatientCockpit } from "@/components/PatientCockpit";
 import { PageLoader } from "@/components/PageLoader";
 import { usePageReady } from "@/hooks/usePageReady";
-import { useLastClinicalAction, type UltimaAcao } from "@/hooks/useLastClinicalAction";
 import { safeSetItem } from "@/lib/safeStorage";
 
 const parseTextArray = (input: string | string[] | undefined | null): string[] => {
@@ -106,17 +105,16 @@ const getSectorLabel = (sector: string) => {
   return map[sector] || sector;
 };
 
-const getSectorColor = (sector: string) => {
-  const map: Record<string, string> = {
-    red: "bg-critical/10 text-critical-on-soft border-critical-border",
-    yellow: "bg-warning/10 text-warning-on-soft border-warning-border",
-    blue: "bg-primary/10 text-foreground border-border",
-    outside: "bg-muted text-muted-foreground border-border",
-    ucc: "bg-primary/10 text-foreground border-border",
-  };
-  return map[sector] || "";
-};
+// Cor do numero de dias de internacao: mesmo padrao do mapa de leitos
+// (verde ate 7, amarelo 8 a 10, vermelho acima de 10).
+const daysToneClass = (days: number): string =>
+  days <= 7 ? "text-released-on-soft" : days <= 10 ? "text-warning-on-soft" : "text-critical-on-soft";
 
+// Cor da mortalidade prevista do SAPS 3 (so texto, sem caixa).
+const sapsMortalityClass = (m: number): string =>
+  m < 10 ? "text-released-on-soft" : m < 25 ? "text-warning-on-soft" : m < 50 ? "text-orange-600 dark:text-orange-400" : "text-critical-on-soft";
+
+const formatMortality = (m: number): string => `${String(m).replace(".", ",")}%`;
 
 const getPrescriptionStatus = (status: TodaysPrescriptionStatus): { label: string; variant: "default" | "secondary" | "outline" | "destructive"; dotColor: string; pulsing: boolean } => {
   // Bolinha verde vinculada à VALIDAÇÃO — não à assinatura digital
@@ -126,36 +124,16 @@ const getPrescriptionStatus = (status: TodaysPrescriptionStatus): { label: strin
   return { label: "Pendente", variant: "secondary", dotColor: "bg-warning", pulsing: true };
 };
 
+// Previsao de alta padronizada: so a data dd/mm/aaaa (sem "(D+x)"); "—" quando nao ha.
 const getDischargeText = (patient: Patient): string => {
   const predictions = parseTextArray(patient.utiDischargePrediction);
-  if (predictions.length > 0) {
-    // Suporta "2026-06-03" → "03/06/2026" e "2026-06-03 (D+7)" → "03/06/2026 (D+7)"
-    const raw = predictions[0];
-    return raw.replace(/\d{4}-\d{2}-\d{2}/, (m) => formatDateBR(m));
-  }
-  return "Sem previsão";
+  if (predictions.length === 0) return "—";
+  const raw = predictions[0];
+  const iso = raw.match(/\d{4}-\d{2}-\d{2}/);
+  if (iso) return formatDateBR(iso[0]);
+  const br = raw.match(/\d{2}\/\d{2}\/\d{4}/);
+  return br ? br[0] : "—";
 };
-
-// Linha discreta "Ultima: {tipo} por {autor} · ha X" — mostrada nas duas views
-// (card mobile e linha de tabela) quando houver ultima acao clinica.
-function LastActionLine({ action }: { action: UltimaAcao | undefined }) {
-  if (!action) return null;
-  let quando: string;
-  try {
-    quando = formatDistanceToNow(new Date(action.quando), { addSuffix: true, locale: ptBR });
-  } catch {
-    return null;
-  }
-  return (
-    <p className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-      <UserIcon className="h-3 w-3 shrink-0" />
-      <span className="line-clamp-1">
-        Última: {action.tipo}
-        {action.autor ? ` por ${action.autor}` : ""} · {quando}
-      </span>
-    </p>
-  );
-}
 
 // Documents list
 const DOCUMENTS = [
@@ -276,8 +254,6 @@ export default function PainelClinicoPage() {
 
   // Ultima acao clinica (evolucao OU prescricao) por paciente — QUEM fez e QUANDO.
   // Consultas EM LOTE (nao por paciente), chaveadas pelos ids do setor.
-  const sectorPatientIds = useMemo(() => filteredPatients.map((p) => p.id), [filteredPatients]);
-  const lastActionByPatient = useLastClinicalAction(sectorPatientIds);
 
   const handleInlineSave = useCallback(async (patientId: string, field: string, items: string[]) => {
     await updatePatient(patientId, { [field]: items } as Partial<Patient>);
@@ -445,9 +421,9 @@ export default function PainelClinicoPage() {
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-mono font-bold text-sm text-foreground">{patient.bedNumber}</span>
-                          <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0", getSectorColor(patient.sector))}>
+                          <span className="font-mono text-[11px] font-semibold text-muted-foreground">
                             {patient.sectorName || getSectorLabel(patient.sector)}
-                          </Badge>
+                          </span>
                           <span className={cn("inline-block h-2 w-2 rounded-full", prescStatus.dotColor, prescStatus.pulsing && "animate-pulse-soft")} />
                           <span className="text-xs text-muted-foreground">{prescStatus.label}</span>
                         </div>
@@ -469,7 +445,7 @@ export default function PainelClinicoPage() {
                         </div>
                         {(days !== null || (saps && saps.status !== 'pendente')) && (
                           <p className="text-xs text-muted-foreground mt-1">
-                            {days !== null && <span className={cn(days > 7 && "text-destructive font-medium")}>{days}d int.</span>}
+                            {days !== null && <span className={cn("font-medium", daysToneClass(days))}>{days}d int.</span>}
                             {saps && saps.status !== 'pendente' && <span className={cn(days !== null && "ml-2")}>SAPS {saps.score}</span>}
                           </p>
                         )}
@@ -483,7 +459,6 @@ export default function PainelClinicoPage() {
                             return `${first}${open.length > 1 ? ` +${open.length - 1}` : ""}`;
                           })()}</p>
                         )}
-                        <LastActionLine action={lastActionByPatient.get(patient.id)} />
                       </div>
                       <Button
                         variant="ghost"
@@ -504,14 +479,14 @@ export default function PainelClinicoPage() {
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className="w-24">Leito</TableHead>
-                   <TableHead>Paciente</TableHead>
-                  <TableHead className="w-24 text-center hidden sm:table-cell">SAPS 3</TableHead>
-                  <TableHead className="w-48">Pendências</TableHead>
+                  <TableHead className="w-20">Leito</TableHead>
+                  <TableHead className="w-[520px]">Paciente</TableHead>
+                  <TableHead className="w-36 text-center hidden sm:table-cell">SAPS 3</TableHead>
+                  <TableHead className="w-[300px]">Pendências</TableHead>
                   <TableHead className="w-28 text-center">Prescrição</TableHead>
                   <TableHead className="w-24 text-center hidden md:table-cell">Dias Int.</TableHead>
-                  <TableHead className="w-36 hidden md:table-cell">Previsão Alta</TableHead>
-                  <TableHead className="w-20 text-center">Ações</TableHead>
+                  <TableHead className="w-32 text-center hidden md:table-cell">Previsão Alta</TableHead>
+                  <TableHead className="w-28 text-center">Visualização</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -537,19 +512,16 @@ export default function PainelClinicoPage() {
                       onMouseEnter={() => prefetchPatient(qc, patient.id, patient.name)}
                       title="Clique para abrir o atendimento • Use o olho para pré-visualizar"
                     >
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <span className="patient-id font-mono font-bold text-foreground">{patient.bedNumber}</span>
-                          <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 whitespace-nowrap", getSectorColor(patient.sector))}>
-                            {patient.sectorName || getSectorLabel(patient.sector)}
-                          </Badge>
+                      <TableCell className="align-middle">
+                        <div className="patient-id font-mono font-bold leading-tight text-foreground">{patient.bedNumber}</div>
+                        <div className="font-mono text-[11px] font-semibold leading-tight text-muted-foreground whitespace-nowrap">
+                          {patient.sectorName || getSectorLabel(patient.sector)}
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <div>
+                      <TableCell className="align-middle">
+                        <div className="w-[480px] max-w-full">
                           {/* Nome + idade e, AO LADO (mesma linha, com wrap), a tarja de
-                              sinalizacao ou o badge de admissao pendente — sem ocupar
-                              linha propria. */}
+                              sinalizacao ou o badge de admissao pendente. */}
                           <div className="flex items-center gap-x-1.5 gap-y-1 flex-wrap">
                             <p className="min-w-0 font-medium text-foreground leading-tight hover:text-primary transition-colors">{patient.name}</p>
                             {ageLabel && <span className="shrink-0 text-xs text-muted-foreground">{ageLabel}</span>}
@@ -564,26 +536,26 @@ export default function PainelClinicoPage() {
                             )}
                           </div>
                           {diagnoses.length > 0 && (
-                            <p className="text-xs text-muted-foreground mt-1 line-clamp-1 max-w-[260px]">
-                              {diagnoses.join("  |  ")}
+                            <p className="text-xs text-muted-foreground mt-0.5 leading-snug line-clamp-2 break-words" title={diagnoses.join(" | ")}>
+                              {diagnoses.join(" | ")}
                             </p>
                           )}
-                          <LastActionLine action={lastActionByPatient.get(patient.id)} />
                         </div>
                       </TableCell>
-                      <TableCell className="text-center">
+                      <TableCell className="text-center align-middle">
                         {sapsScores[patient.id] ? (
                           sapsScores[patient.id].status === 'pendente' ? (
-                            <div className="flex flex-col items-center gap-1">
-                              <div className="flex items-center gap-1 text-warning-on-soft">
-                                <Clock className="h-3.5 w-3.5 animate-pulse" />
-                                <span className="text-xs font-medium">Pendente</span>
-                              </div>
-                              <SapsPendingMiniTimer pendingSince={sapsScores[patient.id].pending_since} />
-                              <Button
-                                size="sm"
-                                variant="default"
-                                className="h-6 px-2 text-xs gap-1 bg-warning hover:bg-warning text-white"
+                            <div
+                              className="inline-flex flex-col items-start gap-1 text-xs font-semibold text-warning-on-soft leading-tight"
+                              title={sapsScores[patient.id].pending_since ? `SAPS 3 pendente desde ${new Date(sapsScores[patient.id].pending_since as string).toLocaleString("pt-BR")}` : "SAPS 3 pendente"}
+                            >
+                              <span className="inline-flex items-center gap-1.5">
+                                <Clock className="h-3.5 w-3.5" />
+                                Pendente
+                              </span>
+                              <button
+                                type="button"
+                                className="inline-flex items-center gap-1.5 underline underline-offset-2 hover:opacity-80"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   const params = new URLSearchParams();
@@ -595,73 +567,56 @@ export default function PainelClinicoPage() {
                                   if (patient.sector) params.set("patientSector", patient.sector);
                                   navigate(`/saps3?${params.toString()}`);
                                 }}
-                                title="Completar ficha SAPS 3"
+                                title="Preencher ficha SAPS 3"
                               >
-                                <ClipboardList className="h-3 w-3" />
-                                Completar
-                              </Button>
+                                <Pencil className="h-3.5 w-3.5" />
+                                Preencher
+                              </button>
                             </div>
                           ) : (
-                            <div className="flex flex-col items-center gap-0.5">
+                            <div className="inline-flex flex-col items-center leading-tight">
                               <span className="font-mono font-bold text-sm text-foreground">{sapsScores[patient.id].score}</span>
-                              <Badge variant="outline" className={cn("text-[10px] px-1.5",
-                                sapsScores[patient.id].mortality < 10 ? "text-emerald-600 border-emerald-200 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-400" :
-                                sapsScores[patient.id].mortality < 25 ? "text-yellow-600 border-yellow-200 bg-yellow-50 dark:bg-yellow-900/20 dark:text-yellow-400" :
-                                sapsScores[patient.id].mortality < 50 ? "text-orange-600 border-orange-200 bg-orange-50 dark:bg-orange-900/20 dark:text-orange-400" :
-                                "text-red-600 border-red-200 bg-red-50 dark:bg-red-900/20 dark:text-red-400"
-                              )}>
-                                {sapsScores[patient.id].mortality}%
-                              </Badge>
+                              <span className={cn("text-xs font-semibold", sapsMortalityClass(sapsScores[patient.id].mortality))}>
+                                {formatMortality(sapsScores[patient.id].mortality)}
+                              </span>
                             </div>
                           )
                         ) : (
                           <span className="text-xs text-muted-foreground">—</span>
                         )}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="align-middle">
                         {pendencies.length > 0 ? (
-                          <div className="flex flex-col gap-1">
-                            {pendencies.map((p, i) => {
-                              const { done, text } = parsePendency(p);
+                          <p className="w-[280px] max-w-full text-xs leading-snug text-muted-foreground line-clamp-2 break-words" title={pendencies.map((x) => parsePendency(x).text).join(" | ")}>
+                            {pendencies.map((raw, i) => {
+                              const { done, text } = parsePendency(raw);
                               return (
-                                <span
-                                  key={i}
-                                  className={cn(
-                                    "text-xs break-words",
-                                    done ? "text-muted-foreground/70 line-through" : "text-muted-foreground",
-                                  )}
-                                >
-                                  {done && <Check className="inline h-3 w-3 mr-1 -mt-0.5" />}
+                                <span key={i} className={cn(done && "line-through text-muted-foreground/60")}>
+                                  {i > 0 && " | "}
                                   {text}
                                 </span>
                               );
                             })}
-                          </div>
+                          </p>
                         ) : (
                           <span className="text-xs text-muted-foreground">—</span>
                         )}
                       </TableCell>
-                      <TableCell className="text-center">
-                        <div className="flex items-center justify-center gap-2">
-                          <span className={cn(
-                            "inline-block h-2.5 w-2.5 rounded-full shrink-0",
-                            prescStatus.dotColor,
-                            prescStatus.pulsing && "animate-pulse-soft"
-                          )} />
-                          <Badge variant={prescStatus.variant} className="text-xs">
-                            {prescStatus.label}
-                          </Badge>
-                        </div>
+                      <TableCell className="text-center align-middle">
+                        <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", prescStatus.dotColor)} />
+                          {prescStatus.label}
+                        </span>
                       </TableCell>
-                      <TableCell className="text-center">
-                        <span className={cn("font-mono font-semibold text-sm", days !== null && days > 7 ? "text-destructive" : "text-foreground")}>
+                      <TableCell className="text-center align-middle">
+                        <span className={cn("font-mono font-bold text-sm", days !== null ? daysToneClass(days) : "text-muted-foreground")}>
                           {days !== null ? days : "—"}
                         </span>
                       </TableCell>
-                      <TableCell>
-                        <span className="text-xs text-muted-foreground">{getDischargeText(patient)}</span>
+                      <TableCell className="text-center align-middle">
+                        <span className="text-xs tabular-nums text-foreground/80">{getDischargeText(patient)}</span>
                       </TableCell>
-                      <TableCell className="text-center">
+                      <TableCell className="text-center align-middle">
                         <Button
                           variant="ghost"
                           size="sm"

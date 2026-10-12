@@ -1,14 +1,10 @@
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { Home, LayoutDashboard, ClipboardCheck } from "lucide-react";
+import { CLINICAL_NAV_TABS } from "@/lib/clinicalNavTabs";
 import { cn } from "@/lib/utils";
 import { useDepartment, SECTOR_DISPLAY } from "@/contexts/DepartmentContext";
 import { useIsGestor } from "@/hooks/useIsGestor";
 
-const ALL_TABS = [
-  { label: "Início", path: "/", icon: Home },
-  { label: "Mapa de leitos", path: "/mapa", icon: LayoutDashboard },
-  { label: "Painel clínico", path: "/painel-clinico", icon: ClipboardCheck },
-];
+const ALL_TABS = CLINICAL_NAV_TABS;
 
 interface ClinicalNavTabsProps {
   variant?: "default" | "dark";
