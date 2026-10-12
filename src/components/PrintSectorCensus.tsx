@@ -1,5 +1,5 @@
 import type { Patient } from "@/types/patient";
-import { getMainPageTitle } from "@/config/whitelabel";
+import { DocumentHeader } from "@/components/DocumentHeader";
 
 /**
  * Censo do setor para impressao (documento administrativo em lista) — o que o
@@ -82,23 +82,14 @@ export function PrintSectorCensus({ patients, sectorLabel, atendimentoById }: Pr
         }
       `}</style>
 
-      {/* Cabecalho do documento: identidade (sistema/hospital) + titulo + meta. */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", borderBottom: "2px solid #111", paddingBottom: 8, marginBottom: 10 }}>
-        <div>
-          <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, color: "#555" }}>
-            {getMainPageTitle()}
-          </div>
-          <div style={{ fontSize: 17, fontWeight: 800, marginTop: 2 }}>
-            Censo do Setor — {sectorLabel || "Setor"}
-          </div>
-        </div>
-        <div style={{ fontSize: 10, color: "#444", textAlign: "right", lineHeight: 1.5 }}>
-          <div>Emitido em {dateStr}</div>
-          <div style={{ fontWeight: 700, color: "#111" }}>
-            {rows.length} paciente{rows.length !== 1 ? "s" : ""}
-          </div>
-        </div>
-      </div>
+      {/* Cabecalho padronizado (sem grade de paciente: documento agregado). */}
+      <DocumentHeader
+        model="semPaciente"
+        title={`Censo do setor — ${sectorLabel || "Setor"}`}
+        complement={`${rows.length} paciente${rows.length !== 1 ? "s" : ""}`}
+        emission={dateStr}
+        width="100%"
+      />
 
       {rows.length === 0 ? (
         <div style={{ fontSize: 12, color: "#777", padding: "24px 0", textAlign: "center" }}>

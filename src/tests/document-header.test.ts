@@ -161,3 +161,12 @@ test("variante compacta (2 vias): mesmo conteudo, fontes e logo menores", () => 
   // O padrao nao muda: sem opcoes sai igual ao modo normal.
   assert.equal(renderHeaderHtml(l, brand, "all", {}), normal);
 });
+
+test("assistencial dense: grade enxuta com alergias e linhas extras", () => {
+  const l = buildHeaderLayout({ model: "assistencial", dense: true, title: "x", emission: "e", patient: { ...pac, allergies: "Dipirona" }, extras: [["Diagnósticos", "Sepse"]] });
+  const labels = l.rows.flat().map((c) => c.label);
+  assert.deepEqual(labels.slice(0, 3), ["Paciente", "Leito", "Prontuário"]);
+  assert.ok(["Idade", "Setor", "Atendimento", "Alergias", "Diagnósticos"].every((x) => labels.includes(x)));
+  assert.ok(!labels.includes("Peso") && !labels.includes("Sexo") && !labels.includes("Nascimento"));
+  assert.equal(find(l, "Alergias")?.tone, "allergyAlert");
+});

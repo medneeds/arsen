@@ -66,6 +66,11 @@ export interface HeaderInput {
    * O modelo documental sempre os mostra.
    */
   includeRegistry?: boolean;
+  /**
+   * Grade enxuta do modelo assistencial (folhas que precisam caber em uma pagina,
+   * ex.: Round): Paciente/Leito/Prontuario + Idade/Setor/Atendimento/Alergias.
+   */
+  dense?: boolean;
   /** Dados proprios do documento (CID, Caracter, Solicitante...). So entram se tiverem valor. */
   extras?: Array<[label: string, value: string | null | undefined]>;
 }
@@ -149,7 +154,17 @@ export function buildHeaderLayout(input: HeaderInput): HeaderLayout {
     { label: "Prontuário", value: dash(p.record), strong: true },
   ]);
 
-  if (input.model === "assistencial") {
+  if (input.model === "assistencial" && input.dense) {
+    const allergy = clean(p.allergies) || SEM_RELATO;
+    rows.push(
+      ...packPairs([
+        { label: "Idade", value: dash(p.age) },
+        { label: "Setor", value: dash(p.sector) },
+        { label: "Atendimento", value: dash(formatAtendimento(p.atendimento)) },
+        { label: "Alergias", value: allergy, alertLabel: true, tone: isSemAlergia(allergy) ? "allergyOk" : "allergyAlert", strong: true },
+      ]),
+    );
+  } else if (input.model === "assistencial") {
     const allergy = clean(p.allergies) || SEM_RELATO;
     rows.push(
       ...packPairs([

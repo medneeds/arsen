@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { useCurrentDoctor } from "@/hooks/useCurrentDoctor";
 import { useUnifiedMedicationCatalog, type ControlledCatalogItem } from "@/hooks/useUnifiedMedicationCatalog";
 import { openPrintWindow } from "@/lib/printNormaZero";
+import { DocumentHeader } from "@/components/DocumentHeader";
 import { getNormaZeroMissingFields, NormaZeroBlockedDocument } from "@/components/NormaZeroPrintHeader";
 
 export type NotificationType = 'Receita Amarela' | 'Receita Azul' | 'Controle Especial 2 vias';
@@ -662,27 +663,15 @@ function PrintablePsychotropicForm({
         const meta = NOTIFICATION_META[page.type];
         return (
           <div key={page.type} style={{ pageBreakAfter: pageIdx < pages.length - 1 ? 'always' : 'auto' }}>
-            {/* === Norma Zero institutional header === */}
-            <div style={{ borderBottom: '1px solid #0f172a', paddingBottom: '4px', marginBottom: '4px', textAlign: 'center' }}>
-              <div style={{ fontSize: '6.5pt', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Prefeitura Municipal · Secretaria Municipal de Saúde</div>
-              <div style={{ fontSize: '10pt', fontWeight: 800, color: '#0c4a6e', textTransform: 'uppercase', letterSpacing: '0.3px' }}>{hospitalName || 'HOSPITAL MUNICIPAL'}</div>
-              <div style={{ fontSize: '6pt', color: '#64748b' }}>{hospitalAddress || 'Endereço da unidade hospitalar'}</div>
-              {/* Faixa cruz colorida institucional */}
-              <div style={{ display: 'flex', height: '3px', marginTop: '4px' }}>
-                <div style={{ flex: 1, backgroundColor: '#dc2626' }} />
-                <div style={{ flex: 1, backgroundColor: '#ea580c' }} />
-                <div style={{ flex: 1, backgroundColor: '#facc15' }} />
-                <div style={{ flex: 1, backgroundColor: '#16a34a' }} />
-                <div style={{ flex: 1, backgroundColor: '#0054a6' }} />
-              </div>
-            </div>
-
-            {/* Doc-bar */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '6pt', color: '#64748b', marginBottom: '6px', padding: '2px 4px', backgroundColor: '#f1f5f9' }}>
-              <span><strong>Doc:</strong> {docCode}</span>
-              <span><strong>Setor:</strong> {patient.unit || '—'}</span>
-              <span><strong>Emissão:</strong> {date}</span>
-            </div>
+            {/* Cabeçalho padronizado (só o topo: timbrado + faixa). A identificação do emitente
+                e do paciente permanece no bloco regulatório (Portaria 344) abaixo. */}
+            <DocumentHeader
+              model="semPaciente"
+              title="Receituário — Portaria 344/98"
+              complement={`Doc: ${docCode}`}
+              emission={date}
+              width="100%"
+            />
 
             {/* Faixa do tipo de receita */}
             <div style={{ border: `2px solid ${meta.color}`, borderBottom: 'none', padding: '6px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: `${meta.color}10` }}>

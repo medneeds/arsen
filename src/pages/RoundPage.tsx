@@ -691,6 +691,7 @@ export default function RoundPage() {
           patientBed={selectedPatient.bed_number}
           patientAge={selectedPatient.age}
           patientRecord={selectedPatient.record}
+          patientId={selectedPatient.id}
           diagnosis={selectedPatient.diagnoses}
           roundDate={roundDate}
           responses={responses}

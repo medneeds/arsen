@@ -100,6 +100,12 @@ export function NirPdfExport({ metrics, predictions = [] }: Props) {
 
     const html = buildNormaZeroDocument({
       title: "Relatório Operacional — NIR",
+      standardHeader: {
+        model: "semPaciente",
+        title: "Relatório operacional — NIR",
+        complement: "Indicadores em tempo real",
+        emission: "",
+      },
       subtitle: "Indicadores em tempo real",
       sectorLabel: "Núcleo Interno de Regulação (NIR)",
       hospitalName: currentHospital?.name,

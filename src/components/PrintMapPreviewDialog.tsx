@@ -1,8 +1,9 @@
 import { Patient } from "@/types/patient";
 import { Button } from "@/components/ui/button";
-import { X, Download, ClipboardList } from "lucide-react";
+import { X, Download } from "lucide-react";
 import { useRef } from "react";
 import { whitelabel, getMainPageTitle } from "@/config/whitelabel";
+import { DocumentHeader } from "@/components/DocumentHeader";
 import { PrintableSectorSection } from "./PrintableSectorSection";
 
 interface PrintMapPreviewDialogProps {
@@ -212,75 +213,16 @@ export function PrintMapPreviewDialog({
               aspectRatio: '297/210', /* A4 Landscape ratio */
             }}
           >
-            {/* Watermark */}
-            <img 
-              src={whitelabel.logos.networkFull} 
-              alt={whitelabel.institution.networkLogoAlt}
-              className="watermark"
-              style={{ 
-                position: 'absolute',
-                top: '5mm',
-                right: '10mm',
-                height: isCompact ? '35px' : '45px',
-                width: 'auto',
-                opacity: 0.35,
-              }}
+            {/* Cabeçalho padronizado (sem grade de paciente: documento agregado). */}
+            <DocumentHeader
+              model="semPaciente"
+              title="Mapa de leitos"
+              complement={`Modo ${mode === 'compact' ? 'retraído' : 'detalhado'}`}
+              emission={new Date().toLocaleString('pt-BR')}
+              width="100%"
             />
-            
-            {/* Header */}
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '10px', 
-              marginBottom: isCompact ? '10px' : '14px', 
-              paddingBottom: isCompact ? '8px' : '10px', 
-              borderBottom: '2px solid #d1d5db',
-              position: 'relative',
-              zIndex: 1
-            }}>
-              <div style={{ 
-                height: isCompact ? '32px' : '36px', 
-                width: isCompact ? '32px' : '36px', 
-                background: 'linear-gradient(135deg, #ef4444, #eab308, #3b82f6)', 
-                borderRadius: '6px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0
-              }}>
-                <ClipboardList style={{ height: isCompact ? '16px' : '18px', width: isCompact ? '16px' : '18px', color: '#ffffff' }} />
-              </div>
-              <h1 style={{ 
-                fontSize: isCompact ? '16pt' : '18pt', 
-                fontWeight: 'bold', 
-                textTransform: 'uppercase',
-                margin: 0,
-                color: '#000000',
-                letterSpacing: '0.5px'
-              }}>
-                {getMainPageTitle()}
-              </h1>
-            </div>
-            
-            {/* Metadata */}
-            <div style={{ 
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr 1fr',
-              gap: '12px',
-              fontSize: isCompact ? '8.5pt' : '9.5pt', 
-              color: '#4b5563', 
-              marginBottom: isCompact ? '10px' : '14px', 
-              paddingBottom: isCompact ? '8px' : '10px', 
-              borderBottom: '1px solid #e5e7eb',
-              backgroundColor: '#f9fafb',
-              padding: '8px',
-              borderRadius: '4px'
-            }}>
-              <div><strong>Data:</strong> {new Date().toLocaleDateString('pt-BR')}</div>
-              <div><strong>Hora:</strong> {new Date().toLocaleTimeString('pt-BR')}</div>
-              <div><strong>Modo:</strong> {mode === 'compact' ? 'Retraído' : 'Detalhado'}</div>
-            </div>
-            
+            <div style={{ height: '8px' }} />
+
             {/* Sectors */}
             <div>
               <PrintableSectorSection

@@ -4,7 +4,7 @@
  * preenchimento manual à beira-leito.
  */
 import { ROUND_SECTIONS, STATUS_OPTIONS, type RoundStatus } from "@/data/roundChecklistSchema";
-import { openPrintWindow } from "@/lib/printNormaZero";
+import { openPrintWindow, prepareLogo, buildStandardHeaderHtml } from "@/lib/printNormaZero";
 import { getSectorDisplayLabel } from "@/utils/bedNaming";
 import { format } from "date-fns";
 
@@ -28,7 +28,7 @@ const escape = (v: unknown) =>
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
 
-function renderPage(it: RoundPrintItem, blank: boolean): string {
+function renderPage(it: RoundPrintItem, blank: boolean, logoDataUrl: string): string {
   const formattedDate = (() => {
     try {
       return format(new Date(it.roundDate + "T12:00:00"), "dd/MM/yyyy");
@@ -72,43 +72,42 @@ function renderPage(it: RoundPrintItem, blank: boolean): string {
     </table>`;
   }).join("");
 
+  // Cabecalho padronizado (modelo assistencial, grade enxuta para caber em 1 folha).
+  const diagnoses = it.patientDiagnoses?.filter(Boolean) ?? [];
+  const allergies = it.patientAllergies?.filter(Boolean) ?? [];
+  const header = buildStandardHeaderHtml(
+    {
+      model: "assistencial",
+      dense: true,
+      title: `Round diário multiprofissional${blank ? " — folha de preenchimento" : ""}`,
+      complement: `Data do round: ${formattedDate}`,
+      emission: "",
+      patient: {
+        name: it.patientName,
+        bed: it.patientBed,
+        sector: getSectorDisplayLabel(it.patientSector),
+        record: it.patientRecord,
+        age: it.patientAge,
+        allergies: allergies.join(" • "),
+      },
+      extras: [["Diagnósticos", diagnoses.join(" • ")]],
+    },
+    logoDataUrl,
+  );
+
   return `<section class="round-page">
-    <header class="hdr">
-      <div class="hosp">Hospital Municipal Djalma Marques – Socorrão I</div>
-      <div class="title">ROUND DIÁRIO MULTIPROFISSIONAL${blank ? " — FOLHA DE PREENCHIMENTO" : ""}</div>
-    </header>
-    <table class="ident">
-      <tbody>
-        <tr>
-          <td class="lbl">Paciente</td><td>${escape(it.patientName)}</td>
-          <td class="lbl">Data</td><td>${formattedDate}</td>
-          <td class="lbl">Idade</td><td>${escape(it.patientAge || "")}</td>
-        </tr>
-        <tr>
-          <td class="lbl">Setor</td><td>${escape(getSectorDisplayLabel(it.patientSector))}</td>
-          <td class="lbl">Leito</td><td>${escape(it.patientBed)}</td>
-          <td class="lbl">Prontuário</td><td>${escape(it.patientRecord || "—")}</td>
-        </tr>
-        ${(it.patientDiagnoses?.filter(Boolean).length ?? 0) > 0 ? `<tr>
-          <td class="lbl">Diagnósticos</td>
-          <td colspan="5" style="font-size:7pt">${escape(it.patientDiagnoses!.filter(Boolean).join(" • "))}</td>
-        </tr>` : ""}
-        ${(it.patientAllergies?.filter(Boolean).length ?? 0) > 0 ? `<tr>
-          <td class="lbl" style="color:#dc2626">⚠ Alergias</td>
-          <td colspan="5" style="color:#dc2626;font-weight:700;font-size:7pt">${escape(it.patientAllergies!.filter(Boolean).join(" • "))}</td>
-        </tr>` : ""}
-      </tbody>
-    </table>
+    ${header}
     <div class="legend">${legend}</div>
     ${sectionsHtml}
     <div class="obsbox"><b>Observações importantes:</b> ${escape((!blank && it.observations) || "")}</div>
   </section>`;
 }
 
-export function printRoundDocument(items: RoundPrintItem[], blank = false) {
+export async function printRoundDocument(items: RoundPrintItem[], blank = false) {
   if (!items.length) return;
+  const logoDataUrl = await prepareLogo();
   const generatedAt = format(new Date(), "dd/MM/yyyy 'às' HH:mm");
-  const pages = items.map((it) => renderPage(it, blank)).join("");
+  const pages = items.map((it) => renderPage(it, blank, logoDataUrl)).join("");
 
   const html = `<!doctype html><html><head><meta charset="utf-8"/>
 <title>Round Multiprofissional</title>
@@ -118,12 +117,7 @@ export function printRoundDocument(items: RoundPrintItem[], blank = false) {
   body { margin: 0; font-family: Arial, sans-serif; font-size: 7pt; line-height: 1.3; color: #000; background: #fff; }
   .round-page { padding: 4mm 6mm; page-break-after: always; }
   .round-page:last-child { page-break-after: auto; }
-  .hdr { text-align: center; border-bottom: 1px solid #000; padding-bottom: 3mm; margin-bottom: 3mm; }
-  .hdr .hosp { font-size: 8pt; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
-  .hdr .title { font-size: 10pt; font-weight: bold; margin-top: 2mm; }
   table { border-collapse: collapse; width: 100%; }
-  .ident td { border: 0.5px solid #000; padding: 1.5mm 2mm; font-size: 7pt; }
-  .ident td.lbl { font-weight: bold; background: #f3f4f6; width: 12%; }
   .legend { display: flex; gap: 4mm; flex-wrap: wrap; margin: 3mm 0; font-size: 6.5pt; }
   table.sec { margin-bottom: 2mm; page-break-inside: avoid; }
   table.sec th, table.sec td { border: 0.5px solid #000; padding: 1mm 2mm; font-size: 7pt; vertical-align: top; }

@@ -1,8 +1,9 @@
 import { Patient } from "@/types/patient";
 import { Button } from "@/components/ui/button";
-import { X, Download, ClipboardList, ChevronDown } from "lucide-react";
+import { X, Download, ChevronDown } from "lucide-react";
 import { useRef, useState } from "react";
 import { whitelabel, getPrintTitle } from "@/config/whitelabel";
+import { DocumentHeader } from "@/components/DocumentHeader";
 import { PrintableSectorSection } from "./PrintableSectorSection";
 import {
   DropdownMenu,
@@ -273,75 +274,16 @@ export function PrintUtiPreviewDialog({
               lineHeight: isCompact ? '1.25' : '1.35',
             }}
           >
-            {/* Watermark */}
-            <img 
-              src={whitelabel.logos.networkFull} 
-              alt={whitelabel.institution.networkLogoAlt}
-              className="watermark"
-              style={{ 
-                position: 'absolute',
-                top: '4mm',
-                right: '8mm',
-                height: isCompact ? '30px' : '38px',
-                width: 'auto',
-                opacity: 0.30,
-              }}
+            {/* Cabeçalho padronizado (sem grade de paciente: documento agregado). */}
+            <DocumentHeader
+              model="semPaciente"
+              title={getPrintTitle(printTitle)}
+              complement={`${sectorLabel} · ${totalPatients} pacientes`}
+              emission={new Date().toLocaleString('pt-BR')}
+              width="100%"
             />
-            
-            {/* Header */}
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '8px', 
-              marginBottom: isCompact ? '8px' : '10px', 
-              paddingBottom: isCompact ? '6px' : '8px', 
-              borderBottom: '2px solid #d1d5db',
-              position: 'relative',
-              zIndex: 1
-            }}>
-              <div style={{ 
-                height: isCompact ? '28px' : '32px', 
-                width: isCompact ? '28px' : '32px', 
-                background: 'linear-gradient(135deg, #3b82f6, #eab308)', 
-                borderRadius: '5px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0
-              }}>
-                <ClipboardList style={{ height: isCompact ? '14px' : '16px', width: isCompact ? '14px' : '16px', color: '#ffffff' }} />
-              </div>
-              <h1 style={{ 
-                fontSize: isCompact ? '14pt' : '16pt', 
-                fontWeight: 'bold', 
-                margin: 0,
-                color: '#000000',
-                letterSpacing: '0.4px'
-              }}>
-                {getPrintTitle(printTitle)}
-              </h1>
-            </div>
-            
-            {/* Metadata */}
-            <div style={{ 
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr 1fr 1fr',
-              gap: '10px',
-              fontSize: isCompact ? '7.5pt' : '8.5pt', 
-              color: '#4b5563', 
-              marginBottom: isCompact ? '8px' : '10px', 
-              paddingBottom: isCompact ? '6px' : '8px', 
-              borderBottom: '1px solid #e5e7eb',
-              backgroundColor: '#f9fafb',
-              padding: '6px 8px',
-              borderRadius: '3px'
-            }}>
-              <div><strong>Data:</strong> {new Date().toLocaleDateString('pt-BR')}</div>
-              <div><strong>Hora:</strong> {new Date().toLocaleTimeString('pt-BR')}</div>
-              <div><strong>Total:</strong> {totalPatients} pacientes</div>
-              <div><strong>Setor:</strong> {sectorLabel}</div>
-            </div>
-            
+            <div style={{ height: '8px' }} />
+
             {/* Sectors */}
             <div className="content-area">
               {sectorsToDisplay.map(({ key, patients }) => {

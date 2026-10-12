@@ -1,6 +1,7 @@
 import { format, isValid, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { whitelabel } from "@/config/whitelabel";
+import { DocumentHeader } from "@/components/DocumentHeader";
 import { TrendingUp, TrendingDown, UserPlus, Users, UserCheck, UserX, ArrowRightLeft } from "lucide-react";
 
 const safeFormatDate = (dateValue: string | Date, formatString: string): string => {
@@ -54,7 +55,7 @@ export function PrintableDashboard({
     <div style={{
       border: '1px solid #e2e8f0',
       borderRadius: '6px',
-      padding: '10px 12px',
+      padding: '8px 10px',
       background: 'linear-gradient(135deg, #ffffff, #f8fafc)',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
@@ -79,7 +80,7 @@ export function PrintableDashboard({
 
   return (
     <div className="hidden print:block" style={{ 
-      backgroundColor: '#ffffff', color: '#000000', padding: '8mm 10mm', minHeight: '100vh',
+      backgroundColor: '#ffffff', color: '#000000', padding: '0 2mm',
       fontFamily: "'Inter', 'Segoe UI', system-ui, sans-serif"
     }}>
       <style>{`
@@ -90,23 +91,17 @@ export function PrintableDashboard({
         }
       `}</style>
 
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '12px', paddingBottom: '8px', borderBottom: '1.5px solid #0f172a' }}>
-        <div>
-          <h1 style={{ fontSize: '18pt', fontWeight: '800', color: '#0f172a', margin: '0 0 4px 0', letterSpacing: '0.5px' }}>Dashboard de Gestão</h1>
-          <div style={{ fontSize: '8pt', color: '#475569', lineHeight: '1.6' }}>
-            <span style={{ fontWeight: '700' }}>{departmentLabels[department] || department}</span>
-            <span style={{ margin: '0 6px', color: '#cbd5e1' }}>|</span>
-            {safeFormatDate(dateRange.from, "dd/MM/yyyy")} — {safeFormatDate(dateRange.to, "dd/MM/yyyy")}
-            <span style={{ margin: '0 6px', color: '#cbd5e1' }}>|</span>
-            Gerado: {safeFormatDate(new Date(), "dd/MM/yyyy HH:mm")}
-          </div>
-        </div>
-        <img src={whitelabel.logos.networkFull} alt={whitelabel.institution.networkLogoAlt} style={{ height: '36px', objectFit: 'contain', opacity: 0.3 }} />
-      </div>
+      {/* Cabeçalho padronizado (sem grade de paciente: documento agregado). */}
+      <DocumentHeader
+        model="semPaciente"
+        title="Dashboard de gestão"
+        complement={`${departmentLabels[department] || department} · ${safeFormatDate(dateRange.from, "dd/MM/yyyy")} — ${safeFormatDate(dateRange.to, "dd/MM/yyyy")}`}
+        emission={safeFormatDate(new Date(), "dd/MM/yyyy HH:mm:ss")}
+        width="100%"
+      />
 
       {/* KPIs */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px', marginBottom: '12px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px', marginBottom: '8px' }}>
         <KPICard title="Solicitações" value={kpis.requests.value} change={kpis.requests.change} icon={UserPlus} />
         <KPICard title="Pacientes Ativos" value={kpis.activePatients.value} change={kpis.activePatients.change} icon={Users} />
         <KPICard title="Altas" value={kpis.discharges.value} change={kpis.discharges.change} icon={UserCheck} />

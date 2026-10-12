@@ -2,7 +2,7 @@ import { useRef } from "react";
 import type { Patient } from "@/types/patient";
 import { Button } from "@/components/ui/button";
 import { X, Printer, ClipboardList } from "lucide-react";
-import { getMainPageTitle } from "@/config/whitelabel";
+import { DocumentHeader } from "@/components/DocumentHeader";
 import { getSectorDisplayLabel } from "@/utils/bedNaming";
 
 /**
@@ -31,11 +31,6 @@ interface Props {
 const HANDOVER_CSS = `
   .pdp-root { width: 100%; max-width: 900px; margin: 0 auto; background: #fff; color: #111;
     font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; padding: 20px 22px; }
-  .pdp-head { display: flex; justify-content: space-between; align-items: flex-end;
-    border-bottom: 2px solid #111; padding-bottom: 8px; margin-bottom: 14px; }
-  .pdp-head h1 { font-size: 15px; font-weight: 700; letter-spacing: .3px; }
-  .pdp-head .pdp-sub { font-size: 11px; color: #444; margin-top: 2px; }
-  .pdp-head .pdp-meta { font-size: 11px; color: #444; text-align: right; }
   .pdp-patient { border: 1px solid #c9c9c9; border-radius: 6px; margin-bottom: 12px;
     padding: 8px 10px; page-break-inside: avoid; break-inside: avoid; }
   .pdp-patient-head { display: flex; align-items: baseline; gap: 8px; font-size: 12px;
@@ -130,16 +125,15 @@ export function PassagemPlantaoDialog({ open, onClose, patients, sectorLabel }: 
       {/* Preview */}
       <div className="flex-1 overflow-auto p-4">
         <div ref={printRef} className="pdp-root">
-          <div className="pdp-head">
-            <div>
-              <h1>Passagem de Plantão</h1>
-              <div className="pdp-sub">{getMainPageTitle()} · {sectorLabel || "Setor"}</div>
-            </div>
-            <div className="pdp-meta">
-              {dateStr}<br />
-              {eligible.length} paciente{eligible.length !== 1 ? "s" : ""}
-            </div>
-          </div>
+          {/* Cabeçalho padronizado (sem grade de paciente: documento agregado). */}
+          <DocumentHeader
+            model="semPaciente"
+            title={`Passagem de plantão — ${sectorLabel || "Setor"}`}
+            complement={`${eligible.length} paciente${eligible.length !== 1 ? "s" : ""}`}
+            emission={dateStr}
+            width="100%"
+          />
+          <div style={{ height: "10px" }} />
 
           {eligible.length === 0 ? (
             <div className="pdp-none">Nenhum paciente ativo neste setor.</div>
