@@ -17,7 +17,7 @@ import {
   Search, AlertTriangle, UtensilsCrossed, Droplets, Syringe, History,
   ClipboardList, X, Check, Shield, Wind, TestTube, FileText, FlaskConical,
   GripVertical, CheckSquare, Square, Pause, MoreHorizontal, CopyPlus, Lock, Eye, EyeOff, ShieldCheck, Fingerprint,
-  Zap, Loader2, CalendarDays, Circle, RotateCw, Package, List, AlignJustify, ChevronUp, Wand2, BedDouble, PlusCircle, ChevronDown, User as UserIcon } from "lucide-react";
+  Zap, Loader2, CalendarDays, Circle, RotateCw, Package, List, AlignJustify, ChevronUp, Wand2, BedDouble, PlusCircle, ChevronDown } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
@@ -8846,35 +8846,6 @@ const PrescricaoPage = () => {
         <PatientIdentityBar
           patientId={urlPatientIdForRecord}
           className="px-3 pt-3 pb-2"
-          rightSlot={
-            <>
-              {currentPrescriptionId && (
-                <div className="flex items-center justify-end gap-2 flex-wrap">
-                  <Badge variant="outline" className="text-xs h-4 px-2 text-primary border-primary/30">
-                    Salva
-                  </Badge>
-                </div>
-              )}
-              {(createdByProfessional || digitalSignature) && (
-                <div className="flex flex-col items-end gap-0.5 mt-1">
-                  {createdByProfessional && (
-                    <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                      <UserIcon className="h-2.5 w-2.5" />
-                      Criada por <strong className="text-foreground font-medium">{createdByProfessional.nome}</strong>
-                      {createdByProfessional.crm && ` · CRM ${createdByProfessional.crm}`}
-                    </span>
-                  )}
-                  {digitalSignature && (
-                    <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                      <UserIcon className="h-2.5 w-2.5" />
-                      Validada por <strong className="text-foreground font-medium">{digitalSignature.doctorName}</strong>
-                      {digitalSignature.crm && ` · CRM ${digitalSignature.crm}`}
-                    </span>
-                  )}
-                </div>
-              )}
-            </>
-          }
         />
 
         {/* Skeleton do cabecalho clinico ate os dados (peso/alergias/identidade)
