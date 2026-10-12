@@ -5,6 +5,11 @@ import { useQuery } from "@tanstack/react-query";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
 import { PatientIdentityBar } from "@/components/PatientIdentityBar";
 import { SapsPendingAlert } from "@/components/SapsPendingAlert";
+import { Switch } from "@/components/ui/switch";
+import {
+  supportsContraste, isContrasteInerente, comContraste, procedureDisplayName,
+  observationsWithContraste, contrasteObservation, cleanDiagnosisText,
+} from "@/lib/apacContraste";
 
 import { PatientCockpit } from "@/components/PatientCockpit";
 import { useCockpitPatient } from "@/hooks/useCockpitPatient";
@@ -2400,7 +2405,14 @@ async function buildApacHtmlFromProcedimentoRequest(request: any): Promise<strin
     cidPrimary: "",
     cidSecondary: "",
     cidAssociated: "",
-    observations: request?.notes || "",
+    // O nome gravado ja traz "— COM CONTRASTE"; a linha do campo 37 e refeita a partir dele.
+    observations: observationsWithContraste(
+      request?.notes || "",
+      items.map((it) => {
+        const raw = typeof it === "string" ? it : (it?.name || String(it ?? ""));
+        return raw.replace(/\s\([^)]+\)\s*$/, "");
+      }),
+    ),
     doctor: { name: doctor.name, cpf: "", crm: doctor.crm },
     today: format(new Date(), "dd/MM/yyyy"),
   });
@@ -2528,6 +2540,8 @@ interface ApacSelectedProcedure {
   name: string;
   qty: number;
   instrumento: "APAC" | "AIH" | null; // derivado do SIGTAP; null = sem código
+  /** Com contraste (TC/RM). Padrao: sem. Angio e sempre com (ver apacContraste.ts). */
+  contraste?: boolean;
 }
 
 function CollapsibleInfoCard({ title, summary, badge, children }: { title: string; summary: string; badge?: string; children: React.ReactNode }) {
@@ -2671,11 +2685,11 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
         // Diagnóstico e justificativa a partir da própria internação.
         // MIGRAÇÃO: CID (primary_cid10/secondary_cid10) não tem coluna em
         // internacoes → cidPrimary/cidSecondary degradados (ficam em branco).
-        setDiagnosis((internacao as any).hipotese_diagnostica || "");
+        setDiagnosis(cleanDiagnosisText((internacao as any).hipotese_diagnostica));
         const admParts: string[] = [];
         if ((internacao as any).queixa_principal)     admParts.push(`QP: ${(internacao as any).queixa_principal}`);
         if ((internacao as any).historia_clinica)     admParts.push(`HDA: ${(internacao as any).historia_clinica}`);
-        if ((internacao as any).hipotese_diagnostica) admParts.push(`HD: ${(internacao as any).hipotese_diagnostica}`);
+        if ((internacao as any).hipotese_diagnostica) admParts.push(`HD: ${cleanDiagnosisText((internacao as any).hipotese_diagnostica)}`);
         if ((internacao as any).conduta_inicial)      admParts.push(`Conduta: ${(internacao as any).conduta_inicial}`);
         if (admParts.length > 0) {
           setObservations(prev => {
@@ -2786,7 +2800,10 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
       const { data: createdRow, error } = await supabase.from("solicitacoes_exame").insert({
         internacao_id: internacaoId,
         categoria: "procedimento", // taxonomia preservada
-        itens: selectedProcedures.map(p => ({ name: p.code ? `${p.name} (${p.code})` : p.name })),
+        itens: selectedProcedures.map(p => {
+          const nome = procedureDisplayName(p); // inclui "— COM CONTRASTE" quando for o caso
+          return { name: p.code ? `${nome} (${p.code})` : nome };
+        }),
         prioridade: "rotina",
         status: "pendente",
         indicacao_clinica: null, // o laudo APAC já contempla o procedimento no corpo
@@ -2848,12 +2865,12 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
         city: patientCity,
         uf: patientUF,
       },
-      procedures: selectedProcedures,
+      procedures: selectedProcedures.map((p) => ({ code: p.code, name: procedureDisplayName(p), qty: p.qty })),
       diagnosis,
       cidPrimary,
       cidSecondary,
       cidAssociated,
-      observations,
+      observations: observationsWithContraste(observations, selectedProcedures.map(procedureDisplayName)),
       doctor: { name: doctorName, cpf: doctorCPF, crm: doctorCRM },
       today: todayFormatted,
     };
@@ -2896,7 +2913,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
       const parts: string[] = [];
       if ((data as any).queixa_principal) parts.push(`QP: ${(data as any).queixa_principal}`);
       if ((data as any).historia_clinica) parts.push(`HDA: ${(data as any).historia_clinica}`);
-      if ((data as any).hipotese_diagnostica) parts.push(`HD: ${(data as any).hipotese_diagnostica}`);
+      if ((data as any).hipotese_diagnostica) parts.push(`HD: ${cleanDiagnosisText((data as any).hipotese_diagnostica)}`);
       if ((data as any).conduta_inicial) parts.push(`Conduta: ${(data as any).conduta_inicial}`);
       if (parts.length === 0) { toast.info("Admissão sem dados preenchidos"); return; }
       setObservations(prev => prev ? prev + "\n\n" + parts.join("\n") : parts.join("\n"));
@@ -2931,7 +2948,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
         .select("hipotese_diagnostica")
         .eq("id", validPid)
         .maybeSingle();
-      const diagFromInternacao = (internacao as any)?.hipotese_diagnostica || "";
+      const diagFromInternacao = cleanDiagnosisText((internacao as any)?.hipotese_diagnostica);
       if (diagFromInternacao) setDiagnosis(diagFromInternacao);
 
       // Observações a partir do SOAP
@@ -3136,6 +3153,20 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
                           <p className="text-xs font-medium text-foreground truncate">{proc.name}</p>
                           <p className="text-xs font-mono text-muted-foreground">{proc.code}</p>
                         </div>
+                        {supportsContraste(proc.name, proc.code) && (
+                          <div className="flex items-center gap-2 border-l border-border pl-3 shrink-0">
+                            <Switch
+                              checked={comContraste(proc)}
+                              disabled={isContrasteInerente(proc.name)}
+                              onCheckedChange={(v) => setSelectedProcedures((prev) => prev.map((p) => (p.code === proc.code ? { ...p, contraste: v } : p)))}
+                              aria-label={`Contraste — ${proc.name}`}
+                            />
+                            <span className={cn("text-xs font-medium whitespace-nowrap", comContraste(proc) ? "text-primary" : "text-muted-foreground")}>
+                              {comContraste(proc) ? "Com contraste" : "Sem contraste"}
+                              {isContrasteInerente(proc.name) && <span className="ml-1 font-normal text-muted-foreground">(inerente ao exame)</span>}
+                            </span>
+                          </div>
+                        )}
                         <Input type="number" min={1} max={99} value={proc.qty} onChange={(e) => { const qty = parseInt(e.target.value) || 1; setSelectedProcedures((prev) => prev.map((p) => (p.code === proc.code ? { ...p, qty } : p))); }} className="w-12 h-7 text-center text-xs" />
                         <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => removeProcedure(proc.code)}><Trash2 className="h-3.5 w-3.5" /></Button>
                       </div>
@@ -3485,7 +3516,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
               <tr><td colSpan={5} className="sec">Procedimento(s) Solicitado(s)</td></tr>
               <tr>
                 <td><span className="lbl">15 — Cód. Proc. Principal</span><div className="val-mono">{selectedProcedures[0]?.code || ""}</div></td>
-                <td colSpan={3}><span className="lbl">16 — Nome do Procedimento Principal</span><div className="val">{selectedProcedures[0]?.name || ""}</div></td>
+                <td colSpan={3}><span className="lbl">16 — Nome do Procedimento Principal</span><div className="val">{selectedProcedures[0] ? procedureDisplayName(selectedProcedures[0]) : ""}</div></td>
                 <td><span className="lbl">17 — Qtde.</span><div className="val" style={{ textAlign: "center" }}>{selectedProcedures[0]?.qty || ""}</div></td>
               </tr>
 
@@ -3497,7 +3528,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
                 return (
                   <tr key={idx}>
                     <td><span className="lbl">{fn} — Código</span><div className="val-mono">{proc?.code || ""}</div></td>
-                    <td colSpan={3}><span className="lbl">{fn + 1} — Nome do Procedimento</span><div className="val">{proc?.name || ""}</div></td>
+                    <td colSpan={3}><span className="lbl">{fn + 1} — Nome do Procedimento</span><div className="val">{proc ? procedureDisplayName(proc) : ""}</div></td>
                     <td><span className="lbl">{fn + 2} — Qtde.</span><div className="val" style={{ textAlign: "center" }}>{proc?.qty || ""}</div></td>
                   </tr>
                 );
@@ -3512,7 +3543,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
                 <td><span className="lbl">36 — CID-10 Causas Assoc.</span><div className="val-mono">{cidAssociated.toUpperCase()}</div></td>
               </tr>
               <tr>
-                <td colSpan={5} className="obs-cell"><span className="lbl">37 — Observações</span><div className="obs-space">{observations}</div></td>
+                <td colSpan={5} className="obs-cell"><span className="lbl">37 — Observações</span><div className="obs-space">{observationsWithContraste(observations, selectedProcedures.map(procedureDisplayName))}</div></td>
               </tr>
 
               {/* ── SOLICITAÇÃO ── */}
