@@ -9,7 +9,8 @@ import { PatientIdentityBar } from "@/components/PatientIdentityBar";
 import ReactMarkdown from "react-markdown";
 import { format, addDays, isAfter, setHours, setMinutes, setSeconds, startOfDay } from "date-fns";
 import { ArsenMark } from "@/components/brand/ArsenMark";
-import { NormaZeroPrintHeader, NormaZeroPrintFooter, generatePrintDocCode } from "@/components/NormaZeroPrintHeader";
+import { NormaZeroPrintFooter, generatePrintDocCode } from "@/components/NormaZeroPrintHeader";
+import { DocumentHeader } from "@/components/DocumentHeader";
 import { ptBR } from "date-fns/locale";
 import {
   Pill, Plus, Trash2, Copy, Printer, Save, RefreshCw,
@@ -861,6 +862,8 @@ interface PatientHeader {
   weight: string;
   allergies: string;
   motherName: string;
+  /** Nome social (cadastro) — só aparece no cabeçalho do impresso quando preenchido. */
+  socialName?: string;
   address: string;
   city: string;
   encounterCode?: string;
@@ -6142,6 +6145,7 @@ const PrescricaoPage = () => {
       };
       apply('name', registryFull.fullName);
       apply('motherName', registryFull.motherName);
+      apply('socialName', registryFull.socialName);
       apply('birthDate', registryFull.birthDate);
       // Idade: sincroniza a calculada ao vivo (a partir de birthDate) — para
       // de depender do valor semeado uma única vez via URL (?patientAge=),
@@ -11761,22 +11765,8 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
     return parsed.toLocaleDateString('pt-BR');
   };
 
-  // BUGFIX (07/08/2026): a versão antiga fazia
-  //   patient.sex.toLowerCase().startsWith('m') ? 'M' : 'F'
-  // — qualquer valor que não começasse por 'm' (ex: cadastro com sexo "Outro",
-  // dado legado com espaço/formatação diferente) virava Feminino por padrão,
-  // silenciosamente. Reportado: paciente do sexo masculino impresso como
-  // feminino, não reproduzível sob demanda — exatamente o padrão de dado
-  // malformado, não de bug determinístico. Checagem agora é explícita: só
-  // rotula M ou F quando o valor bate exatamente; qualquer outra coisa
-  // (incluindo "Outro") mostra o valor real, nunca assume.
-  const formatSexCode = (sex?: string | null): string => {
-    if (!sex) return '—';
-    const v = sex.trim().toUpperCase();
-    if (v === 'M' || v === 'MASCULINO') return 'M';
-    if (v === 'F' || v === 'FEMININO') return 'F';
-    return sex.trim(); // ex: "Outro" — nunca vira F por padrão
-  };
+  // Sexo por extenso (M/F → Masculino/Feminino; qualquer outro valor sai como cadastrado, nunca
+  // assume F) agora vive em lib/documentHeaderLayout.ts (formatSexLabel), com teste.
 
   const isSimple = (cat: PrescriptionCategory) => ['nutrition', 'care'].includes(cat);
 
@@ -11810,54 +11800,29 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
       )}
       {/* Bloco cabeçalho + paciente — não pode ser separado do corpo da prescrição */}
       <div style={{ pageBreakInside: 'auto', breakInside: 'auto' }}>
-      {/* Cabeçalho institucional Norma Zero (MAN.05-001) */}
-      <NormaZeroPrintHeader
-        documentLabel="Prescrição Médica Diária"
-        documentCode={prescriptionDate}
-        documentSubtitle={docCode}
+      {/* Cabeçalho padronizado (modelo assistencial): timbrado compacto + faixa com o
+          nome do documento + identificação do paciente. Código do documento no rodapé. */}
+      <DocumentHeader
+        model="assistencial"
+        title="Prescrição médica diária"
+        emission={prescriptionDate}
         width="186mm"
-        variant="compact"
+        patient={{
+          name: patient.name,
+          socialName: patient.socialName,
+          bed: patient.bed,
+          sector: patient.unit,
+          record: patient.record,
+          atendimento: patient.encounterCode,
+          birthDate: safeFormatPatientDate(patient.birthDate),
+          age: patient.age,
+          sex: patient.sex,
+          weight: patient.weight ? `${patient.weight}kg` : '',
+          sectorAdmission: safeFormatPatientDate(patient.utiAdmissionDate || patient.admissionDate),
+          allergies: patient.allergies,
+          motherName: patient.motherName,
+        }}
       />
-
-      {/* Patient Data — compact with allergy inline */}
-      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '5px', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-        <tbody>
-          <tr>
-            <td style={headerCellStyle}>Paciente</td>
-            <td style={{ ...cellStyle, fontWeight: 800, fontSize: '8.5pt' }} colSpan={3}>{patient.name || '—'}</td>
-            <td style={headerCellStyle}>Leito</td>
-            <td style={{ ...cellStyle, fontWeight: 700 }}>{patient.bed || '—'}</td>
-            <td style={headerCellStyle}>Prontuário</td>
-            <td style={{ ...cellStyle, fontWeight: 700 }}>{patient.record || '—'}</td>
-          </tr>
-          <tr>
-            <td style={headerCellStyle}>Idade</td>
-            <td style={cellStyle}>{patient.age || '—'}</td>
-            <td style={headerCellStyle}>Peso</td>
-            <td style={cellStyle}>{patient.weight ? `${patient.weight}kg` : '—'}</td>
-            <td style={headerCellStyle}>Sexo</td>
-            <td style={cellStyle}>{formatSexCode(patient.sex)}</td>
-            <td style={headerCellStyle}>Adm. no setor</td>
-            <td style={cellStyle}>{safeFormatPatientDate(patient.utiAdmissionDate || patient.admissionDate)}</td>
-          </tr>
-          <tr>
-            <td style={headerCellStyle}>Nascimento</td>
-            <td style={cellStyle}>{safeFormatPatientDate(patient.birthDate)}</td>
-            <td style={headerCellStyle}>Setor</td>
-            <td style={cellStyle}>{patient.unit || '—'}</td>
-            <td style={headerCellStyle}>Atendimento</td>
-            <td style={cellStyle}>{patient.encounterCode ? `#${patient.encounterCode}` : '—'}</td>
-            <td style={{ ...headerCellStyle, color: '#dc2626', fontSize: '6pt' }}>ALERGIAS</td>
-            {(() => {
-              const a = patient.allergies || 'Sem relato';
-              const ok = isSemAlergia(a);
-              return (
-                <td style={{ ...cellStyle, fontWeight: 700, color: ok ? '#166534' : '#991b1b', fontSize: '7.5pt', backgroundColor: ok ? '#f0fdf4' : '#fef2f2' }}>{a}</td>
-              );
-            })()}
-          </tr>
-        </tbody>
-      </table>
 
       {/* QP / Sinais Vitais / Classificação de Risco removidos do PDF —
           informações pertencem a outros documentos (evolução / triagem). */}
@@ -12167,7 +12132,7 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
       {/* Rodapé Norma Zero (MAN.05-001).
           A identificação do paciente vem do rodapé fixo (#prescription-page-footer),
           repetido em todas as páginas — não duplicar aqui. */}
-      <NormaZeroPrintFooter width="186mm" showAddress />
+      <NormaZeroPrintFooter width="186mm" showAddress documentCode={docCode} />
     </div>
   );
 }

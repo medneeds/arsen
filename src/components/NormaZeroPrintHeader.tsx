@@ -227,7 +227,10 @@ export function NormaZeroPrintFooter({
   width = "182mm",
   showAddress = false,
   patientInfo,
+  documentCode,
 }: {
+  /** Codigo do documento (ex.: PRESC-20261011-1910). Quando presente, aparece no rodape. */
+  documentCode?: string;
   width?: string;
   /** Quando true, adiciona uma 2ª linha discreta com o endereço institucional
    *  (usado quando o header está em variant="compact" e o endereço foi removido dele). */
@@ -279,6 +282,9 @@ export function NormaZeroPrintFooter({
         >
           {patientLine}
         </div>
+      )}
+      {documentCode && (
+        <div style={{ fontSize: "6pt", color: inkMuted, marginBottom: "2pt" }}>Documento: {documentCode}</div>
       )}
       <div
         style={{
