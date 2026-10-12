@@ -134,14 +134,14 @@ export function PatientSwitcher({ variant = "dark", large = false }: PatientSwit
         <DropdownMenuTrigger asChild>
           <button className={cn(
             "flex items-center rounded-md font-medium transition-all",
-            large ? "gap-2 px-4 py-2 text-sm font-semibold max-w-[min(75vw,40rem)] border" : "gap-1 px-2 py-1 text-xs max-w-[200px]",
+            large ? "gap-2 px-3 py-1.5 text-[11px] font-semibold max-w-[min(75vw,40rem)] border" : "gap-1 px-2 py-1 text-xs max-w-[200px]",
             variant === "dark"
               ? cn("text-white hover:bg-white/10", large && "bg-white/12 border-white/35")
               : cn("text-foreground hover:bg-muted", large && "bg-muted/60 border-border/60")
           )}>
             {large && patientBed ? (
               <span className={cn(
-                "shrink-0 rounded px-2 py-0.5 text-xs font-extrabold",
+                "shrink-0 rounded px-1.5 py-0.5 text-[10px] font-extrabold",
                 variant === "dark" ? "bg-white text-primary" : "bg-primary text-primary-foreground",
               )}>{patientBed}</span>
             ) : (

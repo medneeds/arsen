@@ -50,14 +50,14 @@ export function BreadcrumbBar({
   const isInstitutional = variant === "institutional";
   // Com paciente + abas de modulo (desktop): barra maior, abas em linha propria de largura total.
   const big = showModules && showPatient;
-  const chevron = cn("hidden sm:inline-block flex-shrink-0", big ? "h-4 w-4" : "h-3.5 w-3.5", isInstitutional ? "text-primary-foreground/80" : "text-muted-foreground/50");
+  const chevron = cn("hidden sm:inline-block flex-shrink-0", big ? "h-[13px] w-[13px]" : "h-3.5 w-3.5", isInstitutional ? "text-primary-foreground/80" : "text-muted-foreground/50");
 
   return (
     <nav
       aria-label="Hierarquia do setor"
       className={cn(
         "print:hidden flex items-center justify-between gap-2 sm:gap-2 px-2 sm:px-3 py-1 sm:py-2 shadow-sm rounded-lg sm:rounded-lg backdrop-blur-sm",
-        big && "sm:px-4 sm:pt-3 sm:pb-0",
+        big && "sm:px-3.5 sm:pt-2.5 sm:pb-0",
         // Mobile: nowrap + horizontal scroll keeps the bar to a single row.
         // Desktop: wraps as before so all chips stay visible.
         "flex-nowrap overflow-x-auto sm:flex-wrap sm:overflow-visible scrollbar-none",
@@ -75,7 +75,7 @@ export function BreadcrumbBar({
           : undefined
       }
     >
-      <div className={cn("flex items-center flex-nowrap sm:flex-wrap gap-x-1.5 sm:gap-x-2 gap-y-1.5 text-[11px] sm:text-xs font-medium tracking-wide min-w-0", big && "sm:gap-x-3 sm:text-sm")}>
+      <div className={cn("flex items-center flex-nowrap sm:flex-wrap gap-x-1.5 sm:gap-x-2 gap-y-1.5 text-[11px] sm:text-xs font-medium tracking-wide min-w-0", big && "sm:gap-x-2.5")}>
         <SidebarTrigger
           className={cn(
             "flex-shrink-0 h-9 w-9 sm:h-7 sm:w-7",
@@ -103,13 +103,13 @@ export function BreadcrumbBar({
         <span
           className={cn(
             "hidden sm:inline-flex items-center gap-2 rounded-md border font-medium",
-            big ? "px-4 py-2" : "px-3 py-1",
+            big ? "px-3 py-1.5" : "px-3 py-1",
             isInstitutional
               ? "bg-white/25 text-white border-white/40 backdrop-blur shadow-md font-semibold"
               : "bg-muted/60 text-muted-foreground border-border/50",
           )}
         >
-          <Building2 className={big ? "h-4 w-4" : "h-3.5 w-3.5"} />
+          <Building2 className={big ? "h-[13px] w-[13px]" : "h-3.5 w-3.5"} />
           <span className="uppercase tracking-wider">{whitelabel.institution.hospitalAbbreviation}</span>
         </span>
 

@@ -82,7 +82,7 @@ export function ClinicalModuleTabs({ variant = "dark", layout = "pill" }: Clinic
                 aria-selected={isActive}
                 onClick={() => handleTabClick(tab.path)}
                 className={cn(
-                  "flex flex-1 items-center justify-center gap-2.5 px-3 py-3.5 text-sm font-semibold tracking-wide border-b-[3px] transition-colors duration-150",
+                  "flex flex-1 items-center justify-center gap-2 px-3 py-3.5 text-[11px] font-semibold tracking-wide border-b-[3px] transition-colors duration-150",
                   variant === "dark"
                     ? isActive
                       ? "bg-white/15 text-white border-white"
@@ -92,7 +92,7 @@ export function ClinicalModuleTabs({ variant = "dark", layout = "pill" }: Clinic
                       : "text-foreground/75 border-transparent hover:bg-muted hover:text-foreground"
                 )}
               >
-                <tab.icon className="h-[18px] w-[18px] shrink-0" />
+                <tab.icon className="h-[13px] w-[13px] shrink-0" />
                 <span>{tab.label}</span>
               </button>
             );
