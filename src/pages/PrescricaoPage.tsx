@@ -131,6 +131,7 @@ import { useUnifiedMedicationCatalog, invalidateMedicationCatalog } from "@/hook
 import { PsychotropicFormDialog, isPsychotropicMedication } from "@/components/PsychotropicFormDialog";
 import { usePatientCid } from "@/hooks/usePatientCid";
 import { TevProtocolDialog } from "@/components/TevProtocolDialog";
+import { hasNewItemIds, isAdditionsGated, shouldExitAddingMode } from "@/lib/prescriptionGate";
 import { HighAlertGuideDialog } from "@/components/HighAlertGuideDialog";
 import { InsulinTherapyDialog, SlidingEditor } from "@/components/prescription/InsulinTherapyDialog";
 import { describeInsulinPlan, type InsulinPlan } from "@/lib/insulinTherapy";
@@ -4819,7 +4820,37 @@ const PrescricaoPage = () => {
     return initialPatientBed ? getDemoPrescriptionItems(initialPatientBed) : [];
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  const [items, setItems] = useState<PrescriptionItem[]>(initialDemoItems);
+  const [items, setItemsRaw] = useState<PrescriptionItem[]>(initialDemoItems);
+  // Trava de inclusao: com a prescricao toda validada, itens NOVOS so entram depois
+  // de "Adicionar itens" (addingItems). O ref e atualizado a cada render (ver
+  // additionsGated) para que setItems, estavel, leia o estado vigente.
+  const additionsGatedRef = useRef(false);
+  const GATE_MSG = 'Prescrição validada: clique em "Adicionar itens" para incluir novos itens.';
+  const guardAdd = useCallback((): boolean => {
+    if (!additionsGatedRef.current) return true;
+    toast.info(GATE_MSG, { id: 'rx-add-gate' });
+    return false;
+  }, []);
+  // Rede de seguranca unica para TODOS os caminhos de inclusao (catalogo, templates,
+  // extra, nutricao, insulina, ATM...): se a trava esta ativa e a atualizacao traria
+  // ids novos, ela e descartada com aviso. Atualizacoes que so mapeiam/removem/
+  // reordenam itens (mesmos ids) passam. Carregamentos completos (outra versao,
+  // renovacao) usam setItemsRaw.
+  const setItems = useCallback(
+    (update: PrescriptionItem[] | ((prev: PrescriptionItem[]) => PrescriptionItem[])) => {
+      setItemsRaw((prev) => {
+        const next = typeof update === 'function' ? update(prev) : update;
+        if (additionsGatedRef.current) {
+          if (hasNewItemIds(prev, next)) {
+            queueMicrotask(() => toast.info(GATE_MSG, { id: 'rx-add-gate' }));
+            return prev;
+          }
+        }
+        return next;
+      });
+    },
+    [],
+  );
   const [activeTab, setActiveTab] = useState<PrescriptionCategory>(initialDemoItems.length > 0 ? 'medication' : 'nutrition');
   // Sugestões de posologia para o último item adicionado
   const [posologySuggestion, setPosologySuggestion] = useState<{
@@ -5096,7 +5127,7 @@ const PrescricaoPage = () => {
     isLoadingRef.current = true; // novo paciente — aguarda carregamento antes de avaliar dirty
     loadGenerationRef.current += 1; // ← cancela qualquer load em andamento
     draftRestoreAttemptedRef.current = false;
-  }, [urlPatientId, searchParams]);
+  }, [urlPatientId, searchParams, setItems]);
 
 
   // Repeat previous prescription
@@ -5127,6 +5158,7 @@ const PrescricaoPage = () => {
   const [doseCalcInitialMed, setDoseCalcInitialMed] = useState<string | undefined>(undefined);
 
   const applyDoseCalculatorResult = useCallback((r: DoseCalculatorResult) => {
+    if (!guardAdd()) return;
     const instructions = [
       r.diluent && r.diluentVolume ? `Diluir em ${r.diluentVolume} mL ${r.diluent}` : null,
       r.infusionTime ? `Infundir em ${r.infusionTime}` : null,
@@ -5151,7 +5183,7 @@ const PrescricaoPage = () => {
       infusionTime: r.infusionTime,
     } as any]);
     toast.success("Item adicionado pela calculadora", { description: `${r.medication} — ${r.dose} ${r.schedule}` });
-  }, []);
+  }, [setItems, guardAdd]);
 
   // Validation: check if past 05:00 renewal time
   const isPastRenewalTime = useMemo(() => {
@@ -5421,6 +5453,23 @@ const PrescricaoPage = () => {
     const activeItems = items.filter(i => i.status === 'active');
     return activeItems.length > 0 && activeItems.every(isItemValidatedToday);
   }, [items, isItemValidatedToday]);
+
+  // Modo "Adicionar itens": destrava a inclusao numa prescricao ja validada.
+  // Fecha sozinho quando tudo volta a ficar validado (ou pendentes removidos) e
+  // ao trocar de prescricao/paciente.
+  const [addingItems, setAddingItems] = useState(false);
+  const pendingSeenRef = useRef(false);
+  const additionsGated = isAdditionsGated(allItemsValidated, addingItems);
+  additionsGatedRef.current = additionsGated;
+  useEffect(() => {
+    if (!addingItems) { pendingSeenRef.current = false; return; }
+    if (!allItemsValidated) { pendingSeenRef.current = true; return; }
+    if (shouldExitAddingMode(addingItems, allItemsValidated, pendingSeenRef.current)) {
+      pendingSeenRef.current = false;
+      setAddingItems(false);
+    }
+  }, [addingItems, allItemsValidated]);
+  useEffect(() => { setAddingItems(false); }, [currentPrescriptionId, internacaoId]);
 
   // Itens ativos que NÃO foram revalidados após o corte 05:00 de hoje
   const renewalPendingCount = useMemo(() => {
@@ -5885,7 +5934,7 @@ const PrescricaoPage = () => {
         return;
       }
       if (Array.isArray(parsed?.items) && parsed.items.length > 0) {
-        setItems((parsed.items as PrescriptionItem[]).map(normalizeLegacyIntervalFlags));
+        setItemsRaw((parsed.items as PrescriptionItem[]).map(normalizeLegacyIntervalFlags));
       }
     } catch {}
     draftRestoreAttemptedRef.current = true;
@@ -5980,7 +6029,7 @@ const PrescricaoPage = () => {
     } else {
       toast.success(isRevalidationPostCutoff ? "Item revalidado (nova versão)" : "Item validado");
     }
-  }, [persistItems]);
+  }, [persistItems, setItems]);
 
   // === Pré-validação clínica: alertas (alergia / interações graves / duplicidade) ===
   // O médico é alertado mas NÃO bloqueado: pode confirmar ciência e prosseguir.
@@ -6531,6 +6580,7 @@ const PrescricaoPage = () => {
   };
 
   const addItem = (med: MedicationEntry, opts?: { fromGlobalSearch?: boolean }) => {
+    if (!guardAdd()) return;
     const fromGlobalSearch = opts?.fromGlobalSearch === true;
     // Track usage for favorites/ranking (best-effort, non-blocking)
     if (med.id && med.category !== 'nonstandard') {
@@ -6872,7 +6922,7 @@ const PrescricaoPage = () => {
       names: newItems.map(it => it.name),
     });
     toast.success(`${newItems.length} ${(newItems.length) === 1 ? 'antimicrobiano' : 'antimicrobianos'} ${(newItems.length) === 1 ? 'adicionado' : 'adicionados'} à prescrição via Guia ATM`);
-  }, []);
+  }, [setItems]);
 
   // Estado do pop-up de pré-visualização do perfil de cuidado
   const [careProfilePreview, setCareProfilePreview] = useState<{
@@ -6943,6 +6993,7 @@ const PrescricaoPage = () => {
 
   const addFreeRecommendation = () => {
     if (!freeRecommendation.trim()) return;
+    if (!guardAdd()) return;
     setItems(prev => [...prev, {
       id: crypto.randomUUID(),
       name: freeRecommendation.trim(),
@@ -6957,6 +7008,7 @@ const PrescricaoPage = () => {
   const addNonStandard = (overrideName?: string) => {
     const name = (overrideName ?? nonStdName).trim();
     if (!name) return;
+    if (!guardAdd()) return;
     setItems(prev => [...prev, {
       id: crypto.randomUUID(),
       name,
@@ -6989,7 +7041,7 @@ const PrescricaoPage = () => {
       // INTERVALO, a duplicidade deixou de ser possível e o remendo caiu.
       return next;
     }));
-  }, [isItemEditLocked]);
+  }, [isItemEditLocked, setItems]);
 
   const updateInsulinPlan = useCallback((id: string, plan: InsulinPlan) => {
     setItems((prev) => prev.map((item) => {
@@ -7004,7 +7056,7 @@ const PrescricaoPage = () => {
       // livre para uma observação real do médico, se houver (plan.notes).
       return { ...item, insulinPlan: plan };
     }));
-  }, [isItemEditLocked]);
+  }, [isItemEditLocked, setItems]);
 
   const removeItem = useCallback((id: string) => {
     setItems((prev) => {
@@ -7016,7 +7068,7 @@ const PrescricaoPage = () => {
       return prev.filter((item) => item.id !== id);
     });
     setSelectedIds(prev => { const n = new Set(prev); n.delete(id); return n; });
-  }, [isItemEditLocked]);
+  }, [isItemEditLocked, setItems]);
 
   const toggleFlag = useCallback((id: string, flag: PrescriptionFlag) => {
     setItems((prev) => prev.map((item) => {
@@ -7032,7 +7084,7 @@ const PrescricaoPage = () => {
       const next = { ...item, flags } as PrescriptionItem;
       return next;
     }));
-  }, [isItemEditLocked]);
+  }, [isItemEditLocked, setItems]);
 
   const togglePrintOnly = useCallback((id: string) => {
     setItems((prev) => prev.map((item) => {
@@ -7043,7 +7095,7 @@ const PrescricaoPage = () => {
       }
       return { ...item, printOnly: !item.printOnly };
     }));
-  }, [isItemEditLocked]);
+  }, [isItemEditLocked, setItems]);
 
 
   // Individual duplicate
@@ -7058,7 +7110,7 @@ const PrescricaoPage = () => {
       return next;
     });
     toast.success("Item duplicado");
-  }, []);
+  }, [setItems]);
 
   // Suspend with reason (individual)
   const requestSuspendItem = useCallback((id: string) => {
@@ -7118,7 +7170,7 @@ const PrescricaoPage = () => {
     if (nextItems.length) persistItems(nextItems, { mode: 'update', reason, autoNewVersionIfSigned: true });
     setSuspendDialogOpen(false);
     setSuspendTarget({});
-  }, [suspendTarget, selectedIds, persistItems]);
+  }, [suspendTarget, selectedIds, persistItems, setItems]);
 
   // Reactivate: REMOVIDO por regra clínica. Item suspenso é irreversível —
   // o médico deve criar um novo item (mesma medicação com ajustes se necessário).
@@ -7172,9 +7224,10 @@ const PrescricaoPage = () => {
       });
     }
     setSelectedIds(new Set());
-  }, [selectedIds, items]);
+  }, [selectedIds, items, setItems]);
 
   const duplicateSelected = useCallback(() => {
+    if (!guardAdd()) return;
     setItems(prev => {
       const duplicates = prev
         .filter(item => selectedIds.has(item.id))
@@ -7183,7 +7236,7 @@ const PrescricaoPage = () => {
     });
     toast.success(`${selectedIds.size} ${(selectedIds.size) === 1 ? 'item' : 'itens'} ${(selectedIds.size) === 1 ? 'duplicado' : 'duplicados'}`);
     setSelectedIds(new Set());
-  }, [selectedIds]);
+  }, [selectedIds, setItems, guardAdd]);
 
   // ===== Keyboard shortcuts =====
   // Ctrl/⌘+K or "/" → focus search · Ctrl/⌘+D → duplicate selected
@@ -7264,7 +7317,7 @@ const PrescricaoPage = () => {
       if (oldIndex === -1 || newIndex === -1) return prev;
       return arrayMove(prev, oldIndex, newIndex);
     });
-  }, []);
+  }, [setItems]);
 
   const itemsByCategory = useMemo(() => {
     const map: Record<PrescriptionCategory, PrescriptionItem[]> = {
@@ -7455,7 +7508,7 @@ const PrescricaoPage = () => {
     } finally {
       setDraftDeleting(false);
     }
-  }, [draftToDelete, draftDeleteReason, currentPrescriptionId, fetchPrescriptions]);
+  }, [draftToDelete, draftDeleteReason, currentPrescriptionId, fetchPrescriptions, setItems]);
 
   // ============================================================
   // AUTO-LOAD universal de prescrição ao abrir o paciente
@@ -7637,7 +7690,7 @@ const PrescricaoPage = () => {
           // Atualiza ref antes de setar items — evita dirty state falso após renovação
           lastPersistedSerializedRef.current = JSON.stringify(renewedItems);
           isLoadingRef.current = false;
-          setItems(renewedItems);
+          setItemsRaw(renewedItems);
           setDigitalSignature(null);
           setPrescriptionCreatedBy(null);
           setCurrentPrescriptionId(null);
@@ -7723,7 +7776,7 @@ const PrescricaoPage = () => {
         // cabeçalho do paciente já é mantido ao vivo (internacoes/pacientes/leito),
         // então não há mais snapshot histórico para restaurar aqui.
         const loadedItems = (((data as any).itens ?? []) as unknown as PrescriptionItem[]).map(normalizeLegacyIntervalFlags);
-        setItems(loadedItems);
+        setItemsRaw(loadedItems);
         // Atualiza a baseline ANTES de liberar isDirty (isLoadingRef=false).
         // Sem isso, o useEffect de isDirty via ao carregar e compara com ''→dirty=true.
         lastPersistedSerializedRef.current = JSON.stringify(loadedItems);
@@ -7863,13 +7916,14 @@ const PrescricaoPage = () => {
     setRepeatSourceItems([]);
     setRepeatSelectedIds(new Set());
     setRepeatSourceMeta(null);
-  }, [repeatSelectedIds, repeatSourceItems]);
+  }, [repeatSelectedIds, repeatSourceItems, setItems]);
 
   // === FASE 3.1 — Restaurar prescrição como rascunho (SOMAR sem duplicar) ===
   // Mescla itens da prescrição-fonte na lista atual usando assinatura
   // (name|dose|route|posology) normalizada. Itens já presentes são ignorados.
   // NÃO sobrescreve assinatura nem cria nova versão — apenas adiciona em memória.
   const restoreFromPrescription = useCallback((source: { id: string; version: number; items: PrescriptionItem[] }) => {
+    if (!guardAdd()) return;
     const norm = (s: string | undefined) => (s || "").trim().toUpperCase().replace(/\s+/g, " ");
     const sig = (it: PrescriptionItem) =>
       `${norm(it.name)}|${norm(it.dose)}|${norm(it.route)}|${norm(it.posology)}`;
@@ -7907,7 +7961,7 @@ const PrescricaoPage = () => {
     toast.success(`v${source.version} restaurada — ${added} ${(added) === 1 ? 'item' : 'itens'} ${(added) === 1 ? 'somado' : 'somados'}`, {
       description: skipped > 0 ? `${skipped} ${(skipped) === 1 ? 'duplicado' : 'duplicados'} ${(skipped) === 1 ? 'ignorado' : 'ignorados'}.` : "Revise e assine quando estiver pronto.",
     });
-  }, [items]);
+  }, [items, setItems, guardAdd]);
 
   // Keep keyboard-shortcut handlers in sync with latest closures
   useEffect(() => {
@@ -7938,6 +7992,7 @@ const PrescricaoPage = () => {
   }, []);
 
   const applyQuickTemplate = useCallback((tpl: QuickPrescriptionTemplate) => {
+    if (!guardAdd()) return;
     if (!tpl.items?.length) {
       toast.error("Template vazio");
       return;
@@ -7981,7 +8036,7 @@ const PrescricaoPage = () => {
       description: `${cloned.length} ${(cloned.length) === 1 ? 'item' : 'itens'} ${(cloned.length) === 1 ? 'adicionado' : 'adicionados'} à prescrição`,
     });
     setQuickTemplatesDialogOpen(false);
-  }, [bumpQuickTemplateUse, mapTemplateCategory]);
+  }, [bumpQuickTemplateUse, mapTemplateCategory, setItems, guardAdd]);
 
   const handleSave = async () => {
     if (!patient.name.trim()) { toast.error("Preencha o nome do paciente"); return; }
@@ -8045,7 +8100,7 @@ const PrescricaoPage = () => {
     setDigitalSignature(null);
     setCurrentPrescriptionId(null);
     setSelectedIds(new Set());
-  }, []);
+  }, [setItems]);
 
   const handleNewPrescription = () => {
     if (prescriptionLocked) {
@@ -8433,7 +8488,7 @@ const PrescricaoPage = () => {
       });
     }
 
-    setItems(renewedItems);
+    setItemsRaw(renewedItems);
     setDigitalSignature(null);
     setRenewDialogOpen(false);
     setSelectedIds(new Set());
@@ -8751,93 +8806,123 @@ const PrescricaoPage = () => {
         </div>
       )}
 
-      {/* === FASE 3.1 — Strip "VALIDADAS HOJE" (sempre visível, sem precisar do calendário) === */}
+      {/* Faixa unica de estado da prescricao validada (substitui o strip "Validadas hoje" e o
+          ribbon informativo). Assinatura legal e manual (carimbo + caneta no PDF impresso).
+          Com tudo validado, a inclusao de itens fica travada ate "Adicionar itens". */}
       {(() => {
         const dayStart = getClinicalDayWindowSP().start.getTime();
         const todays = savedPrescriptions.filter(
           p => p.isValidated && new Date(p.created_at).getTime() >= dayStart,
         );
-        if (todays.length === 0) return null;
-        return (
-          <div className="print:hidden mb-2 rounded-lg border border-released-border/70 bg-released-soft/40 px-3 py-2">
-            <div className="flex items-center justify-between gap-2 mb-2">
-              <div className="flex items-center gap-2 text-xs font-medium tracking-wider uppercase text-released-on-soft">
-                <ShieldCheck className="h-3 w-3" />
-                Validadas hoje
-                <span className="font-mono text-released-on-soft/70">({todays.length})</span>
+        const latest = todays[0]; // savedPrescriptions vem ordenado por criado_em desc
+        const viewingOlder = !!latest && !!currentPrescriptionId && latest.id !== currentPrescriptionId;
+        const fmtHm = (iso: string) => {
+          try { return format(new Date(iso), "HH:mm", { locale: ptBR }); } catch { return ""; }
+        };
+        if (addingItems) {
+          const pending = items.filter(i => i.status === 'active' && !isItemValidatedToday(i)).length;
+          return (
+            <div className="print:hidden mb-2 flex flex-wrap items-center gap-2 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-warning-on-soft">
+              <Plus className="h-4 w-4 shrink-0" />
+              <div className="text-xs leading-snug min-w-0 flex-1">
+                <strong className="font-medium">ADICIONANDO ITENS À PRESCRIÇÃO</strong>
+                {". "}
+                <span className="opacity-80">
+                  {pending > 0
+                    ? `${pending} ${pending === 1 ? 'item pendente' : 'itens pendentes'} — valide para concluir (ou remova o item para desistir).`
+                    : 'Itens novos entram pendentes e precisam ser validados. Itens já validados não são alterados.'}
+                </span>
               </div>
-              <span className="text-xs text-released-on-soft/70 italic">
-                Clique em "Abrir" para visualizar a versão no editor.
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs"
+                disabled={pending > 0}
+                title={pending > 0 ? "Há itens pendentes: valide ou remova antes de cancelar" : "Voltar ao estado travado"}
+                onClick={() => setAddingItems(false)}
+              >
+                Cancelar
+              </Button>
+            </div>
+          );
+        }
+        if (!allItemsValidated) return null;
+        const validatedTimes = items
+          .filter(i => i.status === 'active' && i.validatedAt)
+          .map(i => new Date(i.validatedAt as string).getTime())
+          .filter(t => !Number.isNaN(t));
+        const hm = validatedTimes.length > 0
+          ? fmtHm(new Date(Math.max(...validatedTimes)).toISOString())
+          : (latest ? fmtHm(latest.created_at) : "");
+        return (
+          <div className="print:hidden mb-2 flex flex-wrap items-center gap-2 rounded-lg border border-released-border/70 bg-released-soft/80 px-3 py-2 text-released-on-soft">
+            <ShieldCheck className="h-4 w-4 shrink-0" />
+            <div className="text-xs leading-snug min-w-0 flex items-center gap-2">
+              <strong className="font-medium">
+                {viewingOlder ? 'VERSÃO ANTERIOR VALIDADA' : 'PRESCRIÇÃO VALIDADA HOJE'}
+              </strong>
+              {hm && <span className="font-mono opacity-70">{hm}</span>}
+              <span className="inline-flex items-center gap-1 opacity-70">
+                <Lock className="h-3 w-3" />
+                edição bloqueada
               </span>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {todays.map(p => {
-                const isCurrent = currentPrescriptionId === p.id;
-                return (
-                  <div
-                    key={p.id}
-                    className={cn(
-                      "flex items-center gap-2 rounded-md border bg-card/80 px-2 py-1 text-xs transition-colors",
-                      isCurrent ? "border-primary ring-1 ring-primary/30" : "border-released-border/70 hover:border-released",
-                    )}
-                  >
-                    <Badge className="text-xs h-4 px-2 bg-released hover:bg-released shrink-0">v{p.version}</Badge>
-                    <span className="text-xs text-muted-foreground font-mono shrink-0">
-                      {format(new Date(p.created_at), "HH:mm", { locale: ptBR })}
-                    </span>
-                    {isCurrent && (
-                      <Badge variant="secondary" className="text-xs h-4 px-2 shrink-0">Atual</Badge>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => setPreviewPrescription(p)}
-                      className="shrink-0 p-1 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
-                      title="Visualizar prescrição"
-                      aria-label="Visualizar prescrição"
-                    >
-                      <Eye className="h-3 w-3" />
-                    </button>
-                    {!isCurrent && (
-                      <button
-                        type="button"
-                        onClick={() => loadPrescription(p.id)}
-                        className="shrink-0 px-2 py-1 rounded-md text-xs font-medium border border-released-border/70 text-released-on-soft hover:bg-released-soft/60 transition-colors"
-                        title="Abrir esta versão no editor"
-                      >
-                        Abrir
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => restoreFromPrescription(p)}
-                      className="shrink-0 p-1 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
-                      title="Somar itens desta versão no rascunho atual (sem duplicar)"
-                      aria-label="Restaurar somando itens"
-                    >
-                      <CopyPlus className="h-3 w-3" />
-                    </button>
-                  </div>
-                );
-              })}
+            <div className="ml-auto flex items-center gap-2">
+              {todays.length > 1 && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-7 text-xs gap-1 border-released-border/70 bg-card/80">
+                      Versões ({todays.length}) <ChevronDown className="h-3 w-3" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent align="end" className="w-60 p-1">
+                    {todays.map(p => {
+                      const isCurrent = currentPrescriptionId === p.id;
+                      return (
+                        <div key={p.id} className="flex items-center gap-2 rounded-md px-2 py-1.5 text-xs hover:bg-accent">
+                          <Badge className="text-xs h-4 px-2 bg-released hover:bg-released shrink-0">v{p.version}</Badge>
+                          <span className="font-mono text-muted-foreground shrink-0">{fmtHm(p.created_at)}</span>
+                          {isCurrent ? (
+                            <Badge variant="secondary" className="text-xs h-4 px-2 ml-auto">Atual</Badge>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => loadPrescription(p.id)}
+                              className="ml-auto px-2 py-0.5 rounded-md border border-released-border/70 font-medium text-released-on-soft hover:bg-released-soft/60"
+                            >
+                              Abrir
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </PopoverContent>
+                </Popover>
+              )}
+              {viewingOlder ? (
+                <Button
+                  size="sm"
+                  className="h-7 text-xs gap-1 bg-released hover:bg-released text-white"
+                  onClick={() => loadPrescription(latest.id)}
+                >
+                  Ir para a mais recente
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  className="h-7 text-xs gap-1 bg-released hover:bg-released text-white"
+                  onClick={() => {
+                    if (!canPrescribe) { toast.error("Preencha o peso e as alergias antes de prescrever"); return; }
+                    setAddingItems(true);
+                  }}
+                >
+                  <CopyPlus className="h-3.5 w-3.5" /> Adicionar itens
+                </Button>
+              )}
             </div>
           </div>
         );
       })()}
-
-      {/* Ribbon — Prescrição validada do dia clínico atual (informativa, read-only).
-          Assinatura digital foi removida da UI: assinatura legal é manual (carimbo + caneta no PDF impresso).
-          Para incluir item novo: basta adicionar pelo caminho normal — o item entra pendente (bolinha amarela)
-          e bloqueia a impressão até ser validado. */}
-      {allItemsValidated && (
-        <div className="print:hidden mb-2 flex items-center gap-2 rounded-lg border border-released-border/70 bg-released-soft/80 px-3 py-2 text-released-on-soft">
-          <ShieldCheck className="h-4 w-4 shrink-0" />
-          <div className="text-xs leading-snug min-w-0">
-            <strong className="font-medium">PRESCRIÇÃO VALIDADA HOJE</strong>
-            {". "}
-            <span className="opacity-80">A assinatura legal é feita manualmente (carimbo + caneta) no PDF impresso.</span>
-          </div>
-        </div>
-      )}
 
       {/* ===== UNIFIED HEADER — title + context (peso/alergias/data/templates) + actions ===== */}
       <div className="print:hidden rounded-lg border border-border bg-card/60 shadow-[0_4px_18px_-8px_hsl(var(--primary)/0.18),0_1px_2px_-1px_hsl(var(--foreground)/0.06)] hover:shadow-[0_6px_24px_-8px_hsl(var(--primary)/0.22),0_1px_2px_-1px_hsl(var(--foreground)/0.08)] transition-shadow-sm duration-300">
@@ -8974,6 +9059,7 @@ const PrescricaoPage = () => {
             variant="ghost"
             size="sm"
             onClick={() => {
+              if (!guardAdd()) return;
               if (!canPrescribe) { toast.error("Preencha o peso e as alergias antes de prescrever"); return; }
               setExtraChooserOpen(true);
             }}
@@ -9150,7 +9236,7 @@ const PrescricaoPage = () => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setQuickTemplatesDialogOpen(true)}
+            onClick={() => { if (guardAdd()) setQuickTemplatesDialogOpen(true); }}
             className="gap-1 text-[11px] text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors h-7 px-2"
             title="Templates clínicos prontos (Sepse, Pós-op, DPOC...)"
           >
@@ -9209,6 +9295,15 @@ const PrescricaoPage = () => {
 
         {/* Section 4 — Busca global (sem rótulo redundante) */}
         <div className="px-3 py-2 relative z-20">
+          {additionsGated && (
+            <button
+              type="button"
+              aria-label="Adicionar itens bloqueado: prescrição validada"
+              title='Prescrição validada: clique em "Adicionar itens" para incluir novos itens'
+              onClick={() => guardAdd()}
+              className="absolute inset-0 z-30 cursor-not-allowed rounded-md bg-background/60"
+            />
+          )}
           <GlobalPrescriptionSearch
             ref={globalSearchRef}
             onAddItem={(med) => addItem(med, { fromGlobalSearch: true })}
