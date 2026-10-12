@@ -39,13 +39,15 @@ const STALE_PATIENT_PARAMS = [
 
 interface PatientSwitcherProps {
   variant?: "default" | "dark";
+  /** Versao maior da barra clinica: leito em destaque e nome completo (sem corte). */
+  large?: boolean;
 }
 
 /**
  * Dropdown in the clinical header that shows the current patient name
  * and allows switching to other patients in the same sector.
  */
-export function PatientSwitcher({ variant = "dark" }: PatientSwitcherProps) {
+export function PatientSwitcher({ variant = "dark", large = false }: PatientSwitcherProps) {
   const [searchParams] = useSearchParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -53,6 +55,7 @@ export function PatientSwitcher({ variant = "dark" }: PatientSwitcherProps) {
 
   const patientName = searchParams.get("patientName") || "";
   const patientSector = searchParams.get("patientSector") || "";
+  const patientBed = searchParams.get("patientBed") || "";
 
   const [patients, setPatients] = useState<SectorPatient[]>([]);
 
@@ -127,17 +130,24 @@ export function PatientSwitcher({ variant = "dark" }: PatientSwitcherProps) {
 
   return (
     <>
-      <span className={cn("text-xs", variant === "dark" ? "text-white/30" : "text-muted-foreground/40")}>/</span>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button className={cn(
-            "flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition-all max-w-[200px]",
+            "flex items-center rounded-md font-medium transition-all",
+            large ? "gap-2 px-4 py-2 text-sm font-semibold max-w-[min(75vw,40rem)] border" : "gap-1 px-2 py-1 text-xs max-w-[200px]",
             variant === "dark"
-              ? "text-white hover:bg-white/10"
-              : "text-foreground hover:bg-muted"
+              ? cn("text-white hover:bg-white/10", large && "bg-white/12 border-white/35")
+              : cn("text-foreground hover:bg-muted", large && "bg-muted/60 border-border/60")
           )}>
-            <User className="h-3 w-3 shrink-0 opacity-60" />
-            <span className="truncate patient-id">{patientName}</span>
+            {large && patientBed ? (
+              <span className={cn(
+                "shrink-0 rounded px-2 py-0.5 text-xs font-extrabold",
+                variant === "dark" ? "bg-white text-primary" : "bg-primary text-primary-foreground",
+              )}>{patientBed}</span>
+            ) : (
+              <User className="h-3 w-3 shrink-0 opacity-60" />
+            )}
+            <span className={cn("patient-id text-left", large ? "uppercase tracking-wide leading-tight" : "truncate")}>{patientName}</span>
             <ChevronDown className="h-3 w-3 shrink-0 opacity-50" />
           </button>
         </DropdownMenuTrigger>

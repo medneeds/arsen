@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { Pill, NotebookPen, FileText, FolderOpen, Clock, Activity, AlertTriangle, Stethoscope, ArrowLeftRight } from "lucide-react";
+import { Pill, Pencil, FileText, FolderOpen, Clock, Activity, AlertTriangle, Stethoscope, ArrowLeftRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUnsavedPrescription } from "@/contexts/UnsavedPrescriptionContext";
 import {
@@ -13,7 +13,7 @@ import { toast } from "sonner";
 const MODULE_TABS = [
   { label: "Admissão", path: "/admissao", icon: Stethoscope },
   { label: "Prescrição", path: "/prescricao", icon: Pill },
-  { label: "Evolução", path: "/evolucao", icon: NotebookPen },
+  { label: "Evolução", path: "/evolucao", icon: Pencil },
   { label: "Requisições", path: "/requisicoes", icon: FileText },
   { label: "Monitoramento", path: "/monitoramento", icon: Activity },
   { label: "Docs", path: "/documentos", icon: FolderOpen },
@@ -23,6 +23,8 @@ const MODULE_TABS = [
 
 interface ClinicalModuleTabsProps {
   variant?: "default" | "dark";
+  /** "pill" = botoes agrupados (padrao); "bar" = linha de largura total com sublinhado na aba ativa. */
+  layout?: "pill" | "bar";
 }
 
 /**
@@ -30,7 +32,7 @@ interface ClinicalModuleTabsProps {
  * while preserving patient context via URL search params.
  * Intercepta navegação quando há alterações não salvas na prescrição.
  */
-export function ClinicalModuleTabs({ variant = "dark" }: ClinicalModuleTabsProps) {
+export function ClinicalModuleTabs({ variant = "dark", layout = "pill" }: ClinicalModuleTabsProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -63,6 +65,40 @@ export function ClinicalModuleTabs({ variant = "dark" }: ClinicalModuleTabsProps
 
   return (
     <>
+      {layout === "bar" ? (
+        <div
+          role="tablist"
+          className={cn(
+            "flex w-full border-t",
+            variant === "dark" ? "border-white/25" : "border-border/60"
+          )}
+        >
+          {MODULE_TABS.map(tab => {
+            const isActive = location.pathname === tab.path;
+            return (
+              <button
+                key={tab.path}
+                role="tab"
+                aria-selected={isActive}
+                onClick={() => handleTabClick(tab.path)}
+                className={cn(
+                  "flex flex-1 items-center justify-center gap-2.5 px-3 py-3.5 text-sm font-semibold tracking-wide border-b-[3px] transition-colors duration-150",
+                  variant === "dark"
+                    ? isActive
+                      ? "bg-white/15 text-white border-white"
+                      : "text-white/85 border-transparent hover:bg-white/10 hover:text-white"
+                    : isActive
+                      ? "bg-primary/10 text-primary border-primary"
+                      : "text-foreground/75 border-transparent hover:bg-muted hover:text-foreground"
+                )}
+              >
+                <tab.icon className="h-[18px] w-[18px] shrink-0" />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      ) : (
       <div className={cn(
         "flex gap-1 rounded-lg p-1 border",
         variant === "dark"
@@ -92,6 +128,7 @@ export function ClinicalModuleTabs({ variant = "dark" }: ClinicalModuleTabsProps
           );
         })}
       </div>
+      )}
 
       {/* Pop-up de alterações não salvas */}
       <AlertDialog open={!!pendingUrl} onOpenChange={(open) => { if (!open) setPendingUrl(null); }}>

@@ -37,9 +37,11 @@ interface SectorSelectorProps {
   navigateOnSelect?: boolean;
   /** Disparado após a troca, com o departamento escolhido. */
   onSelect?: (department: Department) => void;
+  /** Gatilho maior (barra clinica com abas de modulo). */
+  large?: boolean;
 }
 
-export function SectorSelector({ variant = "light", navigateOnSelect = true, onSelect }: SectorSelectorProps) {
+export function SectorSelector({ variant = "light", navigateOnSelect = true, onSelect, large = false }: SectorSelectorProps) {
   const navigate = useNavigate();
   const { currentDepartment, currentSectorLabel, setCurrentDepartment } = useDepartment();
   const { role } = useAuth();
@@ -119,17 +121,18 @@ export function SectorSelector({ variant = "light", navigateOnSelect = true, onS
         <button
           type="button"
           className={cn(
-            "inline-flex items-center gap-2 px-3 py-1 rounded-md text-xs sm:text-xs font-medium uppercase tracking-wide transition-all duration-200 border",
+            "inline-flex items-center gap-2 rounded-md font-medium uppercase tracking-wide transition-all duration-200 border",
+            large ? "px-4 py-2 text-sm" : "px-3 py-1 text-xs sm:text-xs",
             variant === "dark"
               ? "bg-white/10 text-white border-white/20 hover:bg-white/20 hover:border-white/30"
               : "bg-background text-foreground border-border hover:bg-muted hover:border-primary/40 shadow-sm"
           )}
         >
-          <BedDouble className={cn("h-3.5 w-3.5", variant === "dark" ? "text-white/80" : "text-primary")} />
+          <BedDouble className={cn(large ? "h-4 w-4" : "h-3.5 w-3.5", variant === "dark" ? "text-white/80" : "text-primary")} />
           <span className="truncate max-w-[140px]">
             {allActive ? "Todos os setores" : currentSectorLabel || "Selecionar setor"}
           </span>
-          <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", open && "rotate-180", variant === "dark" ? "text-white/60" : "text-muted-foreground")} />
+          <ChevronDown className={cn(large ? "h-4 w-4" : "h-3.5 w-3.5", "transition-transform", open && "rotate-180", variant === "dark" ? "text-white/60" : "text-muted-foreground")} />
         </button>
       </PopoverTrigger>
       <PopoverContent
