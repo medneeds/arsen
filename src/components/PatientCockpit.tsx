@@ -15,6 +15,7 @@ import { ScrollText, ChevronUp } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { parsePendency, setPendencyDone } from "@/lib/pendencyMarker";
+import { togglePendencyRemote } from "@/lib/pendenciasRemote";
 import { ReceituarioForm } from "./ReceituarioForm";
 import { printReceituario } from "@/lib/receituario";
 import { useReceituario } from "@/hooks/useReceituario";
@@ -264,17 +265,18 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
   const pendDoneCount = pendencies.filter((x) => parsePendency(x).done).length;
   const pendOpenCount = pendencies.length - pendDoneCount;
 
+  // Marca/desmarca pela fonte unica (internacoes.pendencias), identificando a pendencia pelo
+  // TEXTO e relendo a lista no banco antes de gravar (nao sobrescreve outra tela).
   const togglePendency = async (idx: number, done: boolean) => {
     const prev = pendencies;
-    const next = prev.map((x, i) => (i === idx ? setPendencyDone(x, done) : x));
-    setPendOverride(next);
-    const { error } = await supabase
-      .from("internacoes")
-      .update({ pendencias: next.join("\n") })
-      .eq("id", patient.id);
-    if (error) {
+    const { text } = parsePendency(prev[idx] ?? "");
+    setPendOverride(prev.map((x, i) => (i === idx ? setPendencyDone(x, done) : x)));
+    try {
+      const saved = await togglePendencyRemote(patient.id, text, done);
+      setPendOverride(saved);
+    } catch (e) {
       setPendOverride(prev);
-      toast.error("Não foi possível salvar a pendência", { description: error.message });
+      toast.error("Não foi possível salvar a pendência", { description: e instanceof Error ? e.message : undefined });
     }
   };
   const exams = parseList(patient.relevantExams);

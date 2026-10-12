@@ -25,7 +25,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { parsePendency } from "@/lib/pendencyMarker";
+import { parsePendency, setPendencyDone } from "@/lib/pendencyMarker";
+import { togglePendencyRemote } from "@/lib/pendenciasRemote";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { PatientCockpit } from "@/components/PatientCockpit";
@@ -110,9 +112,15 @@ const getSectorLabel = (sector: string) => {
 const daysToneClass = (days: number): string =>
   days <= 7 ? "text-released-on-soft" : days <= 10 ? "text-warning-on-soft" : "text-critical-on-soft";
 
-// Cor da mortalidade prevista do SAPS 3 (so texto, sem caixa).
-const sapsMortalityClass = (m: number): string =>
-  m < 10 ? "text-released-on-soft" : m < 25 ? "text-warning-on-soft" : m < 50 ? "text-orange-600 dark:text-orange-400" : "text-critical-on-soft";
+// Bloco da % de mortalidade (quase quadrado, tamanho proximo do botao Preencher).
+const sapsMortalityBlockClass = (m: number): string =>
+  m < 10
+    ? "bg-released/10 text-released-on-soft border-released/30"
+    : m < 25
+      ? "bg-warning/10 text-warning-on-soft border-warning-border"
+      : m < 50
+        ? "bg-orange-500/10 text-orange-600 border-orange-500/30 dark:text-orange-400"
+        : "bg-critical/10 text-critical-on-soft border-critical-border";
 
 const formatMortality = (m: number): string => `${String(m).replace(".", ",")}%`;
 
@@ -123,6 +131,30 @@ const getPrescriptionStatus = (status: TodaysPrescriptionStatus): { label: strin
   }
   return { label: "Pendente", variant: "secondary", dotColor: "bg-warning", pulsing: true };
 };
+
+/**
+ * Lista de ate 3 linhas (uma por item). Com mais de 3 itens, mostra os 3 primeiros e um
+ * "+N" discreto no fim da 3a linha (quantos ficaram de fora).
+ */
+const MAX_LINES = 3;
+function LineList<T>({
+  items, render, width, title,
+}: { items: T[]; render: (item: T, i: number) => React.ReactNode; width: string; title?: string }) {
+  const shown = items.slice(0, MAX_LINES);
+  const extra = items.length - shown.length;
+  return (
+    <div className={cn("flex flex-col gap-px", width)} title={title}>
+      {shown.map((it, i) => (
+        <div key={i} className="relative min-w-0 text-xs leading-snug text-muted-foreground">
+          <div className={cn("truncate", extra > 0 && i === shown.length - 1 && "pr-8")}>{render(it, i)}</div>
+          {extra > 0 && i === shown.length - 1 && (
+            <span className="absolute right-0 top-1/2 -translate-y-1/2 text-[11px] font-semibold text-muted-foreground/60">+{extra}</span>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
 
 // Previsao de alta padronizada: so a data dd/mm/aaaa (sem "(D+x)"); "—" quando nao ha.
 const getDischargeText = (patient: Patient): string => {
@@ -184,6 +216,26 @@ export default function PainelClinicoPage() {
     return currentSectorCode || localStorage.getItem("selected_sector") || "all";
   });
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+  // Marcacao otimista das pendencias: so vale enquanto a lista do paciente (fonte) nao mudou.
+  const [pendOverrides, setPendOverrides] = useState<Record<string, { base: string; list: string[] }>>({});
+  const effectivePendencies = (patient: Patient): string[] => {
+    const base = parseTextArray(patient.pendencies);
+    const o = pendOverrides[patient.id];
+    return o && o.base === base.join("\n") ? o.list : base;
+  };
+  const togglePendency = async (patient: Patient, text: string, done: boolean) => {
+    const base = parseTextArray(patient.pendencies);
+    const current = effectivePendencies(patient);
+    const optimistic = current.map((l) => (parsePendency(l).text === text && parsePendency(l).done !== done ? setPendencyDone(l, done) : l));
+    setPendOverrides((p) => ({ ...p, [patient.id]: { base: base.join("\n"), list: optimistic } }));
+    try {
+      const saved = await togglePendencyRemote(patient.id, text, done);
+      setPendOverrides((p) => ({ ...p, [patient.id]: { base: base.join("\n"), list: saved } }));
+    } catch (e) {
+      setPendOverrides((p) => ({ ...p, [patient.id]: { base: base.join("\n"), list: current } }));
+      toast({ title: "Não foi possível salvar a pendência", description: e instanceof Error ? e.message : undefined, variant: "destructive" });
+    }
+  };
   const [sidebarTab, setSidebarTab] = useState("resumo");
   const [sapsScores, setSapsScores] = useState<Record<string, { id: string; score: number; mortality: number; status: string; pending_since: string | null }>>({});
 
@@ -481,7 +533,7 @@ export default function PainelClinicoPage() {
                 <TableRow className="hover:bg-transparent">
                   <TableHead className="w-20">Leito</TableHead>
                   <TableHead className="w-[520px]">Paciente</TableHead>
-                  <TableHead className="w-36 text-center hidden sm:table-cell">SAPS 3</TableHead>
+                  <TableHead className="w-44 text-center hidden sm:table-cell">SAPS 3</TableHead>
                   <TableHead className="w-[300px]">Pendências</TableHead>
                   <TableHead className="w-28 text-center">Prescrição</TableHead>
                   <TableHead className="w-24 text-center hidden md:table-cell">Dias Int.</TableHead>
@@ -493,7 +545,11 @@ export default function PainelClinicoPage() {
                 {filteredPatients.map(patient => {
                   const days = calcDaysInternment(patient.admissionDate);
                   const prescStatus = getPrescriptionStatus(getTodaysPrescriptionStatus(patient.name, patient.registryId));
-                  const pendencies = parseTextArray(patient.pendencies);
+                  // Em aberto primeiro, concluidas por ultimo (a ordem na fonte nao muda).
+                  const pendencies = (() => {
+                    const all = effectivePendencies(patient);
+                    return [...all.filter((x) => !parsePendency(x).done), ...all.filter((x) => parsePendency(x).done)];
+                  })();
                   const diagnoses = normalizeDiagnoses(patient.diagnoses);
                   const admissionPending =
                     !patient.admissionStatus &&
@@ -536,9 +592,14 @@ export default function PainelClinicoPage() {
                             )}
                           </div>
                           {diagnoses.length > 0 && (
-                            <p className="text-xs text-muted-foreground mt-0.5 leading-snug line-clamp-2 break-words" title={diagnoses.join(" | ")}>
-                              {diagnoses.join(" | ")}
-                            </p>
+                            <div className="mt-0.5">
+                              <LineList
+                                items={diagnoses}
+                                width="w-[470px] max-w-full"
+                                title={diagnoses.join("\n")}
+                                render={(d) => (<><span className="mr-1.5 text-muted-foreground/60">•</span>{d}</>)}
+                              />
+                            </div>
                           )}
                         </div>
                       </TableCell>
@@ -546,16 +607,13 @@ export default function PainelClinicoPage() {
                         {sapsScores[patient.id] ? (
                           sapsScores[patient.id].status === 'pendente' ? (
                             <div
-                              className="inline-flex flex-col items-start gap-1 text-xs font-semibold text-warning-on-soft leading-tight"
+                              className="inline-flex flex-col items-center gap-1.5"
                               title={sapsScores[patient.id].pending_since ? `SAPS 3 pendente desde ${new Date(sapsScores[patient.id].pending_since as string).toLocaleString("pt-BR")}` : "SAPS 3 pendente"}
                             >
-                              <span className="inline-flex items-center gap-1.5">
-                                <Clock className="h-3.5 w-3.5" />
-                                Pendente
-                              </span>
+                              <span className="text-xs font-semibold leading-tight text-warning-on-soft">Pendente</span>
                               <button
                                 type="button"
-                                className="inline-flex items-center gap-1.5 underline underline-offset-2 hover:opacity-80"
+                                className="inline-flex min-w-[88px] items-center justify-center gap-1.5 rounded-md bg-warning px-3 py-1 text-xs font-semibold leading-tight text-white hover:bg-warning/90"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   const params = new URLSearchParams();
@@ -574,11 +632,11 @@ export default function PainelClinicoPage() {
                               </button>
                             </div>
                           ) : (
-                            <div className="inline-flex flex-col items-center leading-tight">
-                              <span className="font-mono font-bold text-sm text-foreground">{sapsScores[patient.id].score}</span>
-                              <span className={cn("text-xs font-semibold", sapsMortalityClass(sapsScores[patient.id].mortality))}>
+                            <div className="inline-flex flex-col items-center gap-1.5">
+                              <span className={cn("inline-flex min-w-[88px] items-center justify-center rounded-md border px-3 py-1 text-[13px] font-bold leading-tight", sapsMortalityBlockClass(sapsScores[patient.id].mortality))}>
                                 {formatMortality(sapsScores[patient.id].mortality)}
                               </span>
+                              <span className="font-mono text-xs font-bold leading-none text-foreground">{sapsScores[patient.id].score}</span>
                             </div>
                           )
                         ) : (
@@ -587,17 +645,25 @@ export default function PainelClinicoPage() {
                       </TableCell>
                       <TableCell className="align-middle">
                         {pendencies.length > 0 ? (
-                          <p className="w-[280px] max-w-full text-xs leading-snug text-muted-foreground line-clamp-2 break-words" title={pendencies.map((x) => parsePendency(x).text).join(" | ")}>
-                            {pendencies.map((raw, i) => {
+                          <LineList
+                            items={pendencies}
+                            width="w-[270px] max-w-full"
+                            title={pendencies.map((x) => parsePendency(x).text).join("\n")}
+                            render={(raw) => {
                               const { done, text } = parsePendency(raw);
                               return (
-                                <span key={i} className={cn(done && "line-through text-muted-foreground/60")}>
-                                  {i > 0 && " | "}
-                                  {text}
+                                <span className="flex min-w-0 items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                                  <Checkbox
+                                    checked={done}
+                                    onCheckedChange={(v) => togglePendency(patient, text, v === true)}
+                                    className="h-3.5 w-3.5 shrink-0"
+                                    aria-label={done ? "Reabrir pendência" : "Concluir pendência"}
+                                  />
+                                  <span className={cn("truncate", done && "line-through text-muted-foreground/60")}>{text}</span>
                                 </span>
                               );
-                            })}
-                          </p>
+                            }}
+                          />
                         ) : (
                           <span className="text-xs text-muted-foreground">—</span>
                         )}
