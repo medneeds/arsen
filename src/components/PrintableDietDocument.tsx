@@ -2,12 +2,14 @@ import { Patient } from "@/types/patient";
 import { Button } from "@/components/ui/button";
 import { X, Printer } from "lucide-react";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { useRef } from "react";
 
 // Import logos from whitelabel config
 import { whitelabel } from "@/config/whitelabel";
 import { sectorLabelFromCode } from "@/lib/hospitalSectors";
+import { DocumentHeader } from "@/components/DocumentHeader";
+import { useHeaderPatient } from "@/hooks/useHeaderPatient";
+import { asUuidOrNull } from "@/lib/utils";
 
 interface PrintableDietDocumentProps {
   patient: Patient;
@@ -31,9 +33,15 @@ export function PrintableDietDocument({
 }: PrintableDietDocumentProps) {
   const printRef = useRef<HTMLDivElement>(null);
   const currentDate = new Date();
-  const formattedDate = format(currentDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
-  const formattedTime = format(currentDate, "HH:mm");
   const sectorLabel = sectorLabelFromCode(patient.sector);
+  // Cabecalho padronizado (modelo assistencial): alergias importam para a dieta.
+  const headerPatient = useHeaderPatient(asUuidOrNull(patient.id), {
+    name: patient.name,
+    bed: patient.bedNumber,
+    sector: sectorLabel,
+    birthDate: birthDate,
+    age: patient.age != null ? String(patient.age) : "",
+  });
 
   const handlePrint = () => {
     const printContent = printRef.current;
@@ -57,7 +65,7 @@ export function PrintableDietDocument({
               box-sizing: border-box;
             }
             body {
-              font-family: 'Georgia', 'Times New Roman', Times, serif;
+              font-family: 'Helvetica Neue', 'Segoe UI', Inter, Arial, sans-serif;
               background: white;
               color: black;
               padding: 12mm 15mm;
@@ -319,53 +327,20 @@ export function PrintableDietDocument({
               width: '210mm',
               minHeight: '297mm',
               padding: '12mm 15mm',
-              fontFamily: "'Georgia', 'Times New Roman', Times, serif",
+              fontFamily: "'Helvetica Neue', 'Segoe UI', Inter, Arial, sans-serif",
               position: 'relative'
             }}
           >
-            {/* Header - Only Logos */}
-            <div className="header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', paddingBottom: '12px', borderBottom: '2px solid #1e40af' }}>
-              <img src={whitelabel.logos.hospital} alt={whitelabel.institution.hospitalLogoAlt} className="logo-left" style={{ height: '70px', width: 'auto', objectFit: 'contain' }} />
-              <img src={whitelabel.logos.networkCompact} alt={whitelabel.institution.networkShortName} className="logo-right" style={{ height: '55px', width: 'auto', objectFit: 'contain' }} />
-            </div>
-
-            {/* Title Section */}
-            <div className="title-section" style={{ textAlign: 'center', marginBottom: '24px' }}>
-              <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#1e3a5f', letterSpacing: '2px', textTransform: 'uppercase', margin: 0 }}>
-                Autorização de Dieta
-              </h1>
-              <p style={{ fontSize: '14px', color: '#64748b', marginTop: '6px' }}>
-                Serviço de Nutrição e Dietética
-              </p>
-            </div>
-
-            {/* Patient Info */}
-            <div style={{ marginBottom: '24px', padding: '16px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                <div>
-                  <span style={{ fontSize: '10px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block' }}>Paciente</span>
-                  <p style={{ fontSize: '16px', fontWeight: '600', color: '#1e293b', textTransform: 'uppercase', margin: '4px 0 0 0' }}>{patient.name}</p>
-                </div>
-                <div>
-                  <span style={{ fontSize: '10px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block' }}>Leito</span>
-                  <p style={{ fontSize: '16px', fontWeight: '600', color: '#1e293b', margin: '4px 0 0 0' }}>{patient.bedNumber}</p>
-                </div>
-                <div>
-                  <span style={{ fontSize: '10px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block' }}>Setor</span>
-                  <p style={{ fontSize: '14px', fontWeight: '600', color: '#1e293b', margin: '4px 0 0 0' }}>{sectorLabel}</p>
-                </div>
-                {birthDate && (
-                  <div>
-                    <span style={{ fontSize: '10px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block' }}>Data de Nascimento</span>
-                    <p style={{ fontSize: '14px', fontWeight: '500', color: '#1e293b', margin: '4px 0 0 0' }}>{birthDate}</p>
-                  </div>
-                )}
-                <div>
-                  <span style={{ fontSize: '10px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block' }}>Data da Solicitação</span>
-                  <p style={{ fontSize: '14px', fontWeight: '500', color: '#1e293b', margin: '4px 0 0 0' }}>{formattedDate} às {formattedTime}</p>
-                </div>
-              </div>
-            </div>
+            {/* Cabeçalho padronizado: timbrado + faixa + identificação do paciente */}
+            <DocumentHeader
+              model="assistencial"
+              title="Autorização de dieta"
+              complement="Serviço de Nutrição e Dietética"
+              emission={format(currentDate, "dd/MM/yyyy HH:mm:ss")}
+              width="100%"
+              patient={headerPatient}
+            />
+            <div style={{ height: '16px' }} />
 
             {/* Diet Section */}
             <div style={{ marginBottom: '24px' }}>

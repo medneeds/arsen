@@ -24,6 +24,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { getSectorDisplayLabel } from "@/utils/bedNaming";
+import { buildNormaZeroDocument, openPrintWindow, prepareLogo } from "@/lib/printNormaZero";
+import { resolveHeaderPatient } from "@/lib/headerPatient";
 import { PatientIdentityBar } from "@/components/PatientIdentityBar";
 import { SapsView, type SapsRow } from "@/components/saps3/SapsView";
 import { printSapsDocument } from "@/lib/printSaps";
@@ -528,8 +530,49 @@ export default function HistoricoPacientePage() {
     );
   };
 
+  // Impressao de reimpressoes/listas do Historico no cabecalho padronizado. O corpo de
+  // cada documento continua o mesmo (CSS escopado em .hist para nao vazar no cabecalho).
+  const histCss = `
+    .hist { font-family:'Segoe UI',Arial,sans-serif; color:#1e293b; font-size:12px; }
+    .hist .section-title { font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:#475569; margin:0 0 8px; }
+    .hist .doc-title { font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#0f172a; margin:0 0 12px; border-left:3px solid #0ea5e9; padding-left:8px; }
+    .hist .section { margin-bottom:12px; }
+    .hist .section-lbl { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:#94a3b8; margin-bottom:3px; }
+    .hist .section-val { font-size:12px; color:#1e293b; white-space:pre-wrap; line-height:1.5; }
+    .hist .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px; }
+    .hist table { width:100%; border-collapse:collapse; margin-bottom:12px; }
+    .hist th { background:#f8fafc; padding:5px 8px; text-align:left; font-size:9px; font-weight:700; text-transform:uppercase; color:#64748b; border-bottom:2px solid #e2e8f0; }
+    .hist td { padding:5px 8px; font-size:11px; border-bottom:1px solid #f1f5f9; vertical-align:top; }
+    .hist .badge { display:inline-block; padding:1px 7px; border-radius:4px; font-size:9px; font-weight:700; background:#f1f5f9; color:#334155; }
+  `;
+  const printHistoryDoc = async (
+    tipo: string,
+    bodyHtml: string,
+    model: "assistencial" | "documental",
+    prefix: string,
+  ) => {
+    const sectorLabel = getSectorDisplayLabel(patientSector ?? "") || patientSector || "";
+    const [logoDataUrl, headerPatient] = await Promise.all([
+      prepareLogo(),
+      resolveHeaderPatient(patientId, { name: patientName ?? "", bed: patientBed ?? "", sector: sectorLabel }),
+    ]);
+    const html = buildNormaZeroDocument({
+      title: tipo,
+      standardHeader: { model, title: tipo, emission: "", patient: headerPatient },
+      sectorLabel: sectorLabel || "Assistência Hospitalar",
+      hospitalName: currentHospital?.name,
+      docCodePrefix: prefix,
+      bodyHtml,
+      signatures: [],
+      logoDataUrl,
+      extraStyles: histCss,
+    });
+    const w = openPrintWindow(html, "Preparando documento…");
+    if (!w) alert("Permita pop-ups para imprimir.");
+  };
+
   // Imprime um subconjunto de eventos (card individual ou grupo de dia)
-  const printEvents = (eventsToprint: TimelineEvent[], title: string) => {
+  const printEvents = async (eventsToprint: TimelineEvent[], title: string) => {
     const rows = eventsToprint.map((e) => `
       <tr>
         <td style="padding:6px 8px;border-bottom:1px solid #e2e8f0;font-size:11px;color:#64748b;white-space:nowrap">
@@ -551,28 +594,7 @@ export default function HistoricoPacientePage() {
         </td>
       </tr>`).join("");
 
-    const html = `<!DOCTYPE html><html lang="pt-BR"><head>
-      <meta charset="UTF-8"/>
-      <title>Histórico — ${patientName}</title>
-      <style>
-        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 16px; color: #1e293b; }
-        .header { border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 14px; }
-        .header h1 { margin: 0 0 2px; font-size: 15px; font-weight: 700; text-transform: uppercase; }
-        .header p { margin: 0; font-size: 11px; color: #64748b; }
-        .section-title { font-size: 12px; font-weight: 600; text-transform: uppercase;
-          letter-spacing: .06em; color: #475569; margin: 0 0 8px; }
-        table { width: 100%; border-collapse: collapse; }
-        th { background: #f8fafc; padding: 6px 8px; text-align: left; font-size: 10px;
-          font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
-          color: #64748b; border-bottom: 2px solid #e2e8f0; }
-        @page { size: A4 portrait; margin: 14mm; }
-        @media print { body { padding: 0; } }
-      </style>
-    </head><body>
-      <div class="header">
-        <h1>${patientName}</h1>
-        <p>${[patientBed ? "Leito " + patientBed : "", patientSector ?? ""].filter(Boolean).join(" · ")} · Impresso em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</p>
-      </div>
+    const bodyHtml = `<div class="hist">
       <p class="section-title">${title} · ${eventsToprint.length} registro${eventsToprint.length !== 1 ? "s" : ""}</p>
       <table>
         <thead><tr>
@@ -580,14 +602,8 @@ export default function HistoricoPacientePage() {
         </tr></thead>
         <tbody>${rows}</tbody>
       </table>
-    </body></html>`;
-
-    const w = window.open("", "_blank", "width=900,height=700");
-    if (!w) return;
-    w.document.write(html);
-    w.document.close();
-    w.focus();
-    setTimeout(() => { w.print(); w.close(); }, 400);
+    </div>`;
+    await printHistoryDoc("Histórico do paciente", bodyHtml, "documental", "HIST");
   };
 
   const printDocumentFromHistory = async (e: TimelineEvent) => {
@@ -600,51 +616,6 @@ export default function HistoricoPacientePage() {
     const rawId = e.event_id.startsWith(`${e.event_type}-`)
       ? e.event_id.slice(e.event_type.length + 1)
       : e.event_id;
-
-    const openPrint = (html: string) => {
-      const w = window.open("", "_blank", "width=960,height=720");
-      if (!w) return;
-      w.document.open();
-      w.document.write(html);
-      w.document.close();
-      w.focus();
-      setTimeout(() => { try { w.print(); } finally { /* noop */ } }, 500);
-    };
-
-    const docHeader = (tipo: string) => `
-      <!DOCTYPE html><html lang="pt-BR"><head>
-      <meta charset="UTF-8"/>
-      <title>${tipo} — ${patientName}</title>
-      <style>
-        * { box-sizing: border-box; }
-        body { font-family:'Segoe UI',Arial,sans-serif; margin:0; padding:18px 20px; color:#1e293b; font-size:12px; }
-        .hdr { border-bottom:2px solid #0f172a; padding-bottom:8px; margin-bottom:14px; display:flex; justify-content:space-between; align-items:flex-end; }
-        .hdr-left h1 { margin:0 0 2px; font-size:15px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; }
-        .hdr-left p  { margin:0; font-size:10px; color:#64748b; }
-        .hdr-right   { text-align:right; font-size:10px; color:#64748b; }
-        .doc-title   { font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#0f172a; margin:0 0 12px; border-left:3px solid #0ea5e9; padding-left:8px; }
-        .section     { margin-bottom:12px; }
-        .section-lbl { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:#94a3b8; margin-bottom:3px; }
-        .section-val { font-size:12px; color:#1e293b; white-space:pre-wrap; line-height:1.5; }
-        .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px; }
-        .grid3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:12px; }
-        table { width:100%; border-collapse:collapse; margin-bottom:12px; }
-        th { background:#f8fafc; padding:5px 8px; text-align:left; font-size:9px; font-weight:700; text-transform:uppercase; color:#64748b; border-bottom:2px solid #e2e8f0; }
-        td { padding:5px 8px; font-size:11px; border-bottom:1px solid #f1f5f9; vertical-align:top; }
-        .badge { display:inline-block; padding:1px 7px; border-radius:4px; font-size:9px; font-weight:700; background:#f1f5f9; color:#334155; }
-        @page { size:A4 portrait; margin:14mm; }
-        @media print { body { padding:0; } }
-      </style></head><body>
-      <div class="hdr">
-        <div class="hdr-left">
-          <h1>${patientName}</h1>
-          <p>${[patientBed ? "Leito " + patientBed : "", patientSector ? patientSector : ""].filter(Boolean).join(" · ")}</p>
-        </div>
-        <div class="hdr-right">
-          ${tipo}<br/>
-          Impresso em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-        </div>
-      </div>`;
 
     try {
       if (e.event_type === "evolution") {
@@ -722,7 +693,7 @@ export default function HistoricoPacientePage() {
             <td>${it.route || ""}</td>
             <td>${it.frequency || it.frequencia || ""}</td>
           </tr>`).join("");
-        const html = docHeader("PRESCRIÇÃO MÉDICA") + `
+        const html = `<div class="hist">
           <p class="doc-title">Prescrição Médica · ${format(new Date(data.created_at), "dd/MM/yyyy 'às' HH:mm")}</p>
           <div class="grid2" style="margin-bottom:14px">
             <div><div class="section-lbl">Status</div><div class="section-val"><span class="badge">${data.status ?? ""}</span></div></div>
@@ -733,8 +704,9 @@ export default function HistoricoPacientePage() {
             <tbody>${rows || "<tr><td colspan='5' style='text-align:center;color:#94a3b8'>Sem itens registrados</td></tr>"}</tbody>
           </table>
           ${data.notes ? `<div class="section"><div class="section-lbl">Observações</div><div class="section-val">${data.notes}</div></div>` : ""}
-        </body></html>`;
-        openPrint(html); setPrintingId(null); return;
+        </div>`;
+        await printHistoryDoc("Prescrição médica", html, "assistencial", "PRESC");
+        setPrintingId(null); return;
       }
 
       if (e.event_type === "exam_request") {
@@ -781,14 +753,15 @@ export default function HistoricoPacientePage() {
         if (!data) { alert("Admissão não encontrada."); setPrintingId(null); return; }
         const i = data as any;
         const admDate = i.data_entrada || i.criado_em || e.event_at;
-        const html = docHeader("FICHA DE ADMISSÃO") + `
+        const html = `<div class="hist">
           <p class="doc-title">Admissão · ${format(new Date(admDate), "dd/MM/yyyy 'às' HH:mm")}</p>
           ${i.queixa_principal    ? `<div class="section"><div class="section-lbl">Queixa Principal</div><div class="section-val">${i.queixa_principal}</div></div>` : ""}
           ${i.historia_clinica    ? `<div class="section"><div class="section-lbl">História Clínica</div><div class="section-val">${i.historia_clinica}</div></div>` : ""}
           ${i.hipotese_diagnostica ? `<div class="section"><div class="section-lbl">Hipótese Diagnóstica</div><div class="section-val">${i.hipotese_diagnostica}</div></div>` : ""}
           ${i.conduta_inicial     ? `<div class="section"><div class="section-lbl">Conduta Inicial</div><div class="section-val">${i.conduta_inicial}</div></div>` : ""}
-        </body></html>`;
-        openPrint(html); setPrintingId(null); return;
+        </div>`;
+        await printHistoryDoc("Ficha de admissão", html, "assistencial", "ADM");
+        setPrintingId(null); return;
       }
 
       if (e.event_type === "discharge_document") {
@@ -848,12 +821,12 @@ export default function HistoricoPacientePage() {
         return;
       }
 
-      const html = docHeader(EVENT_TYPE_LABELS[e.event_type] ?? "EVENTO") + `
+      const html = `<div class="hist">
         <p class="doc-title">${e.event_label}</p>
         <div class="section"><div class="section-lbl">Data/Hora</div><div class="section-val">${format(new Date(e.event_at), "dd/MM/yyyy 'às' HH:mm")}</div></div>
         ${e.summary ? `<div class="section"><div class="section-lbl">Resumo</div><div class="section-val">${e.summary}</div></div>` : ""}
-      </body></html>`;
-      openPrint(html);
+      </div>`;
+      await printHistoryDoc(EVENT_TYPE_LABELS[e.event_type] ?? "Evento", html, "documental", "HIST");
     } catch (err) {
       console.error("[HistoricoPrint]", err);
       alert("Erro ao carregar o documento para impressão.");
@@ -870,6 +843,7 @@ export default function HistoricoPacientePage() {
         patientBed,
         patientSector: getSectorDisplayLabel(enc.setor?.nome ?? patientSector ?? ""),
         hospitalName: currentHospital?.name ?? null,
+        patientId: enc.id,
       });
     } finally {
       setPrintingSaps(null);

@@ -2,7 +2,7 @@ import { Patient } from "@/types/patient";
 import { formatDateBR } from "@/utils/dateUtils";
 import { formatAgeDisplay } from "@/utils/ageDisplay";
 import { whitelabel, getConfidentialityFooter } from "@/config/whitelabel";
-import { getSectorDisplayLabel } from "@/utils/bedNaming";
+import { CasoClinicoHeader } from "@/components/CasoClinicoHeader";
 
 interface PrintPatientLayoutProps {
   patient: Patient;
@@ -118,123 +118,8 @@ export function PrintPatientLayout({ patient }: PrintPatientLayoutProps) {
     <>
       <style>{pageStyle}</style>
       <div style={containerStyle}>
-        {/* Logo Watermark */}
-        <img 
-          src={whitelabel.logos.networkFull} 
-          alt={whitelabel.institution.networkLogoAlt}
-          style={{ 
-            position: 'absolute',
-            top: '5mm',
-            right: '8mm',
-            height: '26px',
-            width: 'auto',
-            opacity: 0.15,
-            zIndex: 0
-          }}
-        />
-        
-        {/* Header - Minimalista */}
-        <div style={{ 
-          borderLeft: `4px solid ${colors.primary}`,
-          padding: '8px 10px',
-          marginBottom: '10px',
-          backgroundColor: '#fafafa',
-          position: 'relative',
-          zIndex: 1
-        }}>
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'space-between',
-            marginBottom: '6px'
-          }}>
-            <div>
-              <h1 style={{ 
-                fontSize: '11pt', 
-                fontWeight: '600', 
-                textTransform: 'uppercase',
-                margin: 0,
-                color: '#111827',
-                letterSpacing: '0.3px'
-              }}>
-                Caso Clínico Completo
-              </h1>
-              <div style={{ 
-                fontSize: '7pt', 
-                color: '#6b7280',
-                marginTop: '2px'
-              }}>
-                {getSectorDisplayLabel(patient.sector)} • Leito {patient.bedNumber}
-              </div>
-            </div>
-            <div style={{ 
-              backgroundColor: colors.primary,
-              color: '#ffffff',
-              padding: '6px 12px',
-              borderRadius: '3px',
-              fontSize: '12pt',
-              fontWeight: 'bold'
-            }}>
-              {patient.bedNumber}
-            </div>
-          </div>
-          
-          {/* Metadata Bar */}
-          <div style={{ 
-            display: 'flex',
-            gap: '8px',
-            fontSize: '6.5pt',
-            color: '#6b7280',
-            paddingTop: '6px',
-            borderTop: '1px solid #e5e7eb'
-          }}>
-            <div>
-              {new Date().toLocaleDateString('pt-BR')}
-            </div>
-            <div style={{ borderLeft: '1px solid #d1d5db', paddingLeft: '8px' }}>
-              {new Date().toLocaleTimeString('pt-BR')}
-            </div>
-            {patient.admissionDate && (
-              <div style={{ borderLeft: '1px solid #d1d5db', paddingLeft: '8px' }}>
-                Admissão: {new Date(patient.admissionDate).toLocaleDateString('pt-BR')}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Patient Card - Clean */}
-        <div style={{ 
-          padding: '10px 12px', 
-          marginBottom: '10px',
-          border: '1px solid #e5e7eb',
-          borderLeft: `3px solid ${colors.primary}`,
-          backgroundColor: '#ffffff'
-        }}>
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: '12px'
-          }}>
-            <div>
-              <div style={{ fontSize: '6.5pt', color: '#9ca3af', marginBottom: '2px', fontWeight: '600', textTransform: 'uppercase' }}>
-                Paciente
-              </div>
-              <div style={{ 
-                fontSize: '10pt', 
-                fontWeight: '600', 
-                color: '#111827', 
-                textTransform: 'uppercase',
-                letterSpacing: '0.3px'
-              }}>
-                {patient.name}
-              </div>
-            </div>
-            <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
-              <div style={{ fontSize: '6.5pt', color: '#9ca3af', marginBottom: '2px', fontWeight: '600' }}>IDADE</div>
-              <div style={{ fontSize: '9pt', fontWeight: '600', color: '#374151' }}>{formatAgeDisplay(patient.age)}</div>
-            </div>
-          </div>
-        </div>
+        {/* Cabeçalho padronizado (mesmo da prévia): timbrado + faixa + identificação */}
+        <CasoClinicoHeader patient={patient} />
 
         {/* UTI-specific header info */}
         {(patient.utiAdmissionDate?.[0] || patient.utiOriginSector?.[0]) && (

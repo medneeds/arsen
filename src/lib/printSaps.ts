@@ -6,6 +6,8 @@ import {
 } from "@/lib/saps3";
 import type { SapsRow } from "@/components/saps3/SapsView";
 import { sectorLabelFromCode } from "@/lib/hospitalSectors";
+import { buildNormaZeroDocument, openPrintWindow, prepareLogo } from "@/lib/printNormaZero";
+import { resolveHeaderPatient } from "@/lib/headerPatient";
 
 // Faixa gravada (ex.: "lt120") -> rotulo PT (saps3.ts). Fallback para o codigo.
 const labelFrom = (faixas: { id: string; rotulo: string }[], code?: string | null): string => {
@@ -41,14 +43,11 @@ export interface PrintSapsIdentity {
   patientBed?: string | null;
   patientSector?: string | null;
   hospitalName?: string | null;
+  /** Id da internacao — completa o cabecalho com o cadastro (sexo, atendimento, alergias...). */
+  patientId?: string | null;
 }
 
-export function printSapsDocument(row: SapsRow, id: PrintSapsIdentity = {}) {
-  const w = window.open("", "_blank", "width=1000,height=800");
-  if (!w) {
-    alert("Por favor, permita pop-ups para imprimir a ficha SAPS 3.");
-    return;
-  }
+export async function printSapsDocument(row: SapsRow, id: PrintSapsIdentity = {}) {
   const leuco = row.leucocitos != null ? formatarContagem(milParaContagem(row.leucocitos)) : "";
   const plaq = row.plaquetas_mais_baixas != null ? formatarContagem(milParaContagem(row.plaquetas_mais_baixas)) : "";
 
@@ -90,30 +89,18 @@ export function printSapsDocument(row: SapsRow, id: PrintSapsIdentity = {}) {
     field("Droga vasoativa (antes da UTI)", fx(VASOATIVO, "vasoativo")),
   ].join("");
 
-  const ident = [
-    field("Paciente", id.patientName ?? ""),
-    field("Leito", id.patientBed ?? ""),
-    field("Setor", id.patientSector ? sectorLabelFromCode(id.patientSector) : ""),
-  ].join("");
+  const sectorLabel = id.patientSector ? sectorLabelFromCode(id.patientSector) : "";
+  // A identificacao do paciente vive no cabecalho padronizado (modelo assistencial).
+  const [logoDataUrl, headerPatient] = await Promise.all([
+    prepareLogo(),
+    resolveHeaderPatient(id.patientId, {
+      name: id.patientName ?? "",
+      bed: id.patientBed ?? "",
+      sector: sectorLabel,
+    }),
+  ]);
 
-  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Ficha SAPS 3 — ${esc(id.patientName ?? "")}</title>
-    <style>
-      * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      body { font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; color:#111; margin:0; padding:16px 20px; }
-      h1 { font-size:16px; margin:0 0 2px; }
-      .sub { font-size:11px; color:#555; margin-bottom:10px; }
-      .score { border:1px solid #cbd5e1; border-radius:6px; background:#f8fafc; padding:8px 12px; display:flex; gap:28px; align-items:flex-end; margin-bottom:12px; }
-      .score .big { font-size:26px; font-weight:700; font-family:ui-monospace,Menlo,monospace; }
-      .score .k { font-size:8px; text-transform:uppercase; letter-spacing:.4px; color:#64748b; font-weight:700; }
-      .sec { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:#0054A6; border-bottom:1px solid #0054A6; margin:12px 0 6px; padding-bottom:2px; }
-      .grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:4px 16px; }
-      .f .l { font-size:8px; text-transform:uppercase; letter-spacing:.3px; color:#64748b; font-weight:700; }
-      .f .v { font-size:11px; color:#0a1628; }
-      @page { size:A4; margin:12mm; }
-    </style></head><body>
-    <h1>Ficha SAPS 3</h1>
-    <div class="sub">${esc(id.hospitalName ?? "")}</div>
-    <div class="grid">${ident}</div>
+  const bodyHtml = `
     <div class="score">
       <div><div class="k">Escore total</div><div class="big">${num(row.escore_total) || "—"}</div></div>
       <div><div class="k">Mortalidade prevista</div><div class="big">${row.mortalidade_prevista != null ? row.mortalidade_prevista + "%" : "—"}</div></div>
@@ -122,8 +109,35 @@ export function printSapsDocument(row: SapsRow, id: PrintSapsIdentity = {}) {
     <div class="sec">Box I — Condicoes previas</div><div class="grid">${boxI}</div>
     <div class="sec">Box II — Circunstancias da admissao</div><div class="grid">${boxII}</div>
     <div class="sec">Box III — Fisiologia</div><div class="grid">${boxIII}</div>
-    </body></html>`);
-  w.document.close();
-  w.focus();
-  setTimeout(() => w.print(), 250);
+  `;
+
+  const extraStyles = `
+    .score { border:1px solid #cbd5e1; border-radius:6px; background:#f8fafc; padding:8px 12px; display:flex; gap:28px; align-items:flex-end; margin-bottom:12px; }
+    .score .big { font-size:26px; font-weight:700; font-family:ui-monospace,Menlo,monospace; }
+    .score .k { font-size:8px; text-transform:uppercase; letter-spacing:.4px; color:#64748b; font-weight:700; }
+    .sec { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:#0054A6; border-bottom:1px solid #0054A6; margin:12px 0 6px; padding-bottom:2px; }
+    .grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:4px 16px; }
+    .f .l { font-size:8px; text-transform:uppercase; letter-spacing:.3px; color:#64748b; font-weight:700; }
+    .f .v { font-size:11px; color:#0a1628; }
+  `;
+
+  const html = buildNormaZeroDocument({
+    title: "Ficha SAPS 3",
+    standardHeader: {
+      model: "assistencial",
+      title: "Ficha SAPS 3",
+      complement: "Escore de gravidade",
+      emission: "",
+      patient: headerPatient,
+    },
+    sectorLabel: sectorLabel || "UTI",
+    hospitalName: id.hospitalName ?? undefined,
+    docCodePrefix: "SAPS",
+    bodyHtml,
+    signatures: [],
+    logoDataUrl,
+    extraStyles,
+  });
+  const w = openPrintWindow(html, "Preparando ficha SAPS 3…");
+  if (!w) alert("Por favor, permita pop-ups para imprimir a ficha SAPS 3.");
 }

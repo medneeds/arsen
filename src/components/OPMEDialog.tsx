@@ -26,6 +26,8 @@ import { useHospital } from "@/contexts/HospitalContext";
 import { supabase } from "@/integrations/supabase/client";
 import { asUuidOrNull } from "@/lib/utils";
 import { resolvePatientHeader, resolveCurrentBedSector } from "@/lib/resolvePatientHeader";
+import { buildNormaZeroDocument, openPrintWindow, prepareLogo } from "@/lib/printNormaZero";
+import { resolveHeaderPatient } from "@/lib/headerPatient";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { getSectorDisplayLabel } from "@/utils/bedNaming";
@@ -186,7 +188,7 @@ export function OPMEDialog({
     }
   };
 
-  const handlePrint = () => {
+  const handlePrint = async () => {
     const esc = (s: unknown) => String(s ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]!));
     const validMateriais = materiais.filter((m) => m.descricao.trim());
     const dataFormatada = dataHora ? format(new Date(dataHora), "dd/MM/yyyy HH:mm") : format(new Date(), "dd/MM/yyyy HH:mm");
@@ -222,44 +224,29 @@ export function OPMEDialog({
         </table>
       </div>`).join("");
 
-    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/>
-<title>Registro de OPME — ${esc(resolvedName)}</title>
-<style>
-@page{size:A4 portrait;margin:12mm 14mm;}
-body{font-family:Arial,sans-serif;font-size:10pt;color:#000;margin:0;}
-.header{text-align:center;border-bottom:2px solid #000;padding-bottom:6px;margin-bottom:10px;}
-.header h1{font-size:13pt;font-weight:bold;margin:0 0 2px 0;text-transform:uppercase;}
-.header h2{font-size:10pt;font-weight:normal;margin:0 0 2px 0;}
-.header h3{font-size:11pt;font-weight:bold;margin:4px 0 0 0;text-transform:uppercase;letter-spacing:1px;}
-.st{font-size:9pt;font-weight:bold;text-transform:uppercase;letter-spacing:.5px;background:#e8e8e8;padding:3px 6px;margin:10px 0 4px 0;border-left:3px solid #333;}
-.fr{display:flex;gap:12px;margin-bottom:6px;}
-.f{flex:1;}
-.f label{font-size:8pt;font-weight:bold;display:block;margin-bottom:1px;color:#444;}
-.f span{font-size:9.5pt;border-bottom:1px solid #999;display:block;min-height:16px;padding-bottom:1px;}
-table{width:100%;border-collapse:collapse;margin-bottom:8px;}
-th{background:#e8e8e8;font-size:9pt;font-weight:bold;padding:4px 6px;border:1px solid #000;text-align:left;}
-.ic{border:1px solid #999;min-height:40px;padding:4px 6px;font-size:9.5pt;margin-bottom:8px;}
-.assinaturas{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;}
-.ab{border:1px solid #999;padding:6px;}
-.ab label{font-size:8pt;font-weight:bold;display:block;margin-bottom:24px;}
-.al{border-top:1px solid #000;font-size:8pt;padding-top:2px;text-align:center;}
-.rodape{margin-top:14px;border-top:1px solid #ccc;padding-top:4px;font-size:8pt;color:#666;text-align:center;}
-</style></head><body>
-<div class="header">
-<h2>PREFEITURA MUNICIPAL DE SÃO LUÍS — SECRETARIA MUNICIPAL DE SAÚDE</h2>
-<h1>Hospital Municipal Djalma Marques — Socorrão I</h1>
-<h3>Registro de Utilização de OPME</h3>
-<div style="font-size:8.5pt;margin-top:3px;">Órtese, Prótese e Material Especial</div>
-</div>
-<div class="st">Identificação do Paciente</div>
-<div class="fr">
-<div class="f"><label>Nome</label><span>${esc(resolvedName)}</span></div>
-<div class="f" style="max-width:180px;"><label>Data do Procedimento</label><span>${esc(dataFormatada)}</span></div>
-</div>
+    // Escopo .opme: o CSS proprio do formulario nao vaza para o cabecalho padronizado.
+    const extraStyles = `
+.opme{font-family:Arial,sans-serif;font-size:10pt;color:#000;}
+.opme .st{font-size:9pt;font-weight:bold;text-transform:uppercase;letter-spacing:.5px;background:#e8e8e8;padding:3px 6px;margin:10px 0 4px 0;border-left:3px solid #333;}
+.opme .fr{display:flex;gap:12px;margin-bottom:6px;}
+.opme .f{flex:1;}
+.opme .f label{font-size:8pt;font-weight:bold;display:block;margin-bottom:1px;color:#444;}
+.opme .f span{font-size:9.5pt;border-bottom:1px solid #999;display:block;min-height:16px;padding-bottom:1px;}
+.opme table{width:100%;border-collapse:collapse;margin-bottom:8px;}
+.opme th{background:#e8e8e8;font-size:9pt;font-weight:bold;padding:4px 6px;border:1px solid #000;text-align:left;}
+.opme .ic{border:1px solid #999;min-height:40px;padding:4px 6px;font-size:9.5pt;margin-bottom:8px;}
+.opme .assinaturas{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;}
+.opme .ab{border:1px solid #999;padding:6px;}
+.opme .ab label{font-size:8pt;font-weight:bold;display:block;margin-bottom:24px;}
+.opme .al{border-top:1px solid #000;font-size:8pt;padding-top:2px;text-align:center;}
+.opme .rodape{margin-top:14px;border-top:1px solid #ccc;padding-top:4px;font-size:8pt;color:#666;text-align:center;}
+`;
+
+    const bodyHtml = `<div class="opme">
+<div class="st">Dados do Procedimento</div>
 <div class="fr">
 <div class="f"><label>Cirurgia / Procedimento</label><span>${esc(cirurgia || "—")}</span></div>
-<div class="f" style="max-width:120px;"><label>Leito</label><span>${esc(resolvedBed || "—")}</span></div>
-<div class="f" style="max-width:160px;"><label>Setor</label><span>${esc(getSectorDisplayLabel(resolvedSector) || resolvedSector || "—")}</span></div>
+<div class="f" style="max-width:180px;"><label>Data do Procedimento</label><span>${esc(dataFormatada)}</span></div>
 </div>
 <div class="fr">
 <div class="f"><label>Cirurgião</label><span>${esc(cirurgiao || "—")}</span></div>
@@ -283,16 +270,35 @@ ${rastreabilidadeBlocks}
 <div class="ab"><label>Funcionário CME / Farmácia Satélite</label><div class="al">&nbsp;</div></div>
 </div>
 <div class="rodape">
-Preencher em 2 vias: 1ª Via — Prontuário · 2ª Via — Setor de Dispensação do Material<br/>
-Gerado pelo sistema ARSen em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm")}
+Preencher em 2 vias: 1ª Via — Prontuário · 2ª Via — Setor de Dispensação do Material
 </div>
-</body></html>`;
+</div>`;
 
-    const win = window.open("", "_blank", "width=800,height=900");
-    if (!win) { toast.error("Popup bloqueado — permita pop-ups para imprimir"); return; }
-    win.document.write(html);
-    win.document.close();
-    win.onload = () => win.print();
+    // A identificacao do paciente vive no cabecalho padronizado (modelo assistencial).
+    const sectorLabel = getSectorDisplayLabel(resolvedSector) || resolvedSector;
+    const [logoDataUrl, headerPatient] = await Promise.all([
+      prepareLogo(),
+      resolveHeaderPatient(asUuidOrNull(patientId), { name: resolvedName, bed: resolvedBed, sector: sectorLabel }),
+    ]);
+    const html = buildNormaZeroDocument({
+      title: "Registro de Utilização de OPME",
+      standardHeader: {
+        model: "assistencial",
+        title: "Registro de utilização de OPME",
+        complement: "Órtese, prótese e material especial",
+        emission: "",
+        patient: headerPatient,
+      },
+      sectorLabel: sectorLabel || "Centro Cirúrgico",
+      hospitalName: currentHospital?.name,
+      docCodePrefix: "OPME",
+      bodyHtml,
+      signatures: [],
+      logoDataUrl,
+      extraStyles,
+    });
+    const win = openPrintWindow(html, "Preparando registro de OPME…");
+    if (!win) toast.error("Popup bloqueado — permita pop-ups para imprimir");
   };
 
   return (

@@ -2447,6 +2447,7 @@ function buildSatDataFromRequest(request: any): SatPrintData {
   const traumaAt: string = item.trauma_at || "";
   const [traumaDate, traumaTime] = traumaAt.includes("T") ? traumaAt.split("T") : ["", ""];
   return {
+    patientId: request?.patient_id || null,
     patientName: request?.patient_name || "",
     patientBed: request?.patient_bed || "",
     patientSector: request?.patient_sector || "",

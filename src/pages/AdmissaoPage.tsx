@@ -257,6 +257,7 @@ export default function AdmissaoPage() {
                         patientName: patient.name,
                         patientBed: patient.bed,
                         patientSector: patient.sector,
+                        patientId: patientId || null,
                       })}
                     >
                       <Printer className="h-3.5 w-3.5 mr-1" /> Imprimir
