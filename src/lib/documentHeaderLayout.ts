@@ -71,8 +71,8 @@ export interface HeaderInput {
    * ex.: Round): Paciente/Leito/Prontuario + Idade/Setor/Atendimento/Alergias.
    */
   dense?: boolean;
-  /** Dados proprios do documento (CID, Caracter, Solicitante...). So entram se tiverem valor. */
-  extras?: Array<[label: string, value: string | null | undefined]>;
+  /** Dados proprios do documento (CID, Caracter, Solicitante...). So entram se tiverem valor (ou se o 3o item for true). */
+  extras?: Array<[label: string, value: string | null | undefined, always?: boolean]>;
 }
 
 export type CellTone = "default" | "allergyOk" | "allergyAlert";
@@ -202,8 +202,9 @@ export function buildHeaderLayout(input: HeaderInput): HeaderLayout {
     rows.push(...packPairs(reg));
   }
   if ((input.model === "documental" || input.includeRegistry) && clean(p.address)) rows.push([{ label: "Endereço", value: clean(p.address), span: 7 }]);
-  for (const [label, value] of input.extras ?? []) {
-    if (clean(value)) rows.push([{ label: clean(label), value: clean(value), span: 7 }]);
+  // Linha extra so com valor; com `always` a linha existe mesmo vazia (campo a preencher a mao).
+  for (const [label, value, always] of input.extras ?? []) {
+    if (clean(value) || always) rows.push([{ label: clean(label), value: clean(value), span: 7 }]);
   }
 
   return { ...base, rows };

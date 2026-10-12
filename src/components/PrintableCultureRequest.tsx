@@ -137,17 +137,6 @@ function mapCatalog(items: CultureRequestData["items"]) {
 }
 
 /** Calcula idade aproximada em anos a partir de ISO date. */
-function ageInYears(iso?: string | null): number | null {
-  if (!iso) return null;
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return null;
-  const now = new Date();
-  let years = now.getFullYear() - d.getFullYear();
-  const m = now.getMonth() - d.getMonth();
-  if (m < 0 || (m === 0 && now.getDate() < d.getDate())) years--;
-  return years;
-}
-
 const fmtDate = (iso?: string | null) =>
   iso ? format(new Date(iso + (iso.length === 10 ? "T12:00:00" : "")), "dd/MM/yyyy", { locale: ptBR }) : "";
 
@@ -238,9 +227,6 @@ export function PrintableCultureRequest({
   const createdAt = new Date(request.created_at);
   const createdStr = format(createdAt, "dd/MM/yyyy", { locale: ptBR });
 
-  const age = ageInYears(request.patient_birth_date);
-  const isMinor = age !== null && age < 18;
-
   // Cabecalho padronizado (modelo documental) — mesma fonte da impressao.
   const headerPatient = useHeaderPatient(request.patient_id, {
     name: (request.patient_name || "").toUpperCase(),
@@ -283,30 +269,12 @@ export function PrintableCultureRequest({
         emission={format(new Date(), "dd/MM/yyyy HH:mm:ss")}
         width="100%"
         patient={headerPatient}
+        extras={[["Nasc. da mãe", fmtDate(request.mother_birth_date), true]]}
       />
 
       {/* TABELA ÚNICA — estrutura tipo formulário hospitalar */}
-      <table style={tableStyle}>
+      <table style={{ ...tableStyle, marginTop: "18px" }}>
         <tbody>
-          {/* Dados da mãe — sempre visível, com nota explicativa */}
-          <tr>
-            <td style={sectionRow} colSpan={4}>
-              Se paciente menor de 18 anos, preencher os dados da mãe
-            </td>
-          </tr>
-          <tr>
-            <td style={labelCell}>Nome da mãe:</td>
-            <td style={valueCell} colSpan={3}>
-              {(request.mother_name || (isMinor ? "" : "—"))?.toUpperCase?.() || ""}
-            </td>
-          </tr>
-          <tr>
-            <td style={labelCell}>Data de nascimento:</td>
-            <td style={valueCell} colSpan={3}>
-              {fmtDate(request.mother_birth_date)}
-            </td>
-          </tr>
-
           {/* Antecedentes */}
           <tr>
             <td style={cellBase} colSpan={4}>
@@ -475,10 +443,6 @@ export async function printCultureRequest(
   const formTable = `
     <table class="nz cult">
       <tbody>
-        <tr><td colspan="4" class="section">Se paciente menor de 18 anos, preencher os dados da mãe</td></tr>
-        <tr><th>Nome da mãe:</th><td colspan="3" class="bold">${escapeHtml((request.mother_name || "").toUpperCase())}</td></tr>
-        <tr><th>Data de nascimento:</th><td colspan="3">${escapeHtml(fmtDate(request.mother_birth_date))}</td></tr>
-
         <tr><td colspan="4">Esteve internado nos últimos 30 dias? ${checkbox(request.hospitalized_last_30d === true)} Sim &nbsp; ${checkbox(request.hospitalized_last_30d === false)} Não</td></tr>
         <tr><td colspan="4">
           Fez uso de antibiótico nas últimas 24h? ${checkbox(request.used_antibiotic_last_24h === true)} Sim &nbsp; ${checkbox(request.used_antibiotic_last_24h === false)} Não
@@ -536,6 +500,8 @@ export async function printCultureRequest(
     title: "Solicitação de exame microbiológico",
     emission: "",
     patient: headerPatient,
+    // Data de nascimento da mae: linha do cabecalho em TODAS as culturas (vazia = preencher a mao).
+    extras: [["Nasc. da mãe", fmtDate(request.mother_birth_date), true]] as Array<[string, string, boolean]>,
   };
   // Cada via leva o seu proprio cabecalho (compacto).
   const miniHeader = buildStandardHeaderHtml(headerInput, logoDataUrl, "all", { compact: true });
@@ -553,7 +519,7 @@ export async function printCultureRequest(
     : formTable;
 
   const extraStyles = `
-    table.nz.cult { width:100%; border-collapse:collapse; font-size:9pt; border:1pt solid #1e293b; margin-top:6pt; }
+    table.nz.cult { width:100%; border-collapse:collapse; font-size:9pt; border:1pt solid #1e293b; margin-top:18pt; }
     table.nz.cult th, table.nz.cult td { border:1pt solid #1e293b; padding:4pt 7pt; color:#0a1628; vertical-align:middle; text-align:left; font-weight:500; background:#fff; }
     table.nz.cult th { width:22%; white-space:nowrap; font-weight:500; }
     table.nz.cult td.bold, table.nz.cult .bold { font-weight:700; }
@@ -577,7 +543,7 @@ export async function printCultureRequest(
     .duo .via-tag { font-size:7pt; font-weight:700; color:#0054A6; text-transform:uppercase; letter-spacing:0.5pt; margin-bottom:2pt; text-align:right; }
 
     /* Compactar tabela na paisagem dividida */
-    .duo table.nz.cult { font-size:7pt; margin-top:2pt; }
+    .duo table.nz.cult { font-size:7pt; margin-top:8pt; }
     .duo table.nz.cult th, .duo table.nz.cult td { padding:2pt 4pt; }
     .duo table.nz.cult td.note { font-size:6pt; padding:2pt 4pt; }
     .duo table.nz.cult td.sig-cell { padding-top:12pt; }

@@ -170,3 +170,12 @@ test("assistencial dense: grade enxuta com alergias e linhas extras", () => {
   assert.ok(!labels.includes("Peso") && !labels.includes("Sexo") && !labels.includes("Nascimento"));
   assert.equal(find(l, "Alergias")?.tone, "allergyAlert");
 });
+
+test("linha extra 'always' existe mesmo vazia (campo a preencher a mao); sem always some", () => {
+  const com = buildHeaderLayout({ model: "documental", title: "x", emission: "e", patient: pac, extras: [["Nasc. da mãe", "", true]] });
+  assert.equal(find(com, "Nasc. da mãe")?.value, "");
+  const sem = buildHeaderLayout({ model: "documental", title: "x", emission: "e", patient: pac, extras: [["Nasc. da mãe", ""]] });
+  assert.equal(find(sem, "Nasc. da mãe"), undefined);
+  const cheio = buildHeaderLayout({ model: "documental", title: "x", emission: "e", patient: pac, extras: [["Nasc. da mãe", "02/01/1940", true]] });
+  assert.equal(find(cheio, "Nasc. da mãe")?.value, "02/01/1940");
+});
