@@ -906,7 +906,7 @@ export function MovimentacaoForm({
                   : subtypeDef.label)
                 : step === "subtype" && headerCat
                 ? headerCat.label
-                : "Sinalizar Movimentação (Painel Clínico)"}
+                : "Sinalizar Movimentação"}
             </h2>
             <p className="text-xs mt-1 text-muted-foreground">
               {step === "form" && subtypeDef
