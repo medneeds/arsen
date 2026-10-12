@@ -1,4 +1,5 @@
 import { Patient } from "@/types/patient";
+import { stripPendencyMarker } from "@/lib/pendencyMarker";
 import { formatAgeDisplay } from "@/utils/ageDisplay";
 
 interface PrintableUtiPatientCardProps {
@@ -150,7 +151,7 @@ export function PrintableUtiPatientCard({ patient, mode, colorVariant = 'blue' }
                   padding: hl ? '1px 2px' : '0',
                   borderRadius: hl ? '2px' : '0'
                 }}>
-                  <span style={{ color: '#94a3b8', fontWeight: '600', marginRight: '2px' }}>{idx + 1}.</span>{p}
+                  <span style={{ color: '#94a3b8', fontWeight: '600', marginRight: '2px' }}>{idx + 1}.</span>{stripPendencyMarker(p)}
                 </div>
               );
             })

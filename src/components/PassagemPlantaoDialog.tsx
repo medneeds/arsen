@@ -2,6 +2,7 @@ import { useRef } from "react";
 import type { Patient } from "@/types/patient";
 import { Button } from "@/components/ui/button";
 import { X, Printer, ClipboardList } from "lucide-react";
+import { stripPendencyMarker } from "@/lib/pendencyMarker";
 import { DocumentHeader } from "@/components/DocumentHeader";
 import { getSectorDisplayLabel } from "@/utils/bedNaming";
 
@@ -152,7 +153,7 @@ export function PassagemPlantaoDialog({ open, onClose, patients, sectorLabel }: 
                   <Block title="Hipóteses / Diagnósticos" items={p.diagnoses} />
                   <Block title="Antecedentes / Comorbidades" items={p.medicalHistory} />
                   <Block title="Plano Terapêutico" items={p.therapeuticPlan} />
-                  <Block title="Programações / Pendências" items={p.pendencies} />
+                  <Block title="Programações / Pendências" items={p.pendencies?.map(stripPendencyMarker)} />
                 </div>
               </section>
             ))

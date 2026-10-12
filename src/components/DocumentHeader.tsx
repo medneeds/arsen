@@ -84,16 +84,17 @@ export function DocumentHeader({ width = "186mm", ...input }: DocumentHeaderProp
         style={{
           backgroundColor: S.band,
           color: "#fff",
-          position: "relative",
-          textAlign: "center",
+          ...(layout.complement
+            ? { display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", columnGap: "8px" }
+            : { textAlign: "center" as const }),
           padding: "5px 9px",
           marginTop: "4px",
           marginBottom: layout.rows.length ? 0 : "6px",
         }}
       >
-        <b style={{ fontSize: "8.6pt", letterSpacing: "0.9px", textTransform: "uppercase" }}>{layout.title}</b>
+        <b style={{ ...(layout.complement ? { gridColumn: 2 } : {}), textAlign: "center", fontSize: "8.6pt", letterSpacing: "0.9px", textTransform: "uppercase" }}>{layout.title}</b>
         {layout.complement && (
-          <span style={{ position: "absolute", right: "9px", top: "50%", transform: "translateY(-50%)", fontSize: "7pt", letterSpacing: "0.4px", textTransform: "uppercase", opacity: 0.92 }}>
+          <span style={{ gridColumn: 3, justifySelf: "end", textAlign: "right", fontSize: "7pt", letterSpacing: "0.4px", textTransform: "uppercase", opacity: 0.92, lineHeight: 1.2 }}>
             {layout.complement}
           </span>
         )}

@@ -85,8 +85,10 @@ export function renderHeaderHtml(layout: HeaderLayout, brand: HeaderBrand, part:
         "</tr>",
     )
     .join("");
+  // Complemento na faixa: coluna propria (grade 1fr auto 1fr), nunca sobreposto ao titulo —
+  // com pouca largura (impressao A4 com margens) ele quebra de linha em vez de passar por baixo.
   const complement = layout.complement
-    ? `<span style="position:absolute;right:9px;top:50%;transform:translateY(-50%);font-size:${z.cmp};letter-spacing:0.4px;text-transform:uppercase;opacity:0.92">${esc(layout.complement)}</span>`
+    ? `<span style="grid-column:3;justify-self:end;text-align:right;font-size:${z.cmp};letter-spacing:0.4px;text-transform:uppercase;opacity:0.92;line-height:1.2">${esc(layout.complement)}</span>`
     : "";
   const table = layout.rows.length
     ? `<table style="width:100%;border-collapse:collapse;margin-bottom:${z.after};page-break-inside:avoid"><tbody>${rows}</tbody></table>`
@@ -105,8 +107,8 @@ export function renderHeaderHtml(layout: HeaderLayout, brand: HeaderBrand, part:
     </div>
   </div>
   <div style="display:flex;height:${z.bar}px"><div style="flex:1;background:${c.red}"></div><div style="flex:1;background:${c.orange}"></div><div style="flex:1;background:${c.yellow}"></div><div style="flex:1;background:${c.green}"></div><div style="flex:1;background:${c.blue}"></div></div>
-  <div style="background:${S.band};color:#fff;position:relative;text-align:center;padding:${z.bandPad};margin-top:4px;margin-bottom:${showGrid ? "0" : "6px"}">
-    <b style="font-size:${z.band};letter-spacing:0.9px;text-transform:uppercase">${esc(layout.title)}</b>${complement}
+  <div style="background:${S.band};color:#fff;${layout.complement ? "display:grid;grid-template-columns:1fr auto 1fr;align-items:center;column-gap:8px;" : "text-align:center;"}padding:${z.bandPad};margin-top:4px;margin-bottom:${showGrid ? "0" : "6px"}">
+    <b style="${layout.complement ? "grid-column:2;" : ""}text-align:center;font-size:${z.band};letter-spacing:0.9px;text-transform:uppercase">${esc(layout.title)}</b>${complement}
   </div>
   ${showGrid ? table : ""}
 </div>`;

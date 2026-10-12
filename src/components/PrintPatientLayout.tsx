@@ -1,4 +1,5 @@
 import { Patient } from "@/types/patient";
+import { stripPendencyMarker } from "@/lib/pendencyMarker";
 import { formatDateBR } from "@/utils/dateUtils";
 import { formatAgeDisplay } from "@/utils/ageDisplay";
 import { whitelabel, getConfidentialityFooter } from "@/config/whitelabel";
@@ -300,7 +301,7 @@ export function PrintPatientLayout({ patient }: PrintPatientLayoutProps) {
                       border: isHighlighted ? `1px solid ${colors.border}` : 'none'
                     }}
                   >
-                    {pendency}
+                    {stripPendencyMarker(pendency)}
                   </li>
                 );
               })}
