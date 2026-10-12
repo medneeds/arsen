@@ -414,7 +414,7 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
         <div className="flex items-center gap-2 flex-wrap">
           <FileText className="h-4 w-4 text-muted-foreground" />
           <span className="text-sm font-medium text-foreground">
-            Timeline ({filteredEvolutions.length}{filteredEvolutions.length !== evolutions.length && ` de ${evolutions.length}`})
+            Timeline
           </span>
           <div className="ml-auto flex items-center gap-2">
             <div className="relative">
