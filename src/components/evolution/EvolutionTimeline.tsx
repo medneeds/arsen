@@ -15,6 +15,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { RichTextEditor, richHtmlToPlainText } from "@/components/ui/rich-text-editor";
+import { diffPendencyToggles } from "@/lib/pendenciasSync";
+import { togglePendencyRemote } from "@/lib/pendenciasRemote";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
@@ -842,7 +844,19 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                           planItems={Array.isArray((data.soap as any).planItems) ? (data.soap as any).planItems : []}
                           onPlanItemsChange={(items) => updateLocal(evo.id, "soap", "planItems", items)}
                           pendenciasItems={Array.isArray((data.soap as any).pendenciasItems) ? (data.soap as any).pendenciasItems : []}
-                          onPendenciasItemsChange={(items) => updateLocal(evo.id, "soap", "pendenciasItems", items)}
+                          onPendenciasItemsChange={(items) => {
+                            // marcar/desmarcar grava na fonte unica (internacoes.pendencias) na hora
+                            if (patientId) {
+                              const rawPrev = (data.soap as { pendenciasItems?: unknown }).pendenciasItems;
+                              const prevItems: string[] = Array.isArray(rawPrev) ? (rawPrev as string[]) : [];
+                              for (const t of diffPendencyToggles(prevItems, items)) {
+                                togglePendencyRemote(patientId, t.text, t.done).catch((e) => {
+                                  toast.error("Não foi possível sincronizar a pendência", { description: e instanceof Error ? e.message : undefined });
+                                });
+                              }
+                            }
+                            updateLocal(evo.id, "soap", "pendenciasItems", items);
+                          }}
                         />
                       );
                     })()}

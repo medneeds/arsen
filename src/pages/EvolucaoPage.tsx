@@ -31,6 +31,8 @@ import { useHospital } from "@/contexts/HospitalContext";
 import { useEvolutions, EvolutionRecord } from "@/hooks/useEvolutions";
 import { usePatientCid } from "@/hooks/usePatientCid";
 import { usePatientLive } from "@/hooks/usePatientLive";
+import { mergeLiveIntoLocal, diffPendencyToggles, pendencyKeys } from "@/lib/pendenciasSync";
+import { togglePendencyRemote } from "@/lib/pendenciasRemote";
 import { usePatientIdentifiers } from "@/hooks/usePatientIdentifiers";
 import { usePatientDiagnosticContext } from "@/hooks/usePatientDiagnosticContext";
 import { isWithin24h } from "@/hooks/useDischargeAlert";
@@ -172,10 +174,10 @@ const EvolucaoPage = () => {
   const { setDirty, registerSaveDraft } = useUnsavedClinical('evolucao');
   const isDirtyRef = useRef(false);
 
-  const serializeForm = () => JSON.stringify({
+  const serializeForm = (pendOverride?: string[]) => JSON.stringify({
     soap: newSoap, vitals: newVitals, exam: newExam,
     devices: newDevices, culturesHtml: newCulturesHtml, antibioticos: newAntibioticos,
-    diagnosticHypotheses, antecedentes, planItems, pendenciasItems,
+    diagnosticHypotheses, antecedentes, planItems, pendenciasItems: pendOverride ?? pendenciasItems,
   });
 
   const baselineRef = useRef<string>('');
@@ -248,6 +250,40 @@ const EvolucaoPage = () => {
 
   // Live patient row (realtime sync with Painel Clínico)
   const { patient: livePatient, loading: livePatientLoading } = usePatientLive(initialPatientId || null);
+
+  // ── Pendencias: fonte unica = internacoes.pendencias ────────────────────────
+  // A lista do formulario e semeada/atualizada a partir da fonte (tempo real) e a
+  // marcacao de uma caixa grava NA HORA na fonte (identificando a pendencia pelo
+  // texto), para Evolucao, painel lateral e Painel Clinico mostrarem sempre o mesmo.
+  // Texto novo/editado/removido continua sendo gravado ao salvar a evolucao.
+  const livePendenciesKey = (livePatient?.pendencies ?? []).join("\n");
+  const seenLivePendenciesRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (!showNewForm) { seenLivePendenciesRef.current = new Set(); return; }
+    const live = (livePatient?.pendencies ?? []).filter(Boolean);
+    const merged = mergeLiveIntoLocal(pendenciasItems, live, seenLivePendenciesRef.current);
+    seenLivePendenciesRef.current = new Set([...seenLivePendenciesRef.current, ...pendencyKeys(live)]);
+    if (merged === pendenciasItems) return;
+    // Se o formulario estava limpo, a baseline acompanha (senao abrir o formulario ja o marcaria como "alterado").
+    const wasClean = serializeForm() === baselineRef.current;
+    if (wasClean) baselineRef.current = serializeForm(merged);
+    setPendenciasItems(merged);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showNewForm, livePendenciesKey]);
+
+  /** Marcar/desmarcar grava na fonte unica na hora; o restante da lista fica no formulario. */
+  const syncPendencyToggles = (prev: string[], next: string[]) => {
+    if (!initialPatientId) return;
+    for (const t of diffPendencyToggles(prev, next)) {
+      togglePendencyRemote(initialPatientId, t.text, t.done).catch((e) => {
+        toast.error("Não foi possível sincronizar a pendência", { description: e instanceof Error ? e.message : undefined });
+      });
+    }
+  };
+  const handlePendenciasItemsChange = (next: string[]) => {
+    syncPendencyToggles(pendenciasItems, next);
+    setPendenciasItems(next);
+  };
 
   //  BUGFIX (07/08/2026): `usePatientLive` não mapeia peso (`uti_weight_kg`),
   // e o `patient` (useMemo acima) só popula sexo/nascimento/idade/admissão/
@@ -770,7 +806,7 @@ const EvolucaoPage = () => {
               planItems={planItems}
               onPlanItemsChange={setPlanItems}
               pendenciasItems={pendenciasItems}
-              onPendenciasItemsChange={setPendenciasItems}
+              onPendenciasItemsChange={handlePendenciasItemsChange}
               cidPrimary={cidPrimary}
               cidSecondary={cidSecondary}
               patientId={initialPatientId || null}
