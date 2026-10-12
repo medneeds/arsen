@@ -20,7 +20,7 @@ import { printReceituario } from "@/lib/receituario";
 import { useReceituario } from "@/hooks/useReceituario";
 import {
   Activity, AlertTriangle, ArrowRight, BedDouble, ChevronLeft, ChevronRight,
-  ClipboardList, Copy, Droplet, FileText, FlaskConical, Heart, NotebookPen, Pill, Route,
+  ClipboardList, Copy, Droplet, FileText, FlaskConical, Heart, Pencil, Pill, Route,
   ShieldAlert, Stethoscope, Syringe, TestTubes, TrendingUp, User2, Users
 } from "lucide-react";
 import { calcDIH } from "@/lib/dihCalc";
@@ -255,6 +255,12 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
   const diagnoses = parseClinicalList(patient.diagnoses);
   const medHistory = parseClinicalList(patient.medicalHistory);
   const pendencies = pendOverride ?? parseList(patient.pendencies);
+  const specialCountsText = [
+    specialSummary.hemocomponente > 0 ? `Hemo ${specialSummary.hemocomponente}` : null,
+    specialSummary.sat > 0 ? `SAT ${specialSummary.sat}` : null,
+    specialSummary.apac > 0 ? `APAC ${specialSummary.apac}` : null,
+    specialSummary.cultura > 0 ? `Cult. ${specialSummary.cultura}` : null,
+  ].filter(Boolean).join(" · ");
   const pendDoneCount = pendencies.filter((x) => parsePendency(x).done).length;
   const pendOpenCount = pendencies.length - pendDoneCount;
 
@@ -768,14 +774,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
               onToggle={(o) => toggleCard("presc", o)}
               onOpenPage={() => goPatient("/prescricao")}
               title="Prescrição"
-              marker={<PrescriptionMarker status={prescription.status} signed={prescription.signed} />}
-              summary={(() => {
-                try {
-                  return `Atualizada ${formatDistanceToNow(new Date(prescription.updatedAt), { addSuffix: true, locale: ptBR })}`;
-                } catch {
-                  return undefined;
-                }
-              })()}
+              marker={<StatusMarker kind={prescriptionMarkerKind(prescription.status)} />}
             >
               {prescription.lines.length === 0 ? (
                 <EmptyMsg>Sem itens ativos.</EmptyMsg>
@@ -797,20 +796,13 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
         {evolution && (
           <div className="mx-3 mt-1 mb-1">
             <FoldCard
-              icon={NotebookPen}
+              icon={Pencil}
               tone="muted"
               open={!!openCards.evo}
               onToggle={(o) => toggleCard("evo", o)}
               onOpenPage={() => goPatient("/evolucao")}
               title="Evolução"
-              marker={<EvolutionStatusBadge status={evolution.status} validatedAt={evolution.validatedAt} />}
-              summary={(() => {
-                try {
-                  return `${evolution.createdByName ? `${evolution.createdByName} • ` : ""}${formatDistanceToNow(new Date(evolution.createdAt), { addSuffix: true, locale: ptBR })}`;
-                } catch {
-                  return evolution.createdByName || undefined;
-                }
-              })()}
+              marker={<StatusMarker kind={evolutionMarkerKind(evolution.status, evolution.validatedAt)} />}
             >
               {lastValidated ? (
                 <div className="space-y-1">
@@ -968,9 +960,13 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
 
         {/* ===== ZONA 3.10: REQUISIÇÕES ESPECIAIS (realtime) ===== */}
         {specialSummary.total > 0 && (
-          <div className="mx-3 mt-1 mb-1 rounded-md border border-border bg-muted/40">
-            <button
-              onClick={() => {
+          <div className="mx-3 mt-1 mb-1">
+            <FoldCard
+              icon={ClipboardList}
+              tone={specialSummary.pending > 0 ? "warning" : "muted"}
+              open={!!openCards.spec}
+              onToggle={(o) => toggleCard("spec", o)}
+              onOpenPage={() => {
                 const params = new URLSearchParams({
                   patientId: patient.id,
                   patientName: patient.name,
@@ -979,67 +975,49 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
                 });
                 navigate(`/requisicoes?${params.toString()}&especial=apac`);
               }}
-              className="w-full flex items-center justify-between gap-2 hover:bg-muted/70 transition px-3 py-2 text-left rounded-md"
+              title="Requisições especiais"
+              marker={
+                specialSummary.pending > 0 ? (
+                  <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground shrink-0">
+                    <span className="h-1.5 w-1.5 rounded-full bg-warning" />
+                    {specialSummary.pending} pendente{specialSummary.pending > 1 ? "s" : ""}
+                  </span>
+                ) : undefined
+              }
+              summary={specialSummary.pending > 0 ? undefined : specialCountsText}
             >
-              <div className="flex items-center gap-2 min-w-0">
-                <FileCheckIcon />
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium text-foreground">
-                      Requisições especiais
-                    </span>
-                    {specialSummary.pending > 0 && (
-                      <span className="inline-flex items-center rounded-md px-2 py-0 text-xs font-medium bg-warning/15 text-warning">
-                        {specialSummary.pending} pendente{specialSummary.pending > 1 ? "s" : ""}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex flex-wrap gap-x-2 gap-y-1 text-xs text-muted-foreground mt-1">
-                    {specialSummary.hemocomponente > 0 && (
-                      <span className="inline-flex items-center gap-1">
-                        <Droplet className="h-2.5 w-2.5 text-critical" />
-                        Hemo <strong className="text-foreground">{specialSummary.hemocomponente}</strong>
-                      </span>
-                    )}
-                    {specialSummary.sat > 0 && (
-                      <span className="inline-flex items-center gap-1">
-                        <Syringe className="h-2.5 w-2.5 text-warning" />
-                        SAT <strong className="text-foreground">{specialSummary.sat}</strong>
-                      </span>
-                    )}
-                    {specialSummary.apac > 0 && (
-                      <span>APAC <strong className="text-foreground">{specialSummary.apac}</strong></span>
-                    )}
-                    {specialSummary.cultura > 0 && (
-                      <span>Cult. <strong className="text-foreground">{specialSummary.cultura}</strong></span>
-                    )}
-                  </div>
-                </div>
+              <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground mb-1.5">
+                {specialSummary.hemocomponente > 0 && (
+                  <span>Hemo <strong className="text-foreground">{specialSummary.hemocomponente}</strong></span>
+                )}
+                {specialSummary.sat > 0 && (
+                  <span>SAT <strong className="text-foreground">{specialSummary.sat}</strong></span>
+                )}
+                {specialSummary.apac > 0 && (
+                  <span>APAC <strong className="text-foreground">{specialSummary.apac}</strong></span>
+                )}
+                {specialSummary.cultura > 0 && (
+                  <span>Cult. <strong className="text-foreground">{specialSummary.cultura}</strong></span>
+                )}
               </div>
-              <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-            </button>
-            {specialItems.length > 0 && (
-              <ul className="border-t border-border/60 px-3 py-2 space-y-1">
+              <ul className="space-y-1">
                 {specialItems.slice(0, 3).map((it) => (
-                  <li
-                    key={`${it.kind}-${it.id}`}
-                    className="flex items-center justify-between gap-2 text-xs"
-                  >
+                  <li key={`${it.kind}-${it.id}`} className="flex items-center justify-between gap-2 text-xs">
                     <span className="flex items-center gap-2 min-w-0">
                       <SpecialKindDot kind={it.kind} />
                       <span className="truncate text-foreground preserve-case">{it.label}</span>
                     </span>
-                    <span className={cn(
-                      "text-xs uppercase font-medium px-1 rounded-md shrink-0",
-                      it.status === "completed" && "text-released-on-soft",
-                      it.status === "pending" && "text-warning",
-                    )}>
-                      {it.status}
+                    <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground shrink-0">
+                      <span className={cn("h-1.5 w-1.5 rounded-full", it.status === "completed" ? "bg-released" : "bg-warning")} />
+                      {it.status === "completed" ? "Concluída" : "Pendente"}
                     </span>
                   </li>
                 ))}
+                {specialSummary.total > 3 && (
+                  <li className="text-xs text-muted-foreground">+ {specialSummary.total - 3} requisições</li>
+                )}
               </ul>
-            )}
+            </FoldCard>
           </div>
         )}
 
@@ -1415,10 +1393,6 @@ function DischargeQuickActions({ patientId, patientName, admissionStatus, fallba
 }
 
 
-function FileCheckIcon() {
-  return <ClipboardList className="h-3.5 w-3.5 text-primary shrink-0" />;
-}
-
 function SpecialKindDot({ kind }: { kind: "hemocomponente" | "sat" | "apac" | "cultura" }) {
   const map: Record<string, string> = {
     hemocomponente: "bg-critical",
@@ -1538,23 +1512,32 @@ function FoldCard({ icon: Icon, tone, title, summary, marker, open, onToggle, on
   );
 }
 
-/** Marcador discreto do status da prescrição (bolinha + rótulo). */
-function PrescriptionMarker({ status, signed }: { status: string; signed: boolean }) {
-  const map: Record<string, { label: string; dot: string }> = {
-    draft: { label: "Rascunho", dot: "bg-muted-foreground" },
-    pending_validation: { label: "Aguard. validação", dot: "bg-warning" },
+type MarkerKind = "validated" | "pending" | "suspended";
+
+/** Marcador discreto de status (bolinha + rótulo): só Validada / Pendente (Suspensa é caso clínico distinto). */
+function StatusMarker({ kind }: { kind: MarkerKind }) {
+  const cfg = {
     validated: { label: "Validada", dot: "bg-released" },
+    pending: { label: "Pendente", dot: "bg-warning" },
     suspended: { label: "Suspensa", dot: "bg-destructive" },
-    finalized: { label: "Finalizada", dot: "bg-released" },
-  };
-  const cfg = map[status] || map.draft;
+  }[kind];
   return (
     <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground shrink-0">
       <span className={cn("h-1.5 w-1.5 rounded-full", cfg.dot)} />
-      {cfg.label}{signed ? " • assinada" : ""}
+      {cfg.label}
     </span>
   );
 }
+
+const prescriptionMarkerKind = (status: string): MarkerKind =>
+  status === "validated" || status === "signed" || status === "finalized"
+    ? "validated"
+    : status === "suspended"
+      ? "suspended"
+      : "pending";
+
+const evolutionMarkerKind = (status: string, validatedAt: string | null): MarkerKind =>
+  status === "suspended" ? "suspended" : validatedAt || status === "validated" ? "validated" : "pending";
 
 interface CockpitSectionProps {
   icon: React.ComponentType<{ className?: string }>;
@@ -1596,21 +1579,6 @@ function ItemList({ items, emptyMsg }: { items: string[]; emptyMsg: string }) {
 
 function EmptyMsg({ children }: { children: React.ReactNode }) {
   return <p className="text-xs text-muted-foreground italic preserve-case">{children}</p>;
-}
-
-function EvolutionStatusBadge({ status, validatedAt }: { status: string; validatedAt: string | null }) {
-  const isValidated = !!validatedAt || status === "validated";
-  const isSuspended = status === "suspended";
-  const cfg = isSuspended
-    ? { label: "Suspensa", className: "bg-destructive/10 text-destructive" }
-    : isValidated
-      ? { label: "Validada", className: "bg-released/10 text-released-on-soft" }
-      : { label: "Em andamento", className: "bg-warning/15 text-warning" };
-  return (
-    <span className={cn("inline-flex items-center gap-1 rounded-md px-2 py-0 text-xs font-medium", cfg.className)}>
-      {cfg.label}
-    </span>
-  );
 }
 
 function News2Badge({ risk, score }: { risk: string; score: number | null }) {
