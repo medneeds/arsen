@@ -176,7 +176,6 @@ import { Switch } from "@/components/ui/switch";
  */
 const CONTEXT_CHIP =
   "inline-flex items-center gap-1.5 h-7 rounded-md border border-border bg-background px-2 text-xs font-medium text-foreground transition-colors";
-const CONTEXT_CHIP_BTN = cn(CONTEXT_CHIP, "hover:bg-muted/60 hover:text-foreground");
 
 interface DigitalSignature {
   doctorName: string;
@@ -8961,12 +8960,79 @@ const PrescricaoPage = () => {
             </span>
           )}
 
-          <span className="h-5 w-px bg-border/60 mx-1" />
+          <div className="ml-auto flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={fetchPrescriptions} disabled={loadingList} className="h-7 text-xs gap-1 px-2">
+              <RefreshCw className={cn("h-3 w-3", loadingList && "animate-spin")} /> Atualizar
+            </Button>
+          </div>
+        </div>
 
+        {/* Row 2 — Prescription actions (Nova, Extra, Interações, ATM, TEV | Compacto). Validar e Imprimir ficam so no fim da pagina. */}
+        <div className="flex items-center gap-1 flex-wrap px-3 py-2 border-t border-border bg-muted/40 rounded-b-lg">
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    if (prescriptionLocked) {
+                      toast.error("Prescrição validada hoje", {
+                        description: "Não é possível iniciar uma nova enquanto houver prescrição validada do dia. Use revalidação após o corte 05h.",
+                      });
+                      return;
+                    }
+                    setNewRxChoiceOpen(true);
+                  }}
+                  disabled={prescriptionLocked}
+                  className="gap-1 text-xs text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors h-7 px-2 disabled:opacity-50"
+                >
+                  <Plus className="h-2.5 w-2.5" /> Nova
+                </Button>
+              </span>
+            </TooltipTrigger>
+            {prescriptionLocked && (
+              <TooltipContent side="bottom" className="text-xs max-w-[220px]">
+                Bloqueado: já existe prescrição validada hoje. Aguarde corte 05h ou use renovação.
+              </TooltipContent>
+            )}
+          </Tooltip>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              if (!canPrescribe) { toast.error("Preencha o peso e as alergias antes de prescrever"); return; }
+              setExtraChooserOpen(true);
+            }}
+            className="gap-1 text-xs text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors h-7 px-2"
+          >
+            <Syringe className="h-2.5 w-2.5" /> Extra
+          </Button>
+          <span className="h-5 w-px bg-border/60 mx-1" />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              const activeMeds = items.filter(i => i.status === 'active' && !['nutrition', 'care'].includes(i.category));
+              if (activeMeds.length < 2) {
+                toast.error("Mínimo de 2 medicamentos ativos para verificar interações");
+                return;
+              }
+              setInteractionDialogOpen(true);
+            }}
+            className="gap-1 text-xs text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors h-7 px-2"
+          >
+            <Zap className="h-2.5 w-2.5" /> Interações
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => setTevProtocolOpen(true)} className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2">
+            <Droplets className="h-2.5 w-2.5" /> TEV
+          </Button>
+          <span className="h-5 w-px bg-border/60 mx-1" />
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className={CONTEXT_CHIP_BTN}>
-                <CalendarDays className="h-3 w-3 text-muted-foreground" />
+              <Button variant="ghost" size="sm" className="gap-1 text-xs text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors h-7 px-2">
+                <CalendarDays className="h-2.5 w-2.5" />
                 {historyDate ? format(historyDate, "dd/MM/yyyy") : "Calendário"}
               </Button>
             </PopoverTrigger>
@@ -9098,96 +9164,30 @@ const PrescricaoPage = () => {
               Filtro oculta {prescriptionDateKeys.size} {prescriptionDateKeys.size === 1 ? 'data' : 'datas'} — limpar
             </button>
           )}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => { setDoseCalcInitialMed(undefined); setDoseCalcOpen(true); }}
-            className={CONTEXT_CHIP_BTN}
-            title="Calculadora de dose por peso/superfície corporal"
-          >
-            <Calculator className="h-3 w-3 text-muted-foreground" /> Dose/kg
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setQuickTemplatesDialogOpen(true)}
-            className={CONTEXT_CHIP_BTN}
-            title="Templates clínicos prontos (Sepse, Pós-op, DPOC...)"
-          >
-            <Zap className="h-3 w-3 text-muted-foreground" /> Templates
-            {quickTemplates.length > 0 && (
-              <span className="ml-1 text-xs font-mono text-muted-foreground">
-                ({quickTemplates.length})
-              </span>
-            )}
-          </Button>
-          <div className="ml-auto flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={fetchPrescriptions} disabled={loadingList} className="h-7 text-xs gap-1 px-2">
-              <RefreshCw className={cn("h-3 w-3", loadingList && "animate-spin")} /> Atualizar
-            </Button>
-          </div>
-        </div>
-
-        {/* Row 2 — Prescription actions (Nova, Extra, Interações, ATM, TEV | Compacto). Validar e Imprimir ficam so no fim da pagina. */}
-        <div className="flex items-center gap-1 flex-wrap px-3 py-2 border-t border-border bg-muted/40 rounded-b-lg">
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    if (prescriptionLocked) {
-                      toast.error("Prescrição validada hoje", {
-                        description: "Não é possível iniciar uma nova enquanto houver prescrição validada do dia. Use revalidação após o corte 05h.",
-                      });
-                      return;
-                    }
-                    setNewRxChoiceOpen(true);
-                  }}
-                  disabled={prescriptionLocked}
-                  className="gap-1 text-xs text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors h-7 px-2 disabled:opacity-50"
-                >
-                  <Plus className="h-3 w-3" /> Nova
-                </Button>
-              </span>
-            </TooltipTrigger>
-            {prescriptionLocked && (
-              <TooltipContent side="bottom" className="text-xs max-w-[220px]">
-                Bloqueado: já existe prescrição validada hoje. Aguarde corte 05h ou use renovação.
-              </TooltipContent>
-            )}
-          </Tooltip>
+          <span className="h-5 w-px bg-border/60 mx-1" />
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => {
-              if (!canPrescribe) { toast.error("Preencha o peso e as alergias antes de prescrever"); return; }
-              setExtraChooserOpen(true);
-            }}
+            onClick={() => { setDoseCalcInitialMed(undefined); setDoseCalcOpen(true); }}
             className="gap-1 text-xs text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors h-7 px-2"
+            title="Calculadora de dose por peso/superfície corporal"
           >
-            <Syringe className="h-3 w-3" /> Extra
+            <Calculator className="h-2.5 w-2.5" /> Dose/kg
           </Button>
           <span className="h-5 w-px bg-border/60 mx-1" />
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => {
-              const activeMeds = items.filter(i => i.status === 'active' && !['nutrition', 'care'].includes(i.category));
-              if (activeMeds.length < 2) {
-                toast.error("Mínimo de 2 medicamentos ativos para verificar interações");
-                return;
-              }
-              setInteractionDialogOpen(true);
-            }}
+            onClick={() => setQuickTemplatesDialogOpen(true)}
             className="gap-1 text-xs text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors h-7 px-2"
+            title="Templates clínicos prontos (Sepse, Pós-op, DPOC...)"
           >
-            <Zap className="h-3 w-3" /> Interações
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => setTevProtocolOpen(true)} className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2">
-            <Droplets className="h-3 w-3" /> TEV
+            <Zap className="h-2.5 w-2.5" /> Templates
+            {quickTemplates.length > 0 && (
+              <span className="ml-1 text-xs font-mono text-muted-foreground">
+                ({quickTemplates.length})
+              </span>
+            )}
           </Button>
           <span className="h-5 w-px bg-border/60 mx-1" />
           {isValidationSessionActive && (
@@ -9212,7 +9212,7 @@ const PrescricaoPage = () => {
                   onClick={() => setCompactView(!compactView)}
                   className={cn("gap-1 text-xs h-7 px-2 transition-colors", compactView ? "text-primary hover:bg-primary/10" : "text-muted-foreground hover:bg-primary/10 hover:text-primary")}
                 >
-                  {compactView ? <AlignJustify className="h-3 w-3" /> : <List className="h-3 w-3" />}
+                  {compactView ? <AlignJustify className="h-2.5 w-2.5" /> : <List className="h-2.5 w-2.5" />}
                 {compactView ? 'Expandido' : 'Compacto'}
                 </Button>
               </TooltipTrigger>
