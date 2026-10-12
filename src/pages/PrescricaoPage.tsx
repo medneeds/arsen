@@ -8986,9 +8986,9 @@ const PrescricaoPage = () => {
                     setNewRxChoiceOpen(true);
                   }}
                   disabled={prescriptionLocked}
-                  className="gap-1 text-xs text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors h-7 px-2 disabled:opacity-50"
+                  className="gap-1 text-[11px] text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors h-7 px-2 disabled:opacity-50"
                 >
-                  <Plus className="h-2.5 w-2.5" /> Nova
+                  <Plus className="h-[9px] w-[9px]" /> Nova
                 </Button>
               </span>
             </TooltipTrigger>
@@ -9005,9 +9005,9 @@ const PrescricaoPage = () => {
               if (!canPrescribe) { toast.error("Preencha o peso e as alergias antes de prescrever"); return; }
               setExtraChooserOpen(true);
             }}
-            className="gap-1 text-xs text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors h-7 px-2"
+            className="gap-1 text-[11px] text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors h-7 px-2"
           >
-            <Syringe className="h-2.5 w-2.5" /> Extra
+            <Syringe className="h-[9px] w-[9px]" /> Extra
           </Button>
           <span className="h-5 w-px bg-border/60 mx-1" />
           <Button
@@ -9021,18 +9021,18 @@ const PrescricaoPage = () => {
               }
               setInteractionDialogOpen(true);
             }}
-            className="gap-1 text-xs text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors h-7 px-2"
+            className="gap-1 text-[11px] text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors h-7 px-2"
           >
-            <Zap className="h-2.5 w-2.5" /> Interações
+            <Zap className="h-[9px] w-[9px]" /> Interações
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => setTevProtocolOpen(true)} className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2">
-            <Droplets className="h-2.5 w-2.5" /> TEV
+          <Button variant="ghost" size="sm" onClick={() => setTevProtocolOpen(true)} className="gap-1 text-[11px] text-muted-foreground hover:text-foreground h-7 px-2">
+            <Droplets className="h-[9px] w-[9px]" /> TEV
           </Button>
           <span className="h-5 w-px bg-border/60 mx-1" />
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="ghost" size="sm" className="gap-1 text-xs text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors h-7 px-2">
-                <CalendarDays className="h-2.5 w-2.5" />
+              <Button variant="ghost" size="sm" className="gap-1 text-[11px] text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors h-7 px-2">
+                <CalendarDays className="h-[9px] w-[9px]" />
                 {historyDate ? format(historyDate, "dd/MM/yyyy") : "Calendário"}
               </Button>
             </PopoverTrigger>
@@ -9169,20 +9169,20 @@ const PrescricaoPage = () => {
             variant="ghost"
             size="sm"
             onClick={() => { setDoseCalcInitialMed(undefined); setDoseCalcOpen(true); }}
-            className="gap-1 text-xs text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors h-7 px-2"
+            className="gap-1 text-[11px] text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors h-7 px-2"
             title="Calculadora de dose por peso/superfície corporal"
           >
-            <Calculator className="h-2.5 w-2.5" /> Dose/kg
+            <Calculator className="h-[9px] w-[9px]" /> Dose/kg
           </Button>
           <span className="h-5 w-px bg-border/60 mx-1" />
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setQuickTemplatesDialogOpen(true)}
-            className="gap-1 text-xs text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors h-7 px-2"
+            className="gap-1 text-[11px] text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors h-7 px-2"
             title="Templates clínicos prontos (Sepse, Pós-op, DPOC...)"
           >
-            <Zap className="h-2.5 w-2.5" /> Templates
+            <Zap className="h-[9px] w-[9px]" /> Templates
             {quickTemplates.length > 0 && (
               <span className="ml-1 text-xs font-mono text-muted-foreground">
                 ({quickTemplates.length})
@@ -9210,9 +9210,9 @@ const PrescricaoPage = () => {
                   variant="ghost"
                   size="sm"
                   onClick={() => setCompactView(!compactView)}
-                  className={cn("gap-1 text-xs h-7 px-2 transition-colors", compactView ? "text-primary hover:bg-primary/10" : "text-muted-foreground hover:bg-primary/10 hover:text-primary")}
+                  className={cn("gap-1 text-[11px] h-7 px-2 transition-colors", compactView ? "text-primary hover:bg-primary/10" : "text-muted-foreground hover:bg-primary/10 hover:text-primary")}
                 >
-                  {compactView ? <AlignJustify className="h-2.5 w-2.5" /> : <List className="h-2.5 w-2.5" />}
+                  {compactView ? <AlignJustify className="h-[9px] w-[9px]" /> : <List className="h-[9px] w-[9px]" />}
                 {compactView ? 'Expandido' : 'Compacto'}
                 </Button>
               </TooltipTrigger>
