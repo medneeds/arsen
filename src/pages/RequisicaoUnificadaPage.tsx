@@ -2542,6 +2542,9 @@ interface ApacSelectedProcedure {
   instrumento: "APAC" | "AIH" | null; // derivado do SIGTAP; null = sem código
   /** Com contraste (TC/RM). Padrao: sem. Angio e sempre com (ver apacContraste.ts). */
   contraste?: boolean;
+  /** Sedacao para o exame: so registro interno do Arsen — NAO vai para o laudo APAC. */
+  sedacaoOn?: boolean;
+  sedacao?: string;
 }
 
 function CollapsibleInfoCard({ title, summary, badge, children }: { title: string; summary: string; badge?: string; children: React.ReactNode }) {
@@ -2802,7 +2805,9 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
         categoria: "procedimento", // taxonomia preservada
         itens: selectedProcedures.map(p => {
           const nome = procedureDisplayName(p); // inclui "— COM CONTRASTE" quando for o caso
-          return { name: p.code ? `${nome} (${p.code})` : nome };
+          const sedacao = p.sedacaoOn ? (p.sedacao || "").trim() : "";
+          // sedacao: registro interno (itens e JSON) — nao entra no laudo APAC.
+          return { name: p.code ? `${nome} (${p.code})` : nome, ...(sedacao ? { sedacao } : {}) };
         }),
         prioridade: "rotina",
         status: "pendente",
@@ -2836,6 +2841,11 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
     */
     if (selectedProcedures.length === 0) { toast.error("Adicione ao menos um procedimento"); return; }
     if (!apacPatientName.trim()) { toast.error("Informe o nome do paciente"); return; }
+    const semSedativo = selectedProcedures.find((p) => p.sedacaoOn && !(p.sedacao || "").trim());
+    if (semSedativo) {
+      toast.error("Informe a sedação utilizada", { description: semSedativo.name });
+      return;
+    }
     if (!cidPrimary.trim()) {
       toast.error("Informe o CID-10 Principal", {
         description: "Obrigatório no laudo — sem ele o documento não é aceito.",
@@ -3142,7 +3152,8 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
                 ) : (
                   <div className="space-y-2">
                     {selectedProcedures.map((proc, idx) => (
-                      <div key={proc.code} className="flex items-center gap-2 p-2 rounded-md border bg-card">
+                      <div key={proc.code} className="rounded-md border bg-card p-2">
+                        <div className="flex items-center gap-2">
                         <Badge variant="secondary" className="shrink-0 font-mono text-xs">{idx === 0 ? "Princ." : `Sec.${idx}`}</Badge>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1 mb-1">
@@ -3167,8 +3178,33 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
                             </span>
                           </div>
                         )}
+                        {supportsContraste(proc.name, proc.code) && (
+                          <div className="flex items-center gap-2 border-l border-border pl-3 shrink-0">
+                            <Switch
+                              checked={!!proc.sedacaoOn}
+                              onCheckedChange={(v) => setSelectedProcedures((prev) => prev.map((p) => (p.code === proc.code ? { ...p, sedacaoOn: v } : p)))}
+                              aria-label={`Sedação — ${proc.name}`}
+                            />
+                            <span className={cn("text-xs font-medium whitespace-nowrap", proc.sedacaoOn ? "text-primary" : "text-muted-foreground")}>
+                              {proc.sedacaoOn ? "Com sedação" : "Sem sedação"}
+                            </span>
+                          </div>
+                        )}
                         <Input type="number" min={1} max={99} value={proc.qty} onChange={(e) => { const qty = parseInt(e.target.value) || 1; setSelectedProcedures((prev) => prev.map((p) => (p.code === proc.code ? { ...p, qty } : p))); }} className="w-12 h-7 text-center text-xs" />
                         <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => removeProcedure(proc.code)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                      </div>
+                        {supportsContraste(proc.name, proc.code) && proc.sedacaoOn && (
+                          <div className="flex items-center gap-2 mt-2 pt-2 border-t border-dashed border-border ml-[4.5rem]">
+                            <Label className="text-xs font-semibold text-muted-foreground whitespace-nowrap">Sedação utilizada</Label>
+                            <Input
+                              value={proc.sedacao || ""}
+                              onChange={(e) => setSelectedProcedures((prev) => prev.map((p) => (p.code === proc.code ? { ...p, sedacao: e.target.value } : p)))}
+                              placeholder="Ex.: midazolam 5 mg EV"
+                              className="h-8 text-xs"
+                              maxLength={120}
+                            />
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -3649,7 +3685,7 @@ function RequestCard({ request, category, onViewResult, onCancel, showResult }: 
             </div>
             <div className="flex flex-wrap gap-1">
               {items.slice(0, 6).map((item: any, i: number) => (
-                <Badge key={i} variant="outline" className="text-xs bg-background">{item.name || item}</Badge>
+                <Badge key={i} variant="outline" className="text-xs bg-background">{item.name || item}{item?.sedacao ? ` · sedação: ${item.sedacao}` : ""}</Badge>
               ))}
               {items.length > 6 && <Badge variant="secondary" className="text-xs">+{items.length - 6}</Badge>}
             </div>
@@ -4016,7 +4052,7 @@ function LabComparativeView({ requests, patientName, patientId, allRequests }: {
                 </div>
                 <div className="flex flex-wrap gap-1">
                   {(req.items as any[]).slice(0, 4).map((item: any, i: number) => (
-                    <Badge key={i} variant="secondary" className="text-xs">{typeof item === "string" ? item : item.name}</Badge>
+                    <Badge key={i} variant="secondary" className="text-xs">{typeof item === "string" ? item : item.name}{typeof item !== "string" && item?.sedacao ? ` · sedação: ${item.sedacao}` : ""}</Badge>
                   ))}
                   {(req.items as any[]).length > 4 && (
                     <Badge variant="secondary" className="text-xs">+{(req.items as any[]).length - 4}</Badge>
