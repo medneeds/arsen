@@ -8950,10 +8950,15 @@ const PrescricaoPage = () => {
         )}
         {/* Row 1 — Clinical context (peso, alergias, calendário, dose/kg, templates). A tecla ? abre os atalhos. */}
         <div className={cn("flex items-center gap-2 flex-wrap px-2 sm:px-3 py-2 sm:border-t sm:border-border/40", !patientHeaderReady && "hidden")}>
+          {/* Peso + Alergias numa unica linha-grupo: ambos esticam a mesma altura
+              (que cresce se as alergias quebrarem de linha) e encolhem juntos. */}
+          <div className="flex items-stretch gap-2 min-w-0 max-w-full">
           {/* Peso — rotulo e valor numa UNIDADE unica (o numero faz parte da
               marcacao do peso, "abraçado" pelo mesmo contorno). */}
           <div className={cn(
             CONTEXT_CHIP,
+            // Acompanha a altura do grupo de Alergias (que pode crescer com varias alergias).
+            "h-auto min-h-7",
             !patient.weight.trim() && "border-warning/60 bg-warning-soft/30",
           )}>
             <span className="text-muted-foreground whitespace-nowrap">Peso</span>
@@ -8993,8 +8998,8 @@ const PrescricaoPage = () => {
             // Rotulo CONECTADO ao campo (grupo unico): o rotulo encosta no valor
             // que ele descreve, sem folga, formando uma so informacao.
             return (
-              <div className="inline-flex items-stretch">
-                <span className={cn(CONTEXT_CHIP, "rounded-r-none border-r-0 whitespace-nowrap")}>
+              <div className="inline-flex items-stretch min-w-0">
+                <span className={cn(CONTEXT_CHIP, "h-auto min-h-7 rounded-r-none border-r-0 whitespace-nowrap")}>
                   {isNDAM ? (
                     <ShieldCheck className="h-3 w-3 text-released-on-soft" />
                   ) : (
@@ -9005,11 +9010,12 @@ const PrescricaoPage = () => {
                 <AllergiesChipInput
                   value={patient.allergies}
                   onChange={(next) => updatePatient("allergies", next)}
-                  className="rounded-l-none max-w-[340px]"
+                  className="rounded-l-none max-w-full"
                 />
               </div>
             );
           })()}
+          </div>
           {(!patient.weight.trim() || !patient.allergies.trim()) && (
             <span className="inline-flex items-center gap-1 text-xs text-warning-on-soft font-medium">
               <AlertTriangle className="h-3 w-3" />

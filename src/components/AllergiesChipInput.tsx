@@ -1,8 +1,6 @@
 import { useState, useRef, KeyboardEvent } from "react";
 import { AlertTriangle, X, Plus, ShieldCheck } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { isSemAlergia, SEM_RELATO } from "@/lib/allergyStatus";
 
@@ -11,7 +9,6 @@ interface AllergiesChipInputProps {
   value: string;
   onChange: (next: string) => void;
   className?: string;
-  maxInline?: number;
 }
 
 function parseItems(value: string): string[] {
@@ -39,14 +36,12 @@ export function AllergiesChipInput({
   value,
   onChange,
   className,
-  maxInline = 3,
 }: AllergiesChipInputProps) {
   const items = parseItems(value);
   const isSemRelato = items.length === 1 && isSemAlergia(items[0]);
   const realItems = isSemRelato ? [] : items;
 
   const [draft, setDraft] = useState("");
-  const [popoverOpen, setPopoverOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const empty = realItems.length === 0 && !isSemRelato;
@@ -85,8 +80,8 @@ export function AllergiesChipInput({
     inputRef.current?.focus();
   };
 
-  const visible = realItems.slice(0, maxInline);
-  const overflow = Math.max(0, realItems.length - maxInline);
+  // Todas as alergias ficam visiveis (sem truncar nem "+N"); se faltar espaco, quebra de linha.
+  const visible = realItems;
 
   const baseChip =
     "inline-flex items-center gap-1 h-5 px-2 rounded-md text-xs font-medium uppercase border";
@@ -99,7 +94,7 @@ export function AllergiesChipInput({
         // (border-r-0) + valor formam UMA caixa so. O "Sem relato" interno segue sem
         // borda propria (evita caixa-dentro-de-caixa). bg de estado sinaliza vazio/
         // sem relato/alergia.
-        "flex items-center gap-1 min-h-7 px-2 py-1 rounded-md border border-border bg-background transition-colors",
+        "flex flex-wrap items-center gap-1 min-h-7 px-2 py-0.5 rounded-md border border-border bg-background transition-colors",
         empty
           ? "bg-warning-soft/30"
           : isSemRelato
@@ -138,12 +133,12 @@ export function AllergiesChipInput({
               key={`${item}-${idx}`}
               className={cn(
                 baseChip,
-                "border-destructive/40 bg-destructive/10 text-destructive max-w-[110px]",
+                "border-destructive/40 bg-destructive/10 text-destructive",
               )}
               title={item}
             >
               <AlertTriangle className="h-2.5 w-2.5 shrink-0" />
-              <span className="truncate">{item}</span>
+              <span className="whitespace-nowrap">{item}</span>
               <button
                 type="button"
                 aria-label={`Remover ${item}`}
@@ -158,82 +153,6 @@ export function AllergiesChipInput({
             </span>
           ))}
 
-          {overflow > 0 && (
-            <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
-              <PopoverTrigger asChild>
-                <button
-                  type="button"
-                  className={cn(
-                    baseChip,
-                    "border-destructive/30 bg-destructive/5 text-destructive hover:bg-destructive/10",
-                  )}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  +{overflow}
-                </button>
-              </PopoverTrigger>
-              <PopoverContent
-                align="start"
-                className="w-72 p-3 space-y-2"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground flex items-center gap-1">
-                    <AlertTriangle className="h-3 w-3 text-destructive" />
-                    Alergias ({realItems.length})
-                  </span>
-                  <button
-                    type="button"
-                    className="text-xs text-muted-foreground hover:text-destructive uppercase tracking-wider"
-                    onClick={clearAll}
-                  >
-                    Limpar
-                  </button>
-                </div>
-                <div className="flex flex-wrap gap-2 max-h-48 overflow-auto">
-                  {realItems.map((item, idx) => (
-                    <span
-                      key={`pop-${item}-${idx}`}
-                      className={cn(
-                        baseChip,
-                        "border-destructive/40 bg-destructive/10 text-destructive",
-                      )}
-                    >
-                      <AlertTriangle className="h-2.5 w-2.5" />
-                      {item}
-                      <button
-                        type="button"
-                        aria-label={`Remover ${item}`}
-                        className="ml-1 hover:opacity-70"
-                        onClick={() => removeAt(idx)}
-                      >
-                        <X className="h-2.5 w-2.5" />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-                <div className="flex items-center gap-1 pt-1 border-t border-border/40">
-                  <Input
-                    placeholder="Adicionar alergia..."
-                    value={draft}
-                    onChange={(e) => setDraft(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    className="h-7 text-xs"
-                  />
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    className="h-7 px-2"
-                    onClick={commitDraft}
-                  >
-                    <Plus className="h-3 w-3" />
-                  </Button>
-                </div>
-              </PopoverContent>
-            </Popover>
-          )}
-
           <div className="flex items-center gap-1">
             {!empty && <Plus className="h-3 w-3 text-muted-foreground shrink-0" aria-hidden />}
             <Input
@@ -247,7 +166,7 @@ export function AllergiesChipInput({
               placeholder={empty ? "Sem relato ou listar..." : ""}
               aria-label="Adicionar alergia"
               className={cn(
-                "h-6 border-0 bg-transparent px-1 text-xs shadow-none focus-visible:ring-0 focus-visible:ring-offset-0",
+                "h-5 border-0 bg-transparent px-1 text-xs shadow-none focus-visible:ring-0 focus-visible:ring-offset-0",
                 empty ? "min-w-[110px]" : "min-w-[60px] max-w-[100px]",
               )}
             />
