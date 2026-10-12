@@ -1,5 +1,8 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { buildHydrationLine } from "@/lib/nutritionHydration";
+import { buildSolutoTokenLabeled } from "@/lib/solutoToken";
+import { abbrevRoute } from "@/lib/printAbbreviations";
 
 export interface ActivePrescriptionSummary {
   id: string;
@@ -8,6 +11,35 @@ export interface ActivePrescriptionSummary {
   itemsCount: number;
   updatedAt: string;
   signed: boolean;
+  /** Linhas reduzidas (nome + dose · via · intervalo) dos itens ativos, para o card expandido. */
+  lines: string[];
+}
+
+/** Linha reduzida de um item de prescrição. Nunca lança: item malformado vira só o nome. */
+interface PrescriptionItemLike {
+  name?: string; category?: string; dose?: string; route?: string; posology?: string; status?: string;
+  [k: string]: unknown;
+}
+
+export function buildPrescriptionLine(raw: unknown): string {
+  const item = (raw ?? {}) as PrescriptionItemLike;
+  try {
+    const name = String(item?.name || "").trim();
+    if (!name) return "";
+    if (item.category === "nutrition") return name;
+    if (item.category === "hydration") {
+      const h = buildHydrationLine(item as Parameters<typeof buildHydrationLine>[0]);
+      return h ? `${name} · ${h}` : name;
+    }
+    const parts = [
+      buildSolutoTokenLabeled(item as Parameters<typeof buildSolutoTokenLabeled>[0]) || item.dose || "",
+      item.route && item.route !== "-" ? abbrevRoute(item.route) : "",
+      item.posology && item.posology !== "-" ? item.posology : "",
+    ].filter(Boolean);
+    return parts.length ? `${name} · ${parts.join(" · ")}` : name;
+  } catch {
+    return String(item.name || "").trim();
+  }
 }
 
 /**
@@ -55,6 +87,10 @@ export function useActivePrescription(
         itemsCount: items.length,
         updatedAt: row.atualizado_em || row.criado_em,
         signed: Boolean(row.assinatura_digital),
+        lines: items
+          .filter((it) => it && (it as PrescriptionItemLike).status !== "suspended")
+          .map(buildPrescriptionLine)
+          .filter(Boolean),
       });
     } else {
       setData(null);

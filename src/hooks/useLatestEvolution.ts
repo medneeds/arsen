@@ -16,6 +16,13 @@ export interface LatestEvolutionDevice {
   custom?: boolean;
 }
 
+export interface ValidatedEvolutionSummary {
+  id: string;
+  createdAt: string;
+  createdByName: string | null;
+  fullText: string;
+}
+
 export interface LatestEvolutionSummary {
   id: string;
   status: string;
@@ -48,6 +55,7 @@ export function useLatestEvolution(
   hospitalUnitId: string | null,
 ) {
   const [evolution, setEvolution] = useState<LatestEvolutionSummary | null>(null);
+  const [lastValidated, setLastValidated] = useState<ValidatedEvolutionSummary | null>(null);
   const [loading, setLoading] = useState(false);
   const lastSeenIdRef = useRef<string | null>(null);
 
@@ -104,9 +112,30 @@ export function useLatestEvolution(
   const fetch = useCallback(async () => {
     if (!patientId) {
       setEvolution(null);
+      setLastValidated(null);
       return;
     }
     setLoading(true);
+    // Última evolução VALIDADA (a mais recente pode estar em rascunho).
+    const { data: valRows } = await supabase
+      .from("evolucoes")
+      .select("id, soap, data_hora, criado_em")
+      .eq("internacao_id", patientId)
+      .eq("status", "validada")
+      .order("data_hora", { ascending: false })
+      .limit(1);
+    if (valRows && valRows.length > 0) {
+      const v = valRows[0];
+      const vs = (v.soap || {}) as Record<string, unknown>;
+      setLastValidated({
+        id: v.id,
+        createdAt: (vs.__validated_at as string) || v.criado_em || v.data_hora,
+        createdByName: (vs.__created_by_name as string) ?? null,
+        fullText: buildFullText(vs),
+      });
+    } else {
+      setLastValidated(null);
+    }
     const { data, error } = await supabase
       .from("evolucoes")
       .select("id, status, soap, data_hora, criado_em")
@@ -173,5 +202,5 @@ export function useLatestEvolution(
     return () => { supabase.removeChannel(channel); };
   }, [patientId, fetch]);
 
-  return { evolution, loading, refresh: fetch };
+  return { evolution, lastValidated, loading, refresh: fetch };
 }

@@ -25,6 +25,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { parsePendency } from "@/lib/pendencyMarker";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { PatientCockpit } from "@/components/PatientCockpit";
@@ -476,7 +477,11 @@ export default function PainelClinicoPage() {
                           <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{diagnoses.join("  |  ")}</p>
                         )}
                         {pendencies.length > 0 && (
-                          <p className="text-xs text-warning-on-soft mt-1 line-clamp-1">{pendencies[0]}{pendencies.length > 1 && ` +${pendencies.length - 1}`}</p>
+                          <p className="text-xs text-warning-on-soft mt-1 break-words">{(() => {
+                            const open = pendencies.filter((x) => !parsePendency(x).done);
+                            const first = parsePendency(open[0] ?? pendencies[0]).text;
+                            return `${first}${open.length > 1 ? ` +${open.length - 1}` : ""}`;
+                          })()}</p>
                         )}
                         <LastActionLine action={lastActionByPatient.get(patient.id)} />
                       </div>
@@ -616,12 +621,21 @@ export default function PainelClinicoPage() {
                       <TableCell>
                         {pendencies.length > 0 ? (
                           <div className="flex flex-col gap-1">
-                            {pendencies.slice(0, 2).map((p, i) => (
-                              <span key={i} className="text-xs text-muted-foreground line-clamp-1">{p}</span>
-                            ))}
-                            {pendencies.length > 2 && (
-                              <span className="text-xs text-primary">+{pendencies.length - 2} mais</span>
-                            )}
+                            {pendencies.map((p, i) => {
+                              const { done, text } = parsePendency(p);
+                              return (
+                                <span
+                                  key={i}
+                                  className={cn(
+                                    "text-xs break-words",
+                                    done ? "text-muted-foreground/70 line-through" : "text-muted-foreground",
+                                  )}
+                                >
+                                  {done && <Check className="inline h-3 w-3 mr-1 -mt-0.5" />}
+                                  {text}
+                                </span>
+                              );
+                            })}
                           </div>
                         ) : (
                           <span className="text-xs text-muted-foreground">—</span>

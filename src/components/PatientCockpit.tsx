@@ -11,7 +11,10 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { sanitizeRichHtml } from "@/components/ui/rich-text-editor";
-import { ScrollText } from "lucide-react";
+import { ScrollText, ChevronUp } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { supabase } from "@/integrations/supabase/client";
+import { parsePendency, setPendencyDone } from "@/lib/pendencyMarker";
 import { ReceituarioForm } from "./ReceituarioForm";
 import { printReceituario } from "@/lib/receituario";
 import { useReceituario } from "@/hooks/useReceituario";
@@ -196,7 +199,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
     patient?.name || null,
     currentHospital?.id || null,
   );
-  const { evolution } = useLatestEvolution(
+  const { evolution, lastValidated } = useLatestEvolution(
     patient?.id || null,
     patient?.name || null,
     currentHospital?.id || null,
@@ -219,6 +222,14 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
     currentHospital?.id || null,
   );
   usePatientBedWatcher(patient?.id || null, patient?.bedNumber || null, patient?.sector || null);
+
+  // Cards dobráveis do painel: 1º clique expande, 2º clique (card já aberto) navega.
+  const [openCards, setOpenCards] = useState<Record<string, boolean>>({});
+  const toggleCard = (key: string, open?: boolean) =>
+    setOpenCards((prev) => ({ ...prev, [key]: open ?? !prev[key] }));
+  // Pendências: override otimista após marcar/desmarcar (zera quando o dado do paciente muda).
+  const [pendOverride, setPendOverride] = useState<string[] | null>(null);
+  useEffect(() => { setPendOverride(null); }, [patient?.id, patient?.pendencies]);
 
   if (!patient) {
     return (
@@ -243,7 +254,23 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
   const allergies = parseList(patient.utiAllergies);
   const diagnoses = parseClinicalList(patient.diagnoses);
   const medHistory = parseClinicalList(patient.medicalHistory);
-  const pendencies = parseList(patient.pendencies);
+  const pendencies = pendOverride ?? parseList(patient.pendencies);
+  const pendDoneCount = pendencies.filter((x) => parsePendency(x).done).length;
+  const pendOpenCount = pendencies.length - pendDoneCount;
+
+  const togglePendency = async (idx: number, done: boolean) => {
+    const prev = pendencies;
+    const next = prev.map((x, i) => (i === idx ? setPendencyDone(x, done) : x));
+    setPendOverride(next);
+    const { error } = await supabase
+      .from("internacoes")
+      .update({ pendencias: next.join("\n") })
+      .eq("id", patient.id);
+    if (error) {
+      setPendOverride(prev);
+      toast.error("Não foi possível salvar a pendência", { description: error.message });
+    }
+  };
   const exams = parseList(patient.relevantExams);
   const conducts = parseList(patient.utiDailyConducts);
   const devices = parseList(patient.utiDevices);
@@ -598,17 +625,19 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
             <AlertChip
               icon={ShieldAlert}
               tone="danger"
+              compact
               label="Alergia"
               value={allergies.slice(0, 2).join(" • ")}
               count={allergies.length > 2 ? `+${allergies.length - 2}` : undefined}
             />
           ) : (
-            <AlertChip icon={ShieldAlert} tone="muted" label="Sem alergias registradas" />
+            <AlertChip icon={ShieldAlert} tone="muted" compact label="Sem alergias registradas" />
           )}
 
           <AlertChip
             icon={AlertTriangle}
             tone={patient.clinicalStatus === "gravissimo" || patient.clinicalStatus === "grave" ? "danger" : "warning"}
+            compact
             label="Risco TEV"
             value="Alto • Profilaxia ativa"
           />
@@ -693,84 +722,118 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
           })()}
 
           {pendencies.length > 0 && (
-            <AlertChip
+            <FoldCard
               icon={ClipboardList}
               tone="warning"
-              label={`${pendencies.length} pendência${pendencies.length > 1 ? "s" : ""}`}
-              value={pendencies[0]}
-            />
+              open={!!openCards.pend}
+              onToggle={(o) => toggleCard("pend", o)}
+              onOpenPage={() => goPatient("/evolucao")}
+              title="Pendências"
+              summary={
+                pendOpenCount > 0
+                  ? `${pendOpenCount} em aberto${pendDoneCount > 0 ? ` · ${pendDoneCount} concluída${pendDoneCount > 1 ? "s" : ""}` : ""}`
+                  : "Todas concluídas"
+              }
+            >
+              <ul className="space-y-1.5">
+                {pendencies.map((raw, i) => {
+                  const { done, text } = parsePendency(raw);
+                  return (
+                    <li key={i} className="flex items-start gap-2 text-xs leading-snug">
+                      <Checkbox
+                        checked={done}
+                        onCheckedChange={(v) => togglePendency(i, v === true)}
+                        onClick={(e) => e.stopPropagation()}
+                        className="mt-0.5 h-3.5 w-3.5"
+                        aria-label={done ? "Reabrir pendência" : "Concluir pendência"}
+                      />
+                      <span className={cn("preserve-case min-w-0 break-words", done && "line-through text-muted-foreground")}>
+                        {text}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </FoldCard>
           )}
         </div>
 
         {/* ===== ZONA 3.5: PRESCRIÇÃO ATIVA (realtime) ===== */}
         {prescription && (
-          <button
-            onClick={() => goPatient("/prescricao")}
-            className="mx-3 mt-2 mb-1 flex items-center justify-between gap-2 rounded-md border border-border bg-muted/40 hover:bg-muted/70 transition px-3 py-2 text-left"
-          >
-            <div className="flex items-center gap-2 min-w-0">
-              <Pill className="h-3.5 w-3.5 text-primary shrink-0" />
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-medium text-foreground">
-                    Prescrição v{prescription.version}
-                  </span>
-                  <PrescriptionStatusBadge status={prescription.status} signed={prescription.signed} />
-                </div>
-                <p className="text-xs text-muted-foreground leading-tight">
-                  {prescription.itemsCount} {prescription.itemsCount === 1 ? "item" : "itens"} •{" "}
-                  {(() => {
-                    try {
-                      return formatDistanceToNow(new Date(prescription.updatedAt), {
-                        addSuffix: true,
-                        locale: ptBR,
-                      });
-                    } catch {
-                      return "—";
-                    }
-                  })()}
-                </p>
-              </div>
-            </div>
-            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-          </button>
+          <div className="mx-3 mt-2 mb-1">
+            <FoldCard
+              icon={Pill}
+              tone="muted"
+              open={!!openCards.presc}
+              onToggle={(o) => toggleCard("presc", o)}
+              onOpenPage={() => goPatient("/prescricao")}
+              title="Prescrição"
+              marker={<PrescriptionMarker status={prescription.status} signed={prescription.signed} />}
+              summary={(() => {
+                try {
+                  return `Atualizada ${formatDistanceToNow(new Date(prescription.updatedAt), { addSuffix: true, locale: ptBR })}`;
+                } catch {
+                  return undefined;
+                }
+              })()}
+            >
+              {prescription.lines.length === 0 ? (
+                <EmptyMsg>Sem itens ativos.</EmptyMsg>
+              ) : (
+                <ul className="space-y-1">
+                  {prescription.lines.slice(0, 8).map((l, i) => (
+                    <li key={i} className="text-xs leading-snug text-foreground/90 preserve-case break-words">{l}</li>
+                  ))}
+                  {prescription.lines.length > 8 && (
+                    <li className="text-xs text-muted-foreground">+{prescription.lines.length - 8} itens</li>
+                  )}
+                </ul>
+              )}
+            </FoldCard>
+          </div>
         )}
 
         {/* ===== ZONA 3.6: ÚLTIMA EVOLUÇÃO (realtime) ===== */}
         {evolution && (
-          <button
-            onClick={() => goPatient("/evolucao")}
-            className="mx-3 mt-1 mb-1 flex items-start justify-between gap-2 rounded-md border border-border bg-muted/40 hover:bg-muted/70 transition px-3 py-2 text-left"
-          >
-            <div className="flex items-start gap-2 min-w-0">
-              <NotebookPen className="h-3.5 w-3.5 text-primary shrink-0 mt-1" />
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs font-medium text-foreground">Última evolução</span>
-                  <EvolutionStatusBadge status={evolution.status} validatedAt={evolution.validatedAt} />
-                </div>
-                {evolution.preview && (
-                  <p className="text-xs text-foreground/80 leading-tight line-clamp-2 preserve-case mt-1">
-                    {evolution.preview}
+          <div className="mx-3 mt-1 mb-1">
+            <FoldCard
+              icon={NotebookPen}
+              tone="muted"
+              open={!!openCards.evo}
+              onToggle={(o) => toggleCard("evo", o)}
+              onOpenPage={() => goPatient("/evolucao")}
+              title="Evolução"
+              marker={<EvolutionStatusBadge status={evolution.status} validatedAt={evolution.validatedAt} />}
+              summary={(() => {
+                try {
+                  return `${evolution.createdByName ? `${evolution.createdByName} • ` : ""}${formatDistanceToNow(new Date(evolution.createdAt), { addSuffix: true, locale: ptBR })}`;
+                } catch {
+                  return evolution.createdByName || undefined;
+                }
+              })()}
+            >
+              {lastValidated ? (
+                <div className="space-y-1">
+                  <p className="text-[11px] text-muted-foreground preserve-case">
+                    Última validada{lastValidated.createdByName ? ` • ${lastValidated.createdByName}` : ""}
+                    {" • "}
+                    {(() => {
+                      try {
+                        return format(new Date(lastValidated.createdAt), "dd/MM HH:mm", { locale: ptBR });
+                      } catch {
+                        return "—";
+                      }
+                    })()}
                   </p>
-                )}
-                <p className="text-xs text-muted-foreground leading-tight mt-1 preserve-case">
-                  {evolution.createdByName ? `${evolution.createdByName} • ` : ""}
-                  {(() => {
-                    try {
-                      return formatDistanceToNow(new Date(evolution.createdAt), {
-                        addSuffix: true,
-                        locale: ptBR,
-                      });
-                    } catch {
-                      return "—";
-                    }
-                  })()}
-                </p>
-              </div>
-            </div>
-            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-1" />
-          </button>
+                  <p className="text-xs leading-snug text-foreground/90 whitespace-pre-line preserve-case break-words max-h-48 overflow-y-auto">
+                    {lastValidated.fullText || "Sem texto."}
+                  </p>
+                </div>
+              ) : (
+                <EmptyMsg>Nenhuma evolução validada ainda.</EmptyMsg>
+              )}
+            </FoldCard>
+          </div>
         )}
 
         {/* ===== ZONA 3.7: ÚLTIMOS SINAIS VITAIS (realtime) ===== */}
@@ -1372,15 +1435,34 @@ interface AlertChipProps {
   label: string;
   value?: string;
   count?: string;
+  /** Linha única: rótulo e valor lado a lado. */
+  compact?: boolean;
 }
 
-function AlertChip({ icon: Icon, tone, label, value, count }: AlertChipProps) {
+function AlertChip({ icon: Icon, tone, label, value, count, compact }: AlertChipProps) {
   const toneStyles = {
     danger: { wrap: "border-l-destructive/70", icon: "text-destructive", count: "text-destructive" },
     warning: { wrap: "border-l-warning/70", icon: "text-warning", count: "text-warning" },
     success: { wrap: "border-l-emerald-500/70", icon: "text-released-on-soft", count: "text-released-on-soft" },
     muted: { wrap: "border-l-border", icon: "text-muted-foreground", count: "text-muted-foreground" },
   }[tone];
+
+  if (compact) {
+    return (
+      <div
+        title={value ? `${label}: ${value}` : label}
+        className={cn(
+          "flex items-center gap-2 px-3 py-1.5 rounded-md border border-border/60 bg-muted/30 border-l-2",
+          toneStyles.wrap,
+        )}
+      >
+        <Icon className={cn("h-3.5 w-3.5 shrink-0", toneStyles.icon)} />
+        <span className="text-xs font-medium text-foreground shrink-0">{label}</span>
+        {value && <span className="text-xs text-muted-foreground truncate preserve-case min-w-0">{value}</span>}
+        {count && <span className={cn("text-xs font-semibold shrink-0 ml-auto", toneStyles.count)}>{count}</span>}
+      </div>
+    );
+  }
 
   return (
     <div
@@ -1400,6 +1482,77 @@ function AlertChip({ icon: Icon, tone, label, value, count }: AlertChipProps) {
         )}
       </div>
     </div>
+  );
+}
+
+interface FoldCardProps {
+  icon: React.ComponentType<{ className?: string }>;
+  tone: "warning" | "muted";
+  title: string;
+  summary?: string;
+  marker?: React.ReactNode;
+  open: boolean;
+  /** open=true/false: expandir/recolher. */
+  onToggle: (open: boolean) => void;
+  /** Chamado no clique do cabeçalho com o card já aberto. */
+  onOpenPage: () => void;
+  children: React.ReactNode;
+}
+
+/** Card dobrável: compacto por padrão; 1º clique expande, 2º clique abre a página. */
+function FoldCard({ icon: Icon, tone, title, summary, marker, open, onToggle, onOpenPage, children }: FoldCardProps) {
+  return (
+    <div
+      className={cn(
+        "rounded-md border border-border/60 bg-muted/30 border-l-2",
+        tone === "warning" ? "border-l-warning/70" : "border-l-border",
+      )}
+    >
+      <div className="flex items-center gap-2 px-3 py-1.5">
+        <button
+          type="button"
+          onClick={() => (open ? onOpenPage() : onToggle(true))}
+          title={open ? `Abrir ${title}` : `Expandir ${title}`}
+          className="flex flex-1 min-w-0 items-center gap-2 text-left"
+        >
+          <Icon className={cn("h-3.5 w-3.5 shrink-0", tone === "warning" ? "text-warning" : "text-primary")} />
+          <span className="text-xs font-medium text-foreground shrink-0">{title}</span>
+          {marker}
+          {summary && <span className="text-xs text-muted-foreground truncate preserve-case min-w-0">{summary}</span>}
+        </button>
+        {open ? (
+          <button
+            type="button"
+            onClick={() => onToggle(false)}
+            aria-label={`Recolher ${title}`}
+            className="shrink-0 text-muted-foreground hover:text-foreground"
+          >
+            <ChevronUp className="h-3.5 w-3.5" />
+          </button>
+        ) : (
+          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+        )}
+      </div>
+      {open && <div className="px-3 pb-2 pt-0.5 border-t border-border/40">{children}</div>}
+    </div>
+  );
+}
+
+/** Marcador discreto do status da prescrição (bolinha + rótulo). */
+function PrescriptionMarker({ status, signed }: { status: string; signed: boolean }) {
+  const map: Record<string, { label: string; dot: string }> = {
+    draft: { label: "Rascunho", dot: "bg-muted-foreground" },
+    pending_validation: { label: "Aguard. validação", dot: "bg-warning" },
+    validated: { label: "Validada", dot: "bg-released" },
+    suspended: { label: "Suspensa", dot: "bg-destructive" },
+    finalized: { label: "Finalizada", dot: "bg-released" },
+  };
+  const cfg = map[status] || map.draft;
+  return (
+    <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground shrink-0">
+      <span className={cn("h-1.5 w-1.5 rounded-full", cfg.dot)} />
+      {cfg.label}{signed ? " • assinada" : ""}
+    </span>
   );
 }
 
@@ -1443,23 +1596,6 @@ function ItemList({ items, emptyMsg }: { items: string[]; emptyMsg: string }) {
 
 function EmptyMsg({ children }: { children: React.ReactNode }) {
   return <p className="text-xs text-muted-foreground italic preserve-case">{children}</p>;
-}
-
-function PrescriptionStatusBadge({ status, signed }: { status: string; signed: boolean }) {
-  const map: Record<string, { label: string; className: string }> = {
-    draft: { label: "Rascunho", className: "bg-muted text-muted-foreground" },
-    pending_validation: { label: "Aguard. validação", className: "bg-warning/15 text-warning" },
-    validated: { label: "Validada", className: "bg-primary/10 text-primary" },
-    suspended: { label: "Suspensa", className: "bg-destructive/10 text-destructive" },
-    finalized: { label: "Finalizada", className: "bg-released/10 text-released-on-soft" },
-  };
-  const cfg = map[status] || map.draft;
-  return (
-    <span className={cn("inline-flex items-center gap-1 rounded-md px-2 py-0 text-xs font-medium", cfg.className)}>
-      {cfg.label}
-      {signed && <span className="opacity-80">• assinada</span>}
-    </span>
-  );
 }
 
 function EvolutionStatusBadge({ status, validatedAt }: { status: string; validatedAt: string | null }) {
