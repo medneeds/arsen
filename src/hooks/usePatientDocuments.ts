@@ -178,13 +178,11 @@ export function usePatientDocuments({
       }
 
       // ── documentos médicos (atestado / relatório / termo) ──
-      // MIGRAÇÃO: documentos_medicos → altas (type→tipo). Filtra os três tipos
-      // deste fluxo; altas também guarda desfechos (alta/óbito).
+      // Tabela dedicada documentos_medicos (colunas próprias, não mais em altas/jsonb).
       const docMedicoQuery = supabase
-        .from("altas")
+        .from("documentos_medicos")
         .select("*")
         .eq("internacao_id", validId)
-        .in("tipo", ["atestado", "relatorio", "termo"])
         .order("criado_em", { ascending: false })
         .limit(100);
 
@@ -301,16 +299,13 @@ export function usePatientDocuments({
         });
       });
 
-      // altas (atestado / relatório / termo) → "documento_medico"
-      // MIGRAÇÃO: documentos_medicos → altas; source mantido "documentos_medicos"
-      // (shape exportado estável). body/patient_*/nome do assinante ficam no conteudo.
+      // documentos_medicos (atestado / relatório / termo) → "documento_medico"
       const DOC_MEDICO_LABEL: Record<string, string> = {
         atestado: "Atestado Médico",
         relatorio: "Relatório Médico",
         termo: "Termo / Declaração",
       };
       (docMedicoRes.data || []).forEach((r: any) => {
-        const c = (r.conteudo ?? {}) as Record<string, any>;
         list.push({
           id: r.id,
           type: "documento_medico",
@@ -319,13 +314,13 @@ export function usePatientDocuments({
           // de status.
           status: "concluido",
           rawStatus: r.tipo,
-          createdAt: r.criado_em ?? r.data_hora,
-          authorName: c.signed_by_name ?? null,
-          // CRM embutido do assinante (conteudo ou coluna crm_assinatura); o nome
-          // nao-embutido e resolvido via profissionais(assinado_por) na pagina.
-          authorCrm: c.signed_by_crm ?? r.crm_assinatura ?? null,
-          patientSector: c.patient_sector ?? null,
-          patientBed: c.patient_bed ?? null,
+          createdAt: r.criado_em,
+          authorName: r.assinado_por_nome ?? null,
+          // CRM embutido do assinante (coluna crm_assinatura); o nome nao-embutido
+          // e resolvido via profissionais(assinado_por) na pagina.
+          authorCrm: r.crm_assinatura ?? null,
+          patientSector: r.paciente_setor ?? null,
+          patientBed: r.paciente_leito ?? null,
           source: "documentos_medicos",
           raw: r,
         });

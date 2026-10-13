@@ -28,22 +28,15 @@ export interface DocumentoMedicoData {
 /**
  * Hook para criar e listar atestados / relatórios / termos de um paciente.
  *
- * MIGRAÇÃO: `documentos_medicos` não existe no schema novo → mapeado para
- * `altas` (per de-para). `patientId` é `internacoes.id` → vínculo por
- * internacao_id. Colunas de altas: tipo (atestado/relatorio/termo),
- * conteudo(Json), crm_assinatura, assinado_por(FK profissionais.id), data_hora.
+ * Persiste na tabela dedicada `documentos_medicos` (colunas: tipo, internacao_id,
+ * paciente_id, paciente_nome/leito/setor, corpo, dias, cid, assinado_por(FK
+ * profissionais.id), assinado_por_nome, crm_assinatura, criado_em). `internacao_id`
+ * é NULLABLE — permite emitir documento de paciente não internado; `paciente_id`
+ * é preenchido pelo banco a partir da internação (vínculo estável).
  *
- * Como `altas` não tem colunas dedicadas para body, days, cid, patient e nome do
- * assinante, esses campos são preservados dentro de `conteudo` (Json). Filtra os
- * documentos pelos três tipos deste hook — `altas` também guarda desfechos
- * (alta_hospitalar/obito), tratados por usePatientDischargeDocs.
- *
- * DEGRADADO:
- * - Vínculo estável por paciente (patient_registry_id/paciente_id) removido:
- *   `altas` só referencia internacao_id → cross-internação não é possível aqui.
- * - Salvar exige internação ativa (altas.internacao_id NOT NULL); sem patientId
- *   não é possível emitir (antes documentos_medicos aceitava só patient_name).
- * - encounter_id / hospital_unit_id / created_by descontinuados (sem coluna).
+ * `patientId` recebido pelo hook é `internacoes.id`. Em `DocumentoMedicoData`,
+ * `patient_id` continua representando a internação (compatibilidade com os
+ * componentes que consomem este hook).
  */
 
 /** Resolve profissionais.id a partir do auth user id (assinado_por ≠ auth.uid). */
@@ -61,23 +54,20 @@ async function resolveProfissionalId(userId: string | null | undefined): Promise
   }
 }
 
-const DOC_MEDICO_TIPOS = ["atestado", "relatorio", "termo"];
-
 export function mapRow(r: any, fallbackName?: string | null): DocumentoMedicoData {
-  const c = (r.conteudo ?? {}) as Record<string, any>;
   return {
     id: r.id,
     type: r.tipo,
     patient_id: r.internacao_id ?? null,
-    patient_name: c.patient_name ?? fallbackName ?? "",
-    patient_bed: c.patient_bed ?? undefined,
-    patient_sector: c.patient_sector ?? undefined,
-    body: c.body ?? "",
-    days: c.days ?? null,
-    cid: c.cid ?? null,
-    signed_by_name: c.signed_by_name ?? undefined,
+    patient_name: r.paciente_nome ?? fallbackName ?? "",
+    patient_bed: r.paciente_leito ?? undefined,
+    patient_sector: r.paciente_setor ?? undefined,
+    body: r.corpo ?? "",
+    days: r.dias ?? null,
+    cid: r.cid ?? null,
+    signed_by_name: r.assinado_por_nome ?? undefined,
     signed_by_crm: r.crm_assinatura ?? undefined,
-    created_at: r.criado_em ?? r.data_hora,
+    created_at: r.criado_em,
   };
 }
 
@@ -97,10 +87,9 @@ export function useDocumentoMedico(
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from("altas")
+        .from("documentos_medicos")
         .select("*")
         .eq("internacao_id", patientId)
-        .in("tipo", DOC_MEDICO_TIPOS)
         .order("criado_em", { ascending: false });
       if (error) throw error;
       setDocumentos((data ?? []).map((r) => mapRow(r, patientName)));
@@ -117,32 +106,28 @@ export function useDocumentoMedico(
   const save = useCallback(async (data: DocumentoMedicoData): Promise<string | null> => {
     try {
       const internacaoId = data.patient_id ?? patientId ?? null;
-      if (!internacaoId) {
-        // MIGRAÇÃO: altas.internacao_id é NOT NULL — sem internação ativa não há
-        // onde vincular o documento.
-        toast.error("Selecione um paciente internado antes de salvar o documento");
+      if (!internacaoId && !data.patient_name) {
+        toast.error("Informe o paciente antes de salvar o documento");
         return null;
       }
       const assinadoPor = await resolveProfissionalId(user?.id);
       const payload: Record<string, any> = {
-        internacao_id: internacaoId,
         tipo: data.type,
-        crm_assinatura: data.signed_by_crm ?? null,
+        internacao_id: internacaoId,
+        // paciente_id é preenchido pelo trigger a partir da internação.
+        paciente_nome: data.patient_name,
+        paciente_leito: data.patient_bed ?? null,
+        paciente_setor: data.patient_sector ?? null,
+        corpo: data.body,
+        dias: data.days ?? null,
+        cid: data.cid ?? null,
         assinado_por: assinadoPor,
-        // Campos sem coluna dedicada em altas → preservados no conteudo (Json).
-        conteudo: {
-          body: data.body,
-          days: data.days ?? null,
-          cid: data.cid ?? null,
-          patient_name: data.patient_name,
-          patient_bed: data.patient_bed ?? null,
-          patient_sector: data.patient_sector ?? null,
-          signed_by_name: data.signed_by_name ?? null,
-        },
+        assinado_por_nome: data.signed_by_name ?? null,
+        crm_assinatura: data.signed_by_crm ?? null,
       };
 
       const { data: row, error } = await supabase
-        .from("altas")
+        .from("documentos_medicos")
         .insert(payload as any)
         .select("id")
         .single();
