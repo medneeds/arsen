@@ -134,6 +134,28 @@ export function buildSolutoToken(item: SolutoFields): string {
   const isMassUnit   = /^(mg|mcg|µg|g|ui)$/i.test(unitLower); // prescrito em massa
   const isUnitUnit   = !isVolumeUnit && !isMassUnit; // amp, FA, comp, gota, etc.
 
+  // Massa a partir da CONCENTRACAO da apresentacao quando prescrito em mL.
+  // Ex.: Dipirona "500mg/mL", 4 mL -> " (2 g)". Usa a concentracao da APRESENTACAO
+  // (confiavel), nunca a dose do catalogo — por isso e seguro escalar pela Qtd.
+  // Sem concentracao mg/mL (ou %, ou volume puro) na apresentacao, nao anexa nada.
+  const concMassSuffix = (() => {
+    if (!isVolumeUnit) return '';
+    const qn = parseFloat((item.quantity || '').replace(',', '.'));
+    if (!(qn > 0)) return '';
+    const m = (item.presentation || '').match(/(\d[\d.,]*)\s*(mg|mcg|µg|ug|g|ui)\s*\/\s*m[lL]\b/i);
+    if (!m) return '';
+    const val = parseFloat(m[1].replace(',', '.'));
+    if (!(val > 0)) return '';
+    const unit = m[2].toLowerCase().replace('µg', 'mcg').replace('ug', 'mcg');
+    const total = val * qn; // na unidade da concentracao
+    const fmt = (nn: number) => Number.isInteger(nn) ? String(nn) : String(+nn.toFixed(2)).replace('.', ',');
+    if (unit === 'g')   return ` (${fmt(total)} g)`;
+    if (unit === 'mg')  return total >= 1000 ? ` (${fmt(total / 1000)} g)` : ` (${fmt(total)} mg)`;
+    if (unit === 'mcg') return total >= 1000 ? ` (${fmt(total / 1000)} mg)` : ` (${fmt(total)} mcg)`;
+    if (unit === 'ui')  return ` (${fmt(total)} UI)`;
+    return '';
+  })();
+
   // ══════════════════════════════════════════════════════════════════
   // CASO A — Quantidade prescrita em MASSA (mg, mcg, g, UI)
   //   Médico digitou 500 mg ou 40 mg — mostrar só o qty.
@@ -147,7 +169,7 @@ export function buildSolutoToken(item: SolutoFields): string {
   //   Concentração não informa dose total — omitir, mostrar só qty.
   // ══════════════════════════════════════════════════════════════════
   if (isConcentration) {
-    return qtyStr || doseRaw;
+    return (qtyStr || doseRaw) + concMassSuffix;
   }
 
   // ══════════════════════════════════════════════════════════════════
@@ -188,12 +210,13 @@ export function buildSolutoToken(item: SolutoFields): string {
   // ══════════════════════════════════════════════════════════════════
   if (isMassDose) {
     if (isVolumeUnit && qtyStr) {
-      // Padronizado com o CASO A (mg/g): ao prescrever em mL, o volume já É
-      // a informação relevante — anexar a dose por-unidade do catálogo
-      // ("4 mL (1g (2mL))") ficava redundante e, pior, podia informar massa
-      // ERRADA quando o mL prescrito não bate com o volume unitário do
-      // catálogo (4 mL prescritos ≠ 1g se a referência é "1g por 2mL").
-      return qtyStr;
+      // Ao prescrever em mL, o volume é a informacao principal. A massa so e
+      // anexada quando computavel a partir da CONCENTRACAO da apresentacao
+      // (concMassSuffix) — ex.: Dipirona 500mg/mL, 4 mL -> "4 mL (2 g)". NUNCA
+      // usamos a dose por-unidade do catalogo para isso (podia dar massa errada
+      // quando o mL prescrito nao bate com o volume de referencia). Sem
+      // concentracao na apresentacao, concMassSuffix e vazio -> so o volume.
+      return qtyStr + concMassSuffix;
     }
     if (isUnitUnit && qtyStr) {
       // Escala a dose com a quantidade — mesmo princípio já aplicado ao volume
@@ -264,7 +287,9 @@ export function buildSolutoToken(item: SolutoFields): string {
     const concPart = pres.includes(' — ') ? pres.split(' — ')[0].trim() : pres;
     if (concPart) return `${qtyStr} (${concPart})`;
   }
-  return qtyStr || doseRaw;
+  // Fallback final: prescrito em mL sem dose textual (ex.: Noradrenalina 1mg/mL,
+  // 10 mL) tambem recebe a massa da concentracao da apresentacao (concMassSuffix).
+  return (qtyStr || doseRaw) + concMassSuffix;
 }
 
 // ════════════════════════════════════════════════════════════════════════
