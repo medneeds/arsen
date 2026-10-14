@@ -19,6 +19,38 @@ function norm(s: string): string {
     .trim();
 }
 
+// Palavras de ligacao que nao agregam a busca (ruido). Removidas dos tokens do
+// termo digitado para "com contraste", "ressonancia de cranio" casarem.
+const STOPWORDS = new Set(["de", "do", "da", "dos", "das", "com", "e", "ou", "para", "sem", "no", "na", "a", "o", "em"]);
+
+// Sinonimos/abreviacoes comuns da radiologia -> termo como aparece no SIGTAP.
+const SINONIMOS: Record<string, string> = {
+  tc: "tomografia",
+  rm: "ressonancia",
+  rnm: "ressonancia",
+  usg: "ultrassonografia",
+  us: "ultrassonografia",
+  eco: "ecocardiograma",
+  rx: "radiografia",
+};
+
+// Expande um token: contrastado/contrastada/contrastadas -> contraste; aplica
+// sinonimos; senao mantem.
+function expandirToken(tok: string): string {
+  if (/^contrast/.test(tok)) return "contraste";
+  return SINONIMOS[tok] ?? tok;
+}
+
+// Quebra o termo em tokens uteis (sem acento/caixa, sem stopwords, >=2 chars).
+function tokenizar(q: string): string[] {
+  return norm(q)
+    .split(/\s+/)
+    .filter(Boolean)
+    .filter((t) => !STOPWORDS.has(t))
+    .map(expandirToken)
+    .filter((t) => t.length >= 2);
+}
+
 // Ordena por complexidade (alta -> media -> resto) para o alto custo vir primeiro.
 const COMPLEX_RANK: Record<string, number> = {
   "Alta Complexidade": 0,
@@ -73,10 +105,11 @@ export function useSigtapSearch(term: string) {
   const data = useMemo<SigtapProcedure[]>(() => {
     if (q.length < 3 || normalizado.length === 0) return [];
     const digits = q.replace(/\D/g, "");
-    // Busca por TOKENS: cada palavra digitada (sem acento) precisa aparecer em
-    // qualquer posicao do nome, em qualquer ordem. "ressonancia cranio" casa com
-    // "RESSONANCIA MAGNETICA DE CRANIO". Codigo casa em paralelo (>=3 digitos).
-    const tokens = norm(q).split(/\s+/).filter(Boolean);
+    // Busca por TOKENS: cada palavra util (sem acento/stopword, com sinonimos)
+    // precisa aparecer em qualquer posicao do nome, em qualquer ordem.
+    // "com contraste" -> [contraste]; "tc torax" -> [tomografia, torax].
+    // Codigo casa em paralelo (>=3 digitos).
+    const tokens = tokenizar(q);
     const hits = normalizado
       .filter(({ r, nomeNorm }) => {
         const nameMatch = tokens.length > 0 && tokens.every((t) => nomeNorm.includes(t));
