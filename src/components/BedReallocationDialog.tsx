@@ -85,21 +85,28 @@ export function BedReallocationDialog({ open, onOpenChange, patient, onSuccess }
     let cancel = false;
     (async () => {
       setLoading(true);
-      // 1) Resolve o setor. MIGRAÇÃO: usePatientLive mapeia Patient.sector ← setores.nome,
-      //    logo o código do setor está gravado em setores.nome.
-      const { data: setorRows, error: setorErr } = await supabase
-        .from("setores")
-        .select("id")
-        .eq("nome", patient.sector);
+      // 1) Resolve o setor pela INTERNACAO atual do paciente (leito -> setor_id).
+      //    Antes casava por setores.nome === patient.sector; mas o paciente vindo
+      //    do Mapa de Leitos (usePatients) traz sector como CODIGO de setor
+      //    (resolveSectorCode, ex.: "red" = UTI 1), nao o nome -> a query por nome
+      //    voltava vazia e o setor inteiro aparecia sem leitos vagos ("nenhum leito
+      //    vago neste setor"), mesmo havendo. Resolver pelo leito da internacao e
+      //    inequivoco (independe de nome/codigo).
+      const { data: interSetorRow, error: setorErr } = await supabase
+        .from("internacoes")
+        .select("leito:leitos(setor_id)")
+        .eq("id", patient.id)
+        .maybeSingle();
       if (cancel) return;
-      const setorIds = (setorRows ?? []).map((s) => s.id);
-      if (setorErr || setorIds.length === 0) {
+      const setorId = (interSetorRow as { leito?: { setor_id?: string | null } | null } | null)?.leito?.setor_id ?? null;
+      if (setorErr || !setorId) {
         if (setorErr) toast.error("Falha ao carregar leitos do setor");
         setLeitos([]);
         setSiblings([]);
         setLoading(false);
         return;
       }
+      const setorIds = [setorId];
 
       // 2) Leitos do setor.
       const { data: leitoRows, error: leitoErr } = await supabase
