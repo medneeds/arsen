@@ -1,5 +1,6 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
+import { useSigtapSearch } from "@/hooks/useSigtapSearch";
 import { ScanLine, Printer, RotateCcw, Plus, Trash2, Search, ShieldAlert, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -67,16 +68,20 @@ const PROCEDURES: Procedure[] = [
   { code: "02.05.01.005-6", name: "ECOCARDIOGRAMA TRANSTORÁCICO", category: "USG" },
 ];
 
-/* Quick-access buttons */
+/* Quick-access buttons — codigos e nomes CONFERIDOS 1:1 contra o SIGTAP 202609
+   (tabela sigtap_procedimentos). Antes a lista usava codigos de competencia
+   antiga apontando para o procedimento ERRADO (ex.: "TC Torax" = 02.06.03.001-0
+   que hoje e TC Abdome Superior; "TC Abdome Total"/"TC Pelve" = codigos de
+   CONTRASTE) — risco de glosa. AngioTC/Abdome Total removidos: nao ha codigo
+   unico no SIGTAP (angioTC = TC regiao + contraste). Nomes grafados como no
+   SIGTAP para o laudo bater com o faturamento. */
 const QUICK_ACCESS = [
-  { code: "02.06.01.007-9", label: "TC Crânio", color: "bg-primary hover:bg-primary text-white" },
-  { code: "02.06.03.001-0", label: "TC Tórax", color: "bg-released hover:bg-released text-white" },
-  { code: "02.06.03.002-9", label: "TC Abdome Sup", color: "bg-warning hover:bg-warning text-white" },
-  { code: "02.06.03.003-7", label: "TC Abdome Inf", color: "bg-warning hover:bg-warning text-white" },
-  { code: "02.06.03.004-5", label: "TC Abdome Total", color: "bg-critical hover:bg-critical text-white" },
-  { code: "02.06.01.005-2", label: "AngioTC Pulmonar", color: "bg-primary hover:bg-primary text-white" },
-  { code: "02.06.01.001-0", label: "AngioTC Cervical", color: "bg-primary hover:bg-primary text-white" },
-  { code: "02.06.03.005-3", label: "TC Pelve", color: "bg-primary hover:bg-primary text-white" },
+  { code: "02.06.01.007-9", label: "TC Crânio",         name: "TOMOGRAFIA COMPUTADORIZADA DO CRANIO", color: "bg-primary hover:bg-primary text-white" },
+  { code: "02.06.02.003-1", label: "TC Tórax",          name: "TOMOGRAFIA COMPUTADORIZADA DE TORAX", color: "bg-released hover:bg-released text-white" },
+  { code: "02.06.03.001-0", label: "TC Abdome Sup.",    name: "TOMOGRAFIA COMPUTADORIZADA DE ABDOMEN SUPERIOR", color: "bg-warning hover:bg-warning text-white" },
+  { code: "02.06.03.003-7", label: "TC Pelve/Abd Inf.", name: "TOMOGRAFIA COMPUTADORIZADA DE PELVE / BACIA / ABDOMEN INFERIOR", color: "bg-warning hover:bg-warning text-white" },
+  { code: "02.06.01.005-2", label: "TC Pescoço",        name: "TOMOGRAFIA COMPUTADORIZADA DO PESCOCO", color: "bg-primary hover:bg-primary text-white" },
+  { code: "02.06.01.004-4", label: "TC Face/Seios",     name: "TOMOGRAFIA COMPUTADORIZADA DE FACE / SEIOS DA FACE / ARTICULACOES TEMPORO-MANDIBULARES", color: "bg-primary hover:bg-primary text-white" },
 ];
 
 /* ── Fixed institution data ────────────────────────────────────── */
@@ -315,7 +320,7 @@ const RequisicaoImagensPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, hydratedFromRegistry]);
 
-  const addProcedure = (proc: Procedure) => {
+  const addProcedure = (proc: { code: string; name: string }) => {
     if (selectedProcedures.find((p) => p.code === proc.code)) {
       toast.info("Procedimento já adicionado");
       return;
@@ -454,6 +459,41 @@ const RequisicaoImagensPage = () => {
     return matchSearch && matchCategory;
   });
 
+  // Busca autoritativa no catalogo SIGTAP (tabela sigtap_procedimentos), escopada
+  // a imagem (grupos 02.05 USG/Doppler, 02.06 TC, 02.07 RM). Ignora acento/caixa
+  // e por tokens (ver useSigtapSearch). A lista local PROCEDURES tem drift de
+  // competencia, entao so e usada como fallback quando o banco nao retorna.
+  type ImgProc = { code: string; name: string; category: string; valor?: string };
+  const sigtapQuery = useSigtapSearch(searchProcedure);
+  const catFromCode = (code: string, name: string): string => {
+    const c = code.replace(/\D/g, "");
+    if (c.startsWith("0207")) return "RM";
+    if (c.startsWith("0206")) return "TC";
+    if (c.startsWith("0205")) return /doppler/i.test(name) ? "DOPPLER" : "USG";
+    return "OUTRO";
+  };
+  const sigtapResults: ImgProc[] = useMemo(() => {
+    const rows = sigtapQuery.data ?? [];
+    const out: ImgProc[] = [];
+    const vistos = new Set<string>();
+    for (const r of rows) {
+      const code = r.codigo_formatado;
+      const digits = code.replace(/\D/g, "");
+      if (!(digits.startsWith("0205") || digits.startsWith("0206") || digits.startsWith("0207"))) continue; // so imagem
+      if (vistos.has(code)) continue;
+      vistos.add(code);
+      const n = typeof r.valor_total === "string" ? parseFloat(r.valor_total) : (r.valor_total ?? 0);
+      const category = catFromCode(code, r.nome);
+      out.push({ code, name: r.nome, category, valor: Number.isFinite(n) ? n.toFixed(2) : undefined });
+    }
+    return out.filter((p) => categoryFilter === "all" || p.category === categoryFilter);
+  }, [sigtapQuery.data, categoryFilter]);
+
+  // Banco autoritativo quando ha resultado; lista local so como fallback.
+  const mergedProcedures: ImgProc[] = sigtapResults.length > 0
+    ? sigtapResults
+    : filteredProcedures.map((p) => ({ code: p.code, name: p.name, category: p.category }));
+
   const todayFormatted = format(new Date(), "dd/MM/yyyy");
 
   return (
@@ -489,15 +529,15 @@ const RequisicaoImagensPage = () => {
           <CardContent>
             <div className="flex flex-wrap gap-2">
               {QUICK_ACCESS.map((qa) => {
-                const proc = PROCEDURES.find((p) => p.code === qa.code);
                 const isSelected = selectedProcedures.some((p) => p.code === qa.code);
                 return (
                   <Button
                     key={qa.code}
                     size="sm"
                     className={`${isSelected ? "ring-2 ring-offset-2 ring-primary opacity-60" : qa.color} transition-all font-medium`}
-                    onClick={() => proc && addProcedure(proc)}
+                    onClick={() => addProcedure({ code: qa.code, name: qa.name })}
                     disabled={isSelected}
+                    title={`${qa.code} — ${qa.name}`}
                   >
                     <Plus className="h-3.5 w-3.5 mr-1" />
                     {qa.label}
@@ -704,18 +744,24 @@ const RequisicaoImagensPage = () => {
                   </Select>
                 </div>
                 <div className="max-h-60 overflow-y-auto border rounded-lg divide-y">
-                  {filteredProcedures.map((proc) => {
+                  {mergedProcedures.length === 0 && (
+                    <div className="px-3 py-6 text-center text-xs text-muted-foreground">
+                      {sigtapQuery.isFetching ? "Buscando no catálogo SIGTAP..." : "Nenhum procedimento encontrado"}
+                    </div>
+                  )}
+                  {mergedProcedures.map((proc) => {
                     const isSelected = selectedProcedures.some((p) => p.code === proc.code);
                     return (
                       <button
                         key={proc.code}
                         className={`w-full text-left px-3 py-2 text-sm hover:bg-accent/50 transition-colors flex items-center justify-between gap-2 ${isSelected ? "bg-primary/5 opacity-60" : ""}`}
-                        onClick={() => addProcedure(proc)}
+                        onClick={() => addProcedure({ code: proc.code, name: proc.name })}
                         disabled={isSelected}
                       >
                         <div className="min-w-0">
                           <span className="font-mono text-xs text-muted-foreground mr-2">{proc.code}</span>
                           <span className="text-foreground">{proc.name}</span>
+                          {proc.valor && <span className="ml-2 font-mono text-xs text-muted-foreground">R$ {proc.valor}</span>}
                         </div>
                         <Badge variant="outline" className="shrink-0 text-xs">{proc.category}</Badge>
                       </button>
