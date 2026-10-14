@@ -9267,21 +9267,92 @@ const PrescricaoPage = () => {
               </TooltipContent>
             </Tooltip>
           )}
-          <div className="ml-auto flex items-center gap-1">
+          <div className="ml-auto flex items-center gap-0.5">
+            {/* Acoes rapidas SO ICONE (espelham a barra do rodape) — tooltip
+                explicativo, estados de hover e mesmos handlers/condicoes. */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   variant="ghost"
-                  size="sm"
-                  onClick={() => setCompactView(!compactView)}
-                  className={cn("gap-1 text-[11px] h-7 px-2 transition-colors", compactView ? "text-primary hover:bg-primary/10" : "text-muted-foreground hover:bg-primary/10 hover:text-primary")}
+                  size="icon"
+                  onClick={handleSaveDraft}
+                  disabled={savingDraft || renewalPendingCount === 0 || !patient.name.trim()}
+                  aria-label="Salvar rascunho"
+                  className="h-7 w-7 text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
                 >
-                  {compactView ? <AlignJustify className="h-[9px] w-[9px]" /> : <List className="h-[9px] w-[9px]" />}
-                {compactView ? 'Expandido' : 'Compacto'}
+                  {savingDraft ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="text-xs max-w-[220px]">
+                {renewalPendingCount === 0
+                  ? "Salvar rascunho — nenhum item pendente"
+                  : `Salvar ${renewalPendingCount} ${renewalPendingCount === 1 ? 'item pendente' : 'itens pendentes'} como rascunho (visível só p/ você)`}
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={requestValidateAll}
+                  disabled={allItemsValidated}
+                  aria-label="Validar prescrição"
+                  className={cn(
+                    "h-7 w-7 transition-colors",
+                    allItemsValidated ? "text-released" : "text-muted-foreground hover:bg-released/10 hover:text-released",
+                  )}
+                >
+                  <ShieldCheck className="h-3.5 w-3.5" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="top" className="text-xs">
-                {compactView ? 'Alternar para visualização expandida' : 'Alternar para visualização compacta'}
+                {allItemsValidated ? "Todos os itens já validados" : prescriptionLocked ? "Validar itens pendentes" : "Validar prescrição"}
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => {
+                    if (!allItemsValidated) {
+                      const pending = items.filter(i => i.status === 'active' && !isItemValidatedToday(i)).length;
+                      toast.error("Impressão bloqueada — há itens pendentes", {
+                        description: `${pending} ${pending === 1 ? 'item aguarda' : 'itens aguardam'} validação. Valide ou exclua os itens pendentes antes de imprimir.`,
+                      });
+                      return;
+                    }
+                    handlePrint();
+                  }}
+                  aria-label="Imprimir prescrição"
+                  className="h-7 w-7 text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+                >
+                  <Printer className="h-3.5 w-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="text-xs max-w-[220px]">
+                Imprimir a prescrição validada e, quando aplicável, as guias regulatórias
+              </TooltipContent>
+            </Tooltip>
+
+            <span aria-hidden className="mx-0.5 h-4 w-px bg-border/60" />
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setCompactView(!compactView)}
+                  aria-label={compactView ? "Expandir prescrição" : "Compactar prescrição"}
+                  className={cn("h-7 w-7 transition-colors", compactView ? "text-primary hover:bg-primary/10" : "text-muted-foreground hover:bg-primary/10 hover:text-primary")}
+                >
+                  {compactView ? <AlignJustify className="h-3.5 w-3.5" /> : <List className="h-3.5 w-3.5" />}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="text-xs">
+                {compactView ? 'Expandir a prescrição (ver detalhes)' : 'Compactar a prescrição'}
               </TooltipContent>
             </Tooltip>
           </div>
