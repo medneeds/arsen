@@ -72,6 +72,15 @@ const EMPTY_SOAP = { subjective: "", objective: "", assessment: "", plan: "" };
 const EMPTY_VITALS = { pa: "", fc: "", fr: "", temp: "", spo2: "", glasgow: "", diurese: "", dor: "" };
 const EMPTY_EXAM = { general: "", cardiovascular: "", respiratory: "", abdomen: "", neurological: "", extremities: "", skin: "", other: "" };
 
+// Coage todos os valores para STRING. Evolucoes legadas podem ter gravado
+// sinais vitais/exame como NUMERO em soap.__vital_signs; ao mesclar isso cru,
+// os consumidores que fazem v.trim()/v.split() lancavam TypeError em render
+// (crash da tela ao abrir a evolucao). Normalizar na origem blinda todos.
+const strVals = (o: unknown): Record<string, string> =>
+  Object.fromEntries(
+    Object.entries((o ?? {}) as Record<string, unknown>).map(([k, v]) => [k, v == null ? "" : String(v)]),
+  );
+
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const asUuid = (id: string | null): string | null => (id && UUID_RE.test(id) ? id : null);
 
@@ -105,8 +114,8 @@ export function mapEvolution(d: any): EvolutionRecord {
     // soap_data preserva TODAS as chaves do JSON (inclui diagnosticHypotheses,
     // planItems, pendenciasItems, antecedentes usados pelo PDF/consumidores).
     soap_data: { ...EMPTY_SOAP, ...soap },
-    vital_signs: { ...EMPTY_VITALS, ...(soap.__vital_signs ?? {}) },
-    physical_exam: { ...EMPTY_EXAM, ...((d.exame_fisico as any) ?? {}) },
+    vital_signs: { ...EMPTY_VITALS, ...strVals(soap.__vital_signs) },
+    physical_exam: { ...EMPTY_EXAM, ...strVals(d.exame_fisico) },
     status: fromEvolucaoStatusDb(d.status),
     evolution_type: soap.__evolution_type ?? undefined,
     diagnostic_hypotheses: soap.__diagnostic_hypotheses ?? null,

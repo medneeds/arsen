@@ -172,9 +172,12 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
   // NEWS2 — calculado em tempo real a partir dos sinais vitais preenchidos.
   // Exibido como badge no header da seção quando ≥ 1 campo está preenchido.
   const news2 = useMemo(() => {
-    const hasAny = Object.values(vitals).some(v => (v ?? "").trim());
+    // String(...) defensivo: sinais vitais de evolucoes legadas podem vir como
+    // NUMERO em soap.__vital_signs; (numero).trim()/.split lancava TypeError em
+    // render e derrubava o form na ErrorBoundary ao abrir a evolucao.
+    const hasAny = Object.values(vitals).some(v => String(v ?? "").trim());
     if (!hasAny) return null;
-    const pa = vitals.pa.split("/")[0];
+    const pa = String(vitals.pa ?? "").split("/")[0];
     return calculateNEWS2({
       respiratoryRate: parseVitalNumber(vitals.fr),
       spo2: parseVitalNumber(vitals.spo2),
@@ -189,8 +192,8 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
   // OPCIONAIS: Sinais Vitais, Exame Físico, Exames Complementares, Dispositivos/Culturas.
   const completion = useMemo(() => ({
     diagnostics: !!(cidPrimary && cidPrimary.trim()),
-    vitals: Object.values(vitals).some(v => (v ?? "").trim()),
-    exam: Object.values(physicalExam).some(v => (v ?? "").trim()),
+    vitals: Object.values(vitals).some(v => String(v ?? "").trim()),
+    exam: Object.values(physicalExam).some(v => String(v ?? "").trim()),
     evolucao: richHtmlToPlainText(evolucaoText).length >= 10,
     complementares: richHtmlToPlainText(soap.objective).length > 0,
     // Plano completo quando: RichText com 10+ chars OU planItems[] com ao menos 1 item não vazio
@@ -830,8 +833,8 @@ const ReadOnlyView: React.FC<{
   diagnosticHypotheses?: string | string[] | null;
   antecedentes?: string[];
 }> = ({ soap, vitals, physicalExam, devices, culturesHtml, antibioticosHtml, planItems, pendenciasItems, diagnosticHypotheses, antecedentes }) => {
-  const hasVitals = Object.values(vitals).some(v => v.trim());
-  const hasExam = Object.values(physicalExam).some(v => v.trim());
+  const hasVitals = Object.values(vitals).some(v => String(v ?? "").trim());
+  const hasExam = Object.values(physicalExam).some(v => String(v ?? "").trim());
   const hasDevices = Array.isArray(devices) && devices.length > 0;
   const hasCultures = !!culturesHtml && richHtmlToPlainText(culturesHtml).trim().length > 0;
   const hasAntibioticos = !!antibioticosHtml && richHtmlToPlainText(antibioticosHtml).trim().length > 0;
