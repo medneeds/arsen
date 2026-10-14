@@ -671,15 +671,15 @@ export default function PainelClinicoPage() {
                             render={(raw) => {
                               const { done, text } = parsePendency(raw);
                               return (
-                                <span className="flex min-w-0 items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                                <label className="group flex min-w-0 cursor-pointer items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
                                   <Checkbox
                                     checked={done}
                                     onCheckedChange={(v) => togglePendency(patient, text, v === true)}
-                                    className="h-3.5 w-3.5 shrink-0 border-muted-foreground/40 data-[state=checked]:bg-muted-foreground/70 data-[state=checked]:border-muted-foreground/70"
+                                    className="h-3.5 w-3.5 shrink-0 cursor-pointer border-muted-foreground/40 transition-all hover:scale-110 hover:border-foreground/60 hover:bg-muted/40 data-[state=checked]:bg-muted-foreground/70 data-[state=checked]:border-muted-foreground/70"
                                     aria-label={done ? "Reabrir pendência" : "Concluir pendência"}
                                   />
-                                  <span className={cn("truncate", done && "line-through text-muted-foreground/60")}>{text}</span>
-                                </span>
+                                  <span className={cn("truncate transition-colors group-hover:text-foreground", done && "line-through text-muted-foreground/60 group-hover:text-muted-foreground/60")}>{text}</span>
+                                </label>
                               );
                             }}
                           />
