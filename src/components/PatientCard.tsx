@@ -1507,7 +1507,9 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                         <span
                           className={cn(
                             "inline-flex items-center gap-0.5 px-1.5 py-px rounded-full text-[11px] font-medium leading-none border",
-                            stayTimer.colorClasses
+                            // TPS SEMPRE azul (identidade visual) — nao sinaliza por
+                            // tempo. Apenas o DIH muda de cor conforme o tempo.
+                            "bg-primary/10 text-primary border-primary/30"
                           )}
                           title={`Permanência no setor (TPS): ${stayTimer.display}${stayTimer.level === "warning" ? " >24h" : stayTimer.level === "orange" ? " >48h" : stayTimer.level === "critical" || stayTimer.level === "pulsing" ? " >72h" : ""}`}
                         >

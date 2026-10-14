@@ -922,7 +922,9 @@ export function UtiPatientCard({
                           <div
                             className={cn(
                               "flex items-center justify-center gap-1 px-2 py-0.5 rounded-md border",
-                              stayTimer.colorClasses
+                              // TPS SEMPRE azul (identidade visual) — nao sinaliza por
+                              // tempo. So o DIH muda de cor conforme o tempo.
+                              "bg-primary/10 text-primary border-primary/30"
                             )}
                             title={`TPS — Tempo de Permanencia no Setor: ${stayTimer.display} (desde a entrada no setor atual)`}
                           >
