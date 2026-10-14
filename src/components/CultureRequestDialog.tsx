@@ -390,9 +390,6 @@ export function CultureRequestDialog({
                       <Field label={`Nome da mãe${isMinor ? " (obrigatório — menor de 18 anos)" : ""}`} full>
                         <Input value={data.mother_name || ""} onChange={(e) => setData({ ...data, mother_name: e.target.value.toUpperCase() })} />
                       </Field>
-                      <Field label="Data de nascimento da mãe">
-                        <Input type="date" value={data.mother_birth_date || ""} onChange={(e) => setData({ ...data, mother_birth_date: e.target.value })} />
-                      </Field>
                     </>
                   )}
                 </div>

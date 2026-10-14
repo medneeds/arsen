@@ -269,7 +269,6 @@ export function PrintableCultureRequest({
         emission={format(new Date(), "dd/MM/yyyy HH:mm:ss")}
         width="100%"
         patient={headerPatient}
-        extras={[["Nasc. da mãe", fmtDate(request.mother_birth_date), true]]}
       />
 
       {/* TABELA ÚNICA — estrutura tipo formulário hospitalar */}
@@ -500,8 +499,6 @@ export async function printCultureRequest(
     title: "Solicitação de exame microbiológico",
     emission: "",
     patient: headerPatient,
-    // Data de nascimento da mae: linha do cabecalho em TODAS as culturas (vazia = preencher a mao).
-    extras: [["Nasc. da mãe", fmtDate(request.mother_birth_date), true]] as Array<[string, string, boolean]>,
   };
   // Cada via leva o seu proprio cabecalho (compacto).
   const miniHeader = buildStandardHeaderHtml(headerInput, logoDataUrl, "all", { compact: true });
