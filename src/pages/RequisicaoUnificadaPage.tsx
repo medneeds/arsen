@@ -53,6 +53,7 @@ import { useSigtapSearch } from "@/hooks/useSigtapSearch";
 import { fromSolicitacaoStatusDb } from "@/lib/solicitacaoStatus";
 import { normalizeSolicitacao, applyAuthor, type ProfissionalLite, type SolicitacaoContext } from "@/lib/solicitacaoNormalize";
 import { toSectorCode } from "@/lib/requisitionSector";
+import { resolveSectorCode } from "@/config/sectorCoverage";
 import {
   exigeJustificativaPrincipal,
   itensForaDaRotina,
@@ -69,6 +70,7 @@ import { openPrintWindow } from "@/lib/printNormaZero";
 // inserir direto em solicitacoes_exame, então o helper não é mais usado aqui.
 import { PostValidationPrintDialog } from "@/components/PostValidationPrintDialog";
 import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
+import { LabReorderWarningDialog } from "@/components/LabReorderWarningDialog";
 import { useHospital } from "@/contexts/HospitalContext";
 import { getSectorDisplayLabel } from "@/utils/bedNaming";
 
@@ -479,6 +481,8 @@ const RequisicaoUnificadaPage = () => {
   const isTcSelected = formSelectedItems.some(item => TC_PATTERN.test(item));
   const [tcValidationOpen, setTcValidationOpen] = useState(false);
   const [reqValidationOpen, setReqValidationOpen] = useState(false);
+  // Gate suave (sem banco): aviso intermediario de laboratorio reiterado < 48h.
+  const [labReorderWarningOpen, setLabReorderWarningOpen] = useState(false);
   const [formCustomItem, setFormCustomItem] = useState("");
   // Etapa 2 — busca de exame dentro da categoria (Imagem e demais)
   const [examSearch, setExamSearch] = useState("");
@@ -655,6 +659,67 @@ const RequisicaoUnificadaPage = () => {
   // Procedimento, requests ja vem filtrado por categoria="procedimento".
   const allPendingProcedures = pendingRequests;
   const allCompletedProcedures = completedRequests;
+
+  // ── Gate suave: aviso de laboratorio reiterado em < 48h ──────────────────
+  // Pedido do setor de laboratorio. NAO persiste nada (nenhuma coluna/tabela):
+  // so avisa quando o medico vai concluir uma solicitacao de LABORATORIO e ja
+  // existe pedido de laboratorio do MESMO paciente ha < 48h, em setor
+  // NAO-critico. Em UTI/UCI (red/yellow/blue/outside) o aviso NAO aparece.
+  const LAB_REORDER_WINDOW_MS = 48 * 60 * 60 * 1000;
+  const CRITICAL_SECTOR_CODES = useMemo(() => new Set(["red", "yellow", "blue", "outside"]), []);
+
+  // Setor comprovadamente NAO-critico? So entao o aviso PODE aparecer.
+  // formPatientSector ja passa por toSectorCode, mas normalizamos de novo com
+  // resolveSectorCode por robustez (aceita tanto o codigo "yellow" quanto o
+  // nome "UTI 2"); resolveSectorCode tambem devolve o proprio valor quando ele
+  // ja e um codigo valido (red/yellow/blue/outside).
+  // SEGURANCA: setor ausente OU desconhecido => false (nao avisa). Na duvida,
+  // erra para o lado de NAO atrapalhar o fluxo clinico (soft, menos invasivo).
+  const labSectorAllowsWarning = useMemo(() => {
+    const raw = (formPatientSector || "").trim();
+    if (!raw) return false;
+    const code = resolveSectorCode(raw);
+    if (!code) return false;
+    return !CRITICAL_SECTOR_CODES.has(code);
+  }, [formPatientSector, CRITICAL_SECTOR_CODES]);
+
+  // Solicitacoes de laboratorio do paciente atual criadas ha < 48h. Reaproveita
+  // scopedRequests (ja escopado por paciente e, na aba lab, filtrado por
+  // categoria=laboratorio em fetchRequests) — sem nova query. Cancelados NAO
+  // contam: pedido cancelado nao e uma solicitacao vigente a ser reiterada.
+  const recentLabRequests = useMemo(() => {
+    const cutoff = Date.now() - LAB_REORDER_WINDOW_MS;
+    return scopedRequests.filter((r) => {
+      if (r.category !== "laboratorio") return false;
+      if (r.status === "cancelled") return false;
+      const t = r.created_at ? new Date(r.created_at).getTime() : NaN;
+      return Number.isFinite(t) && t >= cutoff;
+    });
+  }, [scopedRequests, LAB_REORDER_WINDOW_MS]);
+
+  const lastRecentLabAt = useMemo(() => {
+    let max = 0;
+    for (const r of recentLabRequests) {
+      const t = r.created_at ? new Date(r.created_at).getTime() : NaN;
+      if (Number.isFinite(t) && t > max) max = t;
+    }
+    return max > 0 ? new Date(max).toISOString() : null;
+  }, [recentLabRequests]);
+
+  // Clique do botao "Solicitar": intercepta SO para laboratorio em setor
+  // nao-critico com lab recente; nos demais casos segue DIRETO para a
+  // assinatura (reqValidationOpen), sem mudar o comportamento de hoje.
+  const handleSolicitarClick = () => {
+    if (
+      activeCategory === "laboratorio" &&
+      labSectorAllowsWarning &&
+      recentLabRequests.length > 0
+    ) {
+      setLabReorderWarningOpen(true);
+    } else {
+      setReqValidationOpen(true);
+    }
+  };
 
   const toggleItem = (item: string) => {
     // Etapa 3 — bloqueio educativo: na categoria Imagem, exame de alta
@@ -1716,7 +1781,7 @@ const RequisicaoUnificadaPage = () => {
                 <div className="flex justify-end gap-2">
                   <Button variant="outline" onClick={resetForm} disabled={submitting}>Limpar</Button>
                   <Button
-                    onClick={() => setReqValidationOpen(true)}
+                    onClick={handleSolicitarClick}
                     disabled={submitting || blocked}
                     className="gap-2"
                     title={blocked ? `Falta: ${missing.join(" · ")}` : undefined}
@@ -2011,6 +2076,17 @@ const RequisicaoUnificadaPage = () => {
           setReqValidationOpen(false);
           await handleSubmitRequest();
         }}
+      />
+
+      {/* Gate suave de laboratorio reiterado (< 48h, setor nao-critico). Ao
+          prosseguir, cai no MESMO fluxo de assinatura (reqValidationOpen) que o
+          botao Solicitar ja usava. Nada e persistido. */}
+      <LabReorderWarningDialog
+        open={labReorderWarningOpen}
+        onOpenChange={setLabReorderWarningOpen}
+        count={recentLabRequests.length}
+        lastRequestedAt={lastRecentLabAt}
+        onConfirm={() => setReqValidationOpen(true)}
       />
 
     </div>
