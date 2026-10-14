@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface SigtapProcedure {
@@ -9,40 +10,77 @@ export interface SigtapProcedure {
   valor_total: number | string | null;
 }
 
+// Normaliza para busca: remove acentos e caixa. "CRÂNIO" -> "cranio".
+function norm(s: string): string {
+  return (s ?? "")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+// Ordena por complexidade (alta -> media -> resto) para o alto custo vir primeiro.
+const COMPLEX_RANK: Record<string, number> = {
+  "Alta Complexidade": 0,
+  "Media Complexidade": 1,
+};
+
 /**
- * Busca procedimentos no catalogo SIGTAP (tabela sigtap_procedimentos) por nome
- * ou codigo, restrito a media/alta complexidade (foco em alto custo das APACs).
+ * Catalogo SIGTAP completo (tabela sigtap_procedimentos), carregado UMA vez e
+ * cacheado. A busca e feita no cliente, ignorando ACENTO e CAIXA — essencial
+ * para nomes em maiusculas acentuadas ("CRÂNIO", "TÓRAX") contra termos que o
+ * medico digita sem acento ("cranio", "torax"). Solucao sem mudanca de banco.
  *
- * Seguro por construcao: so dispara com >=3 caracteres; se a tabela estiver
- * vazia ou ausente, o erro e absorvido pelo React Query e retorna lista vazia —
- * o picker da APAC continua funcionando com o catalogo local.
+ * Carrega sob demanda (so quando o usuario comeca a digitar) e pagina em blocos
+ * de 1000 (limite default do PostgREST). Se a tabela estiver vazia/ausente, o
+ * React Query absorve o erro e a busca volta vazia — o picker segue no catalogo
+ * local.
  */
 export function useSigtapSearch(term: string) {
   const q = (term ?? "").trim();
-  const digits = q.replace(/\D/g, "");
-  const porCodigo = digits.length >= 3;
+  const enabled = q.length >= 2;
 
-  return useQuery({
-    queryKey: ["sigtap-search", q],
-    enabled: q.length >= 3,
-    staleTime: 5 * 60 * 1000,
+  const catalog = useQuery({
+    queryKey: ["sigtap-catalog"],
+    enabled,
+    staleTime: 30 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
     queryFn: async (): Promise<SigtapProcedure[]> => {
-      let query = supabase
-        .from("sigtap_procedimentos")
-        .select("codigo, codigo_formatado, nome, complexidade, valor_total")
-        .in("complexidade", ["Alta Complexidade", "Media Complexidade"])
-        .order("complexidade", { ascending: true })
-        .limit(40);
-
-      // Busca por codigo quando o termo tem digitos suficientes; senao por nome.
-      // Evita o operador .or() (fragil a virgula/parenteses no termo digitado).
-      query = porCodigo
-        ? query.ilike("codigo", `%${digits}%`)
-        : query.ilike("nome", `%${q}%`);
-
-      const { data, error } = await query;
-      if (error) throw error;
-      return (data ?? []) as SigtapProcedure[];
+      const page = 1000;
+      const all: SigtapProcedure[] = [];
+      for (let from = 0; ; from += page) {
+        const { data, error } = await supabase
+          .from("sigtap_procedimentos")
+          .select("codigo, codigo_formatado, nome, complexidade, valor_total")
+          .order("codigo", { ascending: true })
+          .range(from, from + page - 1);
+        if (error) throw error;
+        const rows = (data ?? []) as SigtapProcedure[];
+        all.push(...rows);
+        if (rows.length < page) break;
+      }
+      return all;
     },
   });
+
+  const data = useMemo<SigtapProcedure[]>(() => {
+    if (q.length < 3 || !catalog.data) return [];
+    const digits = q.replace(/\D/g, "");
+    const porCodigo = digits.length >= 3;
+    const nq = norm(q);
+    const hits = catalog.data.filter((r) =>
+      porCodigo
+        ? r.codigo.includes(digits) || (r.codigo_formatado ?? "").includes(q)
+        : norm(r.nome).includes(nq),
+    );
+    hits.sort((a, b) => {
+      const ra = COMPLEX_RANK[a.complexidade ?? ""] ?? 2;
+      const rb = COMPLEX_RANK[b.complexidade ?? ""] ?? 2;
+      if (ra !== rb) return ra - rb;
+      return a.nome.localeCompare(b.nome, "pt-BR");
+    });
+    return hits.slice(0, 50);
+  }, [q, catalog.data]);
+
+  return { data, isFetching: catalog.isFetching };
 }
