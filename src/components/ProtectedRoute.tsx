@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { ProfileIpGate } from "./ProfileIpGate";
 import { startIdlePrefetch } from "@/lib/prefetchRoutes";
 import { PageLoader } from "@/components/PageLoader";
+import { useSapsSectors } from "@/hooks/useSapsSectors";
 
 // Logins genéricos que não precisam de aprovação (período de transição)
 const LEGACY_GENERIC_USERS = [
@@ -41,6 +42,10 @@ const chaveTermos = (userId: string) => `${userId}:${CURRENT_TERMS_VERSION}`;
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading, status, role } = useAuth();
   const navigate = useNavigate();
+  // Cache global de habilitacao de SAPS por setor (setores.aplica_saps), disponivel
+  // em todas as telas autenticadas — inclusive /mapa (fora do MainLayout), de onde
+  // partem as transferencias. Fonte unica de sectorRequiresSaps em todo o app.
+  useSapsSectors(!!user);
   const termosJaAceitos = !!user && termosAceitosNaAba.has(chaveTermos(user.id));
   const [hasShownLoading, setHasShownLoading] = useState(false);
   const [showTermsDialog, setShowTermsDialog] = useState(false);

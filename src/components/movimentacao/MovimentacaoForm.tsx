@@ -460,7 +460,7 @@ export function MovimentacaoForm({
             try {
               const { classifyTransfer, requiresSaps } = await import("@/lib/sectorComplexity");
               classification = classifyTransfer((patient as any).sector, sectorCode);
-              needsSaps = requiresSaps(classification as TransferClassification);
+              needsSaps = requiresSaps(classification as TransferClassification, sectorCode);
             } catch (importErr) {
               console.error("[MovimentacaoForm] falha ao importar sectorComplexity:", importErr);
             }

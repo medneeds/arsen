@@ -16,10 +16,11 @@ import { setSapsSectorsFromDb } from "@/lib/sectorComplexity";
  * Chame este hook nas telas que gateiam SAPS (admissao, aba SAPS, painel clinico).
  * Fora delas, sectorRequiresSaps cai no estatico = comportamento historico.
  */
-export function useSapsSectors() {
+export function useSapsSectors(enabled = true) {
   const query = useQuery({
     queryKey: ["saps-sectors"],
     staleTime: 5 * 60 * 1000,
+    enabled,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("setores")
@@ -30,7 +31,10 @@ export function useSapsSectors() {
   });
 
   useEffect(() => {
-    if (!query.data) return;
+    // GUARDA: so popula quando ha linhas de setor de verdade. Um resultado vazio
+    // (RLS/pre-auth) NAO pode virar "nenhum setor usa SAPS" — isso zeraria a ficha
+    // em todo o app. Sem linhas, mantemos o fallback estatico.
+    if (!query.data || query.data.length === 0) return;
     const identifiers: string[] = [];
     for (const s of query.data) {
       if (!s.aplica_saps || !s.nome) continue;

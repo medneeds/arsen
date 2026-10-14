@@ -63,7 +63,7 @@ export async function executeInternalTransfer(params: {
   }
 
   const classification = classifyTransfer(source.sector, targetBedRow.sector);
-  const needsSaps = requiresSaps(classification);
+  const needsSaps = requiresSaps(classification, targetBedRow.sector);
   const needsNewAdmission = requiresNewAdmission(classification);
 
   try {
@@ -125,7 +125,7 @@ export async function signalInternalTransfer(
   if (!targetSectorCode) return { ok: false, error: "setor destino ausente" };
 
   const classification = classifyTransfer(source.sector, targetSectorCode);
-  const needsSaps = requiresSaps(classification);
+  const needsSaps = requiresSaps(classification, targetSectorCode);
 
   try {
     // MIGRAÇÃO: snapshot montado apenas a partir do objeto Patient (sem leituras

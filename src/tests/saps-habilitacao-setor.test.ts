@@ -1,7 +1,7 @@
 // Testa a fonte unica de habilitacao de SAPS por setor:
 // sectorRequiresSaps + cache dinamico (setores.aplica_saps) + mapeamento
 // nome<->codigo (resolveSectorCode). Rodar: npx tsx src/tests/saps-habilitacao-setor.test.ts
-import { sectorRequiresSaps, setSapsSectorsFromDb } from "../lib/sectorComplexity.ts";
+import { sectorRequiresSaps, setSapsSectorsFromDb, requiresSaps } from "../lib/sectorComplexity.ts";
 import { resolveSectorCode } from "../config/sectorCoverage.ts";
 
 let pass = 0, fail = 0;
@@ -70,6 +70,23 @@ check("toggle off: red segue sim", sectorRequiresSaps("red"), true);
 const comEnf = padrao.map(s => s.nome === "Enfermaria de Transicao" ? { ...s, aplica_saps: true } : s);
 setSapsSectorsFromDb(buildIdentifiers(comEnf));
 check("toggle on enfermaria: nome sim", sectorRequiresSaps("Enfermaria de Transicao"), true);
+
+// ── 6. requiresSaps (transferencia) ciente do destino ──
+// Cache padrao: UTI 1/UTI 2/UCI 2 habilitados.
+setSapsSectorsFromDb(buildIdentifiers(padrao));
+// Sem destino: criterio historico por complexidade (escalada critica = SAPS).
+check("transfer sem destino: escalada_critica", requiresSaps("escalada_critica"), true);
+check("transfer sem destino: lateral_critica", requiresSaps("lateral_critica"), false);
+check("transfer sem destino: desescalada", requiresSaps("desescalada"), false);
+// Com destino habilitado: SAPS.
+check("transfer destino red (UTI 1) habilitado", requiresSaps("escalada_critica", "red"), true);
+check("transfer destino outside (UCI 2) habilitado", requiresSaps("escalada_critica", "outside"), true);
+// Nao-escalada nunca pede SAPS, mesmo destino habilitado.
+check("transfer lateral destino red nao", requiresSaps("lateral_critica", "red"), false);
+// Com destino DESABILITADO: nao pede SAPS mesmo em escalada critica.
+setSapsSectorsFromDb(buildIdentifiers(semUci2));
+check("transfer escalada p/ UCI 2 desabilitado nao", requiresSaps("escalada_critica", "outside"), false);
+check("transfer escalada p/ UTI 1 (segue habilitado)", requiresSaps("escalada_critica", "red"), true);
 
 console.log(`\n${pass} passaram, ${fail} falharam`);
 if (fail > 0) process.exit(1);

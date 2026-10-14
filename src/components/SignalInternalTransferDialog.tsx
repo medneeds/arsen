@@ -41,7 +41,7 @@ export function SignalInternalTransferDialog({ patient, open, onOpenChange, onSu
     () => (patient && targetSector ? classifyTransfer(patient.sector, targetSector) : null),
     [patient, targetSector],
   );
-  const needsSaps = classification ? requiresSaps(classification) : false;
+  const needsSaps = classification ? requiresSaps(classification, targetSector) : false;
   const needsNewAdmission = classification ? requiresNewAdmission(classification) : false;
 
   const handleConfirm = async () => {

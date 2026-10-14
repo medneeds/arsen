@@ -213,10 +213,20 @@ export function requiresNewAdmission(classification: TransferClassification): bo
 
 /**
  * Retorna true se a transferência exige avaliação SAPS 3.
- * Critério: escalada para nível 1 (UTI) ou nível 2 (UCI 2).
+ * Critério: escalada para nível 1 (UTI) ou nível 2 (UCI 2) E setor destino com
+ * SAPS habilitado (setores.aplica_saps, via sectorRequiresSaps).
+ *
+ * destinationSector e opcional para compatibilidade: sem ele, mantem o criterio
+ * historico por complexidade (escalada critica = SAPS). Com ele, respeita o
+ * toggle de habilitacao do setor destino.
  */
-export function requiresSaps(classification: TransferClassification): boolean {
-  return classification === "escalada_critica";
+export function requiresSaps(
+  classification: TransferClassification,
+  destinationSector?: string | null,
+): boolean {
+  if (classification !== "escalada_critica") return false;
+  if (destinationSector == null) return true;
+  return sectorRequiresSaps(destinationSector);
 }
 
 // ─── Labels de exibição ────────────────────────────────────────
