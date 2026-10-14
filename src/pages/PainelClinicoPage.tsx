@@ -656,7 +656,7 @@ export default function PainelClinicoPage() {
                                   <Checkbox
                                     checked={done}
                                     onCheckedChange={(v) => togglePendency(patient, text, v === true)}
-                                    className="h-3.5 w-3.5 shrink-0"
+                                    className="h-3.5 w-3.5 shrink-0 border-muted-foreground/40 data-[state=checked]:bg-muted-foreground/70 data-[state=checked]:border-muted-foreground/70"
                                     aria-label={done ? "Reabrir pendência" : "Concluir pendência"}
                                   />
                                   <span className={cn("truncate", done && "line-through text-muted-foreground/60")}>{text}</span>
