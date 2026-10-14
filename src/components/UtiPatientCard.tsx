@@ -922,9 +922,10 @@ export function UtiPatientCard({
                           <div
                             className={cn(
                               "flex items-center justify-center gap-1 px-2 py-0.5 rounded-md border",
-                              // TPS SEMPRE azul (identidade visual) — nao sinaliza por
-                              // tempo. So o DIH muda de cor conforme o tempo.
-                              "bg-primary/10 text-primary border-primary/30"
+                              // TPS em tom neutro (muted) — acompanha a identidade e nao
+                              // compete com a sinalizacao do card (setor/DIH). So o DIH
+                              // muda de cor conforme o tempo.
+                              "bg-muted text-muted-foreground border-border"
                             )}
                             title={`TPS — Tempo de Permanencia no Setor: ${stayTimer.display} (desde a entrada no setor atual)`}
                           >
