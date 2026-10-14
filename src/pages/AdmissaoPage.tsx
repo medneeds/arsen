@@ -17,6 +17,7 @@ import Saps3Page from "@/pages/Saps3Page";
 import { printSapsDocument } from "@/lib/printSaps";
 import { usePatientLive } from "@/hooks/usePatientLive";
 import { sectorRequiresSaps } from "@/lib/sectorComplexity";
+import { useSapsSectors } from "@/hooks/useSapsSectors";
 import type { Patient } from "@/types/patient";
 const SAPS_SELECT =
   "id, status, pending_since, validado_em, validado_por, respostas, escore_box1, escore_box2, escore_box3, escore_total, " +
@@ -47,6 +48,8 @@ interface AdmissaoLocationState {
 }
 
 export default function AdmissaoPage() {
+  // Popula o cache de habilitacao de SAPS (setores.aplica_saps) para o gate abaixo.
+  useSapsSectors();
   const [searchParams] = useSearchParams();
   const location = useLocation();
   const navigate = useNavigate();

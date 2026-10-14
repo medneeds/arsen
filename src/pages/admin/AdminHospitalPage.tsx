@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -109,7 +110,7 @@ const statusVariant: Record<string, string> = {
 
 interface Hospital { id: string; nome: string; cnpj: string | null; endereco: string | null; }
 interface Ala { id: string; hospital_id: string; nome: string; descricao: string | null; ativo: boolean; }
-interface Setor { id: string; ala_id: string; nome: string; tipo: string; ativo: boolean; }
+interface Setor { id: string; ala_id: string; nome: string; tipo: string; ativo: boolean; aplica_saps: boolean; }
 interface Leito { id: string; setor_id: string; numero: string; tipo: string; status: string; }
 interface Branding {
   id?: string; hospital_id: string; sigla: string; slogan: string | null; logo_url: string | null;
@@ -141,7 +142,7 @@ export default function AdminHospitalPage() {
     queryFn: async () => {
       const [{ data: alas, error: ea }, { data: setores, error: es }, { data: leitos, error: el }] = await Promise.all([
         supabase.from("alas").select("id, hospital_id, nome, descricao, ativo").eq("hospital_id", hid).order("nome"),
-        supabase.from("setores").select("id, ala_id, nome, tipo, ativo").order("nome"),
+        supabase.from("setores").select("id, ala_id, nome, tipo, ativo, aplica_saps").order("nome"),
         supabase.from("leitos").select("id, setor_id, numero, tipo, status").order("numero"),
       ]);
       if (ea || es || el) throw ea || es || el;
@@ -184,6 +185,16 @@ export default function AdminHospitalPage() {
   const delSetor = useMutation({
     mutationFn: async (id: string) => { const { error } = await supabase.from("setores").delete().eq("id", id); if (error) throw error; },
     onSuccess: invalidarEstrutura, onError: erro,
+  });
+  // Habilitacao da ficha SAPS por setor (coluna setores.aplica_saps). E a fonte
+  // unica que o app le via sectorRequiresSaps — substitui o hardcode UTI/UCI 2.
+  const toggleSetorSaps = useMutation({
+    mutationFn: async (v: { id: string; aplica_saps: boolean }) => {
+      const { error } = await supabase.from("setores").update({ aplica_saps: v.aplica_saps }).eq("id", v.id);
+      if (error) throw error;
+    },
+    onSuccess: () => { invalidarEstrutura(); qc.invalidateQueries({ queryKey: ["saps-sectors"] }); },
+    onError: erro,
   });
   const addLeito = useMutation({
     mutationFn: async (v: { setor_id: string; numero: string; tipo: string; status: string }) => {
@@ -266,6 +277,18 @@ export default function AdminHospitalPage() {
                               <Trash2 className="h-3.5 w-3.5" />
                             </Button>
                           </div>
+                          {/* Habilitacao da ficha SAPS por setor (setores.aplica_saps). */}
+                          <label className="flex items-center gap-2 text-xs cursor-pointer select-none">
+                            <Switch
+                              checked={setor.aplica_saps}
+                              onCheckedChange={(v) => toggleSetorSaps.mutate({ id: setor.id, aplica_saps: v })}
+                              disabled={toggleSetorSaps.isPending}
+                              aria-label={`Habilitar ficha SAPS em ${setor.nome}`}
+                            />
+                            <span className={setor.aplica_saps ? "font-medium text-foreground" : "text-muted-foreground"}>
+                              Ficha SAPS {setor.aplica_saps ? "habilitada" : "desabilitada"}
+                            </span>
+                          </label>
                           <div className="flex flex-wrap gap-1.5">
                             {(leitosBySetor.get(setor.id) ?? []).map((leito) => (
                               <span key={leito.id} className="inline-flex items-center gap-1 rounded-md border bg-card px-2 py-1 text-xs">

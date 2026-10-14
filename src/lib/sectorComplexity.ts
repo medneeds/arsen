@@ -109,9 +109,28 @@ export const ADMISSION_UTI_SECTORS = ["red", "yellow", "outside", "uti_01", "uti
  */
 export const SAPS_SECTORS = ["uti_01", "uti_02", "uci_02", "red", "yellow", "outside"] as const;
 
-/** True apenas para os setores em que o SAPS 3 e obrigatorio (UTI 1/UTI 2/UCI 2). */
+/**
+ * Cache dinamico da habilitacao de SAPS por setor, preenchido do banco
+ * (coluna setores.aplica_saps) via hook useSapsSectors. Contem tanto o NOME do
+ * setor ("UTI 1") quanto o CODIGO resolvido ("red"), para casar com patient.sector
+ * — que vem como codigo (usePatients) ou como nome (usePatientLive).
+ *
+ * Enquanto null (antes do primeiro carregamento), sectorRequiresSaps cai no
+ * SAPS_SECTORS estatico = comportamento historico (UTI 1/UTI 2/UCI 2). Assim a
+ * ficha SAPS NUNCA some por corrida de carregamento (falha para o lado seguro).
+ */
+let DYNAMIC_SAPS_SECTORS: Set<string> | null = null;
+
+/** Preenche o cache a partir do banco. Recebe nomes E codigos ja resolvidos. */
+export function setSapsSectorsFromDb(identifiers: string[]): void {
+  DYNAMIC_SAPS_SECTORS = new Set(identifiers);
+}
+
+/** True apenas para os setores em que o SAPS 3 esta habilitado (UTI 1/UTI 2/UCI 2 por padrao). */
 export function sectorRequiresSaps(sector?: string | null): boolean {
-  return !!sector && (SAPS_SECTORS as readonly string[]).includes(sector);
+  if (!sector) return false;
+  if (DYNAMIC_SAPS_SECTORS) return DYNAMIC_SAPS_SECTORS.has(sector);
+  return (SAPS_SECTORS as readonly string[]).includes(sector);
 }
 
 /**

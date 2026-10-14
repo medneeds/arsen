@@ -2614,6 +2614,7 @@ export type Database = {
       setores: {
         Row: {
           ala_id: string
+          aplica_saps: boolean
           ativo: boolean
           atualizado_em: string
           criado_em: string
@@ -2624,6 +2625,7 @@ export type Database = {
         }
         Insert: {
           ala_id: string
+          aplica_saps?: boolean
           ativo?: boolean
           atualizado_em?: string
           criado_em?: string
@@ -2634,6 +2636,7 @@ export type Database = {
         }
         Update: {
           ala_id?: string
+          aplica_saps?: boolean
           ativo?: boolean
           atualizado_em?: string
           criado_em?: string

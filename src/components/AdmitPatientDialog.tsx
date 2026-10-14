@@ -13,6 +13,8 @@ import { useDepartment, departmentForSector } from "@/contexts/DepartmentContext
 import { normalizePatientName } from "@/utils/normalizePatientName";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
+import { sectorRequiresSaps } from "@/lib/sectorComplexity";
+import { useSapsSectors } from "@/hooks/useSapsSectors";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
@@ -140,6 +142,9 @@ const SECTORS = [
 ];
 
 export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess }: AdmitPatientDialogProps) {
+  // Popula o cache de habilitacao de SAPS (setores.aplica_saps) para que
+  // sectorRequiresSaps reflita o banco neste fluxo de admissao.
+  useSapsSectors();
   const [selectedSector, setSelectedSector] = useState("");
   const [selectedBed, setSelectedBed] = useState("");
   const [admissionNotes, setAdmissionNotes] = useState("");
@@ -235,11 +240,11 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
     return Math.floor((Date.now() - new Date(birthDate + 'T12:00:00').getTime()) / (365.25 * 24 * 60 * 60 * 1000));
   };
 
-  // SAPS 3 é exclusivo para UTI 1, UTI 2 e UCI 2. UCI 1 (blue) segue fluxo de enfermaria.
-  const isUtiAdmission =
-    selectedSector === "red" ||
-    selectedSector === "yellow" ||
-    selectedSector === "outside";
+  // SAPS 3 so para setores habilitados (setores.aplica_saps) — por padrao UTI 1,
+  // UTI 2 e UCI 2. Fonte unica via sectorRequiresSaps (cache do banco, fallback
+  // estatico). O gate governa o fluxo UTI (leito diferido + ficha SAPS); UCI 1 e
+  // enfermarias seguem o fluxo comum.
+  const isUtiAdmission = sectorRequiresSaps(selectedSector);
 
   const handleAdmit = async () => {
     // MIGRAÇÃO: gate por currentHospital/currentState removido (sem colunas no schema novo).

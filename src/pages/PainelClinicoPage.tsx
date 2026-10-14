@@ -34,6 +34,8 @@ import { PatientCockpit } from "@/components/PatientCockpit";
 import { PageLoader } from "@/components/PageLoader";
 import { usePageReady } from "@/hooks/usePageReady";
 import { safeSetItem } from "@/lib/safeStorage";
+import { sectorRequiresSaps } from "@/lib/sectorComplexity";
+import { useSapsSectors } from "@/hooks/useSapsSectors";
 
 const parseTextArray = (input: string | string[] | undefined | null): string[] => {
   if (!input) return [];
@@ -287,6 +289,10 @@ export default function PainelClinicoPage() {
   // PERFORMANCE: prefetch. qc aquece o cache dos pacientes do setor (abaixo) e
   // no hover de cada linha, para abrir o modulo do paciente instantaneamente.
   const qc = useQueryClient();
+  // Popula o cache de habilitacao de SAPS (setores.aplica_saps) para o gate da
+  // coluna/celula SAPS abaixo. Capturamos data para recomputar o memo quando a
+  // flag carrega (o cache de sectorRequiresSaps vive fora do React).
+  const { data: sapsSectorsData } = useSapsSectors();
 
   const filteredPatients = useMemo(() => {
     return patients
@@ -303,6 +309,14 @@ export default function PainelClinicoPage() {
         );
       });
   }, [patients, search, sectorFilter]);
+
+  // SAPS so se aplica a setores habilitados (setores.aplica_saps). A coluna/card
+  // SAPS so aparece se houver ao menos um paciente de setor habilitado na visao
+  // atual; em visao mista, a celula de cada paciente ainda e gateada por setor.
+  const showSapsColumn = useMemo(
+    () => filteredPatients.some(p => sectorRequiresSaps(p.sector) || sectorRequiresSaps(p.sectorName)),
+    [filteredPatients, sapsSectorsData],
+  );
 
   // Ultima acao clinica (evolucao OU prescricao) por paciente — QUEM fez e QUANDO.
   // Consultas EM LOTE (nao por paciente), chaveadas pelos ids do setor.
@@ -447,7 +461,10 @@ export default function PainelClinicoPage() {
                 const days = calcDaysInternment(patient.admissionDate);
                 const prescStatus = getPrescriptionStatus(getTodaysPrescriptionStatus(patient.name, patient.registryId));
                 const pendencies = parseTextArray(patient.pendencies);
-                const saps = sapsScores[patient.id];
+                // SAPS so para setor habilitado (setores.aplica_saps) — nao vaza
+                // ficha para enfermaria/UCI 1 mesmo que exista linha antiga.
+                const patientUsesSaps = sectorRequiresSaps(patient.sector) || sectorRequiresSaps(patient.sectorName);
+                const saps = patientUsesSaps ? sapsScores[patient.id] : undefined;
                 const diagnoses = normalizeDiagnoses(patient.diagnoses);
                 // Admissao pendente = leito ocupado sem admissao finalizada (mesma
                 // heuristica da AdmissaoPage: sem diagnostico E sem historia). Nao
@@ -533,7 +550,7 @@ export default function PainelClinicoPage() {
                 <TableRow className="hover:bg-transparent">
                   <TableHead className="w-20">Leito</TableHead>
                   <TableHead className="w-[520px]">Paciente</TableHead>
-                  <TableHead className="w-44 text-center hidden sm:table-cell">SAPS 3</TableHead>
+                  {showSapsColumn && <TableHead className="w-44 text-center hidden sm:table-cell">SAPS 3</TableHead>}
                   <TableHead className="w-[300px]">Pendências</TableHead>
                   <TableHead className="w-28 text-center">Prescrição</TableHead>
                   <TableHead className="w-24 text-center hidden md:table-cell">Dias Int.</TableHead>
@@ -603,8 +620,9 @@ export default function PainelClinicoPage() {
                           )}
                         </div>
                       </TableCell>
+                      {showSapsColumn && (
                       <TableCell className="text-center align-middle">
-                        {sapsScores[patient.id] ? (
+                        {(sectorRequiresSaps(patient.sector) || sectorRequiresSaps(patient.sectorName)) && sapsScores[patient.id] ? (
                           sapsScores[patient.id].status === 'pendente' ? (
                             <div
                               className="inline-flex flex-col items-center gap-1.5"
@@ -643,6 +661,7 @@ export default function PainelClinicoPage() {
                           <span className="text-xs text-muted-foreground">—</span>
                         )}
                       </TableCell>
+                      )}
                       <TableCell className="align-middle">
                         {pendencies.length > 0 ? (
                           <LineList
