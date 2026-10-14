@@ -3152,7 +3152,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
   // Busca estendida ao catalogo SIGTAP completo (tabela sigtap_procedimentos),
   // para encontrar QUALQUER procedimento de medio/alto custo, nao so os curados
   // localmente. Aditivo: se a tabela estiver vazia/ausente, nao muda nada.
-  type PickerProc = { code: string; name: string; category: string; instrumento: "APAC" | "AIH" | null; valor?: string };
+  type PickerProc = { code: string; name: string; category: string; instrumento: "APAC" | "AIH" | "BPA" | "RAAS" | "APS" | null; valor?: string };
   const sigtapQuery = useSigtapSearch(searchProcedure);
   const sigtapExtra: PickerProc[] = useMemo(() => {
     const rows = sigtapQuery.data ?? [];
@@ -3167,11 +3167,15 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
       if (jaSelecionados.has(code) || vistos.has(code)) continue;
       vistos.add(code);
       const n = typeof r.valor_total === "string" ? parseFloat(r.valor_total) : (r.valor_total ?? 0);
+      // Instrumento OFICIAL do SIGTAP (coluna instrumento, do registro). Fallback
+      // para a heuristica por prefixo so se a coluna vier vazia.
+      const instDb = (r.instrumento || "").trim().toUpperCase();
+      const instrumento = (instDb || getInstrumento(code) || "APAC") as PickerProc["instrumento"];
       out.push({
         code,
         name: r.nome,
         category: "SIGTAP",
-        instrumento: getInstrumento(code) ?? "APAC",
+        instrumento,
         valor: Number.isFinite(n) ? n.toFixed(2) : undefined,
       });
     }
@@ -3274,7 +3278,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
                         {proc.valor && <span className="ml-2 font-mono text-xs text-muted-foreground">R$ {proc.valor}</span>}
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
-                        <Badge variant="outline" className={`text-xs font-semibold ${proc.instrumento === "AIH" ? "border-border text-foreground bg-muted" : "border-warning text-warning-on-soft bg-warning-soft"}`}>{proc.instrumento}</Badge>
+                        <Badge variant="outline" className={`text-xs font-semibold ${proc.instrumento === "APAC" ? "border-warning text-warning-on-soft bg-warning-soft" : proc.instrumento === "AIH" ? "border-border text-foreground bg-muted" : "border-border text-muted-foreground bg-muted/50"}`}>{proc.instrumento || "—"}</Badge>
                         <Badge variant="outline" className="text-xs">{proc.category}</Badge>
                       </div>
                     </button>

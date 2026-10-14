@@ -8,6 +8,7 @@ export interface SigtapProcedure {
   nome: string;
   complexidade: string | null;
   valor_total: number | string | null;
+  instrumento: string | null;
 }
 
 // Normaliza para busca: remove acentos e caixa. "CRÂNIO" -> "cranio".
@@ -83,7 +84,7 @@ export function useSigtapSearch(term: string) {
       for (let from = 0; ; from += page) {
         const { data, error } = await supabase
           .from("sigtap_procedimentos")
-          .select("codigo, codigo_formatado, nome, complexidade, valor_total")
+          .select("codigo, codigo_formatado, nome, complexidade, valor_total, instrumento")
           .order("codigo", { ascending: true })
           .range(from, from + page - 1);
         if (error) throw error;

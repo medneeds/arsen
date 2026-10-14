@@ -2672,6 +2672,7 @@ export type Database = {
           financiamento: string | null
           idade_maxima: number | null
           idade_minima: number | null
+          instrumento: string | null
           nome: string
           pontos: number | null
           qtd_maxima: number | null
@@ -2689,6 +2690,7 @@ export type Database = {
           complexidade?: string | null
           dias_permanencia?: number | null
           financiamento?: string | null
+          instrumento?: string | null
           idade_maxima?: number | null
           idade_minima?: number | null
           nome: string
