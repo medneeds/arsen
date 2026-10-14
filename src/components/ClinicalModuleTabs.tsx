@@ -69,12 +69,11 @@ export function ClinicalModuleTabs({ variant = "dark", layout = "pill" }: Clinic
         <div
           role="tablist"
           className={cn(
-            // divide-x: barra "|" discreta e elegante entre os campos (abas).
-            "flex w-full border-t divide-x",
-            variant === "dark" ? "border-white/25 divide-white/15" : "border-border/60 divide-border/50"
+            "flex w-full border-t",
+            variant === "dark" ? "border-white/25" : "border-border/60"
           )}
         >
-          {MODULE_TABS.map(tab => {
+          {MODULE_TABS.map((tab, i) => {
             const isActive = location.pathname === tab.path;
             return (
               <button
@@ -83,7 +82,10 @@ export function ClinicalModuleTabs({ variant = "dark", layout = "pill" }: Clinic
                 aria-selected={isActive}
                 onClick={() => handleTabClick(tab.path)}
                 className={cn(
-                  "flex flex-1 items-center justify-center gap-2 px-3 py-3.5 text-[11px] font-semibold tracking-wide border-b-[3px] transition-colors duration-150",
+                  "relative flex flex-1 items-center justify-center gap-2 px-3 py-3.5 text-[11px] font-semibold tracking-wide border-b-[3px] transition-colors duration-150",
+                  // divisoria discreta e CURTA (inset, centrada) entre as abas — nao full-height.
+                  i > 0 && "before:absolute before:left-0 before:top-1/2 before:h-4 before:w-px before:-translate-y-1/2",
+                  i > 0 && (variant === "dark" ? "before:bg-white/15" : "before:bg-border/50"),
                   variant === "dark"
                     ? isActive
                       ? "bg-white/15 text-white border-white"
