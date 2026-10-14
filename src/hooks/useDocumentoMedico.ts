@@ -15,6 +15,13 @@ export interface DocumentoMedicoData {
   patient_birth_date?: string | null;
   patient_medical_record?: string | null;
   patient_age?: string | null;
+  patient_sex?: string | null;
+  patient_mother_name?: string | null;
+  patient_cpf?: string | null;
+  patient_cns?: string | null;
+  patient_phone?: string | null;
+  patient_address?: string | null;
+  patient_atendimento?: string | null;
   body: string;
   /** Só atestado: dias de afastamento. */
   days?: number | null;
@@ -62,6 +69,17 @@ export function mapRow(r: any, fallbackName?: string | null): DocumentoMedicoDat
     patient_name: r.paciente_nome ?? fallbackName ?? "",
     patient_bed: r.paciente_leito ?? undefined,
     patient_sector: r.paciente_setor ?? undefined,
+    // Snapshot de identidade gravado na emissao — o cabecalho da reimpressao nao
+    // depende mais de rebuscar o paciente ao vivo (que falhava apos alta/migracao).
+    patient_medical_record: r.paciente_prontuario ?? null,
+    patient_birth_date: r.paciente_data_nascimento ?? null,
+    patient_sex: r.paciente_sexo ?? null,
+    patient_mother_name: r.paciente_nome_mae ?? null,
+    patient_cpf: r.paciente_cpf ?? null,
+    patient_cns: r.paciente_cns ?? null,
+    patient_phone: r.paciente_telefone ?? null,
+    patient_address: r.paciente_endereco ?? null,
+    patient_atendimento: r.numero_atendimento ?? null,
     body: r.corpo ?? "",
     days: r.dias ?? null,
     cid: r.cid ?? null,

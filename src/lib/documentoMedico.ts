@@ -12,6 +12,7 @@ import {
   prepareLogo,
 } from "@/lib/printNormaZero";
 import { resolveHeaderPatient, fmtIsoDate } from "@/lib/headerPatient";
+import { formatAge } from "@/lib/patientAge";
 import type { DocumentoMedicoData, DocumentoMedicoType } from "@/hooks/useDocumentoMedico";
 
 const TYPE_META: Record<DocumentoMedicoType, { title: string; prefix: string }> = {
@@ -45,13 +46,24 @@ export async function printDocumentoMedico(
   const { title, prefix } = TYPE_META[data.type];
   const subtitle = data.type === "atestado" && data.days ? `Afastamento de ${data.days} ${(data.days) === 1 ? 'dia' : 'dias'}` : undefined;
   const cidStr = data.cid ? data.cid.split(" - ").slice(0, 2).join(" — ") : null;
+  // Cabecalho a partir do SNAPSHOT gravado na emissao (prontuario, nascimento,
+  // sexo, mae, CPF/CNS, atendimento...). resolveHeaderPatient so completa o que
+  // estiver vazio e atualiza leito/setor ao vivo — entao, apos alta/migracao,
+  // os dados de identificacao continuam saindo do retrato original.
   const patient = await resolveHeaderPatient(data.patient_id, {
     name: (data.patient_name || "").toUpperCase(),
     bed: data.patient_bed,
     sector: data.patient_sector,
     record: data.patient_medical_record,
+    atendimento: data.patient_atendimento,
     birthDate: fmtIsoDate(data.patient_birth_date),
-    age: data.patient_age,
+    age: data.patient_age || formatAge(data.patient_birth_date),
+    sex: data.patient_sex,
+    motherName: data.patient_mother_name,
+    cpf: data.patient_cpf,
+    cns: data.patient_cns,
+    phone: data.patient_phone,
+    address: data.patient_address,
   });
 
   const html = buildNormaZeroDocument({
