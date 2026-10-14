@@ -14,7 +14,7 @@ import { ptBR } from "date-fns/locale";
 import { NormaZeroPrintFooter, generatePrintDocCode, getNormaZeroMissingFields, NormaZeroBlockedDocument } from "@/components/NormaZeroPrintHeader";
 import { DocumentHeader } from "@/components/DocumentHeader";
 import {
-  NotebookPen, Plus, Loader2, AlertTriangle, ChevronDown, Sun, Moon, Zap,
+  NotebookPen, Plus, Loader2, AlertTriangle, ChevronDown, Sun, Moon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -683,24 +683,32 @@ const EvolucaoPage = () => {
           />
           {/* Acoes da aba: abaixo do bloco, a direita. */}
           <div className="flex items-center justify-end gap-2 w-full">
+            {/* Ponto de entrada unico: o botao azul "Nova Evolucao" agora e um menu
+                com Rotina (form SOAP completo) + as 3 complementares (form compacto). */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
-                  variant="outline"
                   size="sm"
-                  className="gap-2 text-xs border-warning/40 text-warning-on-soft hover:bg-warning/10 hover:text-warning-on-soft flex-1 sm:flex-none h-8"
-                  disabled={showIntercurrenceForm || showNewForm}
+                  className="gap-2 text-xs flex-1 sm:flex-none h-8"
+                  disabled={showNewForm || showIntercurrenceForm}
                 >
-                  <Zap className="h-3.5 w-3.5" /> Evolução complementar
+                  <Plus className="h-3.5 w-3.5" /> Nova Evolução
                   <ChevronDown className="h-3 w-3 opacity-70" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel className="text-xs uppercase tracking-wider text-muted-foreground">
-                  Registro rápido — campo único
-                </DropdownMenuLabel>
+                <DropdownMenuItem
+                  onClick={handleOpenNewEvolution}
+                  className="gap-2 text-xs"
+                >
+                  <Plus className="h-3.5 w-3.5 text-primary" />
+                  Rotina
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                {(['intercurrence', 'vespertina', 'noturna'] as const).map(kind => {
+                <DropdownMenuLabel className="text-xs uppercase tracking-wider text-muted-foreground">
+                  Complementar — campo único
+                </DropdownMenuLabel>
+                {(['vespertina', 'noturna', 'intercurrence'] as const).map(kind => {
                   const meta = COMPLEMENTARY_META[kind];
                   const Icon = meta.Icon;
                   return (
@@ -716,14 +724,6 @@ const EvolucaoPage = () => {
                 })}
               </DropdownMenuContent>
             </DropdownMenu>
-            <Button
-              size="sm"
-              className="gap-2 text-xs flex-1 sm:flex-none h-8"
-              onClick={handleOpenNewEvolution}
-              disabled={showNewForm || showIntercurrenceForm}
-            >
-              <Plus className="h-3.5 w-3.5" /> Nova Evolução
-            </Button>
           </div>
         </div>
 
