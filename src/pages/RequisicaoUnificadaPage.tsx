@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import {
   supportsContraste, isContrasteInerente, comContraste, procedureDisplayName,
   observationsWithContraste, contrasteObservation, cleanDiagnosisText,
+  expandApacBilling, contrasteLineFor,
 } from "@/lib/apacContraste";
 
 import { PatientCockpit } from "@/components/PatientCockpit";
@@ -2927,11 +2928,15 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
       const { data: createdRow, error } = await supabase.from("solicitacoes_exame").insert({
         internacao_id: internacaoId,
         categoria: "procedimento", // taxonomia preservada
-        itens: selectedProcedures.map(p => {
+        itens: selectedProcedures.flatMap(p => {
           const nome = procedureDisplayName(p); // inclui "— COM CONTRASTE" quando for o caso
           const sedacao = p.sedacaoOn ? (p.sedacao || "").trim() : "";
           // sedacao: registro interno (itens e JSON) — nao entra no laudo APAC.
-          return { name: p.code ? `${nome} (${p.code})` : nome, ...(sedacao ? { sedacao } : {}) };
+          const examItem = { name: p.code ? `${nome} (${p.code})` : nome, ...(sedacao ? { sedacao } : {}) };
+          // Contraste marcado => linha de codigo faturavel a mais no registro
+          // (espelha o laudo). Mantem o registro consistente com o impresso.
+          const c = contrasteLineFor(p);
+          return c ? [examItem, { name: `${c.name} (${c.code})` }] : [examItem];
         }),
         prioridade: "rotina",
         status: "pendente",
@@ -2982,6 +2987,16 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
       setAihRoutingOpen(true);
       return;
     }
+    // Contraste marcado vira CODIGO faturavel separado (linha a mais). O laudo
+    // APAC comporta 6 linhas (1 principal + 5 secundarias); se os contrastes
+    // estourarem esse limite, bloqueia — linha alem da 6a nao caberia no laudo.
+    const billingLines = expandApacBilling(selectedProcedures);
+    if (billingLines.length > 6) {
+      toast.error("Laudo APAC excede 6 linhas", {
+        description: `Com os contrastes marcados sao ${billingLines.length} procedimentos (max 6). Remova um exame/contraste ou gere em dois laudos.`,
+      });
+      return;
+    }
     // Gera o HTML do laudo APAC em janela isolada (garante página única
     // sem interferência do restante da UI da página).
     const apacData: Parameters<typeof buildApacHtml>[0] = {
@@ -2999,7 +3014,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
         city: patientCity,
         uf: patientUF,
       },
-      procedures: selectedProcedures.map((p) => ({ code: p.code, name: procedureDisplayName(p), qty: p.qty })),
+      procedures: billingLines,
       diagnosis,
       cidPrimary,
       cidSecondary,
@@ -3172,6 +3187,9 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
   const mergedProcedures: PickerProc[] = sigtapExtra.length > 0 ? sigtapExtra : filteredProcedures;
 
   const todayFormatted = format(new Date(), "dd/MM/yyyy");
+  // Linhas de faturamento do laudo (exames + linha de contraste quando marcado).
+  // Fonte unica tambem da tabela de impressao React abaixo.
+  const apacBillingLines = useMemo(() => expandApacBilling(selectedProcedures), [selectedProcedures]);
 
   return (
     <>
@@ -3719,20 +3737,20 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
               {/* ── PROCEDIMENTO PRINCIPAL ── */}
               <tr><td colSpan={5} className="sec">Procedimento(s) Solicitado(s)</td></tr>
               <tr>
-                <td><span className="lbl">15 — Cód. Proc. Principal</span><div className="val-mono">{selectedProcedures[0]?.code || ""}</div></td>
-                <td colSpan={3}><span className="lbl">16 — Nome do Procedimento Principal</span><div className="val">{selectedProcedures[0] ? procedureDisplayName(selectedProcedures[0]) : ""}</div></td>
-                <td><span className="lbl">17 — Qtde.</span><div className="val" style={{ textAlign: "center" }}>{selectedProcedures[0]?.qty || ""}</div></td>
+                <td><span className="lbl">15 — Cód. Proc. Principal</span><div className="val-mono">{apacBillingLines[0]?.code || ""}</div></td>
+                <td colSpan={3}><span className="lbl">16 — Nome do Procedimento Principal</span><div className="val">{apacBillingLines[0]?.name || ""}</div></td>
+                <td><span className="lbl">17 — Qtde.</span><div className="val" style={{ textAlign: "center" }}>{apacBillingLines[0]?.qty || ""}</div></td>
               </tr>
 
-              {/* ── PROCEDIMENTOS SECUNDÁRIOS ── */}
+              {/* ── PROCEDIMENTOS SECUNDÁRIOS (ja inclui a linha de contraste) ── */}
               <tr><td colSpan={5} className="sec">Procedimento(s) Secundário(s)</td></tr>
               {[1, 2, 3, 4, 5].map((idx) => {
-                const proc = selectedProcedures[idx];
+                const proc = apacBillingLines[idx];
                 const fn = 18 + (idx - 1) * 3;
                 return (
                   <tr key={idx}>
                     <td><span className="lbl">{fn} — Código</span><div className="val-mono">{proc?.code || ""}</div></td>
-                    <td colSpan={3}><span className="lbl">{fn + 1} — Nome do Procedimento</span><div className="val">{proc ? procedureDisplayName(proc) : ""}</div></td>
+                    <td colSpan={3}><span className="lbl">{fn + 1} — Nome do Procedimento</span><div className="val">{proc?.name || ""}</div></td>
                     <td><span className="lbl">{fn + 2} — Qtde.</span><div className="val" style={{ textAlign: "center" }}>{proc?.qty || ""}</div></td>
                   </tr>
                 );
