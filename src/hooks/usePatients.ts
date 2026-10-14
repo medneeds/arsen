@@ -447,8 +447,13 @@ export function usePatients(department?: Department, sector?: string) {
       if (setoresError) throw setoresError;
 
       const wanted = patient.sector as string;
+      // Casamento por IDENTIDADE de setor: nome real OU codigo canonico resolvido
+      // do nome (bedBelongsToSector). O antigo `s.tipo===wanted || s.nome===wanted`
+      // falhava porque `wanted` e um CODIGO (ex.: "blue" = UCI 1) e nunca iguala
+      // setores.tipo (clinico/cirurgico) nem setores.nome ("UCI 1") — por isso o
+      // erro "Setor 'blue' nao encontrado" ao criar leito extra.
       const setorMatch = ((setoresData || []) as any[]).find(
-        (s) => s.tipo === wanted || s.nome === wanted,
+        (s) => bedBelongsToSector(s, wanted),
       );
       if (!setorMatch) {
         throw new Error(`Setor "${wanted}" não encontrado no hospital atual.`);
