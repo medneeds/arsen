@@ -2062,15 +2062,21 @@ const APAC_PROCEDURES: Array<{ code: string; name: string; category: string; ins
   { code: "02.06.01.006-0", name: "ANGIOTOMOGRAFIA DE ARTÉRIAS RENAIS", category: "TC", instrumento: "APAC" },
 ];
 
-const APAC_QUICK_ACCESS = [
-  { code: "02.06.01.007-9", label: "TC Crânio" },
-  { code: "02.06.03.001-0", label: "TC Tórax" },
-  { code: "02.06.03.002-9", label: "TC Abdome Sup" },
-  { code: "02.06.03.003-7", label: "TC Abdome Inf" },
-  { code: "02.06.03.004-5", label: "TC Abdome Total" },
-  { code: "02.06.01.005-2", label: "AngioTC Pulmonar" },
-  { code: "02.06.01.001-0", label: "AngioTC Cervical" },
-  { code: "02.06.03.005-3", label: "TC Pelve" },
+// Acesso rapido — codigos e nomes CONFERIDOS contra o SIGTAP competencia 202609
+// (tabela sigtap_procedimentos). Antes a lista estava com codigos de uma
+// competencia antiga: varios apontavam para o procedimento ERRADO (ex.: "TC
+// Torax" usava 02.06.03.001-0, que hoje e "TC Abdome Superior"; "TC Abdome
+// Total"/"TC Pelve" usavam os codigos de CONTRASTE PARA TC/RM) — risco de glosa.
+// Os atalhos de AngioTC e "Abdome Total" foram removidos: o SIGTAP nao tem
+// codigo de angioTC nem de abdome total (entram na Etapa 2 como exame + contraste).
+// Nomes grafados exatamente como no SIGTAP para o laudo bater com o faturamento.
+const APAC_QUICK_ACCESS: Array<{ code: string; label: string; name: string; category: string }> = [
+  { code: "02.06.01.007-9", label: "TC Crânio",         name: "TOMOGRAFIA COMPUTADORIZADA DO CRANIO", category: "TC" },
+  { code: "02.06.02.003-1", label: "TC Tórax",          name: "TOMOGRAFIA COMPUTADORIZADA DE TORAX", category: "TC" },
+  { code: "02.06.03.001-0", label: "TC Abdome Sup.",    name: "TOMOGRAFIA COMPUTADORIZADA DE ABDOMEN SUPERIOR", category: "TC" },
+  { code: "02.06.03.003-7", label: "TC Pelve/Abd Inf.", name: "TOMOGRAFIA COMPUTADORIZADA DE PELVE / BACIA / ABDOMEN INFERIOR", category: "TC" },
+  { code: "02.06.01.005-2", label: "TC Pescoço",        name: "TOMOGRAFIA COMPUTADORIZADA DO PESCOCO", category: "TC" },
+  { code: "02.06.01.004-4", label: "TC Face/Seios",     name: "TOMOGRAFIA COMPUTADORIZADA DE FACE / SEIOS DA FACE / ARTICULACOES TEMPORO-MANDIBULARES", category: "TC" },
 ];
 
 
@@ -3059,13 +3065,15 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
   const sigtapQuery = useSigtapSearch(searchProcedure);
   const sigtapExtra: PickerProc[] = useMemo(() => {
     const rows = sigtapQuery.data ?? [];
-    const jaLocais = new Set(SIGTAP_PROCEDURES.map(p => p.code));
     const jaSelecionados = new Set(selectedProcedures.map(p => p.code));
     const out: PickerProc[] = [];
     const vistos = new Set<string>();
     for (const r of rows) {
       const code = r.codigo_formatado;
-      if (jaLocais.has(code) || jaSelecionados.has(code) || vistos.has(code)) continue;
+      // NAO deduplica contra a lista local: o banco (SIGTAP oficial) e a fonte
+      // autoritativa de nome/codigo. A lista local tem drift de competencia
+      // (codigos com nome antigo) e nao pode sobrepor o nome oficial.
+      if (jaSelecionados.has(code) || vistos.has(code)) continue;
       vistos.add(code);
       const n = typeof r.valor_total === "string" ? parseFloat(r.valor_total) : (r.valor_total ?? 0);
       out.push({
@@ -3081,7 +3089,11 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
       .filter(p => categoryFilter === "all"); // resultados do banco so aparecem sem filtro de categoria
   }, [sigtapQuery.data, selectedProcedures, instrumentoFilter, categoryFilter]);
 
-  const mergedProcedures: PickerProc[] = [...filteredProcedures, ...sigtapExtra];
+  // Banco autoritativo: sempre que a busca no SIGTAP retorna algo, mostramos o
+  // resultado do banco (nome/codigo oficiais). A lista local curada so aparece
+  // como fallback quando o banco nao retornou (termo curto, catalogo ainda
+  // carregando, ou tabela vazia) — evita nomes desatualizados do drift.
+  const mergedProcedures: PickerProc[] = sigtapExtra.length > 0 ? sigtapExtra : filteredProcedures;
 
   const todayFormatted = format(new Date(), "dd/MM/yyyy");
 
@@ -3096,7 +3108,6 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
           <CardContent>
             <div className="flex flex-wrap gap-2">
               {APAC_QUICK_ACCESS.map((qa) => {
-                const proc = APAC_PROCEDURES.find((p) => p.code === qa.code);
                 const isSelected = selectedProcedures.some((p) => p.code === qa.code);
                 return (
                   <Button
@@ -3104,8 +3115,9 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
                     size="sm"
                     variant="outline"
                     className={`h-7 text-xs font-normal ${isSelected ? "bg-primary/10 border-primary/40 text-primary hover:bg-primary/15 hover:text-primary" : "bg-muted/40 text-foreground border-border hover:bg-accent hover:text-accent-foreground hover:border-primary/40"}`}
-                    onClick={() => proc && addProcedure(proc)}
+                    onClick={() => addProcedure({ code: qa.code, name: qa.name })}
                     disabled={isSelected}
+                    title={`${qa.code} — ${qa.name}`}
                   >
                     <Plus className="h-3 w-3 mr-1" />{qa.label}
                   </Button>
