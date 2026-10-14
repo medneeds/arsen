@@ -2662,6 +2662,66 @@ export type Database = {
           },
         ]
       }
+      sigtap_procedimentos: {
+        Row: {
+          codigo: string
+          codigo_formatado: string
+          competencia: string | null
+          complexidade: string | null
+          dias_permanencia: number | null
+          financiamento: string | null
+          idade_maxima: number | null
+          idade_minima: number | null
+          nome: string
+          pontos: number | null
+          qtd_maxima: number | null
+          rubrica: string | null
+          sexo: string | null
+          valor_ambulatorial_sa: number | null
+          valor_hospitalar_sh: number | null
+          valor_profissional_sp: number | null
+          valor_total: number | null
+        }
+        Insert: {
+          codigo: string
+          codigo_formatado: string
+          competencia?: string | null
+          complexidade?: string | null
+          dias_permanencia?: number | null
+          financiamento?: string | null
+          idade_maxima?: number | null
+          idade_minima?: number | null
+          nome: string
+          pontos?: number | null
+          qtd_maxima?: number | null
+          rubrica?: string | null
+          sexo?: string | null
+          valor_ambulatorial_sa?: number | null
+          valor_hospitalar_sh?: number | null
+          valor_profissional_sp?: number | null
+          valor_total?: number | null
+        }
+        Update: {
+          codigo?: string
+          codigo_formatado?: string
+          competencia?: string | null
+          complexidade?: string | null
+          dias_permanencia?: number | null
+          financiamento?: string | null
+          idade_maxima?: number | null
+          idade_minima?: number | null
+          nome?: string
+          pontos?: number | null
+          qtd_maxima?: number | null
+          rubrica?: string | null
+          sexo?: string | null
+          valor_ambulatorial_sa?: number | null
+          valor_hospitalar_sh?: number | null
+          valor_profissional_sp?: number | null
+          valor_total?: number | null
+        }
+        Relationships: []
+      }
       sinais_vitais: {
         Row: {
           criado_em: string

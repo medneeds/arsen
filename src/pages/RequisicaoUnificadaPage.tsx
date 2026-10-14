@@ -49,6 +49,7 @@ import {
 import { toast } from "sonner";
 import { cn, asUuidOrNull } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { useSigtapSearch } from "@/hooks/useSigtapSearch";
 import { fromSolicitacaoStatusDb } from "@/lib/solicitacaoStatus";
 import { normalizeSolicitacao, applyAuthor, type ProfissionalLite, type SolicitacaoContext } from "@/lib/solicitacaoNormalize";
 import { toSectorCode } from "@/lib/requisitionSector";
@@ -3051,6 +3052,37 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
     return matchSearch && matchCategory && matchInstrumento;
   });
 
+  // Busca estendida ao catalogo SIGTAP completo (tabela sigtap_procedimentos),
+  // para encontrar QUALQUER procedimento de medio/alto custo, nao so os curados
+  // localmente. Aditivo: se a tabela estiver vazia/ausente, nao muda nada.
+  type PickerProc = { code: string; name: string; category: string; instrumento: "APAC" | "AIH" | null; valor?: string };
+  const sigtapQuery = useSigtapSearch(searchProcedure);
+  const sigtapExtra: PickerProc[] = useMemo(() => {
+    const rows = sigtapQuery.data ?? [];
+    const jaLocais = new Set(SIGTAP_PROCEDURES.map(p => p.code));
+    const jaSelecionados = new Set(selectedProcedures.map(p => p.code));
+    const out: PickerProc[] = [];
+    const vistos = new Set<string>();
+    for (const r of rows) {
+      const code = r.codigo_formatado;
+      if (jaLocais.has(code) || jaSelecionados.has(code) || vistos.has(code)) continue;
+      vistos.add(code);
+      const n = typeof r.valor_total === "string" ? parseFloat(r.valor_total) : (r.valor_total ?? 0);
+      out.push({
+        code,
+        name: r.nome,
+        category: "SIGTAP",
+        instrumento: getInstrumento(code) ?? "APAC",
+        valor: Number.isFinite(n) ? n.toFixed(2) : undefined,
+      });
+    }
+    return out
+      .filter(p => instrumentoFilter === "all" || p.instrumento === instrumentoFilter)
+      .filter(p => categoryFilter === "all"); // resultados do banco so aparecem sem filtro de categoria
+  }, [sigtapQuery.data, selectedProcedures, instrumentoFilter, categoryFilter]);
+
+  const mergedProcedures: PickerProc[] = [...filteredProcedures, ...sigtapExtra];
+
   const todayFormatted = format(new Date(), "dd/MM/yyyy");
 
   return (
@@ -3119,18 +3151,22 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
                   </SelectContent>
                 </Select>
               </div>
-              {filteredProcedures.length === 0 && (
+              {mergedProcedures.length === 0 && (
                 <div className="text-center py-6 text-sm text-muted-foreground border rounded-lg">
                   <Search className="h-6 w-6 mx-auto mb-2 opacity-30" />
-                  Nenhum procedimento encontrado
+                  {sigtapQuery.isFetching ? "Buscando no catalogo SIGTAP..." : "Nenhum procedimento encontrado"}
                 </div>
               )}
               <div className="max-h-48 overflow-y-auto border rounded-lg divide-y">
-                {filteredProcedures.map((proc) => {
+                {mergedProcedures.map((proc) => {
                   const isSelected = selectedProcedures.some((p) => p.code === proc.code);
                   return (
                     <button key={proc.code} className={`w-full text-left px-3 py-2 text-sm hover:bg-accent/50 transition-colors flex items-center justify-between gap-2 ${isSelected ? "bg-primary/5 opacity-60" : ""}`} onClick={() => addProcedure(proc)} disabled={isSelected}>
-                      <div className="min-w-0 flex-1"><span className="font-mono text-xs text-muted-foreground mr-2">{proc.code}</span><span className="text-foreground">{proc.name}</span></div>
+                      <div className="min-w-0 flex-1">
+                        <span className="font-mono text-xs text-muted-foreground mr-2">{proc.code}</span>
+                        <span className="text-foreground">{proc.name}</span>
+                        {proc.valor && <span className="ml-2 font-mono text-xs text-muted-foreground">R$ {proc.valor}</span>}
+                      </div>
                       <div className="flex items-center gap-1 shrink-0">
                         <Badge variant="outline" className={`text-xs font-semibold ${proc.instrumento === "AIH" ? "border-border text-foreground bg-muted" : "border-warning text-warning-on-soft bg-warning-soft"}`}>{proc.instrumento}</Badge>
                         <Badge variant="outline" className="text-xs">{proc.category}</Badge>
@@ -3138,6 +3174,9 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
                     </button>
                   );
                 })}
+                {sigtapQuery.isFetching && mergedProcedures.length > 0 && (
+                  <div className="px-3 py-2 text-xs text-muted-foreground">Buscando mais no SIGTAP...</div>
+                )}
               </div>
               <div className="border-t pt-3 space-y-2">
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
