@@ -69,8 +69,9 @@ export function ClinicalModuleTabs({ variant = "dark", layout = "pill" }: Clinic
         <div
           role="tablist"
           className={cn(
-            "flex w-full border-t",
-            variant === "dark" ? "border-white/25" : "border-border/60"
+            // divide-x: barra "|" discreta e elegante entre os campos (abas).
+            "flex w-full border-t divide-x",
+            variant === "dark" ? "border-white/25 divide-white/15" : "border-border/60 divide-border/50"
           )}
         >
           {MODULE_TABS.map(tab => {
