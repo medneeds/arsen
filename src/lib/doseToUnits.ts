@@ -24,7 +24,7 @@ const norm = (s?: string) =>
 // Grandezas oferecidas no campo de dose + as que aparecem nas apresentacoes.
 // factor converte para a unidade-base da dimensao (massa->mg, volume->mL,
 // atividade->UI, eletrolito->mEq).
-const UNIT_DIM: Record<string, { dim: 'massa' | 'volume' | 'ui' | 'meq'; factor: number }> = {
+export const UNIT_DIM: Record<string, { dim: 'massa' | 'volume' | 'ui' | 'meq'; factor: number }> = {
   mcg: { dim: 'massa', factor: 0.001 },
   ug: { dim: 'massa', factor: 0.001 },
   mg: { dim: 'massa', factor: 1 },
@@ -54,7 +54,7 @@ const COUNTABLE_FORMA: { match: string; canonical: string }[] = [
 
 // Ex.: "667mg/mL", "2mEq/mL", "40UI/mL" — a forca lider e CONCENTRACAO, nao o
 // conteudo por unidade: o nº de frascos NAO e dose/concentracao. (Lactulose.)
-const CONCENTRATION_RE = /(\d[\d.,]*)\s*(mcg|ug|mg|g|ui|u|meq)\s*\/\s*ml/i;
+export const CONCENTRATION_RE = /(\d[\d.,]*)\s*(mcg|ug|mg|g|ui|u|meq)\s*\/\s*ml/i;
 
 // Dose que NAO e um numero unico: faixa, condicional, por peso, por superficie.
 const RANGE_RE = /\d\s*(?:[–-]|a|e|\/|ate|até)\s*\d/i;

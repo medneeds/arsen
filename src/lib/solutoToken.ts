@@ -8,7 +8,7 @@
 // preenchia só a Qtd (ex: Midazolam 20 mL), o volume desaparecia do papel.
 // Tela e impresso agora consomem a MESMA função.
 
-import { parsePresentationStrength } from "./doseToUnits";
+import { parsePresentationStrength, CONCENTRATION_RE, UNIT_DIM } from "./doseToUnits";
 
 export interface SolutoFields {
   quantity?: string;
@@ -101,9 +101,56 @@ export function buildSolutoTokenLabeled(item: SolutoFields): string {
   return hasQty ? `Qtd.: ${s}` : s;
 }
 
+/**
+ * Massa TOTAL quando o item é prescrito em VOLUME (mL) e a apresentação traz a
+ * concentração em massa/mL (ex.: Dipirona "500mg/mL" + Qtd 4 mL → "2g").
+ * Cálculo dimensional correto: concentração(mg/mL) × volume(mL) = massa(mg),
+ * formatada mg→g por fmtDoseFromBase. Retorna null quando não se aplica
+ * (não é mL, apresentação sem concentração massa/mL, ou volume inválido) — aí
+ * nada é anexado e o comportamento anterior é preservado.
+ *
+ * Só dimensão MASSA (mg/mcg/g); UI/mEq ficam de fora para não rotular como
+ * "g" o que não é massa. O volume efetivo é a Qtd, salvo o caso em que a Qtd é
+ * o padrão '1' e o campo dose carrega o volume real (ex.: '100mL') — aí usa o
+ * volume do dose, para não calcular a massa de 1 mL quando se mostra 100 mL.
+ */
+function massFromVolumePrescription(item: SolutoFields): string | null {
+  if ((item.quantityUnit || '').toLowerCase() !== 'ml') return null;
+  const cm = (item.presentation || '').match(CONCENTRATION_RE);
+  if (!cm) return null;
+  const concValue = parseFloat(cm[1].replace(',', '.'));
+  const u = UNIT_DIM[cm[2].toLowerCase()];
+  if (!u || u.dim !== 'massa' || !(concValue > 0)) return null;
+  const concMgPerMl = concValue * u.factor;
+
+  const qtyRaw = (item.quantity || '').trim();
+  const qtyNum = parseFloat(qtyRaw.replace(',', '.'));
+  const doseRaw = (item.dose && item.dose !== '-') ? item.dose.trim() : '';
+  const doseVolMatch = doseRaw.match(/^(\d+(?:[.,]\d+)?)\s*m[lL]\b/i);
+  let volMl: number;
+  if (qtyRaw === '1' && doseVolMatch) {
+    volMl = parseFloat(doseVolMatch[1].replace(',', '.'));
+  } else if (qtyNum > 0) {
+    volMl = qtyNum;
+  } else {
+    return null;
+  }
+  if (!(volMl > 0)) return null;
+  return fmtDoseFromBase(concMgPerMl * volMl, 'massa');
+}
+
 // Compõe o token de dose combinando `dose` (texto livre, geralmente do preset
 // do wizard) e `quantity`+`quantityUnit` (campos editados inline pelo médico).
+// Wrapper: anexa a massa total quando prescrito em mL com apresentação em
+// concentração massa/mL (ex.: "4 mL (= 2g)"), via fonte única (tela + impresso).
 export function buildSolutoToken(item: SolutoFields): string {
+  const base = buildSolutoTokenCore(item);
+  if (!base) return base;
+  const mass = massFromVolumePrescription(item);
+  return mass ? `${base} (= ${mass})` : base;
+}
+
+function buildSolutoTokenCore(item: SolutoFields): string {
   const qtyRaw  = (item.quantity || '').trim();
   const qty     = qtyRaw && qtyRaw !== '0' ? qtyRaw : '';
   const unitShort = item.quantityUnit ? quantityUnitShort(item.quantityUnit) : '';
