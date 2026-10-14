@@ -63,16 +63,27 @@ export function useSigtapSearch(term: string) {
     },
   });
 
+  // Pre-normaliza os nomes uma vez por carga do catalogo (sem acento/caixa),
+  // para o filtro por token nao reprocessar 5k linhas a cada tecla.
+  const normalizado = useMemo(
+    () => (catalog.data ?? []).map((r) => ({ r, nomeNorm: norm(r.nome) })),
+    [catalog.data],
+  );
+
   const data = useMemo<SigtapProcedure[]>(() => {
-    if (q.length < 3 || !catalog.data) return [];
+    if (q.length < 3 || normalizado.length === 0) return [];
     const digits = q.replace(/\D/g, "");
-    const porCodigo = digits.length >= 3;
-    const nq = norm(q);
-    const hits = catalog.data.filter((r) =>
-      porCodigo
-        ? r.codigo.includes(digits) || (r.codigo_formatado ?? "").includes(q)
-        : norm(r.nome).includes(nq),
-    );
+    // Busca por TOKENS: cada palavra digitada (sem acento) precisa aparecer em
+    // qualquer posicao do nome, em qualquer ordem. "ressonancia cranio" casa com
+    // "RESSONANCIA MAGNETICA DE CRANIO". Codigo casa em paralelo (>=3 digitos).
+    const tokens = norm(q).split(/\s+/).filter(Boolean);
+    const hits = normalizado
+      .filter(({ r, nomeNorm }) => {
+        const nameMatch = tokens.length > 0 && tokens.every((t) => nomeNorm.includes(t));
+        const codeMatch = digits.length >= 3 && (r.codigo.includes(digits) || (r.codigo_formatado ?? "").includes(q));
+        return nameMatch || codeMatch;
+      })
+      .map(({ r }) => r);
     hits.sort((a, b) => {
       const ra = COMPLEX_RANK[a.complexidade ?? ""] ?? 2;
       const rb = COMPLEX_RANK[b.complexidade ?? ""] ?? 2;
@@ -80,7 +91,7 @@ export function useSigtapSearch(term: string) {
       return a.nome.localeCompare(b.nome, "pt-BR");
     });
     return hits.slice(0, 50);
-  }, [q, catalog.data]);
+  }, [q, normalizado]);
 
   return { data, isFetching: catalog.isFetching };
 }
