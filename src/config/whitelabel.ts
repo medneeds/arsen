@@ -8,8 +8,8 @@ import socorraoLogo from "@/assets/socorrao-logo.jpg";
 export const whitelabel = {
   platform: {
     name: "Arsen",
-    version: "1.0",
-    fullName: "Arsen 1.0",
+    version: "2.0",
+    fullName: "Arsen 2.0",
     slogan: "Mapeando cuidados, salvando vidas.",
     loadingText: "Iniciando",
   },
