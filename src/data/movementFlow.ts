@@ -188,10 +188,11 @@ export const INTERNAL_TRANSFER_DESTINATIONS = [
 ];
 
 export const EXTERNAL_TRANSFER_DESTINATIONS = [
-  "INSTITUTO VOLTA VIDA (IVV)",
-  "PSIQUIATRIA (INSTITUTO VOLTA VIDA)",
-  "HOSPITAL DE REFERÊNCIA REGIONAL",
-  "OUTRO HOSPITAL",
+  "HOSPITAL DE REFERÊNCIA ESTADUAL",
+  "HOSPITAL DE REFERÊNCIA FEDERAL",
+  "REDE PRIVADA",
+  // "OUTRO (especificar)" ja e oferecido como item separado nos seletores
+  // (MovimentacaoForm / MovimentacoesPage / AltaDesfechoPage), com campo livre.
 ];
 
 // Destinos de internação (a partir da UE / pré-admissão)
