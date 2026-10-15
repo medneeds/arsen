@@ -9,8 +9,11 @@ export interface InternacaoIndic {
   data_alta: string | null;
   status: string | null;
   setor_id: string | null;
+  nome: string | null;
+  prontuario: string | null;
 }
 
+interface PacienteNested { nome_completo: string | null; nome_social: string | null; prontuario: string | null }
 interface InternacaoRaw {
   id: string;
   paciente_id: string | null;
@@ -18,6 +21,7 @@ interface InternacaoRaw {
   data_alta: string | null;
   status: string | null;
   setor_classificacao_id: string | null;
+  paciente: PacienteNested | PacienteNested[] | null;
 }
 interface SetorRaw { id: string; nome: string }
 
@@ -39,21 +43,26 @@ export function useIndicadoresData() {
       const [iRes, sRes, lRes] = await Promise.all([
         supabase
           .from("internacoes")
-          .select("id, paciente_id, data_entrada, data_alta, status, setor_classificacao_id")
+          .select("id, paciente_id, data_entrada, data_alta, status, setor_classificacao_id, paciente:pacientes(nome_completo, nome_social, prontuario)")
           .limit(20000),
         supabase.from("setores").select("id, nome"),
         supabase.from("leitos").select("id", { count: "exact", head: true }),
       ]);
       if (iRes.error) throw iRes.error;
-      const rows = (iRes.data ?? []) as InternacaoRaw[];
-      setInternacoes(rows.map((r) => ({
-        id: r.id,
-        paciente_id: r.paciente_id,
-        data_entrada: r.data_entrada,
-        data_alta: r.data_alta,
-        status: r.status,
-        setor_id: r.setor_classificacao_id,
-      })));
+      const rows = (iRes.data ?? []) as unknown as InternacaoRaw[];
+      setInternacoes(rows.map((r) => {
+        const pac = Array.isArray(r.paciente) ? r.paciente[0] : r.paciente;
+        return {
+          id: r.id,
+          paciente_id: r.paciente_id,
+          data_entrada: r.data_entrada,
+          data_alta: r.data_alta,
+          status: r.status,
+          setor_id: r.setor_classificacao_id,
+          nome: pac?.nome_social || pac?.nome_completo || null,
+          prontuario: pac?.prontuario ?? null,
+        };
+      }));
       const sm: Record<string, string> = {};
       for (const s of (sRes.data ?? []) as SetorRaw[]) sm[s.id] = s.nome;
       setSetores(sm);

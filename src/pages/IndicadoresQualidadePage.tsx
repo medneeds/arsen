@@ -11,8 +11,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { useIndicadoresData, type InternacaoIndic } from "@/hooks/useIndicadoresData";
+
+const DESFECHO_LABEL: Record<string, string> = {
+  alta: "Alta", obito: "Óbito", transferida: "Transf. externa", cancelada: "Cancelada", ativa: "Ativa",
+};
+const fmtDT = (v: string | null) => (v ? format(new Date(v), "dd/MM/yy HH:mm", { locale: ptBR }) : "—");
 
 const DAY = 86_400_000;
 const daysBetween = (a: string, b: string) => (new Date(b).getTime() - new Date(a).getTime()) / DAY;
@@ -57,8 +65,25 @@ export default function IndicadoresQualidadePage() {
 
   const [dtIni, setDtIni] = useState<string>(format(subDays(new Date(), 30), "yyyy-MM-dd"));
   const [dtFim, setDtFim] = useState<string>(format(new Date(), "yyyy-MM-dd"));
+  const [setorSel, setSetorSel] = useState<string>("todos");
+  const [desfechoSel, setDesfechoSel] = useState<string>("todos");
 
   const setorNome = (id: string | null) => (id && setores[id]) || "Sem setor";
+
+  // Opcoes de setor (nomes unicos presentes nas internacoes).
+  const setorOptions = useMemo(() => {
+    const s = new Set<string>();
+    for (const i of internacoes) s.add(setorNome(i.setor_id));
+    return Array.from(s).sort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [internacoes, setores]);
+
+  // Internacoes do setor selecionado (base dos KPIs e da tabela de saidas).
+  const baseInternacoes = useMemo(
+    () => (setorSel === "todos" ? internacoes : internacoes.filter((i) => setorNome(i.setor_id) === setorSel)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [internacoes, setorSel, setores],
+  );
 
   const calc = useMemo(() => {
     const ini = new Date(dtIni + "T00:00:00").getTime();
@@ -69,10 +94,10 @@ export default function IndicadoresQualidadePage() {
       return t >= ini && t <= fim;
     };
 
-    // Saidas e admissoes no periodo.
-    const saidas = internacoes.filter((i) => i.data_alta && inRange(i.data_alta));
-    const admissoes = internacoes.filter((i) => i.data_entrada && inRange(i.data_entrada));
-    const ativas = internacoes.filter((i) => !i.data_alta && (i.status === "ativa" || i.status == null));
+    // Saidas e admissoes no periodo (restritas ao setor selecionado).
+    const saidas = baseInternacoes.filter((i) => i.data_alta && inRange(i.data_alta));
+    const admissoes = baseInternacoes.filter((i) => i.data_entrada && inRange(i.data_entrada));
+    const ativas = baseInternacoes.filter((i) => !i.data_alta && (i.status === "ativa" || i.status == null));
 
     // Permanencia (dias) das saidas.
     const permDias = saidas
@@ -88,8 +113,9 @@ export default function IndicadoresQualidadePage() {
     const transfExt = saidas.filter((i) => i.status === "transferida");
     const obitos48 = obitos.filter((i) => i.data_entrada && i.data_alta && hoursBetween(i.data_entrada, i.data_alta) < 48);
 
-    // Taxa de ocupacao ATUAL (snapshot).
-    const ocupacao = leitosTotal > 0 ? Math.round((ativas.length / leitosTotal) * 1000) / 10 : null;
+    // Taxa de ocupacao ATUAL (snapshot). So faz sentido hospital-wide (nao temos
+    // contagem de leitos por setor) — por isso so quando setor = todos.
+    const ocupacao = setorSel === "todos" && leitosTotal > 0 ? Math.round((ativas.length / leitosTotal) * 1000) / 10 : null;
     // Giro de leito no periodo (saidas / leitos).
     const giro = leitosTotal > 0 ? Math.round((saidas.length / leitosTotal) * 100) / 100 : null;
 
@@ -131,7 +157,23 @@ export default function IndicadoresQualidadePage() {
       admissoes: a.adm,
     })).sort((x, y) => y.admissoes - x.admissoes);
 
+    // Lista de SAIDAS/ALTAS no periodo (para o relatorio por setor/paciente).
+    const saidasList = saidas
+      .filter((i) => desfechoSel === "todos" || i.status === desfechoSel)
+      .map((i) => ({
+        id: i.id,
+        nome: i.nome || "—",
+        prontuario: i.prontuario || "—",
+        setor: setorNome(i.setor_id),
+        data_entrada: i.data_entrada,
+        data_alta: i.data_alta,
+        permanencia: i.data_entrada && i.data_alta ? Math.round(daysBetween(i.data_entrada, i.data_alta) * 10) / 10 : null,
+        desfecho: i.status,
+      }))
+      .sort((a, b) => (b.data_alta || "").localeCompare(a.data_alta || ""));
+
     return {
+      saidasList,
       admissoes: admissoes.length,
       saidas: saidas.length,
       ativas: ativas.length,
@@ -146,7 +188,8 @@ export default function IndicadoresQualidadePage() {
       reinternacoes,
       porSetor,
     };
-  }, [internacoes, setores, leitosTotal, dtIni, dtFim]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [internacoes, baseInternacoes, setores, leitosTotal, dtIni, dtFim, setorSel, desfechoSel]);
 
   return (
     <div className="mx-auto w-full max-w-[1400px] space-y-4 p-4">
@@ -160,7 +203,17 @@ export default function IndicadoresQualidadePage() {
             <p className="text-xs text-muted-foreground">Ocupação, permanência, giro, mortalidade e reinternação. Referências: Fiocruz / ANS-QualiSS / Anvisa.</p>
           </div>
         </div>
-        <div className="flex items-end gap-2">
+        <div className="flex flex-wrap items-end gap-2">
+          <div className="min-w-[160px]">
+            <Label className="text-xs">Setor</Label>
+            <Select value={setorSel} onValueChange={setSetorSel}>
+              <SelectTrigger className="mt-1 h-9 text-sm"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os setores</SelectItem>
+                {setorOptions.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
           <div><Label className="text-xs">De</Label><Input type="date" value={dtIni} onChange={(e) => setDtIni(e.target.value)} className="mt-1 h-9 text-sm" /></div>
           <div><Label className="text-xs">Até</Label><Input type="date" value={dtFim} onChange={(e) => setDtFim(e.target.value)} className="mt-1 h-9 text-sm" /></div>
           <Button variant="outline" size="sm" onClick={() => refetch()} className="h-9 gap-2">
@@ -227,6 +280,65 @@ export default function IndicadoresQualidadePage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Saidas / Altas no periodo (relatorio por setor/paciente) */}
+      <Card>
+        <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2 py-3">
+          <CardTitle className="text-sm">
+            Saídas / Altas no período
+            <span className="ml-1 font-normal text-muted-foreground">
+              ({calc.saidasList.length}{setorSel !== "todos" ? ` · ${setorSel}` : ""})
+            </span>
+          </CardTitle>
+          <div className="w-[180px]">
+            <Select value={desfechoSel} onValueChange={setDesfechoSel}>
+              <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Desfecho" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os desfechos</SelectItem>
+                <SelectItem value="alta">Alta</SelectItem>
+                <SelectItem value="obito">Óbito</SelectItem>
+                <SelectItem value="transferida">Transferência externa</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="max-h-[420px] overflow-auto">
+            <Table>
+              <TableHeader className="sticky top-0 z-10 bg-background">
+                <TableRow>
+                  <TableHead className="text-xs">Paciente</TableHead>
+                  <TableHead className="text-xs">Prontuário</TableHead>
+                  <TableHead className="text-xs">Setor</TableHead>
+                  <TableHead className="text-xs">Admissão</TableHead>
+                  <TableHead className="text-xs">Saída</TableHead>
+                  <TableHead className="text-xs text-right">Permanência</TableHead>
+                  <TableHead className="text-xs">Desfecho</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {calc.saidasList.length === 0 ? (
+                  <TableRow><TableCell colSpan={7} className="py-8 text-center text-sm text-muted-foreground">Nenhuma saída no período/filtro.</TableCell></TableRow>
+                ) : calc.saidasList.map((s) => (
+                  <TableRow key={s.id} className="text-xs">
+                    <TableCell className="max-w-[200px] truncate font-medium">{s.nome}</TableCell>
+                    <TableCell className="font-mono">{s.prontuario}</TableCell>
+                    <TableCell>{s.setor}</TableCell>
+                    <TableCell className="whitespace-nowrap">{fmtDT(s.data_entrada)}</TableCell>
+                    <TableCell className="whitespace-nowrap">{fmtDT(s.data_alta)}</TableCell>
+                    <TableCell className="text-right whitespace-nowrap">{s.permanencia == null ? "—" : `${s.permanencia} d`}</TableCell>
+                    <TableCell>
+                      <Badge variant="secondary" className={cn("text-[10px]", s.desfecho === "obito" && "bg-critical-soft text-critical-on-soft")}>
+                        {DESFECHO_LABEL[s.desfecho ?? ""] ?? s.desfecho ?? "—"}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
 
       <p className="text-center text-[11px] text-muted-foreground">
         Período: {format(new Date(dtIni), "dd/MM/yyyy", { locale: ptBR })} a {format(new Date(dtFim), "dd/MM/yyyy", { locale: ptBR })} ·
