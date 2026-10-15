@@ -602,7 +602,10 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
         open={open && step === "encerrado" && !!closedInfo}
         onOpenChange={(o) => { if (!o) { setClosedInfo(null); onOpenChange(false); } }}
       >
-        <AlertDialogContent className="w-[calc(100vw-1.5rem)] max-w-[calc(100vw-1.5rem)] sm:max-w-md">
+        <AlertDialogContent
+          className="w-[calc(100vw-1.5rem)] max-w-[calc(100vw-1.5rem)] sm:max-w-md"
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
           <AlertDialogHeader>
             <div className="flex items-start gap-2 mb-1 min-w-0">
               <div className="rounded-full bg-released-soft p-2">

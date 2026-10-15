@@ -451,7 +451,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
     <>
       {/* Pop-up SAPS 3 (setor com SAPS): preencher agora (/admissao) ou pendente 24h. */}
       <AlertDialog open={!!sapsPrompt} onOpenChange={(o) => { if (!o) setSapsPrompt(null); }}>
-        <AlertDialogContent>
+        <AlertDialogContent onEscapeKeyDown={(e) => e.preventDefault()}>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <Activity className="h-5 w-5 text-primary" />
@@ -482,7 +482,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
 
       {/* Pop-up pos-alocacao em setor SEM SAPS: sugere seguir direto para a admissao. */}
       <AlertDialog open={!!admitPrompt} onOpenChange={(o) => { if (!o) setAdmitPrompt(null); }}>
-        <AlertDialogContent>
+        <AlertDialogContent onEscapeKeyDown={(e) => e.preventDefault()}>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <Activity className="h-5 w-5 text-primary" />
@@ -533,8 +533,13 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
   }
 
   if (!fullData) {
+    // promptPortals/overlay SEMPRE na mesma posicao (index 0) em todos os returns:
+    // evita que o React remonte os AlertDialogs ao trocar de ramo (pre/fullData ->
+    // sucesso), o que fechava o pop-up pos-alocacao sozinho.
     return (
       <>
+        {promptPortals}
+        {submittingOverlay}
         <Dialog open={open} onOpenChange={onOpenChange}>
           <DialogContent className="max-w-md">
             <div className="flex items-center justify-center p-8">
@@ -542,8 +547,6 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
             </div>
           </DialogContent>
         </Dialog>
-        {promptPortals}
-        {submittingOverlay}
       </>
     );
   }
@@ -557,6 +560,10 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
 
   return (
     <>
+    {/* promptPortals/overlay PRIMEIRO (mesma posicao dos outros returns) para o
+        React nao remontar os AlertDialogs ao sair do ramo de sucesso. */}
+    {promptPortals}
+    {submittingOverlay}
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto">
         <DialogHeader>
@@ -953,9 +960,6 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
         </DialogFooter>
       </DialogContent>
     </Dialog>
-
-    {promptPortals}
-    {submittingOverlay}
     </>
   );
 }

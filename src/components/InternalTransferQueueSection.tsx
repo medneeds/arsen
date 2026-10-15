@@ -369,7 +369,7 @@ export function InternalTransferQueueSection({ sectorCode, onTransferComplete }:
           admissao de cuidados intensivos no destino. Mesma oferta do pop-up de
           alocacao — Ir para admissao / Preencher SAPS 3 / Depois (pendente 24h). */}
       <AlertDialog open={!!postPrompt} onOpenChange={(o) => { if (!o) setPostPrompt(null); }}>
-        <AlertDialogContent>
+        <AlertDialogContent onEscapeKeyDown={(e) => e.preventDefault()}>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <BedDouble className="h-5 w-5 text-primary" />
