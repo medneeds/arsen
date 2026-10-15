@@ -91,7 +91,13 @@ async function loadSectorBeds(
 
   if (rows.length > 0) {
     const beds = rows.map((r) => r.numero).sort((a, b) => bedSortNumber(a) - bedSortNumber(b));
-    const freeCount = beds.length - occupied.length;
+    // "Lotado" (superlotacao) considera so os leitos REGULARES. Leitos EXTRA
+    // (macas de superlotacao) viram linhas permanentes em `leitos`; quando o
+    // ocupante sai, ficam livres e orfaos — contados como beds.length antes,
+    // inflavam os "livres" e mascaravam a lotacao real do setor.
+    const regulares = beds.filter((b) => !/^EXTRA/i.test(b));
+    const regularesOcupados = occupied.filter((b) => !/^EXTRA/i.test(b));
+    const freeCount = regulares.length - regularesOcupados.length;
     return { beds: [...beds, "EXTRA"], occupied, full: freeCount <= 0 };
   }
 
