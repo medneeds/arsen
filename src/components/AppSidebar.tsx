@@ -391,12 +391,17 @@ export function AppSidebar() {
     // do medico ao trocar de perfil — por isso quebrava.
     if (accessProfile === "qualidade") {
       return [
-        { title: "Qualidade & Segurança", icon: HeartPulse, profiles: ["qualidade"], items: [
+        { title: "Gestão de Pacientes", icon: HeartPulse, profiles: ["qualidade"], items: [
           { name: "Indicadores de Qualidade", link: "/indicadores-qualidade", profiles: ["qualidade"] },
-          { name: "Gestão de Leitos", link: "/gestao-leitos-qualidade", profiles: ["qualidade"] },
+        ]},
+        { title: "Gestão de Leitos", icon: BedDouble, profiles: ["qualidade"], items: [
+          { name: "Tempos de Movimentação", link: "/gestao-leitos-qualidade", profiles: ["qualidade"] },
+          { name: "Mapa de Leitos", link: "/mapa", profiles: ["qualidade"] },
+        ]},
+        { title: "Documentos & Relatórios", icon: FolderOpen, profiles: ["qualidade"], items: [
+          { name: "Repositório de Documentos", link: "/qualidade-documentos", profiles: ["qualidade"] },
           { name: "Relatórios", link: "/relatorios", profiles: ["qualidade"] },
         ]},
-        { title: "Mapa de Leitos", icon: LayoutDashboard, link: "/mapa", profiles: ["qualidade"] },
       ];
     }
     // Coordenação (médica / enfermagem / multi): consulta transversal, somente leitura clínica
@@ -446,8 +451,9 @@ export function AppSidebar() {
         { name: "Usuários", link: "/painel-admin?tab=equipe" },
         { name: "Hospital", link: "/painel-admin?tab=hospital" },
         { name: "Identidade visual", link: "/painel-admin?tab=branding" },
-        { name: "Qualidade — Gestão de Leitos", link: "/gestao-leitos-qualidade" },
         { name: "Qualidade — Indicadores", link: "/indicadores-qualidade" },
+        { name: "Qualidade — Gestão de Leitos", link: "/gestao-leitos-qualidade" },
+        { name: "Qualidade — Repositório", link: "/qualidade-documentos" },
       ];
       // Mescla com qualquer "Administração" já existente no menu do módulo
       // (ex.: o menu do Gestor tem uma) — evita dois grupos "Administração".
