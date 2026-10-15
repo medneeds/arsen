@@ -230,6 +230,23 @@ export function useBedAllocationRequests() {
     }
   };
 
+  // Carimba o recebimento/avaliacao (solicitacoes_leito.avaliado_em) de forma
+  // TOLERANTE: se a coluna ainda nao existir no banco, apenas avisa no console e
+  // NAO quebra o fluxo de aprovacao/discussao. (Cast necessario ate a coluna
+  // entrar nos tipos gerados.)
+  const stampAvaliadoEm = async (requestId: string) => {
+    try {
+      const { error: tsErr } = await supabase
+        .from("solicitacoes_leito")
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .update({ avaliado_em: new Date().toISOString() } as any)
+        .eq("id", requestId);
+      if (tsErr) console.warn("[useBedAllocationRequests] avaliado_em indisponivel (coluna ausente?):", tsErr.message);
+    } catch (e) {
+      console.warn("[useBedAllocationRequests] falha ao gravar avaliado_em:", e);
+    }
+  };
+
   const approveRequest = async (requestId: string) => {
     if (!user?.id || !currentHospital?.id) return false;
 
@@ -261,6 +278,10 @@ export function useBedAllocationRequests() {
         .eq("id", requestId);
 
       if (updateError) throw updateError;
+
+      // RECEBIMENTO/avaliacao da solicitacao (relatorio de gestao de leitos —
+      // coluna avaliado_em). Tolerante: se a coluna ainda nao existir, nao quebra.
+      await stampAvaliadoEm(requestId);
 
       // MIGRAÇÃO: no schema antigo a aprovação calculava o próximo número de leito
       // (getNextBedNumber, lendo `patients`) e movia o paciente para setor+leito.
@@ -310,6 +331,9 @@ export function useBedAllocationRequests() {
         .eq("id", requestId);
 
       if (error) throw error;
+
+      // Primeiro toque de avaliacao = recebimento da solicitacao (tolerante).
+      await stampAvaliadoEm(requestId);
 
       // MIGRAÇÃO: patients.allocation_status removido (campo degradado).
 
