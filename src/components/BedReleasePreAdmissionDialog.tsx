@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { AlertTriangle, Bed, ClipboardList, FileText, Info, Stethoscope, UserMinus, UserCheck, ArrowRight, Lock } from "lucide-react";
+import { AlertTriangle, Bed, ClipboardList, FileText, Info, Stethoscope, UserMinus, UserCheck, ArrowRight, Lock, CheckCircle2 } from "lucide-react";
 import { MovementConfirmDialog, type MovementBlocker, type MovementWarning } from "./MovementConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -84,7 +84,17 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
               : "alta_concluida")
       : "paciente_saiu";
 
-  const [step, setStep] = useState<"notice" | "form" | "password">("notice");
+  const [step, setStep] = useState<"notice" | "form" | "password" | "encerrado">("notice");
+  // Pop informativo de ENCERRAMENTO (alta/obito/transf. externa): snapshot dos
+  // dados ANTES da escrita/refetch (o card vira "vago" logo depois) + o numero do
+  // atendimento encerrado, exibido apos a senha validar e a desalocacao concluir.
+  const [closedInfo, setClosedInfo] = useState<{
+    name: string;
+    prontuario: string | null;
+    bed: string;
+    outcome: "alta" | "obito" | "transf_externa";
+    atendimento: string | null;
+  } | null>(null);
   const [reason, setReason] = useState<string>(defaultReason);
   const [reasonNote, setReasonNote] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
@@ -100,6 +110,7 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
       setReasonNote("");
       setSubmitting(false);
       setSignaledDestination(null);
+      setClosedInfo(null);
     }
   }, [open, defaultReason]);
 
@@ -204,12 +215,46 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
   const handleConfirm = async () => {
     setSubmitting(true);
     try {
+      // Snapshot ANTES da escrita/refetch: o card vira "vago" depois e o prop
+      // `patient` deixa de refletir o atendimento encerrado.
+      const snap = {
+        name: patient.name || "—",
+        prontuario: patient.prontuario ?? null,
+        bed: patient.bedNumber || "—",
+        outcome: (patient.admissionStatus === "obito"
+          ? "obito"
+          : patient.admissionStatus === "transferencia_externa_pendente"
+            ? "transf_externa"
+            : "alta") as "alta" | "obito" | "transf_externa",
+      };
       await onConfirm({ reason: reasonLabel, reasonNote: reasonNote.trim() });
-      onOpenChange(false);
+      // Encerramento de atendimento (alta/obito/transf. externa): exibe o pop
+      // informativo com o numero do atendimento encerrado, em vez de fechar direto.
+      // Transferencia interna NAO encerra (isClosingOutcome=false) -> fecha normal.
+      if (isClosingOutcome) {
+        let atendimento: string | null = null;
+        try {
+          const { data } = await supabase
+            .from("internacoes")
+            .select("numero_atendimento")
+            .eq("id", patient.id)
+            .maybeSingle();
+          atendimento = (data as { numero_atendimento?: string | null } | null)?.numero_atendimento ?? null;
+        } catch {
+          // numero indisponivel: o pop ainda aparece (sem o numero).
+        }
+        setClosedInfo({ ...snap, atendimento });
+        setStep("encerrado");
+      } else {
+        onOpenChange(false);
+      }
     } finally {
       setSubmitting(false);
     }
   };
+
+  const outcomeLabel = (o: "alta" | "obito" | "transf_externa") =>
+    o === "obito" ? "Óbito" : o === "transf_externa" ? "Transferência externa" : "Alta hospitalar";
 
   // CONTROLE DE PERMISSÃO: desalocação excepcional (sem sinalização) é
   // restrita a gestores e admins. Médicos e demais perfis veem o cadeado
@@ -542,6 +587,61 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
         actionLabel={transferArrowLabel || "Liberar leito"}
         onConfirmed={handleConfirm}
       />
+
+      {/* ETAPA 4 (so em encerramento: alta/obito/transf. externa): pop informativo
+          da acao realizada — dados principais do prontuario, aviso de atendimento
+          encerrado, numero do atendimento e consulta posterior ao historico. */}
+      <AlertDialog
+        open={open && step === "encerrado" && !!closedInfo}
+        onOpenChange={(o) => { if (!o) { setClosedInfo(null); onOpenChange(false); } }}
+      >
+        <AlertDialogContent className="w-[calc(100vw-1.5rem)] max-w-[calc(100vw-1.5rem)] sm:max-w-md">
+          <AlertDialogHeader>
+            <div className="flex items-start gap-2 mb-1 min-w-0">
+              <div className="rounded-full bg-released-soft p-2">
+                <CheckCircle2 className="h-5 w-5 text-released-on-soft" />
+              </div>
+              <AlertDialogTitle className="text-base leading-snug">
+                Atendimento encerrado
+              </AlertDialogTitle>
+            </div>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3 text-xs leading-relaxed text-foreground">
+                <div className="rounded-md border border-border/60 bg-muted/40 p-3 space-y-1">
+                  <p><span className="text-muted-foreground">Paciente:</span> <strong>{closedInfo?.name}</strong></p>
+                  {closedInfo?.prontuario && (
+                    <p><span className="text-muted-foreground">Prontuário:</span> <strong>{closedInfo.prontuario}</strong></p>
+                  )}
+                  <p><span className="text-muted-foreground">Leito:</span> <strong>{closedInfo?.bed}</strong></p>
+                  <p>
+                    <span className="text-muted-foreground">Nº do atendimento:</span>{" "}
+                    <strong>{closedInfo?.atendimento ? `#${closedInfo.atendimento}` : "—"}</strong>
+                  </p>
+                  <p>
+                    <span className="text-muted-foreground">Desfecho:</span>{" "}
+                    <strong>{closedInfo ? outcomeLabel(closedInfo.outcome) : "—"}</strong>
+                  </p>
+                </div>
+                <p>
+                  O <strong>atendimento foi encerrado</strong> (saída registrada) e o leito foi liberado no mapa.
+                </p>
+                <p className="text-muted-foreground">
+                  O histórico do paciente é preservado e poderá ser consultado a qualquer momento após o
+                  encerramento do atendimento.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={() => { setClosedInfo(null); onOpenChange(false); }}
+              className="w-full mt-0"
+            >
+              Fechar
+            </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
