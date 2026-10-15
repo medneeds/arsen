@@ -12,6 +12,7 @@ import { normalizePatientName } from "@/utils/normalizePatientName";
 import { resolveSectorCode, bedBelongsToSector } from "@/config/sectorCoverage";
 import { ADMISSION_STATUS } from "@/lib/admissionStatus";
 import { fetchPendingInternalTransferInternacaoIds, fetchLatestSectorEntryByInternacao } from "@/lib/internalTransfer";
+import { sectorRequiresSaps } from "@/lib/sectorComplexity";
 
 export const GHOST_PREFIXES = ['ARQ-', 'ARCHIVED-', '_GHOST_'];
 
@@ -355,7 +356,11 @@ export function usePatients(department?: Department, sector?: string) {
             // Precedencia (decisao do Artur): admissao pendente ANTES de SAPS.
             if (validationAvailable && !validatedIds.has(p.id)) {
               p.admissionStatus = "admissao_pendente";
-            } else if (sapsPendingIds.has(p.id)) {
+            } else if (sapsPendingIds.has(p.id) && sectorRequiresSaps(p.sector)) {
+              // REGRA ABSOLUTA (Artur): SAPS 3 so se aplica a UTI 1/UTI 2/UCI 2.
+              // A linha pendente em avaliacoes_saps3 ancora em internacao_id e
+              // acompanha o paciente na desescalada (UTI -> enfermaria). Sem este
+              // gate, a tarja viajava para setores onde SAPS nao se aplica.
               p.admissionStatus = "saps_pendente";
             }
             break;
