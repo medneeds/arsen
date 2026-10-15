@@ -79,7 +79,7 @@ export function PendingApprovalScreen() {
         className="relative z-10 max-w-lg w-full"
       >
         {/* Glass card */}
-        <div className="bg-white/10 backdrop-blur-xl rounded-lg border border-white/20 p-8 shadow-md">
+        <div className="bg-card/80 backdrop-blur-xl rounded-lg border border-border p-8 shadow-md">
           {/* Logo */}
           <motion.div
             initial={{ opacity: 0, y: -10 }}
@@ -88,17 +88,17 @@ export function PendingApprovalScreen() {
             className="text-center mb-8"
           >
             <div className="flex items-center justify-center gap-2 mb-3">
-              <span className="text-4xl font-semibold bg-muted bg-clip-text text-transparent tracking-tight">
+              <span className="text-4xl font-semibold text-foreground tracking-tight">
                 {whitelabel.platform.name}
               </span>
               <span className="text-xs font-medium text-muted-foreground bg-primary/20 px-2 py-1 rounded-full">
                 {whitelabel.platform.version}
               </span>
             </div>
-            <p className="text-sm text-muted-foreground/80 italic">
+            <p className="text-sm text-muted-foreground italic">
               {whitelabel.platform.slogan}
             </p>
-            <p className="text-xs text-white/50 mt-2 uppercase tracking-wider">
+            <p className="text-xs text-muted-foreground mt-2 uppercase tracking-wider">
               {whitelabel.institution.hospitalShortName}
             </p>
           </motion.div>
@@ -136,10 +136,10 @@ export function PendingApprovalScreen() {
             transition={{ delay: 0.4 }}
             className="text-center mb-6"
           >
-            <h2 className="text-xl font-semibold text-white mb-2">
+            <h2 className="text-xl font-semibold text-foreground mb-2">
               Olá, <span className="text-muted-foreground">{username}</span>!
             </h2>
-            <p className="text-white/70 text-sm">
+            <p className="text-muted-foreground text-sm">
               Seu cadastro foi recebido com sucesso
             </p>
           </motion.div>
@@ -159,8 +159,8 @@ export function PendingApprovalScreen() {
                 <h3 className="text-warning font-medium mb-1">
                   Aguardando Aprovação
                 </h3>
-                <p className="text-white/70 text-sm leading-relaxed">
-                  Seu acesso ao sistema está sendo analisado pelo <strong className="text-white">Coordenador/Administrador</strong>. 
+                <p className="text-muted-foreground text-sm leading-relaxed">
+                  Seu acesso ao sistema está sendo analisado pelo <strong className="text-foreground">Coordenador/Administrador</strong>.
                   Assim que for aprovado, você terá acesso completo aos dados e funcionalidades.
                 </p>
               </div>
@@ -174,16 +174,16 @@ export function PendingApprovalScreen() {
             transition={{ delay: 0.6 }}
             className="space-y-3 mb-8"
           >
-            <div className="flex items-center gap-3 text-white/60 text-sm">
-              <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center text-xs font-semibold text-muted-foreground">1</div>
+            <div className="flex items-center gap-3 text-foreground text-sm">
+              <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center text-xs font-semibold text-primary">1</div>
               <span>Aguarde o contato do administrador</span>
             </div>
-            <div className="flex items-center gap-3 text-white/60 text-sm">
-              <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center text-xs font-semibold text-muted-foreground">2</div>
+            <div className="flex items-center gap-3 text-foreground text-sm">
+              <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center text-xs font-semibold text-primary">2</div>
               <span>Após aprovação, faça login novamente</span>
             </div>
-            <div className="flex items-center gap-3 text-white/60 text-sm">
-              <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center text-xs font-semibold text-muted-foreground">3</div>
+            <div className="flex items-center gap-3 text-foreground text-sm">
+              <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center text-xs font-semibold text-primary">3</div>
               <span>Acesse todas as funcionalidades do sistema</span>
             </div>
           </motion.div>
@@ -197,7 +197,7 @@ export function PendingApprovalScreen() {
             <Button
               onClick={signOut}
               variant="outline"
-              className="w-full bg-white/5 border-white/20 text-white hover:bg-white/10 hover:border-white/30"
+              className="w-full bg-transparent border-border text-foreground hover:bg-muted hover:border-border"
             >
               <LogOut className="h-4 w-4 mr-2" />
               Sair e Tentar Novamente
@@ -209,7 +209,7 @@ export function PendingApprovalScreen() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.8 }}
-            className="flex items-center justify-center gap-2 mt-6 text-white/40 text-xs"
+            className="flex items-center justify-center gap-2 mt-6 text-muted-foreground text-xs"
           >
             <Shield className="h-3.5 w-3.5" />
             <span>Conforme Lei 13.709/2018 (LGPD)</span>
@@ -223,10 +223,10 @@ export function PendingApprovalScreen() {
           transition={{ delay: 0.9 }}
           className="text-center mt-6"
         >
-          <p className="text-white/30 text-xs">
-            {whitelabel.credits.developerLabel} <span className="text-muted-foreground/60 font-medium">{whitelabel.credits.developerName}</span>
+          <p className="text-muted-foreground text-xs">
+            {whitelabel.credits.developerLabel} <span className="text-foreground font-medium">{whitelabel.credits.developerName}</span>
           </p>
-          <p className="text-white/20 text-xs mt-1">
+          <p className="text-muted-foreground text-xs mt-1">
             {currentTime.toLocaleDateString('pt-BR')} • {currentTime.toLocaleTimeString('pt-BR')}
           </p>
         </motion.div>
