@@ -907,6 +907,7 @@ export type Database = {
       }
       internacoes: {
         Row: {
+          admissao_validada_em: string | null
           agenda: string | null
           atualizado_em: string
           conduta_inicial: string | null
@@ -928,6 +929,7 @@ export type Database = {
           status: string
         }
         Insert: {
+          admissao_validada_em?: string | null
           agenda?: string | null
           atualizado_em?: string
           conduta_inicial?: string | null
@@ -949,6 +951,7 @@ export type Database = {
           status?: string
         }
         Update: {
+          admissao_validada_em?: string | null
           agenda?: string | null
           atualizado_em?: string
           conduta_inicial?: string | null

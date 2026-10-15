@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { ArrowRightLeft, CheckCircle2, Cross, Plane, MousePointerClick, Info } from "lucide-react";
+import { ArrowRightLeft, CheckCircle2, Cross, Plane, MousePointerClick, Info, ClipboardList, Activity } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 type DischargeStatus =
@@ -8,6 +8,8 @@ type DischargeStatus =
   | "transferido"
   | "transferencia_interna_pendente"
   | "transferencia_externa_pendente"
+  | "admissao_pendente"
+  | "saps_pendente"
   | undefined
   | null
   | string;
@@ -29,6 +31,8 @@ const SHORT_LABELS: Record<string, string> = {
   transferido: "TRANSF.",
   transferencia_interna_pendente: "TRANSF. INT.",
   transferencia_externa_pendente: "TRANSF. EXT.",
+  admissao_pendente: "ADMISSÃO",
+  saps_pendente: "SAPS",
 };
 
 /**
@@ -76,6 +80,24 @@ export function DischargeStatusRibbon({ status, className, compact = false }: Di
       tooltipTitle: "Transferência externa sinalizada",
       what: "Paciente aguardando saída para outra instituição de saúde.",
       next: "Após a saída efetiva, desaloque o leito pelo menu Movimentações.",
+    },
+    // Estados de ENTRADA (nao sao desfecho): sinalizam o que falta concluir no
+    // inicio do atendimento. Precedencia no mapa: desfecho > admissao pendente > SAPS.
+    admissao_pendente: {
+      label: "ADMISSÃO PENDENTE",
+      Icon: ClipboardList,
+      pill: "bg-primary/10 text-primary ring-1 ring-primary/30",
+      tooltipTitle: "Admissão pendente",
+      what: "Paciente alocado no leito, mas a admissão clínica ainda não foi validada.",
+      next: "Abra o Painel Clínico do paciente e conclua a admissão (e a ficha SAPS, quando se aplica).",
+    },
+    saps_pendente: {
+      label: "SAPS 3 PENDENTE",
+      Icon: Activity,
+      pill: "bg-warning-soft text-warning-on-soft ring-1 ring-warning-border",
+      tooltipTitle: "Ficha SAPS 3 pendente",
+      what: "A ficha SAPS 3 deste atendimento ainda não foi finalizada.",
+      next: "Preencha a ficha SAPS 3 no Painel Clínico — há prazo de 24h.",
     },
   } as const;
 

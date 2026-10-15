@@ -1335,6 +1335,17 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
         throw new Error(`Falha ao gravar admissão na internação: ${interErr.message}`);
       }
 
+      // Marca a admissao como VALIDADA (faz a tarja "Admissao pendente" sumir do
+      // mapa). Update SEPARADO e TOLERANTE: se a coluna admissao_validada_em ainda
+      // nao existir no banco, apenas loga — nao quebra o salvamento da admissao.
+      {
+        const { error: valErr } = await supabase
+          .from("internacoes")
+          .update({ admissao_validada_em: new Date().toISOString() })
+          .eq("id", patient.id);
+        if (valErr) console.warn("[AdmissionForm] admissao_validada_em indisponivel (coluna ausente?):", valErr.message);
+      }
+
       // #21-B: alergias da admissao alimentam o cadastro (pacientes.alergias), que
       // o cabecalho dos modulos le e edita. Grava SO quando o cadastro ainda nao
       // tem alergia registrada — nao sobrescreve historico; edicoes futuras no

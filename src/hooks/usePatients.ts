@@ -285,6 +285,31 @@ export function usePatients(department?: Department, sector?: string) {
       const pendingTransferIds = await pendingTransferPromise;
       const sectorEntryById = await sectorEntryPromise;
       const exitDocsById = await exitDocsPromise;
+
+      // ENTRADA do atendimento (sem desfecho): sinaliza no mapa o que falta concluir.
+      //  - Admissao pendente: internacao ativa com admissao_validada_em NULL. Query
+      //    TOLERANTE — se a coluna ainda nao existir no banco, validationAvailable
+      //    fica false e a tarja fica INERTE (nao marca ninguem indevidamente).
+      //  - SAPS pendente: avaliacoes_saps3 com status 'pendente' (ancorado em internacao_id).
+      let validationAvailable = false;
+      const validatedIds = new Set<string>();
+      const sapsPendingIds = new Set<string>();
+      {
+        const [valRes, sapsRes] = await Promise.all([
+          supabase.from("internacoes").select("id, admissao_validada_em").is("data_alta", null),
+          supabase.from("avaliacoes_saps3").select("internacao_id").eq("status", "pendente"),
+        ]);
+        if (!valRes.error && valRes.data) {
+          validationAvailable = true;
+          for (const r of valRes.data as { id: string; admissao_validada_em: string | null }[]) {
+            if (r.admissao_validada_em) validatedIds.add(r.id);
+          }
+        }
+        for (const r of (sapsRes.data as { internacao_id: string | null }[] | null) ?? []) {
+          if (r.internacao_id) sapsPendingIds.add(r.internacao_id);
+        }
+      }
+
       for (const p of sortedPatients) {
         if (p.isVacant) continue;
         // TPS: entrada no setor atual. Opcao X — a data MAIS RECENTE entre:
@@ -326,7 +351,14 @@ export function usePatients(department?: Department, sector?: string) {
             p.admissionStatus = ADMISSION_STATUS.EXTERNAL_TRANSFER_PENDING;
             break;
           default:
-            break; // "ativa"/"cancelada" → sem tarja
+            // "ativa"/"cancelada": sem desfecho → sinaliza ENTRADA pendente.
+            // Precedencia (decisao do Artur): admissao pendente ANTES de SAPS.
+            if (validationAvailable && !validatedIds.has(p.id)) {
+              p.admissionStatus = "admissao_pendente";
+            } else if (sapsPendingIds.has(p.id)) {
+              p.admissionStatus = "saps_pendente";
+            }
+            break;
         }
       }
 

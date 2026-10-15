@@ -109,7 +109,7 @@ export interface Patient {
   // 'obito' (óbito registrado — leito aguardando preparo),
   // 'transferencia_interna_pendente' (transferência interna sinalizada — aguardando relocação física),
   // 'transferencia_externa_pendente' (transferência externa sinalizada — leito aguardando liberação)
-  admissionStatus?: 'pre_admitido' | 'admitido' | 'suspenso' | 'alta_dada' | 'obito' | 'transferencia_interna_pendente' | 'transferencia_externa_pendente';
+  admissionStatus?: 'pre_admitido' | 'admitido' | 'suspenso' | 'alta_dada' | 'obito' | 'transferencia_interna_pendente' | 'transferencia_externa_pendente' | 'admissao_pendente' | 'saps_pendente';
   admittedAt?: string | null;
   // TPS (Tempo de Permanencia no Setor): momento de entrada no setor ATUAL —
   // criado_em do ultimo evento conclusao_transferencia_interna da internacao em

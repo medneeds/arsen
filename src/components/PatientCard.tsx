@@ -1520,6 +1520,11 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                       )}
                     </span>
                   )}
+                  {/* Tarja de sinalizacao (mesmo mecanismo da UTI): desfecho
+                      (alta/obito/transf.) OU entrada pendente (admissao/SAPS). */}
+                  {patient.admissionStatus && (
+                    <DischargeStatusRibbon status={patient.admissionStatus} compact className="ml-auto shrink-0" />
+                  )}
                 </div>
                 <div className="group/name relative">
                   <div className="flex items-start gap-1">
