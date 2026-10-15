@@ -86,11 +86,15 @@ export function PatientIdentityHeader({
   const [showFullId, setShowFullId] = useState(alwaysExpanded);
 
   const { patient: livePatient } = usePatientLive(patientId || null);
-  const { prontuario, atendimento, registry } = usePatientIdentifiers(
+  const { prontuario, atendimento, registry, loading: idLoading } = usePatientIdentifiers(
     patientId || null,
     livePatient?.name || fallbackName || null,
     currentHospital?.id || null,
   );
+  // Loading dos dados de prontuario (cadastro central): enquanto a busca corre e o
+  // registry ainda nao chegou, mostramos skeleton em vez de "—" espalhado — evita o
+  // "delay com campos vazios" ao abrir a Edicao Avancada/Cockpit.
+  const registryPending = idLoading && !registry;
 
   const name = registry?.fullName || livePatient?.name || fallbackName || "—";
   const sectorCode = livePatient?.sector || fallbackSector || "";
@@ -111,8 +115,8 @@ export function PatientIdentityHeader({
   const cells: IdCell[] = [
     { label: "Setor", value: sector || "—" },
     { label: "Leito", value: bed },
-    { label: "Prontuário", value: prontuario, copy: true, mono: true },
-    { label: "Atendimento", value: atendimento, copy: true, mono: true },
+    { label: "Prontuário", value: prontuario, copy: true, mono: true, loading: registryPending },
+    { label: "Atendimento", value: atendimento, copy: true, mono: true, loading: registryPending },
     ...(isCockpit && metaCells ? metaCells.map((c) => ({ label: c.label, value: c.value })) : []),
   ];
 
@@ -188,6 +192,10 @@ export function PatientIdentityHeader({
       {/* Painel completo sempre aberto (usado em telas onde a revisão cadastral é prioritária) */}
       {alwaysExpanded && (
         <div className="mt-2 rounded-md border border-border/60 bg-background/60 p-3 text-xs">
+          {registryPending ? (
+            <CadastroSkeleton />
+          ) : (
+          <>
           {/* Linha 1: documentos */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-2">
             <CompactIdRow label="CPF" value={registry?.cpf} mono />
@@ -233,6 +241,8 @@ export function PatientIdentityHeader({
               Paciente não identificado · {registry.unidentifiedCode || "—"}
             </div>
           )}
+          </>
+          )}
         </div>
       )}
     </div>
@@ -263,6 +273,8 @@ interface IdCell {
   /** Mostra o botao de copiar (valor texto). */
   copy?: boolean;
   mono?: boolean;
+  /** Enquanto true e sem valor, mostra skeleton em vez de "—". */
+  loading?: boolean;
 }
 
 /** Celula da grade de identificacao: rotulo pequeno em cima, valor embaixo; divisores finos. */
@@ -279,15 +291,19 @@ function IdGridCell({ cell, index }: { cell: IdCell; index: number }) {
     >
       <div className="text-[10px] font-semibold uppercase leading-none tracking-wider text-muted-foreground">{cell.label}</div>
       <div className="mt-1 flex items-center justify-between gap-1">
-        <span
-          className={cn(
-            "min-w-0 font-semibold tabular-nums leading-tight",
-            cell.mono ? "font-mono text-xs" : "text-[13px]",
-            has ? "text-foreground" : "text-muted-foreground/60",
-          )}
-        >
-          {has ? cell.value : "—"}
-        </span>
+        {!has && cell.loading ? (
+          <span className="inline-block h-3.5 w-20 animate-pulse rounded bg-muted" aria-hidden />
+        ) : (
+          <span
+            className={cn(
+              "min-w-0 font-semibold tabular-nums leading-tight",
+              cell.mono ? "font-mono text-xs" : "text-[13px]",
+              has ? "text-foreground" : "text-muted-foreground/60",
+            )}
+          >
+            {has ? cell.value : "—"}
+          </span>
+        )}
         {cell.copy && has && text && (
           <button
             type="button"
@@ -300,6 +316,31 @@ function IdGridCell({ cell, index }: { cell: IdCell; index: number }) {
           </button>
         )}
       </div>
+    </div>
+  );
+}
+
+/** Skeleton do painel de cadastro enquanto o prontuario (registry) carrega:
+ *  6 campos em grade + 2 linhas longas — mesmo "peso" visual do conteudo real,
+ *  para a Edicao Avancada/Cockpit nao abrir com campos "—" e depois pular. */
+function CadastroSkeleton() {
+  const Field = ({ wide }: { wide?: boolean }) => (
+    <div className={cn("flex flex-col gap-1", wide && "col-span-full")}>
+      <span className="h-2.5 w-14 animate-pulse rounded bg-muted/70" />
+      <span className={cn("h-3.5 animate-pulse rounded bg-muted", wide ? "w-3/4" : "w-20")} />
+    </div>
+  );
+  return (
+    <div aria-hidden>
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-2">
+        <Field /><Field /><Field /><Field /><Field /><Field />
+      </div>
+      <div className="my-2 border-t border-border/40" />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
+        <Field /><Field />
+      </div>
+      <div className="my-2 border-t border-border/40" />
+      <Field wide />
     </div>
   );
 }
