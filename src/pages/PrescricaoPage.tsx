@@ -134,7 +134,7 @@ import { TevProtocolDialog } from "@/components/TevProtocolDialog";
 import { hasNewItemIds, isAdditionsGated, shouldExitAddingMode } from "@/lib/prescriptionGate";
 import { HighAlertGuideDialog } from "@/components/HighAlertGuideDialog";
 import { InsulinTherapyDialog, SlidingEditor } from "@/components/prescription/InsulinTherapyDialog";
-import { describeInsulinPlan, type InsulinPlan } from "@/lib/insulinTherapy";
+import { describeInsulinPlan, isInsulinMedication, type InsulinPlan } from "@/lib/insulinTherapy";
 import { fuzzySearch } from "@/lib/fuzzySearch";
 import { useMedicationFavorites } from "@/hooks/useMedicationFavorites";
 import { useQuickPrescriptionTemplates, type QuickPrescriptionTemplate, type QuickTemplateItem } from "@/hooks/useQuickPrescriptionTemplates";
@@ -2232,6 +2232,14 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-52">
+        {onEditInsulin && isInsulinMedication(item.name) && (
+          <>
+            <DropdownMenuItem onClick={() => onEditInsulin(item.id)} className="text-xs gap-2 text-foreground focus:text-foreground">
+              <Wand2 className="h-3.5 w-3.5" /> Assistente de insulinoterapia
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+          </>
+        )}
         {onAssistant && ['replacement', 'hydration', 'nutrition'].includes(item.category) && (
           <>
             <DropdownMenuItem onClick={() => onAssistant(item.id)} className="text-xs gap-2 text-foreground focus:text-foreground">
@@ -4981,6 +4989,23 @@ const PrescricaoPage = () => {
   const [itemAssistantTargetId, setItemAssistantTargetId] = useState<string | null>(null);
   // Categoria cujo seletor de item do assistente está aberto (2+ itens candidatos).
   const [assistantPickerCat, setAssistantPickerCat] = useState<string | null>(null);
+
+  // Roteamento UNICO do assistente por item (frente 3.1): para INSULINA, o
+  // assistente e o fluxo de esquemas de insulinoterapia (InsulinTherapyDialog),
+  // nao o de diluicao e infusao (ItemAssistantWizard). Para os demais itens
+  // (eletrolitos, ATB, aminas...), segue o de diluicao. Chamado de todos os
+  // pontos de entrada (barra de busca, seletor e menu do item) para que a regra
+  // viva num lugar so.
+  const openItemAssistant = useCallback((id: string) => {
+    const it = items.find(i => i.id === id);
+    if (it && isInsulinMedication(it.name)) {
+      setEditingInsulinItemId(id);
+      setPendingInsulinMed(null);
+      setInsulinDialogOpen(true);
+      return;
+    }
+    setItemAssistantTargetId(id);
+  }, [items]);
   const [compactView, setCompactView] = useState(true);
   const [expandedCategories, setExpandedCategories] = useState<Set<PrescriptionCategory>>(new Set());
   // Item recém-adicionado: abre expandido para preenchimento imediato, sem
@@ -9609,7 +9634,7 @@ const PrescricaoPage = () => {
                                     return;
                                   }
                                   // Um item só: abre direto, sem perguntar o óbvio.
-                                  if (doCat.length === 1) { setItemAssistantTargetId(doCat[0].id); return; }
+                                  if (doCat.length === 1) { openItemAssistant(doCat[0].id); return; }
                                   setAssistantPickerCat(cat);
                                 }
                               : undefined
@@ -9721,7 +9746,7 @@ const PrescricaoPage = () => {
                             onDuplicate={duplicateItem}
                             onRequestSuspend={requestSuspendItem}
                             unifiedCatalog={UNIFIED_CATALOG}
-                            onAssistant={(id) => setItemAssistantTargetId(id)}
+                            onAssistant={(id) => openItemAssistant(id)}
                             onEditInsulin={(id) => { setEditingInsulinItemId(id); setPendingInsulinMed(null); setInsulinDialogOpen(true); }}
                             onUpdateInsulinPlan={updateInsulinPlan}
                             onOpenAntimicrobialGuide={() => setAtmStatusOpen(true)}
@@ -10259,7 +10284,7 @@ const PrescricaoPage = () => {
               .map(i => (
                 <button
                   key={i.id}
-                  onClick={() => { setItemAssistantTargetId(i.id); setAssistantPickerCat(null); }}
+                  onClick={() => { openItemAssistant(i.id); setAssistantPickerCat(null); }}
                   className="w-full text-left px-3 py-2 rounded-md border border-border hover:bg-accent hover:border-primary/40 transition-colors"
                 >
                   <div className="text-xs font-medium text-foreground">{i.name}</div>
