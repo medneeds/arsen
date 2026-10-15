@@ -673,22 +673,29 @@ export function usePatients(department?: Department, sector?: string) {
       let pacienteId: string | null = null;
 
       if (isInternalTransferContinuity) {
-        // CONTINUIDADE: transferencia interna NAO encerra o atendimento NEM libera o
-        // leito de origem aqui. NAO grava data_alta, NAO muda o status e NAO poe a
-        // origem como 'livre' (leitoId fica null) — um leito 'livre' com internacao
-        // ativa ainda apontando para ele seria estado inconsistente. Fechar aqui
-        // (como o ramo generico abaixo, status='alta' + data_alta) encerrava o
-        // atendimento indevidamente e travava a alocacao no destino com "atendimento
-        // ja encerrado" (RPC complete_internal_transfer_atomic). A conclusao da
-        // transferencia (fila) move a internacao e poe a origem em higienizacao.
+        // TRANSITO: transferencia interna NAO encerra o atendimento, mas liberar o
+        // leito tira o paciente do leito de ORIGEM — ele fica "em transito"
+        // (leito_id = NULL, status 'ativa', data_alta NULL) ate ser alocado no leito
+        // de DESTINO pela fila. O leito de origem LIBERA na hora, disponivel para
+        // outro paciente, sem travar o fluxo de movimentacao. (Requer
+        // internacoes.leito_id anulavel — aplicado no banco.)
         const { data: inter, error } = await supabase
           .from('internacoes')
-          .select('paciente_id')
+          .select('leito_id, paciente_id')
           .eq('id', patientId)
           .maybeSingle();
         if (error) throw error;
-        pacienteId = (inter as { paciente_id: string | null } | null)?.paciente_id ?? null;
-        // leitoId permanece null → nao flipa a origem para 'livre'.
+        const row = inter as { leito_id: string | null; paciente_id: string | null } | null;
+        const origemLeito = row?.leito_id ?? null;
+        pacienteId = row?.paciente_id ?? null;
+        // Tira o paciente do leito (em transito), mantendo o atendimento ATIVO.
+        const { error: transitErr } = await supabase
+          .from('internacoes')
+          .update({ leito_id: null })
+          .eq('id', patientId);
+        if (transitErr) throw transitErr;
+        // Libera o leito de origem (cai no update status='livre' abaixo).
+        leitoId = origemLeito;
       } else if (target && !target.isVacant) {
         // Ocupado → patientId = internacoes.id. Encerra a internação AGORA (data_alta):
         // este e o unico ponto que fecha o atendimento no ciclo Opcao A (a sinalizacao
@@ -735,50 +742,49 @@ export function usePatients(department?: Department, sector?: string) {
         hospital_id: currentHospital.id,
       } as any);
 
-      // Em transferencia interna o paciente NAO sai do leito de origem ainda —
-      // nao limpa o card otimisticamente (seria revertido no refetch, com flicker).
-      if (!isInternalTransferContinuity) {
-        setPatients((prev) =>
-          prev.map((p) =>
-            p.id === patientId
-              ? ({
-                  ...p,
-                  name: '',
-                  diagnoses: [],
-                  medicalHistory: [],
-                  relevantExams: [],
-                  pendencies: [],
-                  schedule: [],
-                  admissionHistory: '',
-                  age: '',
-                  medicalResponsibility: undefined,
-                  utiAdmissionDate: [],
-                  utiDischargePrediction: [],
-                  utiAllergies: [],
-                  utiAdmissionReason: [],
-                  utiCurrentStatus: [],
-                  utiDevices: [],
-                  utiCulturesAntibiotics: [],
-                  utiSpecialties: [],
-                  utiOriginSector: [],
-                  utiDailyConducts: [],
-                  psmStatus: null,
-                  clinicalStatus: null,
-                  admissionDate: '',
-                  admissionStatus: undefined,
-                  admittedAt: null,
-                  isVacant: true,
-                } as unknown as Patient)
-              : p,
-          ),
-        );
-      }
+      // O leito de origem foi vacado em TODOS os caminhos agora (desfecho encerra +
+      // libera; transferencia interna poe o paciente em transito e libera a origem).
+      // Limpa o card otimisticamente — a origem fica vaga na hora.
+      setPatients((prev) =>
+        prev.map((p) =>
+          p.id === patientId
+            ? ({
+                ...p,
+                name: '',
+                diagnoses: [],
+                medicalHistory: [],
+                relevantExams: [],
+                pendencies: [],
+                schedule: [],
+                admissionHistory: '',
+                age: '',
+                medicalResponsibility: undefined,
+                utiAdmissionDate: [],
+                utiDischargePrediction: [],
+                utiAllergies: [],
+                utiAdmissionReason: [],
+                utiCurrentStatus: [],
+                utiDevices: [],
+                utiCulturesAntibiotics: [],
+                utiSpecialties: [],
+                utiOriginSector: [],
+                utiDailyConducts: [],
+                psmStatus: null,
+                clinicalStatus: null,
+                admissionDate: '',
+                admissionStatus: undefined,
+                admittedAt: null,
+                isVacant: true,
+              } as unknown as Patient)
+            : p,
+        ),
+      );
 
       toast(
         isInternalTransferContinuity
           ? {
-              title: 'Transferência interna pendente',
-              description: 'O paciente segue no leito de origem até a conclusão. Finalize a alocação na fila de transferência interna.',
+              title: 'Paciente em trânsito',
+              description: 'O paciente saiu do leito (origem liberada) e está aguardando alocação no setor de destino. Conclua pela "Alocação direta" na fila do destino.',
             }
           : {
               title: 'Leito liberado',

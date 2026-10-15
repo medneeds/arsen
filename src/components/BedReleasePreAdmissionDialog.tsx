@@ -423,21 +423,13 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
                     )}
                   </>
                 ) : isInternalTransfer ? (
-                  <div className="space-y-2">
-                    <ul className="list-disc pl-4 space-y-1 text-muted-foreground">
-                      <li>A <strong>transferência interna já foi sinalizada</strong>{signaledDestination ? <> para <strong>{signaledDestination}</strong></> : null}: o paciente <strong>muda de setor</strong> e o <strong>atendimento continua</strong> (mesmo nº de atendimento).</li>
-                      <li>O paciente <strong>permanece no leito {patient.bedNumber || "atual"}</strong> até você concluir a alocação no <strong>leito de destino</strong>.</li>
-                      <li><strong>Não há senha nesta etapa</strong>: a transferência interna não encerra o atendimento nem libera o leito aqui.</li>
-                    </ul>
-                    <div className="rounded-md border border-primary/30 bg-primary/5 p-2 text-xs text-foreground">
-                      <p className="font-medium mb-1">Para concluir (mover o paciente):</p>
-                      <ol className="list-decimal pl-4 space-y-0.5">
-                        <li>Abra o <strong>Mapa de Leitos</strong> do setor de destino{signaledDestination ? <> (<strong>{signaledDestination}</strong>)</> : null}.</li>
-                        <li>Na seção <strong>"Aguardando Alocação por Transferência Interna"</strong>, clique em <strong>"Alocação direta"</strong>.</li>
-                        <li>Escolha o <strong>leito de destino</strong> e <strong>confirme com sua senha</strong> — o paciente é movido e o leito de origem é liberado automaticamente.</li>
-                      </ol>
-                    </div>
-                  </div>
+                  <ul className="list-disc pl-4 space-y-1 text-muted-foreground">
+                    <li>Transferência interna: o paciente <strong>muda de setor</strong> e o <strong>atendimento continua</strong> (mesmo nº).</li>
+                    <li>Ao confirmar com a senha, o paciente entra <strong>em trânsito</strong>: sai do leito <strong>{patient.bedNumber || "atual"}</strong> — que <strong>libera na hora</strong> para outro paciente — e fica <strong>aguardando alocação</strong>{signaledDestination ? <> em <strong>{signaledDestination}</strong></> : null}.</li>
+                    <li>A alocação no leito de destino é feita depois, na fila <strong>"Alocação direta"</strong> do setor de destino (também com senha).</li>
+                    <li>O <strong>atendimento NÃO é encerrado</strong> — o número é preservado no destino.</li>
+                    <li>Você precisará <strong>confirmar com sua senha</strong>.</li>
+                  </ul>
                 ) : isClosingOutcome ? (
                   <ul className="list-disc pl-4 space-y-1 text-muted-foreground">
                     <li>O documento de <strong>{patient.admissionStatus === "obito" ? "óbito" : patient.admissionStatus === "transferencia_externa_pendente" ? "transferência externa" : "alta"}</strong> já foi <strong>assinado e gravado</strong> no prontuário.</li>
@@ -453,17 +445,17 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
                     <li>Você precisará <strong>confirmar com sua senha</strong> antes da liberação efetiva.</li>
                   </ul>
                 )}
-                {!isExceptional && !isInternalTransfer && (
+                {!isExceptional && (
                   <p className="pt-1 text-muted-foreground">
-                    Na próxima etapa você deverá <strong>selecionar o motivo</strong> e revisar os detalhes antes de confirmar.
+                    Na próxima etapa você deverá <strong>revisar os detalhes</strong> e <strong>confirmar com sua senha</strong>.
                   </p>
                 )}
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2 sm:flex-wrap">
-            <AlertDialogCancel className="w-full sm:w-auto">{(isExceptional || isInternalTransfer) ? "Fechar" : "Cancelar"}</AlertDialogCancel>
-            {!blockReleaseHard && !isExceptional && !isInternalTransfer && (
+            <AlertDialogCancel className="w-full sm:w-auto">{isExceptional ? "Fechar" : "Cancelar"}</AlertDialogCancel>
+            {!blockReleaseHard && !isExceptional && (
               <Button
                 type="button"
                 variant="default"
@@ -538,9 +530,11 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
         { icon: Bed, text: <><strong>O leito volta para vago</strong> no mapa, disponível para nova alocação imediatamente.</> },
         { icon: UserCheck, text: <>O <strong>prontuário do paciente é preservado</strong> — nada do que foi cadastrado na recepção/triagem é apagado.</> },
         { icon: FileText, text: <>A ação é <strong>auditada em Movimentações</strong> com motivo, autor, snapshot do leito e <strong>autenticação por senha</strong>.</> },
-        { icon: Info, text: isPostDischarge
-            ? <>Esta liberação é o <strong>passo final</strong> do fluxo Alta/Óbito → liberação censitária.</>
-            : <>Esta ação <strong>não substitui</strong> a alta médica. Pacientes já admitidos só podem deixar o leito pelo fluxo Alta Médica → Alta Administrativa.</> },
+        { icon: Info, text: isInternalTransfer
+            ? <>O paciente entra <strong>em trânsito</strong> (sai do leito, atendimento continua) e aguarda <strong>alocação no setor de destino</strong> — conclua pela "Alocação direta" na fila do destino.</>
+            : isPostDischarge
+              ? <>Esta liberação é o <strong>passo final</strong> do fluxo Alta/Óbito → liberação censitária.</>
+              : <>Esta ação <strong>não substitui</strong> a alta médica. Pacientes já admitidos só podem deixar o leito pelo fluxo Alta Médica → Alta Administrativa.</> },
       ]}
       finalNote={
         <div className="space-y-3">
