@@ -186,7 +186,7 @@ export function DischargeStatusRibbon({ status, className, compact = false }: Di
                   <ArrowRightLeft className="h-2.5 w-2.5 text-primary" strokeWidth={2.8} />
                   <span className="text-xs font-medium text-primary">Movimentações</span>
                 </span>{" "}
-                no cabeçalho do card.
+                na borda lateral direita do card.
               </p>
             </div>
           </div>
