@@ -19,15 +19,6 @@ import type { Patient } from "@/types/patient";
 //   - `patientId`/`source.id`/`targetBedRow.id` == `internacoes.id`.
 //   Ver MIGRACAO_DEGRADACOES.md.
 
-// Detecta erros de RPC não encontrada (função ainda não deployada no banco).
-// Código 42883 = undefined_function no PostgreSQL.
-const isRpcMissing = (err: any): boolean =>
-  (err as any)?.code === "42883" || (err?.message ?? "").includes("does not exist");
-
-const DEGRADED_MSG =
-  "Fluxo sequencial indisponível após a migração de schema (dependia de tabelas removidas). " +
-  "Requer a RPC atômica correspondente no schema novo.";
-
 /**
  * Executa uma TRANSFERÊNCIA INTERNA (one-shot) entre dois leitos do mesmo
  * hospital, preservando histórico clínico via a RPC atômica
@@ -120,7 +111,7 @@ export interface SignalInternalTransferResult {
 export async function signalInternalTransfer(
   params: SignalInternalTransferParams,
 ): Promise<SignalInternalTransferResult> {
-  const { source, targetSectorCode, reason, currentUserId, hospitalUnitId, stateId, department } = params;
+  const { source, targetSectorCode, reason, currentUserId } = params;
   if (!source?.id) return { ok: false, error: "source ausente" };
   if (!targetSectorCode) return { ok: false, error: "setor destino ausente" };
 
@@ -128,36 +119,41 @@ export async function signalInternalTransfer(
   const needsSaps = requiresSaps(classification, targetSectorCode);
 
   try {
-    // MIGRAÇÃO: snapshot montado apenas a partir do objeto Patient (sem leituras
-    // em patient_encounters/patients/patient_registry — tabelas mortas).
+    // Sinalizacao = CONTINUIDADE (nao encerra atendimento): grava SO um evento em
+    // logs_auditoria (tipo_evento='sinalizacao_transferencia_interna'), a mesma
+    // fonte que a fila (useInternalTransferQueue) le e que o MovimentacaoForm ja
+    // usa. NAO toca em internacoes.status/data_alta — a internacao segue ativa e
+    // o paciente permanece no leito de origem ate a alocacao (completeInternalTransfer).
+    // (Antes isto chamava a RPC signal_internal_transfer_atomic, que nunca foi
+    // deployada no schema novo — por isso a sinalizacao pelo card quebrava.)
     const snapshot = { ...source };
-
-    const { data: atomicData, error: atomicErr } = await (supabase as any).rpc(
-      "signal_internal_transfer_atomic",
-      {
-        p_source_patient_id:   source.id,
-        p_snapshot:            snapshot,
-        p_target_sector_code:  targetSectorCode,
-        p_target_sector_label: sectorLabelFromCode(targetSectorCode),
-        p_classification:      classification,
-        p_requires_saps:       needsSaps,
-        p_reason:              reason ?? null,
-        p_signaled_by:         currentUserId ?? null,
-        p_hospital_unit_id:    hospitalUnitId,
-        p_state_id:            stateId,
-        p_department:          department ?? null,
-      },
-    );
-
-    if (!atomicErr) {
-      return { ok: true, requestId: atomicData?.request_id, classification, needsSaps };
-    }
-
-    if (!isRpcMissing(atomicErr)) throw atomicErr;
-
-    // MIGRAÇÃO: sem fila virtual equivalente no schema novo (ver cabeçalho).
-    console.warn("[signalInternalTransfer] RPC atômica indisponível — fluxo degradado");
-    return { ok: false, classification, needsSaps, error: DEGRADED_MSG };
+    const targetLabel = sectorLabelFromCode(targetSectorCode);
+    const { data: logRow, error: logErr } = await supabase
+      .from("logs_auditoria")
+      .insert({
+        tipo_evento: "sinalizacao_transferencia_interna",
+        acao: "UPDATE",
+        nome_tabela: "internacoes",
+        internacao_id: source.id,
+        registro_id: source.id,
+        ator_user_id: currentUserId ?? null,
+        motivo: reason ?? null,
+        dados_novos: {
+          target_sector_code: targetSectorCode,
+          target_sector_label: targetLabel,
+          // `destination` canonico: diálogo de desalocação e timeline leem daqui.
+          destination: targetLabel,
+          source_bed: source.bedNumber ?? null,
+          source_sector: source.sector ?? null,
+          classification,
+          requires_saps: needsSaps,
+          patient_snapshot: snapshot,
+        } as any,
+      } as any)
+      .select("id")
+      .single();
+    if (logErr) throw logErr;
+    return { ok: true, requestId: (logRow as any)?.id, classification, needsSaps };
   } catch (err: any) {
     console.error("[signalInternalTransfer] erro", err);
     return { ok: false, classification, needsSaps, error: err?.message ?? "Erro desconhecido" };
