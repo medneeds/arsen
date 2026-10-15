@@ -149,11 +149,11 @@ export async function signalInternalTransfer(
           requires_saps: needsSaps,
           patient_snapshot: snapshot,
         } as any,
-      } as any)
+      })
       .select("id")
       .single();
     if (logErr) throw logErr;
-    return { ok: true, requestId: (logRow as any)?.id, classification, needsSaps };
+    return { ok: true, requestId: logRow?.id, classification, needsSaps };
   } catch (err: any) {
     console.error("[signalInternalTransfer] erro", err);
     return { ok: false, classification, needsSaps, error: err?.message ?? "Erro desconhecido" };
@@ -203,6 +203,26 @@ export async function completeInternalTransfer(
   if (!targetBedRow?.id) return { ok: false, error: "leito destino ausente" };
 
   try {
+    // CAMINHO FELIZ: RPC atomica (SECURITY DEFINER) — faz move + ocupa destino +
+    // libera origem (higienizacao) + log, tudo em UMA transacao, furando RLS
+    // (elimina a falha silenciosa que deixava leito de origem orfao). Se a RPC
+    // ainda nao estiver deployada (42883), cai no caminho sequencial abaixo.
+    const rpc = await (supabase as any).rpc("complete_internal_transfer_atomic", {
+      p_source_internacao_id: sourceInternacaoId,
+      p_dest_leito_id:        targetBedRow.id,
+      p_reason:               `Transferencia interna concluida -> leito ${targetBedRow.bedNumber} (${sectorLabelFromCode(targetBedRow.sector)})`,
+      p_created_by:           currentUserId ?? null,
+      p_target_bed:           targetBedRow.bedNumber ?? null,
+      p_target_sector_code:   targetBedRow.sector ?? null,
+    });
+    if (!rpc.error) {
+      if (rpc.data?.success) return { ok: true, aviso: null };
+      throw new Error("Transferencia nao confirmada pelo banco de dados");
+    }
+    const rpcMissing = rpc.error?.code === "42883" || (rpc.error?.message ?? "").includes("does not exist");
+    if (!rpcMissing) throw rpc.error;
+    // RPC ausente → fallback sequencial (abaixo), com as mesmas regras de negocio.
+
     // 1) Leito destino ainda livre? (bed.id === leitos.id de leito vago)
     const { data: destLeito, error: destErr } = await supabase
       .from("leitos")
