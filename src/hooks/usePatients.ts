@@ -370,11 +370,18 @@ export function usePatients(department?: Department, sector?: string) {
       setPatients(sortedPatients);
     } catch (error) {
       console.error('Error fetching patients:', error);
-      toast({
-        title: "Erro ao carregar pacientes",
-        description: `Não foi possível carregar os dados dos pacientes.${error instanceof Error && error.message ? ` Motivo: ${error.message}` : ''}`,
-        variant: "destructive",
-      });
+      // So alerta o usuario na carga EXPLICITA/inicial. Em refetch de FUNDO (silent —
+      // realtime/polling, intermitente na VPS), uma falha transitoria NAO deve
+      // estourar toast sozinha: mantem os dados ja na tela (nao limpa setPatients) e
+      // registra so no console. Antes, um blip de rede no refetch de fundo disparava
+      // "Erro ao carregar pacientes" sem o usuario fazer nada, com dados validos na tela.
+      if (!opts?.silent) {
+        toast({
+          title: "Erro ao carregar pacientes",
+          description: `Não foi possível carregar os dados dos pacientes.${error instanceof Error && error.message ? ` Motivo: ${error.message}` : ''}`,
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsLoading(false);
     }
