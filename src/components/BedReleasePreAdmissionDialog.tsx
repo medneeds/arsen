@@ -423,12 +423,21 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
                     )}
                   </>
                 ) : isInternalTransfer ? (
-                  <ul className="list-disc pl-4 space-y-1 text-muted-foreground">
-                    <li>Esta é uma <strong>transferência interna</strong>: o paciente segue sob cuidados em outro setor.</li>
-                    <li>O <strong>atendimento NÃO é encerrado</strong> — o <strong>mesmo número de atendimento é preservado</strong> no destino.</li>
-                    <li>Esta ação <strong>libera o leito atual</strong>; a alocação no setor destino é concluída na fila de transferência.</li>
-                    <li>Você precisará <strong>confirmar com sua senha</strong> antes de efetivar.</li>
-                  </ul>
+                  <div className="space-y-2">
+                    <ul className="list-disc pl-4 space-y-1 text-muted-foreground">
+                      <li>A <strong>transferência interna já foi sinalizada</strong>{signaledDestination ? <> para <strong>{signaledDestination}</strong></> : null}: o paciente <strong>muda de setor</strong> e o <strong>atendimento continua</strong> (mesmo nº de atendimento).</li>
+                      <li>O paciente <strong>permanece no leito {patient.bedNumber || "atual"}</strong> até você concluir a alocação no <strong>leito de destino</strong>.</li>
+                      <li><strong>Não há senha nesta etapa</strong>: a transferência interna não encerra o atendimento nem libera o leito aqui.</li>
+                    </ul>
+                    <div className="rounded-md border border-primary/30 bg-primary/5 p-2 text-xs text-foreground">
+                      <p className="font-medium mb-1">Para concluir (mover o paciente):</p>
+                      <ol className="list-decimal pl-4 space-y-0.5">
+                        <li>Abra o <strong>Mapa de Leitos</strong> do setor de destino{signaledDestination ? <> (<strong>{signaledDestination}</strong>)</> : null}.</li>
+                        <li>Na seção <strong>"Aguardando Alocação por Transferência Interna"</strong>, clique em <strong>"Alocação direta"</strong>.</li>
+                        <li>Escolha o <strong>leito de destino</strong> — o paciente é movido e o leito de origem é liberado automaticamente.</li>
+                      </ol>
+                    </div>
+                  </div>
                 ) : isClosingOutcome ? (
                   <ul className="list-disc pl-4 space-y-1 text-muted-foreground">
                     <li>O documento de <strong>{patient.admissionStatus === "obito" ? "óbito" : patient.admissionStatus === "transferencia_externa_pendente" ? "transferência externa" : "alta"}</strong> já foi <strong>assinado e gravado</strong> no prontuário.</li>
@@ -444,7 +453,7 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
                     <li>Você precisará <strong>confirmar com sua senha</strong> antes da liberação efetiva.</li>
                   </ul>
                 )}
-                {!isExceptional && (
+                {!isExceptional && !isInternalTransfer && (
                   <p className="pt-1 text-muted-foreground">
                     Na próxima etapa você deverá <strong>selecionar o motivo</strong> e revisar os detalhes antes de confirmar.
                   </p>
@@ -453,8 +462,8 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2 sm:flex-wrap">
-            <AlertDialogCancel className="w-full sm:w-auto">{isExceptional ? "Fechar" : "Cancelar"}</AlertDialogCancel>
-            {!blockReleaseHard && !isExceptional && (
+            <AlertDialogCancel className="w-full sm:w-auto">{(isExceptional || isInternalTransfer) ? "Fechar" : "Cancelar"}</AlertDialogCancel>
+            {!blockReleaseHard && !isExceptional && !isInternalTransfer && (
               <Button
                 type="button"
                 variant="default"
