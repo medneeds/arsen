@@ -365,24 +365,46 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
     }
   };
 
-  // Pop-up SAPS 3 — "Preencher agora": vai para a aba SAPS embutida na /admissao.
-  const handleSapsNow = () => {
-    if (!sapsPrompt) return;
-    const { internacaoId, patientName, bed, sectorCode } = sapsPrompt;
-    setSapsPrompt(null);
-    navigate(
-      `/admissao?patientId=${internacaoId}&patientName=${encodeURIComponent(patientName)}&patientBed=${encodeURIComponent(bed)}&patientSector=${sectorCode}`
-    );
+  // Navegacao unica para a /admissao. tab="admissao" abre o corpo de admissao
+  // (via Cuidados Intensivos quando o setor e UTI 1/UTI 2/UCI 2); tab="saps" abre
+  // direto a aba SAPS 3 embutida.
+  const goToAdmission = (
+    info: { internacaoId: string; patientName: string; bed: string; sectorCode: string },
+    tab: "admissao" | "saps",
+  ) => {
+    const q = new URLSearchParams({
+      patientId: info.internacaoId,
+      patientName: info.patientName,
+      patientBed: info.bed,
+      patientSector: info.sectorCode,
+    });
+    if (tab === "saps") q.set("tab", "saps");
+    navigate(`/admissao?${q.toString()}`);
   };
 
-  // Pop-up pos-alocacao (setor SEM SAPS) — "Seguir para admissao": vai direto a /admissao.
+  // Pop-up SAPS — "Ir para admissao": abre o corpo de admissao de Cuidados
+  // Intensivos (preencher + validar). O SAPS 3 tambem fica acessivel pela aba la.
+  const handleSapsAdmission = () => {
+    if (!sapsPrompt) return;
+    const info = sapsPrompt;
+    setSapsPrompt(null);
+    goToAdmission(info, "admissao");
+  };
+
+  // Pop-up SAPS — "Preencher SAPS 3": abre direto a aba SAPS 3 embutida na /admissao.
+  const handleSapsNow = () => {
+    if (!sapsPrompt) return;
+    const info = sapsPrompt;
+    setSapsPrompt(null);
+    goToAdmission(info, "saps");
+  };
+
+  // Pop-up pos-alocacao (setor SEM SAPS) — "Seguir para admissao": corpo de admissao.
   const handleAdmitNow = () => {
     if (!admitPrompt) return;
-    const { internacaoId, patientName, bed, sectorCode } = admitPrompt;
+    const info = admitPrompt;
     setAdmitPrompt(null);
-    navigate(
-      `/admissao?patientId=${internacaoId}&patientName=${encodeURIComponent(patientName)}&patientBed=${encodeURIComponent(bed)}&patientSector=${sectorCode}`
-    );
+    goToAdmission(info, "admissao");
   };
 
   // Pop-up SAPS 3 — "Depois (manter pendente)": cria a ficha SAPS pendente (24h) se ainda
@@ -433,21 +455,27 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <Activity className="h-5 w-5 text-primary" />
-              SAPS 3 — preencher agora?
+              Admissão em cuidados intensivos
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {sapsPrompt?.patientName} foi alocado no leito {sapsPrompt?.bed}. O SAPS 3 depende de
-              exames laboratoriais e do historico de admissao. Voce pode preenche-lo agora ou mante-lo
-              pendente por ate 24h e completar quando os resultados chegarem.
+              {sapsPrompt?.patientName} foi alocado no leito {sapsPrompt?.bed}. Siga para a admissão
+              de cuidados intensivos (preencher e validar) ou preencha o SAPS 3 agora. O SAPS 3
+              depende de exames e do histórico — você também pode mantê-lo pendente por até 24h.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={handleSapsLater}>
-              Depois (manter pendente — 24h)
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={handleSapsNow}>
-              Preencher agora
+          <AlertDialogFooter className="flex-col gap-2 sm:flex-col sm:gap-2 sm:space-x-0">
+            <AlertDialogAction onClick={handleSapsAdmission} className="w-full">
+              Ir para admissão
             </AlertDialogAction>
+            <AlertDialogAction
+              onClick={handleSapsNow}
+              className="w-full border border-input bg-background text-foreground hover:bg-accent hover:text-accent-foreground"
+            >
+              Preencher SAPS 3 agora
+            </AlertDialogAction>
+            <AlertDialogCancel onClick={handleSapsLater} className="w-full mt-0">
+              Depois (manter SAPS pendente — 24h)
+            </AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

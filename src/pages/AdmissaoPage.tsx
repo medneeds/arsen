@@ -99,7 +99,12 @@ export default function AdmissaoPage() {
   // Abre SEMPRE na aba Admissao: o tipo de admissao e a tela primaria, e o SAPS
   // e etapa da via Cuidados Intensivos (fica acessivel pela aba, sem preemptar o
   // topo). A navegacao vinda do SAPS validado ja chega para registrar a admissao.
-  const [activeTab, setActiveTab] = useState<"admissao" | "saps">("admissao");
+  // Aba inicial: por padrao "admissao" (corpo de Cuidados Intensivos quando UTI).
+  // A navegacao pode pedir a aba SAPS direto via ?tab=saps (pop-up pos-alocacao /
+  // escalonamento). So e honrado quando a aba SAPS existir (showSapsTab, abaixo).
+  const [activeTab, setActiveTab] = useState<"admissao" | "saps">(
+    searchParams.get("tab") === "saps" ? "saps" : "admissao",
+  );
   const [sapsRow, setSapsRow] = useState<SapsRow | null>(null);
   // Forca o refetch da sapsRow apos o embute salvar/validar (onEmbeddedDone).
   const [sapsReloadTick, setSapsReloadTick] = useState(0);
