@@ -418,17 +418,105 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
     }
   };
 
-  if (!preAdmission) return null;
-  
+  // Os pop-ups de pos-alocacao (SAPS 3 / seguir para admissao) vivem em estado
+  // LOCAL e precisam sobreviver ao fechamento do dialogo principal: no sucesso,
+  // handleAdmit chama onOpenChange(false) e o pai zera `preAdmission` (admitTarget),
+  // alem de setFullData(null). Antes isso desmontava este componente (return null /
+  // return loading) ANTES de o pop-up aparecer — causa de "nao abre o fluxo para
+  // seguir com a admissao". Por isso os portais sao renderizados em TODAS as
+  // ramificacoes de retorno.
+  const promptPortals = (
+    <>
+      {/* Pop-up SAPS 3 (setor com SAPS): preencher agora (/admissao) ou pendente 24h. */}
+      <AlertDialog open={!!sapsPrompt} onOpenChange={(o) => { if (!o) setSapsPrompt(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Activity className="h-5 w-5 text-primary" />
+              SAPS 3 — preencher agora?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {sapsPrompt?.patientName} foi alocado no leito {sapsPrompt?.bed}. O SAPS 3 depende de
+              exames laboratoriais e do historico de admissao. Voce pode preenche-lo agora ou mante-lo
+              pendente por ate 24h e completar quando os resultados chegarem.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleSapsLater}>
+              Depois (manter pendente — 24h)
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleSapsNow}>
+              Preencher agora
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Pop-up pos-alocacao em setor SEM SAPS: sugere seguir direto para a admissao. */}
+      <AlertDialog open={!!admitPrompt} onOpenChange={(o) => { if (!o) setAdmitPrompt(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Activity className="h-5 w-5 text-primary" />
+              Seguir para a admissão?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {admitPrompt?.patientName} foi alocado no leito {admitPrompt?.bed}. Você pode seguir
+              agora para a admissão (preencher, validar e imprimir) ou concluí-la depois pelo Painel
+              Clínico.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setAdmitPrompt(null)}>
+              Depois
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleAdmitNow}>
+              Seguir para admissão
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+
+  // Loading elegante durante a alocacao (varias escritas em sequencia). Overlay fixo,
+  // independente do scroll do dialogo; some sozinho quando isSubmitting volta a false.
+  const submittingOverlay = isSubmitting ? (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-background/70 backdrop-blur-sm animate-fade-in">
+      <div className="flex flex-col items-center gap-4 rounded-2xl border border-border bg-card px-10 py-8 shadow-xl">
+        <span className="relative flex h-12 w-12 items-center justify-center">
+          <span className="absolute inline-flex h-full w-full rounded-full bg-primary/20 animate-ping" />
+          <Loader2 className="h-9 w-9 animate-spin text-primary" />
+        </span>
+        <div className="text-center">
+          <p className="text-sm font-semibold text-foreground">Alocando paciente no leito…</p>
+          <p className="mt-1 text-xs text-muted-foreground max-w-[240px]">
+            Criando a internação e ocupando o leito. O mapa atualiza sozinho ao concluir.
+          </p>
+        </div>
+      </div>
+    </div>
+  ) : null;
+
+  // Sem pre-admissao selecionada: mantem apenas os portais (um pop-up pode estar
+  // aberto logo apos o sucesso, quando o pai ja zerou admitTarget) e o overlay.
+  if (!preAdmission) {
+    return <>{promptPortals}{submittingOverlay}</>;
+  }
+
   if (!fullData) {
     return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-md">
-          <div className="flex items-center justify-center p-8">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-          </div>
-        </DialogContent>
-      </Dialog>
+      <>
+        <Dialog open={open} onOpenChange={onOpenChange}>
+          <DialogContent className="max-w-md">
+            <div className="flex items-center justify-center p-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          </DialogContent>
+        </Dialog>
+        {promptPortals}
+        {submittingOverlay}
+      </>
     );
   }
 
@@ -838,81 +926,8 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
       </DialogContent>
     </Dialog>
 
-    {/* DESACOPLAMENTO SAPS: pop-up aberto apos alocacao em setor SAPS. Oferece preencher o
-        SAPS 3 agora (aba embutida na /admissao) ou mante-lo pendente por 24h. */}
-    <AlertDialog open={!!sapsPrompt} onOpenChange={(o) => { if (!o) setSapsPrompt(null); }}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle className="flex items-center gap-2">
-            <Activity className="h-5 w-5 text-primary" />
-            SAPS 3 — preencher agora?
-          </AlertDialogTitle>
-          <AlertDialogDescription>
-            {sapsPrompt?.patientName} foi alocado no leito {sapsPrompt?.bed}. O SAPS 3 depende de
-            exames laboratoriais e do historico de admissao. Voce pode preenche-lo agora ou mante-lo
-            pendente por ate 24h e completar quando os resultados chegarem.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel onClick={handleSapsLater}>
-            Depois (manter pendente — 24h)
-          </AlertDialogCancel>
-          <AlertDialogAction onClick={handleSapsNow}>
-            Preencher agora
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-
-    {/* Pop-up pos-alocacao em setor SEM SAPS: sugere seguir direto para a admissao. */}
-    <AlertDialog open={!!admitPrompt} onOpenChange={(o) => { if (!o) setAdmitPrompt(null); }}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle className="flex items-center gap-2">
-            <Activity className="h-5 w-5 text-primary" />
-            Seguir para a admissão?
-          </AlertDialogTitle>
-          <AlertDialogDescription>
-            {admitPrompt?.patientName} foi alocado no leito {admitPrompt?.bed}. Você pode seguir
-            agora para a admissão (preencher, validar e imprimir) ou concluí-la depois pelo Painel
-            Clínico.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel onClick={() => setAdmitPrompt(null)}>
-            Depois
-          </AlertDialogCancel>
-          <AlertDialogAction onClick={handleAdmitNow}>
-            Seguir para admissão
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-
-    {/* Loading elegante durante a alocacao: a pre-admissao faz varias escritas
-        (leito -> paciente -> internacao -> leito ocupado) e leva alguns segundos.
-        Overlay fixo, centralizado, independente do scroll do dialogo. Some sozinho
-        quando a alocacao conclui (isSubmitting volta a false) e o mapa ja refez a
-        busca (onAllocated -> refetch), entao o paciente aparece sem recarregar. */}
-    {isSubmitting && (
-      <div className="fixed inset-0 z-[70] flex items-center justify-center bg-background/70 backdrop-blur-sm animate-fade-in">
-        <div className="flex flex-col items-center gap-4 rounded-2xl border border-border bg-card px-10 py-8 shadow-xl">
-          <span className="relative flex h-12 w-12 items-center justify-center">
-            <span className="absolute inline-flex h-full w-full rounded-full bg-primary/20 animate-ping" />
-            <Loader2 className="h-9 w-9 animate-spin text-primary" />
-          </span>
-          <div className="text-center">
-            <p className="text-sm font-semibold text-foreground">Alocando paciente no leito…</p>
-            <p className="mt-1 text-xs text-muted-foreground max-w-[240px]">
-              Criando a internação e ocupando o leito. O mapa atualiza sozinho ao concluir.
-            </p>
-          </div>
-        </div>
-      </div>
-    )}
-
-    {/* MIGRAÇÃO: PisRegistrySyncDialog removido — sincronizava PIS → patient_registry (tabela
-        morta). Sem destino no schema novo; a identidade vem direto de pacientes. */}
+    {promptPortals}
+    {submittingOverlay}
     </>
   );
 }
