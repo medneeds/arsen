@@ -23,6 +23,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
 
 interface Props {
   sectorCode: string;
@@ -47,6 +48,9 @@ export function InternalTransferQueueSection({ sectorCode, onTransferComplete }:
   const [submitting, setSubmitting] = useState(false);
   const [refreshingBeds, setRefreshingBeds] = useState(false);
   const [open, setOpen] = useState(true);
+  // Conclusao da transferencia interna (movimentacao de leito) exige VALIDACAO por
+  // senha — dupla confirmacao, mesma regra das demais movimentacoes.
+  const [passwordOpen, setPasswordOpen] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
   // Popula o cache de habilitacao de SAPS (setores.aplica_saps) para o gate do
@@ -356,14 +360,29 @@ export function InternalTransferQueueSection({ sectorCode, onTransferComplete }:
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setTarget(null)} disabled={submitting}>Cancelar</Button>
-            <Button onClick={handleAllocate} disabled={submitting || !bedId}>
+            <Button variant="outline" onClick={() => { setTarget(null); setPasswordOpen(false); }} disabled={submitting}>Cancelar</Button>
+            <Button onClick={() => { if (bedId) setPasswordOpen(true); }} disabled={submitting || !bedId}>
               <CheckCircle2 className="h-4 w-4 mr-1" />
-              {submitting ? "Alocando..." : "Confirmar alocação"}
+              {submitting ? "Alocando..." : "Confirmar alocação (senha)"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* VALIDACAO por senha da conclusao (movimentacao de leito). So apos a senha
+          validar, handleAllocate executa a transferencia (move paciente + libera origem). */}
+      <PasswordConfirmDialog
+        open={passwordOpen}
+        onOpenChange={(o) => { if (!o && !submitting) setPasswordOpen(false); }}
+        title="Confirmar alocação por transferência interna"
+        description={
+          target
+            ? `Digite sua senha para mover ${target.patient_name} para o leito ${(patients ?? []).find((p) => p.id === bedId)?.bedNumber ?? ""} (${target.target_sector_label ?? ""}). O leito de origem será liberado. A ação será registrada com seu usuário.`
+            : "Digite sua senha para confirmar a alocação."
+        }
+        actionLabel="Confirmar alocação"
+        onConfirmed={async () => { setPasswordOpen(false); await handleAllocate(); }}
+      />
 
       {/* Prompt pos-conclusao de ESCALADA para UTI/UCI 2 (SAPS): abre o fluxo de
           admissao de cuidados intensivos no destino. Mesma oferta do pop-up de

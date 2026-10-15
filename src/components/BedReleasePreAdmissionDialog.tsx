@@ -434,7 +434,7 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
                       <ol className="list-decimal pl-4 space-y-0.5">
                         <li>Abra o <strong>Mapa de Leitos</strong> do setor de destino{signaledDestination ? <> (<strong>{signaledDestination}</strong>)</> : null}.</li>
                         <li>Na seção <strong>"Aguardando Alocação por Transferência Interna"</strong>, clique em <strong>"Alocação direta"</strong>.</li>
-                        <li>Escolha o <strong>leito de destino</strong> — o paciente é movido e o leito de origem é liberado automaticamente.</li>
+                        <li>Escolha o <strong>leito de destino</strong> e <strong>confirme com sua senha</strong> — o paciente é movido e o leito de origem é liberado automaticamente.</li>
                       </ol>
                     </div>
                   </div>
