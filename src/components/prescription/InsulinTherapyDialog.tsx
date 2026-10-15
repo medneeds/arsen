@@ -78,13 +78,23 @@ export function InsulinTherapyDialog({
         // e as doses editadas anteriormente se perdem.
         setPlan(existingPlan);
       } else {
-        // Novo plano: sugerir scheme baseado no tipo de insulina
-        setPlan(prev => ({
-          ...prev,
+        // Novo plano: COMEÇAR DO ZERO (defaults), nunca herdar o plano anterior.
+        // Antes espalhava `prev`, mantendo doses/esquema/EV/observações de uma
+        // prescrição anterior — informação residual que vazava para o impresso
+        // (doses fixas, NPH, sliding, protocolo EV, notas, hipoglicemia...).
+        setPlan({
           scheme: detected.isBasal && !detected.isBolus ? 'nph_fixed'
                 : detected.isBolus && !detected.isBasal ? 'sliding'
-                : prev.scheme,
-        }));
+                : 'basal_bolus',
+          weightKg: initialWeightKg,
+          basalInsulin: detected.isBasal ? (detected.suggested as BasalInsulin) : 'NPH',
+          bolusInsulin: detected.isBolus ? (detected.suggested as BolusInsulin) : 'Regular',
+          basalPercent: 50,
+          glycemicTarget: '140-180 mg/dL',
+          hgtFrequency: '6/6h',
+          slidingRows: suggestSlidingByWeight(initialWeightKg),
+          source: 'SBD 2024 · ADA 2024 · AMIB',
+        });
       }
     }
   }, [open, existingPlan, detected.isBasal, detected.isBolus]);
