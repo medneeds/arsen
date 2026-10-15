@@ -653,6 +653,11 @@ export function usePatients(department?: Department, sector?: string) {
         throw new Error('Hospital e estado precisam estar selecionados.');
       }
       const target = patients.find((p) => p.id === patientId);
+      // Transferencia interna = CONTINUIDADE: nao encerra o atendimento nem libera o
+      // leito de origem aqui (a conclusao da transferencia move a internacao e poe a
+      // origem em higienizacao). O paciente permanece visivel ate la.
+      const isInternalTransferContinuity =
+        !!target && !target.isVacant && target.admissionStatus === ADMISSION_STATUS.INTERNAL_TRANSFER_PENDING;
 
       const { data: { user: authUser } } = await supabase.auth.getUser();
       const profissionalId = await resolveProfissionalId(authUser?.id);
@@ -660,22 +665,23 @@ export function usePatients(department?: Department, sector?: string) {
       let leitoId: string | null = null;
       let pacienteId: string | null = null;
 
-      if (target && !target.isVacant && target.admissionStatus === ADMISSION_STATUS.INTERNAL_TRANSFER_PENDING) {
-        // CONTINUIDADE: transferencia interna NAO encerra o atendimento. NAO grava
-        // data_alta nem muda o status — a MESMA internacao segue ATIVA e e movida ao
-        // leito destino na conclusao da transferencia (fila). Fechar aqui (como fazia
-        // o ramo generico abaixo, com status='alta' + data_alta) encerrava o
+      if (isInternalTransferContinuity) {
+        // CONTINUIDADE: transferencia interna NAO encerra o atendimento NEM libera o
+        // leito de origem aqui. NAO grava data_alta, NAO muda o status e NAO poe a
+        // origem como 'livre' (leitoId fica null) — um leito 'livre' com internacao
+        // ativa ainda apontando para ele seria estado inconsistente. Fechar aqui
+        // (como o ramo generico abaixo, status='alta' + data_alta) encerrava o
         // atendimento indevidamente e travava a alocacao no destino com "atendimento
-        // ja encerrado" (RPC complete_internal_transfer_atomic). So libera o leito.
+        // ja encerrado" (RPC complete_internal_transfer_atomic). A conclusao da
+        // transferencia (fila) move a internacao e poe a origem em higienizacao.
         const { data: inter, error } = await supabase
           .from('internacoes')
-          .select('leito_id, paciente_id')
+          .select('paciente_id')
           .eq('id', patientId)
           .maybeSingle();
         if (error) throw error;
-        const interRow = inter as { leito_id: string | null; paciente_id: string | null } | null;
-        leitoId = interRow?.leito_id ?? null;
-        pacienteId = interRow?.paciente_id ?? null;
+        pacienteId = (inter as { paciente_id: string | null } | null)?.paciente_id ?? null;
+        // leitoId permanece null → nao flipa a origem para 'livre'.
       } else if (target && !target.isVacant) {
         // Ocupado → patientId = internacoes.id. Encerra a internação AGORA (data_alta):
         // este e o unico ponto que fecha o atendimento no ciclo Opcao A (a sinalizacao
@@ -722,45 +728,56 @@ export function usePatients(department?: Department, sector?: string) {
         hospital_id: currentHospital.id,
       } as any);
 
-      setPatients((prev) =>
-        prev.map((p) =>
-          p.id === patientId
-            ? ({
-                ...p,
-                name: '',
-                diagnoses: [],
-                medicalHistory: [],
-                relevantExams: [],
-                pendencies: [],
-                schedule: [],
-                admissionHistory: '',
-                age: '',
-                medicalResponsibility: undefined,
-                utiAdmissionDate: [],
-                utiDischargePrediction: [],
-                utiAllergies: [],
-                utiAdmissionReason: [],
-                utiCurrentStatus: [],
-                utiDevices: [],
-                utiCulturesAntibiotics: [],
-                utiSpecialties: [],
-                utiOriginSector: [],
-                utiDailyConducts: [],
-                psmStatus: null,
-                clinicalStatus: null,
-                admissionDate: '',
-                admissionStatus: undefined,
-                admittedAt: null,
-                isVacant: true,
-              } as unknown as Patient)
-            : p,
-        ),
-      );
+      // Em transferencia interna o paciente NAO sai do leito de origem ainda —
+      // nao limpa o card otimisticamente (seria revertido no refetch, com flicker).
+      if (!isInternalTransferContinuity) {
+        setPatients((prev) =>
+          prev.map((p) =>
+            p.id === patientId
+              ? ({
+                  ...p,
+                  name: '',
+                  diagnoses: [],
+                  medicalHistory: [],
+                  relevantExams: [],
+                  pendencies: [],
+                  schedule: [],
+                  admissionHistory: '',
+                  age: '',
+                  medicalResponsibility: undefined,
+                  utiAdmissionDate: [],
+                  utiDischargePrediction: [],
+                  utiAllergies: [],
+                  utiAdmissionReason: [],
+                  utiCurrentStatus: [],
+                  utiDevices: [],
+                  utiCulturesAntibiotics: [],
+                  utiSpecialties: [],
+                  utiOriginSector: [],
+                  utiDailyConducts: [],
+                  psmStatus: null,
+                  clinicalStatus: null,
+                  admissionDate: '',
+                  admissionStatus: undefined,
+                  admittedAt: null,
+                  isVacant: true,
+                } as unknown as Patient)
+              : p,
+          ),
+        );
+      }
 
-      toast({
-        title: 'Leito liberado',
-        description: 'Leito desocupado no mapa. O prontuário do paciente foi preservado no histórico.',
-      });
+      toast(
+        isInternalTransferContinuity
+          ? {
+              title: 'Transferência interna pendente',
+              description: 'O paciente segue no leito de origem até a conclusão. Finalize a alocação na fila de transferência interna.',
+            }
+          : {
+              title: 'Leito liberado',
+              description: 'Leito desocupado no mapa. O prontuário do paciente foi preservado no histórico.',
+            },
+      );
     } catch (error) {
       console.error('Error releasing pre-admission bed:', error);
       toast({
