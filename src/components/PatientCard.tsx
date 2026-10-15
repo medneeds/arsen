@@ -2128,8 +2128,8 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                     backgroundColor: `${sectorColor}10`,
                     color: sectorColor,
                   }}
-                  title="Movimentação do leito"
-                  aria-label="Movimentação do leito"
+                  title="Movimentação do paciente"
+                  aria-label="Movimentação do paciente"
                 >
                   <div 
                     className="absolute inset-0 opacity-0 group-hover:opacity-15 transition-opacity duration-300"
@@ -2190,7 +2190,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                           </div>
                           <div className="flex flex-col items-start min-w-0">
                             <span className="text-foreground leading-tight">
-                              Remanejar leito <span className="text-xs font-normal text-foreground/70">(mesmo setor)</span>
+                              Remanejar paciente <span className="text-xs font-normal text-foreground/70">(mesmo setor)</span>
                             </span>
                             <span className="text-xs font-normal text-muted-foreground leading-tight">
                               Realocar ou permutar entre leitos vagos do setor
@@ -2217,14 +2217,14 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                           // deixa claro QUAL fluxo encerra o atendimento). O registro do desfecho
                           // ja foi feito na sinalizacao do Painel Clinico; aqui so se libera o leito.
                           const cfg = isAlta
-                            ? { label: 'Desalocar por alta', sub: 'Alta assinada — encerra o atendimento', tone: 'emerald' as const }
+                            ? { label: 'Liberar leito (alta)', sub: 'Alta assinada — encerra o atendimento e libera o leito', tone: 'emerald' as const }
                             : isObito
-                              ? { label: 'Desalocar por óbito', sub: 'Óbito registrado — encerra o atendimento', tone: 'slate' as const }
+                              ? { label: 'Liberar leito (óbito)', sub: 'Óbito registrado — encerra o atendimento e libera o leito', tone: 'slate' as const }
                               : isInternal
-                                ? { label: 'Transferir leito', sub: 'Transferência interna — preserva o atendimento (mesmo nº)', tone: 'sky' as const }
+                                ? { label: 'Transferir paciente', sub: 'Transferência interna — o paciente muda de setor, o atendimento segue (mesmo nº)', tone: 'sky' as const }
                                 : isExternal
-                                  ? { label: 'Desalocar por transf. externa', sub: 'Transferência externa — encerra o atendimento', tone: 'emerald' as const }
-                                  : { label: 'Desalocar leito', sub: 'Bloqueado — sinalize a movimentação no Painel Clínico', tone: 'amber' as const };
+                                  ? { label: 'Liberar leito (transf. externa)', sub: 'Transferência externa — encerra o atendimento e libera o leito', tone: 'emerald' as const }
+                                  : { label: 'Liberar leito', sub: 'Bloqueado — sinalize a movimentação no Painel Clínico', tone: 'amber' as const };
                           const toneBox: Record<string, string> = {
                             emerald: 'bg-released-soft group-hover/item:bg-released',
                             slate: 'bg-muted group-hover/item:bg-muted-foreground/20',

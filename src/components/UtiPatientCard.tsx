@@ -1001,7 +1001,7 @@ export function UtiPatientCard({
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button ref={movementTriggerRef} variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-primary transition-all duration-300 hover:scale-110 group" title="Movimentação do leito" aria-label="Movimentação do leito">
+                  <Button ref={movementTriggerRef} variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-primary transition-all duration-300 hover:scale-110 group" title="Movimentação do paciente" aria-label="Movimentação do paciente">
                     <ArrowLeftRight className="h-3 w-3 transition-transform duration-300 group-hover:scale-110" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -1026,7 +1026,7 @@ export function UtiPatientCard({
                         </div>
                         <div className="flex flex-col items-start min-w-0">
                           <span className="text-foreground leading-tight">
-                            Remanejar leito <span className="text-xs font-normal text-foreground/70">(mesmo setor)</span>
+                            Remanejar paciente <span className="text-xs font-normal text-foreground/70">(mesmo setor)</span>
                           </span>
                           <span className="text-xs font-normal text-muted-foreground leading-tight">
                             Realocar ou permutar entre leitos da unidade
@@ -1038,16 +1038,33 @@ export function UtiPatientCard({
                           sinalização ativa → conclui; alta/óbito → libera; sem sinalização → bloqueio
                           duro com orientação para sinalizar no Painel Clínico (sem atalho excepcional). */}
                       {onReleasePreAdmissionBed && (role === 'admin' || role === 'medico') && (() => {
-                        const isPostOutcome = patient.admissionStatus === 'alta_dada' || patient.admissionStatus === 'obito';
+                        const isAlta = patient.admissionStatus === 'alta_dada';
+                        const isObito = patient.admissionStatus === 'obito';
+                        const isPostOutcome = isAlta || isObito;
                         const isInternal = patient.admissionStatus === 'transferencia_interna_pendente';
-                        const isSignaled = isInternal || patient.admissionStatus === 'transferencia_externa_pendente';
-                        const sub = isPostOutcome
-                          ? 'Pós-alta/óbito — confirmação por senha, encerra o atendimento'
-                          : isInternal
-                            ? 'Transferência interna — preserva o atendimento (mesmo nº)'
-                            : isSignaled
-                              ? 'Conclui a sinalização feita no Painel Clínico'
-                              : 'Bloqueado — sinalize a movimentação no Painel Clínico';
+                        const isExternal = patient.admissionStatus === 'transferencia_externa_pendente';
+                        const isSignaled = isInternal || isExternal;
+                        // O leito PERMANECE; o que se movimenta e o PACIENTE. Saida do hospital
+                        // (alta/obito/transf. externa) = LIBERAR leito; interna = TRANSFERIR paciente.
+                        // Alta e obito nao se misturam (sao extremos), mesmo encerrando o atendimento.
+                        const label = isAlta
+                          ? 'Liberar leito (alta)'
+                          : isObito
+                            ? 'Liberar leito (óbito)'
+                            : isInternal
+                              ? 'Transferir paciente'
+                              : isExternal
+                                ? 'Liberar leito (transf. externa)'
+                                : 'Liberar leito';
+                        const sub = isAlta
+                          ? 'Alta assinada — encerra o atendimento e libera o leito'
+                          : isObito
+                            ? 'Óbito registrado — encerra o atendimento e libera o leito'
+                            : isInternal
+                              ? 'Transferência interna — o paciente muda de setor, o atendimento segue (mesmo nº)'
+                              : isExternal
+                                ? 'Transferência externa — encerra o atendimento e libera o leito'
+                                : 'Bloqueado — sinalize a movimentação no Painel Clínico';
                         const tone = isSignaled ? 'emerald' : 'amber';
                         const isDisabled = !isSignaled && !isPostOutcome;
                         return (
@@ -1081,7 +1098,7 @@ export function UtiPatientCard({
                                 "leading-tight",
                                 tone === 'emerald' ? "text-released-on-soft" : "text-warning-on-soft"
                               )}>
-                                {isInternal ? 'Transferir leito' : 'Desalocar leito'}
+                                {label}
                               </span>
                               <span className="text-xs font-normal text-muted-foreground leading-tight">
                                 {sub}

@@ -287,14 +287,14 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
               </div>
               <AlertDialogTitle className="text-base leading-snug break-words">
                 {isExceptional
-                  ? "Desalocação excepcional — paciente sem sinalização"
+                  ? "Liberação excepcional — paciente sem sinalização"
                   : patient?.admissionStatus === "transferencia_interna_pendente"
-                    ? "Desalocar leito para transferência interna"
+                    ? "Transferir paciente — transferência interna"
                     : patient?.admissionStatus === "transferencia_externa_pendente"
-                      ? "Desalocar leito para transferência externa"
+                      ? "Liberar leito — transferência externa"
                       : isPostDischarge
-                        ? "Desalocar leito após alta/óbito"
-                        : "Atenção: desalocar leito sem sinalização"}
+                        ? (patient?.admissionStatus === "obito" ? "Liberar leito — óbito" : "Liberar leito — alta hospitalar")
+                        : "Atenção: liberar leito sem sinalização"}
               </AlertDialogTitle>
             </div>
             <AlertDialogDescription asChild>
@@ -479,12 +479,14 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
       isSubmitting={submitting}
       title={
         isExceptional
-          ? "Desalocação excepcional do leito"
+          ? "Liberação excepcional do leito"
           : patient?.admissionStatus === "transferencia_interna_pendente"
-            ? "Desalocar leito — transferência interna sinalizada"
+            ? "Transferir paciente — transferência interna sinalizada"
             : patient?.admissionStatus === "transferencia_externa_pendente"
-              ? "Desalocar leito — transferência externa sinalizada"
-              : isPostDischarge ? "Desalocar leito após alta/óbito" : "Desalocar leito (aguardando alocação)"
+              ? "Liberar leito — transferência externa sinalizada"
+              : isPostDischarge
+                ? (patient?.admissionStatus === "obito" ? "Liberar leito — óbito" : "Liberar leito — alta hospitalar")
+                : "Liberar leito (aguardando alocação)"
       }
       description={
         isExceptional
