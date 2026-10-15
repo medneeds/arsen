@@ -19,199 +19,20 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 
-export type ClinicalDecisionKind =
-  | "alta_medica"
-  | "transf_interna"
-  | "transf_externa"
-  | "obito"
-  | "evasao";
-
-const KIND_TO_STATUS: Record<ClinicalDecisionKind, string> = {
-  alta_medica: "alta_dada",
-  transf_interna: "transferencia_interna_pendente",
-  transf_externa: "transferencia_externa_pendente",
-  obito: "obito",
-  evasao: "evasao",
-};
-
-const KIND_TO_MOVEMENT_TYPE: Record<ClinicalDecisionKind, string> = {
-  alta_medica: "ALTA_HOSPITALAR",
-  transf_interna: "TRANSFERENCIA_INTERNA",
-  transf_externa: "TRANSFERENCIA_EXTERNA",
-  obito: "OBITO",
-  evasao: "EVASAO",
-};
-
-/** Desfechos que encerram a internação (gravam data_alta). */
-const FINAL_KINDS: ReadonlySet<ClinicalDecisionKind> = new Set([
-  "alta_medica",
-  "obito",
-  "transf_externa",
-]);
-
-export interface SignalDecisionPayload {
-  patientId: string;
-  patientName: string;
-  patientBed?: string | null;
-  patientSector?: string | null;
-  hospitalUnitId: string;
-  stateId: string;
-  department?: string | null;
-  /** Destino administrativo (interno: setor/leito; externo: instituição) */
-  destination?: string | null;
-  targetSector?: string | null;
-  targetBed?: string | null;
-  responsibleDoctor?: string | null;
-  notes?: string | null;
-  nirRequested?: boolean;
-  patientSnapshot?: any;
-}
+// REMOVIDO (auditoria pre-producao): signalClinicalDecision/revokeClinicalDecision
+// e seus tipos/mapas auxiliares (ClinicalDecisionKind, KIND_TO_*, FINAL_KINDS,
+// recordAudit, Signal/RevokeDecisionPayload) eram CODIGO MORTO — nenhum
+// componente os chamava (o fluxo vivo e MovimentacaoForm, que usa
+// toInternacaoStatusDb). Alem de mortos, gravavam internacoes.status com valores
+// crus (alta_dada, transferencia_*_pendente, evasao) que VIOLAM o CHECK
+// internacoes_status_check (ativa|alta|obito|transferida|cancelada) — armadilha
+// latente se religados. Se o Painel Clinico vier a marcar decisao, deve usar o
+// caminho vivo (toInternacaoStatusDb), nao ressuscitar esta API.
 
 export interface LifecycleResult {
   ok: boolean;
   movementId?: string;
   error?: string;
-}
-
-/** MIGRAÇÃO: registra a trilha de auditoria em logs_auditoria (substitui patient_movements). */
-async function recordAudit(entry: {
-  internacaoId: string;
-  tipoEvento: string;
-  atorUserId: string | null;
-  hospitalId?: string | null;
-  motivo?: string | null;
-  dados?: any;
-}): Promise<string | undefined> {
-  try {
-    const { data, error } = await supabase
-      .from("logs_auditoria")
-      .insert({
-        tipo_evento: entry.tipoEvento,
-        nome_tabela: "internacoes",
-        registro_id: entry.internacaoId,
-        internacao_id: entry.internacaoId,
-        ator_user_id: entry.atorUserId,
-        hospital_id: entry.hospitalId ?? null,
-        motivo: entry.motivo ?? null,
-        dados_novos: entry.dados ?? null,
-      } as any)
-      .select("id")
-      .single();
-    if (error) {
-      console.warn("[bedLifecycle] falha ao gravar logs_auditoria (não-bloqueante):", error);
-      return undefined;
-    }
-    return (data as any)?.id;
-  } catch (e) {
-    console.warn("[bedLifecycle] exceção ao gravar logs_auditoria (não-bloqueante):", e);
-    return undefined;
-  }
-}
-
-/** Painel Clínico → marca decisão. NÃO libera leito. */
-export async function signalClinicalDecision(
-  kind: ClinicalDecisionKind,
-  payload: SignalDecisionPayload,
-): Promise<LifecycleResult> {
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-
-    // Atualiza o estado da internação (substitui patients.admission_status).
-    // Desfechos finais também carimbam data_alta (substitui o fechamento do encounter).
-    const interUpdate: Record<string, unknown> = {
-      status: KIND_TO_STATUS[kind],
-    };
-    if (FINAL_KINDS.has(kind)) {
-      interUpdate.data_alta = new Date().toISOString();
-    }
-
-    const { error: statusErr } = await supabase
-      .from("internacoes")
-      .update(interUpdate as any)
-      .eq("id", payload.patientId);
-    if (statusErr) throw statusErr;
-
-    // MIGRAÇÃO: patient_movements → logs_auditoria. Campos ricos (bed/sector/
-    // destination/snapshot/metadata) preservados dentro de dados_novos.
-    const movementId = await recordAudit({
-      internacaoId: payload.patientId,
-      tipoEvento: `decisao_clinica:${KIND_TO_MOVEMENT_TYPE[kind]}`,
-      atorUserId: user?.id ?? null,
-      hospitalId: payload.hospitalUnitId,
-      motivo: payload.notes ?? null,
-      dados: {
-        flow_version: "v2_unified",
-        stage: "signal",
-        kind,
-        patient_name: payload.patientName,
-        patient_bed: payload.patientBed ?? null,
-        patient_sector: payload.patientSector ?? null,
-        destination: payload.destination ?? null,
-        target_sector: payload.targetSector ?? null,
-        target_bed: payload.targetBed ?? null,
-        responsible_doctor: payload.responsibleDoctor ?? null,
-        nir_requested: !!payload.nirRequested,
-        department: payload.department ?? null,
-        state_id: payload.stateId,
-        patient_snapshot: payload.patientSnapshot ?? null,
-      },
-    });
-
-    return { ok: true, movementId };
-  } catch (err: any) {
-    console.error("[signalClinicalDecision] erro", err);
-    return { ok: false, error: err?.message ?? "Erro desconhecido" };
-  }
-}
-
-export interface RevokeDecisionPayload {
-  patientId: string;
-  patientName: string;
-  patientBed?: string | null;
-  patientSector?: string | null;
-  hospitalUnitId: string;
-  stateId: string;
-  department?: string | null;
-  reason: string;
-}
-
-/** Painel Clínico → desfaz sinalização (paciente piorou, decisão revogada). */
-export async function revokeClinicalDecision(
-  payload: RevokeDecisionPayload,
-): Promise<LifecycleResult> {
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-
-    // Volta para admitido — leito ainda não foi liberado, paciente segue ativo.
-    // Limpa data_alta caso a decisão revogada fosse um desfecho final.
-    const { error: statusErr } = await supabase
-      .from("internacoes")
-      .update({ status: "ativa", data_alta: null } as any)
-      .eq("id", payload.patientId);
-    if (statusErr) throw statusErr;
-
-    const movementId = await recordAudit({
-      internacaoId: payload.patientId,
-      tipoEvento: "decisao_clinica:REVOGACAO_DECISAO",
-      atorUserId: user?.id ?? null,
-      hospitalId: payload.hospitalUnitId,
-      motivo: payload.reason,
-      dados: {
-        flow_version: "v2_unified",
-        stage: "revoke",
-        patient_name: payload.patientName,
-        patient_bed: payload.patientBed ?? null,
-        patient_sector: payload.patientSector ?? null,
-        department: payload.department ?? null,
-        state_id: payload.stateId,
-      },
-    });
-
-    return { ok: true, movementId };
-  } catch (err: any) {
-    console.error("[revokeClinicalDecision] erro", err);
-    return { ok: false, error: err?.message ?? "Erro desconhecido" };
-  }
 }
 
 export interface OperationalRelocationPayload {
