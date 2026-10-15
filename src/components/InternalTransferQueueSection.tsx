@@ -14,8 +14,15 @@ import { useInternalTransferQueue, type InternalTransferRequestRow } from "@/hoo
 import { usePatients } from "@/hooks/usePatients";
 import { completeInternalTransfer, cancelInternalTransferRequest } from "@/lib/internalTransfer";
 import { sectorLabelFromCode } from "@/lib/hospitalSectors";
-import { classificationLabel } from "@/lib/sectorComplexity";
+import { classificationLabel, sectorRequiresSaps } from "@/lib/sectorComplexity";
 import { BedSelectorGrid, type BedOption } from "@/components/shared/BedSelectorGrid";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { useSapsSectors } from "@/hooks/useSapsSectors";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Props {
   sectorCode: string;
@@ -40,6 +47,76 @@ export function InternalTransferQueueSection({ sectorCode, onTransferComplete }:
   const [submitting, setSubmitting] = useState(false);
   const [refreshingBeds, setRefreshingBeds] = useState(false);
   const [open, setOpen] = useState(true);
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  // Popula o cache de habilitacao de SAPS (setores.aplica_saps) para o gate do
+  // prompt pos-conclusao refletir o banco (UTI 1/UTI 2/UCI 2).
+  useSapsSectors();
+  // Prompt pos-conclusao de ESCALADA para setor de UTI/SAPS: oferece seguir para
+  // a admissao de cuidados intensivos (preencher + validar) e/ou o SAPS 3. O
+  // atendimento CONTINUA (mesma internacao) — isto abre o fluxo de admissao de UTI
+  // no destino, nao um novo atendimento.
+  const [postPrompt, setPostPrompt] = useState<
+    { internacaoId: string; patientName: string; bed: string; sectorCode: string } | null
+  >(null);
+
+  // MIGRAÇÃO: profissional_id (profissionais.id) != auth.uid — resolvido via user_id.
+  const resolveProfissionalId = async (userId?: string | null): Promise<string | null> => {
+    if (!userId) return null;
+    try {
+      const { data } = await supabase.from("profissionais").select("id").eq("user_id", userId).maybeSingle();
+      return (data as { id?: string } | null)?.id ?? null;
+    } catch {
+      return null;
+    }
+  };
+
+  // Navegacao unica para a /admissao (mesma do pop-up de alocacao). tab="admissao"
+  // abre o corpo de Cuidados Intensivos; tab="saps" abre a aba SAPS 3.
+  const goToPostAdmission = (tab: "admissao" | "saps") => {
+    if (!postPrompt) return;
+    const info = postPrompt;
+    setPostPrompt(null);
+    const q = new URLSearchParams({
+      patientId: info.internacaoId,
+      patientName: info.patientName,
+      patientBed: info.bed,
+      patientSector: info.sectorCode,
+    });
+    if (tab === "saps") q.set("tab", "saps");
+    navigate(`/admissao?${q.toString()}`);
+  };
+
+  // "Depois": cria a ficha SAPS pendente (24h) se ainda nao houver, ancorada na
+  // internacao. (Sem isto, o toast "SAPS pendente" nao tinha lastro no banco e a
+  // tarja de SAPS pendente no mapa nunca aparecia apos a escalada.)
+  const handlePostLater = async () => {
+    if (!postPrompt) return;
+    const { internacaoId } = postPrompt;
+    try {
+      const { data: existing } = await supabase
+        .from("avaliacoes_saps3")
+        .select("id")
+        .eq("internacao_id", internacaoId)
+        .limit(1)
+        .maybeSingle();
+      if (!existing) {
+        const registradoPor = await resolveProfissionalId(user?.id);
+        const { error } = await supabase.from("avaliacoes_saps3").insert({
+          internacao_id: internacaoId,
+          status: "pendente",
+          pending_since: new Date().toISOString(),
+          criado_por: registradoPor,
+        });
+        if (error) throw error;
+      }
+      toast({ title: "SAPS 3 pendente", description: "Voce tem 24h para completar." });
+    } catch (err) {
+      toast({ title: "Erro ao criar SAPS pendente", description: err instanceof Error ? err.message : String(err), variant: "destructive" });
+    } finally {
+      setPostPrompt(null);
+    }
+  };
 
   // Abre o diálogo e RE-BUSCA os leitos vagos na hora. O realtime (self-hosted)
   // é intermitente na VPS, então um leito recém-desalocado podia demorar a
@@ -134,6 +211,20 @@ export function InternalTransferQueueSection({ sectorCode, onTransferComplete }:
           description: `Leito ${bed.bedNumber} • ${sectorLabelFromCode(bed.sector)}.`,
         });
       }
+      // Destino de UTI/SAPS (escalada critica enfermaria->UTI): abre o fluxo de
+      // admissao de cuidados intensivos no destino. O atendimento CONTINUA (mesma
+      // internacao, source_patient_id) — isto nao e novo atendimento, e a nova
+      // admissao clinica do setor critico. Captura os dados ANTES de limpar target.
+      const destNeedsUti = !!target.requires_saps || sectorRequiresSaps(bed.sector);
+      const postInfo = destNeedsUti
+        ? {
+            internacaoId: target.source_patient_id,
+            patientName: target.patient_name,
+            bed: bed.bedNumber,
+            sectorCode: bed.sector,
+          }
+        : null;
+
       setTarget(null);
       setBedId("");
       refresh();
@@ -144,6 +235,7 @@ export function InternalTransferQueueSection({ sectorCode, onTransferComplete }:
       // instancia local (lista de vagos). Sem isto, o paciente transferido so
       // aparecia no destino via realtime ou reload.
       onTransferComplete?.();
+      if (postInfo) setPostPrompt(postInfo);
     } catch (err) {
       toast({ title: "Erro ao alocar", description: err instanceof Error ? err.message : "Tente novamente.", variant: "destructive" });
     } finally {
@@ -266,6 +358,40 @@ export function InternalTransferQueueSection({ sectorCode, onTransferComplete }:
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Prompt pos-conclusao de ESCALADA para UTI/UCI 2 (SAPS): abre o fluxo de
+          admissao de cuidados intensivos no destino. Mesma oferta do pop-up de
+          alocacao — Ir para admissao / Preencher SAPS 3 / Depois (pendente 24h). */}
+      <AlertDialog open={!!postPrompt} onOpenChange={(o) => { if (!o) setPostPrompt(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <BedDouble className="h-5 w-5 text-primary" />
+              Admissão em cuidados intensivos
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {postPrompt?.patientName} foi alocado no leito {postPrompt?.bed}. Como os cuidados
+              foram escalonados para setor crítico, abra a admissão de cuidados intensivos
+              (preencher e validar) ou preencha o SAPS 3 agora. O atendimento continua o mesmo —
+              o histórico é preservado. O SAPS 3 também pode ficar pendente por até 24h.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col gap-2 sm:flex-col sm:gap-2 sm:space-x-0">
+            <AlertDialogAction onClick={() => goToPostAdmission("admissao")} className="w-full">
+              Ir para admissão
+            </AlertDialogAction>
+            <AlertDialogAction
+              onClick={() => goToPostAdmission("saps")}
+              className="w-full border border-input bg-background text-foreground hover:bg-accent hover:text-accent-foreground"
+            >
+              Preencher SAPS 3 agora
+            </AlertDialogAction>
+            <AlertDialogCancel onClick={handlePostLater} className="w-full mt-0">
+              Depois (manter SAPS pendente — 24h)
+            </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
