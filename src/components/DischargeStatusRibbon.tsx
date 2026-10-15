@@ -115,17 +115,23 @@ export function DischargeStatusRibbon({ status, className, compact = false }: Di
             aria-label={entry.tooltipTitle}
             className={cn(
               "group relative inline-flex items-center rounded-full select-none",
-              compact ? "gap-1 px-2 py-0.5" : "gap-2 px-3 py-1",
-              "text-xs font-semibold uppercase tracking-[0.08em] leading-none",
-              "shadow-sm transition-colors duration-200 ease-out cursor-help",
+              compact
+                ? "gap-1 px-1.5 py-0.5 text-[10px] font-medium tracking-[0.03em]"
+                : "gap-2 px-3 py-1 text-xs font-semibold tracking-[0.08em]",
+              "uppercase leading-none",
+              compact ? "shadow-none" : "shadow-sm",
+              "transition-colors duration-200 ease-out cursor-help",
               entry.pill,
               "print:bg-white print:text-black print:ring-1 print:ring-ring print:shadow-none",
               className,
             )}
           >
             <Icon
-              className="h-3.5 w-3.5 transition-transform duration-500 ease-in-out group-hover:rotate-6"
-              strokeWidth={2.6}
+              className={cn(
+                compact ? "h-3 w-3" : "h-3.5 w-3.5",
+                "transition-transform duration-500 ease-in-out group-hover:rotate-6",
+              )}
+              strokeWidth={compact ? 2 : 2.6}
             />
             <span className="whitespace-nowrap">{labelText}</span>
             {!compact && (
