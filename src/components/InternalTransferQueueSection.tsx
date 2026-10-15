@@ -14,7 +14,7 @@ import { useInternalTransferQueue, type InternalTransferRequestRow } from "@/hoo
 import { usePatients } from "@/hooks/usePatients";
 import { completeInternalTransfer, cancelInternalTransferRequest } from "@/lib/internalTransfer";
 import { sectorLabelFromCode } from "@/lib/hospitalSectors";
-import { classificationLabel, sectorRequiresSaps } from "@/lib/sectorComplexity";
+import { classificationLabel, classifyTransfer, requiresSaps } from "@/lib/sectorComplexity";
 import { BedSelectorGrid, type BedOption } from "@/components/shared/BedSelectorGrid";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -211,11 +211,17 @@ export function InternalTransferQueueSection({ sectorCode, onTransferComplete }:
           description: `Leito ${bed.bedNumber} • ${sectorLabelFromCode(bed.sector)}.`,
         });
       }
-      // Destino de UTI/SAPS (escalada critica enfermaria->UTI): abre o fluxo de
-      // admissao de cuidados intensivos no destino. O atendimento CONTINUA (mesma
-      // internacao, source_patient_id) — isto nao e novo atendimento, e a nova
-      // admissao clinica do setor critico. Captura os dados ANTES de limpar target.
-      const destNeedsUti = !!target.requires_saps || sectorRequiresSaps(bed.sector);
+      // Destino de UTI/SAPS por ESCALADA CRITICA (nivel sobe para UTI/UCI 2 com
+      // SAPS): abre o fluxo de admissao de cuidados intensivos no destino. O
+      // atendimento CONTINUA (mesma internacao, source_patient_id) — nao e novo
+      // atendimento, e a nova admissao clinica do setor critico. Captura os dados
+      // ANTES de limpar target.
+      //
+      // Gate pela regra AUTORITATIVA com o destino REAL escolhido (bed.sector), nao
+      // por "destino e setor SAPS": transferencia LATERAL (UTI 1 -> UTI 2) ou
+      // DESESCALADA para setor critico sao continuidade e NAO disparam admissao/SAPS.
+      const classification = classifyTransfer(target.source_sector ?? undefined, bed.sector);
+      const destNeedsUti = requiresSaps(classification, bed.sector);
       const postInfo = destNeedsUti
         ? {
             internacaoId: target.source_patient_id,
