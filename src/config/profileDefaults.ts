@@ -150,7 +150,7 @@ export const PROFILE_DEFAULTS: Record<AccessProfile, ProfileDefaults> = {
   qualidade: {
     role: "admin",
     departments: [],
-    landingRoute: "/relatorios",
+    landingRoute: "/indicadores-qualidade",
     hint: "Qualidade / Segurança do Paciente • indicadores assistenciais e auditorias",
   },
   desenvolvedor: {

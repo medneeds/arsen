@@ -386,6 +386,19 @@ export function AppSidebar() {
         { title: "Round Multiprofissional", icon: ClipboardCheck, link: "/round", profiles: ["multi"] },
       ];
     }
+    // Qualidade / Seguranca do Paciente: indicadores, gestao de leitos e (futuro)
+    // repositorio de documentos. Antes NAO tinha menu proprio e caia no menu vazio
+    // do medico ao trocar de perfil — por isso quebrava.
+    if (accessProfile === "qualidade") {
+      return [
+        { title: "Qualidade & Segurança", icon: HeartPulse, profiles: ["qualidade"], items: [
+          { name: "Indicadores de Qualidade", link: "/indicadores-qualidade", profiles: ["qualidade"] },
+          { name: "Gestão de Leitos", link: "/gestao-leitos-qualidade", profiles: ["qualidade"] },
+          { name: "Relatórios", link: "/relatorios", profiles: ["qualidade"] },
+        ]},
+        { title: "Mapa de Leitos", icon: LayoutDashboard, link: "/mapa", profiles: ["qualidade"] },
+      ];
+    }
     // Coordenação (médica / enfermagem / multi): consulta transversal, somente leitura clínica
     if (isCoordinator) {
       const coordLabel = coordKind === "medico"
