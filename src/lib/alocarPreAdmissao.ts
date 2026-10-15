@@ -256,19 +256,43 @@ export async function alocarPreAdmissaoNoLeito({
   // admitted_at, is_vacant, previsão de alta, medical_responsibility, highlights, saps_*,
   // department, hospital/state → não gravados. queixa/alergias/pendências mapeadas para
   // internacoes.
+  // DATAS DO ATENDIMENTO (regra clinica): sao duas datas distintas, data E hora.
+  //  - data_admissao_uti = ADMISSAO NO SETOR: o instante em que o paciente e alocado
+  //    no leito (dataEntrada, escolhido na alocacao). Ancora o TPS / chip de setor.
+  //    Gravada para TODOS os setores (nao so UTI), senao o header/TPS caem no fallback
+  //    data_entrada e as duas datas voltam a se confundir.
+  //  - data_entrada = INTERNACAO HOSPITALAR: o inicio do "aguardando alocacao"
+  //    (pre-admissao.created_at = criado_em/data_hora), que e o ato que abre o
+  //    atendimento. Ancora o DIH. Nunca pode ser POSTERIOR a admissao no setor: numa
+  //    alocacao retroativa (dataEntrada backdated, anterior ao created_at de sistema)
+  //    as duas coincidem. Por isso data_entrada = min(created_at, dataEntrada).
+  const admissaoSetor = dataEntrada;
+  const aguardandoMs = Date.parse(fullData.created_at ?? "");
+  const internacaoHospitalar =
+    Number.isFinite(aguardandoMs) && aguardandoMs < admissaoSetor.getTime()
+      ? new Date(aguardandoMs)
+      : admissaoSetor;
+
   const { data: novaInternacao, error: interErr } = await supabase
     .from("internacoes")
+    // data_admissao_uti e coluna real do banco porem ausente dos tipos gerados
+    // (types.ts desatualizado, como peso_kg) — o RejectExcessProperties do supabase-js
+    // barraria a chave no .insert tipado. Cast do payload, mesma convencao de inserts
+    // com colunas degradadas neste codebase (ex.: AdminDashboardPage). Nao altera o
+    // baseline de tipos. As duas datas sao gravadas no MESMO insert (atomico).
     .insert({
       paciente_id: pacienteId,
       leito_id: leitoId,
       setor_classificacao_id: setorId,
-      data_entrada: dataEntrada.toISOString(),
+      data_entrada: internacaoHospitalar.toISOString(), // INTERNACAO HOSPITALAR (DIH)
+      data_admissao_uti: admissaoSetor.toISOString(),    // ADMISSAO NO SETOR (TPS)
       status: "ativa",
       queixa_principal: fullData.chief_complaint || null,
       historia_clinica: fullData.allergies ? `Alergias: ${fullData.allergies}` : null,
       pendencias: pendencias || null,
       registrado_por: registradoPor,
-    })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any)
     .select("id")
     .single();
   if (interErr) {
