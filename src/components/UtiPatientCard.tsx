@@ -910,18 +910,20 @@ export function UtiPatientCard({
                       <div className="shrink-0 flex items-center gap-1">
                         <div
                           className={cn(
-                            "flex items-center justify-center gap-1 px-2 py-0.5 rounded-md border",
+                            // Fonte padronizada das tarjas do mapa: 10px/medium/pill,
+                            // mesma metrica da DischargeStatusRibbon (harmonico e clean).
+                            "inline-flex items-center justify-center gap-1 px-1.5 py-0.5 rounded-full border leading-none",
                             containerCls
                           )}
                           title={`DIH — Dias de Internacao Hospitalar (desde a admissao, nao reinicia na transferencia). Verde <=7 · Amarelo 8-10 · Vermelho >10`}
                         >
-                          <span className={cn("text-[11px] font-semibold", textCls)}>DIH</span>
-                          <span className={cn("text-[11px] font-semibold", textCls)}>{daysInUti}</span>
+                          <span className={cn("text-[10px] font-medium", textCls)}>DIH</span>
+                          <span className={cn("text-[10px] font-medium", textCls)}>{daysInUti}</span>
                         </div>
                         {stayTimer && (
                           <div
                             className={cn(
-                              "flex items-center justify-center gap-1 px-2 py-0.5 rounded-md border",
+                              "inline-flex items-center justify-center gap-1 px-1.5 py-0.5 rounded-full border leading-none",
                               // TPS em tom neutro (muted) — acompanha a identidade e nao
                               // compete com a sinalizacao do card (setor/DIH). So o DIH
                               // muda de cor conforme o tempo.
@@ -929,8 +931,8 @@ export function UtiPatientCard({
                             )}
                             title={`TPS — Tempo de Permanencia no Setor: ${stayTimer.display} (desde a entrada no setor atual)`}
                           >
-                            <span className="text-[11px] font-semibold">TPS</span>
-                            <span className="text-[11px] font-semibold">{stayTimer.displayShort}</span>
+                            <span className="text-[10px] font-medium">TPS</span>
+                            <span className="text-[10px] font-medium">{stayTimer.displayShort}</span>
                           </div>
                         )}
                       </div>

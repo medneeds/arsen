@@ -1497,7 +1497,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                     <span className="inline-flex flex-col items-start gap-0.5 print:hidden">
                       {dih != null && (
                         <span
-                          className="inline-flex items-center gap-0.5 px-1.5 py-px rounded-full text-[11px] font-medium leading-none border bg-muted/60 text-muted-foreground border-border"
+                          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium leading-none border bg-muted/60 text-muted-foreground border-border"
                           title={`DIH — Dias de Internacao Hospitalar: ${formatDIHLabel(dih)} (desde a admissao, nao reinicia na transferencia)`}
                         >
                           DIH {formatDIHLabel(dih)}
@@ -1506,7 +1506,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                       {stayTimer && (
                         <span
                           className={cn(
-                            "inline-flex items-center gap-0.5 px-1.5 py-px rounded-full text-[11px] font-medium leading-none border",
+                            "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium leading-none border",
                             // TPS em tom neutro (muted) — acompanha a identidade e nao
                             // compete com a sinalizacao do card (setor/DIH). So o DIH
                             // muda de cor conforme o tempo.
@@ -1514,7 +1514,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                           )}
                           title={`Permanência no setor (TPS): ${stayTimer.display}${stayTimer.level === "warning" ? " >24h" : stayTimer.level === "orange" ? " >48h" : stayTimer.level === "critical" || stayTimer.level === "pulsing" ? " >72h" : ""}`}
                         >
-                          <Clock className="h-2.5 w-2.5" />
+                          <Clock className="h-3 w-3" />
                           <span>TPS {stayTimer.displayShort}</span>
                         </span>
                       )}
