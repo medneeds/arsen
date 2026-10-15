@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useHospital } from "@/contexts/HospitalContext";
+import { resolveSectorCode } from "@/config/sectorCoverage";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const isUuid = (v: unknown): v is string => typeof v === "string" && UUID_RE.test(v);
@@ -56,6 +57,12 @@ export function useInternalTransferQueue(sectorCode?: string | null) {
       .limit(500);
 
     if (!error && data) {
+      // O setor ativo (sectorCode) pode chegar como CODIGO ("enfermaria_transicao")
+      // ou como NOME do banco ("Enfermaria de Transição") — ver Index.activeSector.
+      // A sinalizacao grava target_sector_code como CODIGO. Normalizamos os DOIS
+      // lados para o codigo canonico antes de comparar; senao a fila do setor de
+      // DESTINO ficava vazia (e a secao sumia) quando o setor ativo vinha como nome.
+      const wantedCode = sectorCode ? (resolveSectorCode(sectorCode) ?? sectorCode) : null;
       const seen = new Set<string>();
       const mapped: InternalTransferRequestRow[] = [];
       for (const log of data as any[]) {
@@ -72,7 +79,13 @@ export function useInternalTransferQueue(sectorCode?: string | null) {
         seen.add(key);
         // Se o mais recente for conclusão/cancelamento, a internação saiu da fila.
         if (log.tipo_evento !== "sinalizacao_transferencia_interna") continue;
-        if (sectorCode && dn.target_sector_code !== sectorCode) continue;
+        // Compara por CODIGO canonico (destino gravado pode ser codigo ou, em
+        // registros antigos, rotulo; o setor ativo pode ser codigo ou nome).
+        const rowCode =
+          resolveSectorCode(dn.target_sector_code) ??
+          resolveSectorCode(dn.target_sector_label) ??
+          dn.target_sector_code;
+        if (wantedCode && rowCode !== wantedCode) continue;
         mapped.push({
           id: log.id,
           source_patient_id: log.internacao_id,
