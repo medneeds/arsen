@@ -219,6 +219,7 @@ export function AppSidebar() {
       items: [
         { name: "Mapa de Leitos", link: "/mapa", profiles: ["gestor"] },
         { name: "Quadro de Leitos", link: "/nir?modulo=censo_leitos", profiles: ["gestor"] },
+        { name: "Gestão de Leitos — Qualidade", link: "/gestao-leitos-qualidade", profiles: ["gestor"] },
       ],
     },
 
