@@ -103,8 +103,14 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
   const patientId = patient?.id;
   const patientDepartment = (patient as PatientWithDepartment | null)?.department;
 
+  const wasOpenRef = useRef(false);
   useEffect(() => {
-    if (open) {
+    // Reset SO na borda de subida de `open` (fechado -> aberto). Antes dependia de
+    // defaultReason (derivado do prop `patient`, que MUDA apos o encerramento —
+    // admissionStatus vira undefined): isso re-disparava o reset com o dialogo ainda
+    // aberto e apagava o pop "Atendimento encerrado" (voltava para a etapa notice).
+    // Com a guarda de borda, mutacoes do patient nao resetam mais o estado.
+    if (open && !wasOpenRef.current) {
       setStep("notice");
       setReason(defaultReason);
       setReasonNote("");
@@ -112,6 +118,7 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
       setSignaledDestination(null);
       setClosedInfo(null);
     }
+    wasOpenRef.current = open;
   }, [open, defaultReason]);
 
   // Busca o destino da sinalização existente (transferência interna/externa)
