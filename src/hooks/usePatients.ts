@@ -660,7 +660,23 @@ export function usePatients(department?: Department, sector?: string) {
       let leitoId: string | null = null;
       let pacienteId: string | null = null;
 
-      if (target && !target.isVacant) {
+      if (target && !target.isVacant && target.admissionStatus === ADMISSION_STATUS.INTERNAL_TRANSFER_PENDING) {
+        // CONTINUIDADE: transferencia interna NAO encerra o atendimento. NAO grava
+        // data_alta nem muda o status — a MESMA internacao segue ATIVA e e movida ao
+        // leito destino na conclusao da transferencia (fila). Fechar aqui (como fazia
+        // o ramo generico abaixo, com status='alta' + data_alta) encerrava o
+        // atendimento indevidamente e travava a alocacao no destino com "atendimento
+        // ja encerrado" (RPC complete_internal_transfer_atomic). So libera o leito.
+        const { data: inter, error } = await supabase
+          .from('internacoes')
+          .select('leito_id, paciente_id')
+          .eq('id', patientId)
+          .maybeSingle();
+        if (error) throw error;
+        const interRow = inter as { leito_id: string | null; paciente_id: string | null } | null;
+        leitoId = interRow?.leito_id ?? null;
+        pacienteId = interRow?.paciente_id ?? null;
+      } else if (target && !target.isVacant) {
         // Ocupado → patientId = internacoes.id. Encerra a internação AGORA (data_alta):
         // este e o unico ponto que fecha o atendimento no ciclo Opcao A (a sinalizacao
         // deixa a internacao aberta com o status de saida). Preserva o TIPO de desfecho

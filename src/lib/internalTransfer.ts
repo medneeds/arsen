@@ -219,9 +219,17 @@ export async function completeInternalTransfer(
       if (rpc.data?.success) return { ok: true, aviso: null };
       throw new Error("Transferencia nao confirmada pelo banco de dados");
     }
-    const rpcMissing = rpc.error?.code === "42883" || (rpc.error?.message ?? "").includes("does not exist");
-    if (!rpcMissing) throw rpc.error;
-    // RPC ausente → fallback sequencial (abaixo), com as mesmas regras de negocio.
+    const rpcMsg = rpc.error?.message ?? "";
+    const rpcMissing = rpc.error?.code === "42883" || rpcMsg.includes("does not exist");
+    // A RPC recusa internacao com data_alta setado ("Atendimento ja encerrado...
+    // readmita o paciente"). Isso ocorre quando o leito de ORIGEM foi desalocado
+    // antes de concluir a transferencia — o que NAO deveria encerrar o atendimento
+    // (transferencia interna = continuidade). Nesse caso caimos no caminho
+    // sequencial abaixo, que REABRE (data_alta=null) e move, em vez de travar.
+    const rpcEncerrado = rpcMsg.includes("encerrado") || rpcMsg.includes("readmita");
+    if (!rpcMissing && !rpcEncerrado) throw rpc.error;
+    // RPC ausente OU recusa por "encerrado" → fallback sequencial (abaixo), que
+    // reabre a internacao quando necessario, com as mesmas regras de negocio.
 
     // 1) Leito destino ainda livre? (bed.id === leitos.id de leito vago)
     const { data: destLeito, error: destErr } = await supabase
