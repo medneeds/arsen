@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { sectorLabelFromCode } from "@/lib/hospitalSectors";
+import { QualidadeShell } from "@/components/QualidadeShell";
 import { useGestaoLeitos, type GestaoLeitoRow } from "@/hooks/useGestaoLeitos";
 
 // ── Helpers de formatacao ──────────────────────────────────────────────────
@@ -217,28 +218,21 @@ export default function GestaoLeitosQualidadePage() {
   const hasFilters = q || tipo !== "todos" || desfecho !== "todos" || setor !== "todos" || dtIni || dtFim;
 
   return (
-    <div className="mx-auto w-full max-w-[1400px] space-y-4 p-4">
-      {/* Cabecalho */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <BedDouble className="h-5 w-5" />
-          </div>
-          <div>
-            <h1 className="text-lg font-semibold leading-tight text-foreground">Gestão de Leitos — Qualidade</h1>
-            <p className="text-xs text-muted-foreground">Tempos de movimentação de pacientes (admissões e transferências internas).</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => refetch()} className="gap-2">
+    <QualidadeShell
+      title="Gestão de Leitos — Qualidade"
+      subtitle="Tempos de movimentação de pacientes (admissões e transferências internas)."
+      icon={BedDouble}
+      actions={
+        <>
+          <Button variant="outline" size="sm" onClick={() => refetch()} className="h-9 gap-2 border-white/40 bg-white/95 text-foreground shadow-sm hover:bg-white hover:text-primary">
             <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} /> Atualizar
           </Button>
-          <Button size="sm" onClick={exportCsv} disabled={!filtered.length} className="gap-2">
+          <Button size="sm" onClick={exportCsv} disabled={!filtered.length} className="h-9 gap-2">
             <Download className="h-4 w-4" /> Exportar CSV
           </Button>
-        </div>
-      </div>
-
+        </>
+      }
+    >
       {error && (
         <Card className="border-destructive/40 bg-destructive/10">
           <CardContent className="flex items-start gap-3 p-4 text-sm">
@@ -422,6 +416,6 @@ export default function GestaoLeitosQualidadePage() {
       <p className="text-center text-[11px] text-muted-foreground">
         Fonte: view <code className="font-mono">vw_gestao_leitos</code> · datas em {fmtDate(new Date().toISOString())} · uso restrito ao setor de qualidade/gestão.
       </p>
-    </div>
+    </QualidadeShell>
   );
 }

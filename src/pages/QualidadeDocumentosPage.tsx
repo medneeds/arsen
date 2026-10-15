@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { QualidadeShell } from "@/components/QualidadeShell";
 import { supabase } from "@/integrations/supabase/client";
 
 interface DocRow {
@@ -100,28 +101,21 @@ export default function QualidadeDocumentosPage() {
   const catDef = CATEGORIAS.find((c) => c.id === categoria)!;
 
   return (
-    <div className="mx-auto w-full max-w-[1200px] space-y-4 p-4">
-      {/* Cabecalho */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <FolderOpen className="h-5 w-5" />
-          </div>
-          <div>
-            <h1 className="text-lg font-semibold leading-tight text-foreground">Repositório de Documentos — Qualidade</h1>
-            <p className="text-xs text-muted-foreground">Documentação institucional e fluxos manuais (POPs, padronizações, ações clínicas).</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => refetch()} className="gap-2">
+    <QualidadeShell
+      title="Repositório de Documentos — Qualidade"
+      subtitle="Documentação institucional e fluxos manuais (POPs, padronizações, ações clínicas)."
+      icon={FolderOpen}
+      actions={
+        <>
+          <Button variant="outline" size="sm" onClick={() => refetch()} className="h-9 gap-2 border-white/40 bg-white/95 text-foreground shadow-sm hover:bg-white hover:text-primary">
             <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} /> Atualizar
           </Button>
-          <Button size="sm" className="gap-2" disabled={notConfigured} title={notConfigured ? "Ambiente em configuração" : undefined}>
+          <Button size="sm" className="h-9 gap-2" disabled={notConfigured} title={notConfigured ? "Ambiente em configuração" : undefined}>
             <Upload className="h-4 w-4" /> Enviar documento
           </Button>
-        </div>
-      </div>
-
+        </>
+      }
+    >
       {notConfigured && (
         <Card className="border-primary/30 bg-primary/5">
           <CardContent className="flex items-start gap-3 p-4 text-sm">
@@ -231,6 +225,6 @@ export default function QualidadeDocumentosPage() {
           })}
         </div>
       )}
-    </div>
+    </QualidadeShell>
   );
 }

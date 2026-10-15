@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { QualidadeShell } from "@/components/QualidadeShell";
 import { useIndicadoresData, type InternacaoIndic } from "@/hooks/useIndicadoresData";
 
 const DESFECHO_LABEL: Record<string, string> = {
@@ -192,19 +193,25 @@ export default function IndicadoresQualidadePage() {
   }, [internacoes, baseInternacoes, setores, leitosTotal, dtIni, dtFim, setorSel, desfechoSel]);
 
   return (
-    <div className="mx-auto w-full max-w-[1400px] space-y-4 p-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <HeartPulse className="h-5 w-5" />
-          </div>
-          <div>
-            <h1 className="text-lg font-semibold leading-tight text-foreground">Indicadores de Qualidade — Gestão de Pacientes</h1>
-            <p className="text-xs text-muted-foreground">Ocupação, permanência, giro, mortalidade e reinternação. Referências: Fiocruz / ANS-QualiSS / Anvisa.</p>
-          </div>
-        </div>
-        <div className="flex flex-wrap items-end gap-2">
-          <div className="min-w-[160px]">
+    <QualidadeShell
+      title="Indicadores de Qualidade — Gestão de Pacientes"
+      subtitle="Ocupação, permanência, giro, mortalidade e reinternação. Referências: Fiocruz / ANS-QualiSS / Anvisa."
+      icon={HeartPulse}
+      actions={
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => refetch()}
+          className="h-9 gap-2 border-white/40 bg-white/95 text-foreground shadow-sm hover:bg-white hover:text-primary"
+        >
+          <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} /> Atualizar
+        </Button>
+      }
+    >
+      {/* Filtros */}
+      <Card>
+        <CardContent className="flex flex-wrap items-end gap-3 p-4">
+          <div className="min-w-[180px] flex-1 sm:flex-none">
             <Label className="text-xs">Setor</Label>
             <Select value={setorSel} onValueChange={setSetorSel}>
               <SelectTrigger className="mt-1 h-9 text-sm"><SelectValue /></SelectTrigger>
@@ -216,11 +223,8 @@ export default function IndicadoresQualidadePage() {
           </div>
           <div><Label className="text-xs">De</Label><Input type="date" value={dtIni} onChange={(e) => setDtIni(e.target.value)} className="mt-1 h-9 text-sm" /></div>
           <div><Label className="text-xs">Até</Label><Input type="date" value={dtFim} onChange={(e) => setDtFim(e.target.value)} className="mt-1 h-9 text-sm" /></div>
-          <Button variant="outline" size="sm" onClick={() => refetch()} className="h-9 gap-2">
-            <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} /> Atualizar
-          </Button>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {error && (
         <Card className="border-destructive/40 bg-destructive/10">
@@ -344,6 +348,6 @@ export default function IndicadoresQualidadePage() {
         Período: {format(new Date(dtIni), "dd/MM/yyyy", { locale: ptBR })} a {format(new Date(dtFim), "dd/MM/yyyy", { locale: ptBR })} ·
         indicadores calculados sobre internações do Arsen. SMR (mortalidade observada/esperada via SAPS 3) e indicadores de IRAS/segurança entram na próxima fase.
       </p>
-    </div>
+    </QualidadeShell>
   );
 }
