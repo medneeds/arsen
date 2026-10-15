@@ -77,6 +77,7 @@ const MovimentacoesPage = lazy(() => import("./pages/MovimentacoesPage"));
 const MedicationCatalogPage = lazy(() => import("./pages/MedicationCatalogPage"));
 const GestorPanelPage = lazy(() => import("./pages/GestorPanelPage"));
 const GestaoLeitosQualidadePage = lazy(() => import("./pages/GestaoLeitosQualidadePage"));
+const IndicadoresQualidadePage = lazy(() => import("./pages/IndicadoresQualidadePage"));
 const ValidacaoFarmaceuticaPage = lazy(() => import("./pages/ValidacaoFarmaceuticaPage"));
 const PainelClinicoPage = lazy(() => import("./pages/PainelClinicoPage"));
 const PacienteHubPage = lazy(() => import("./pages/PacienteHubPage"));
@@ -306,6 +307,7 @@ const App = () => {
               <Route path="/paciente" element={<ProtectedRoute><MainLayout><PacienteHubPageWrapper /></MainLayout></ProtectedRoute>} />
               <Route path="/resources" element={<ProtectedRoute><MainLayout><ResourcesPage /></MainLayout></ProtectedRoute>} />
               <Route path="/gestao-leitos-qualidade" element={<ProtectedRoute><MainLayout><GestaoLeitosQualidadePage /></MainLayout></ProtectedRoute>} />
+              <Route path="/indicadores-qualidade" element={<ProtectedRoute><MainLayout><IndicadoresQualidadePage /></MainLayout></ProtectedRoute>} />
               <Route path="/codigos" element={<ProtectedRoute><MainLayout><MedicalCodesPage /></MainLayout></ProtectedRoute>} />
               <Route path="/handovers" element={<ProtectedRoute><MainLayout><HandoversPage /></MainLayout></ProtectedRoute>} />
               <Route path="/versions" element={<ProtectedRoute><MainLayout><VersionsPage /></MainLayout></ProtectedRoute>} />

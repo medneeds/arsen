@@ -220,6 +220,7 @@ export function AppSidebar() {
         { name: "Mapa de Leitos", link: "/mapa", profiles: ["gestor"] },
         { name: "Quadro de Leitos", link: "/nir?modulo=censo_leitos", profiles: ["gestor"] },
         { name: "Gestão de Leitos — Qualidade", link: "/gestao-leitos-qualidade", profiles: ["gestor"] },
+        { name: "Indicadores de Qualidade", link: "/indicadores-qualidade", profiles: ["gestor"] },
       ],
     },
 
@@ -432,6 +433,8 @@ export function AppSidebar() {
         { name: "Usuários", link: "/painel-admin?tab=equipe" },
         { name: "Hospital", link: "/painel-admin?tab=hospital" },
         { name: "Identidade visual", link: "/painel-admin?tab=branding" },
+        { name: "Qualidade — Gestão de Leitos", link: "/gestao-leitos-qualidade" },
+        { name: "Qualidade — Indicadores", link: "/indicadores-qualidade" },
       ];
       // Mescla com qualquer "Administração" já existente no menu do módulo
       // (ex.: o menu do Gestor tem uma) — evita dois grupos "Administração".
