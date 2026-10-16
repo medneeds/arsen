@@ -9,6 +9,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { printAdmissionNormaZero } from "@/lib/printAdmission";
+import { formatDeviceLabel } from "@/lib/devicesCatalog";
+import { richHtmlToPlainText } from "@/components/ui/rich-text-editor";
 import { resolveCurrentBedSector } from "@/lib/resolvePatientHeader";
 import { useHospital } from "@/contexts/HospitalContext";
 import { fromEvolucaoStatusDb } from "@/lib/evolucaoStatus";
@@ -508,19 +510,42 @@ export default function PacienteHubPage() {
     // CID sem coluna → usa o preservado no JSON soap.__cid_*).
     const { data: inter } = await supabase
       .from("internacoes")
-      .select("historia_clinica, conduta_inicial, hipotese_diagnostica")
+      .select("historia_clinica, conduta_inicial, hipotese_diagnostica, exames_relevantes, previsao_alta, peso_kg, paciente:pacientes(alergias)")
       .eq("id", ctx.patientId)
       .maybeSingle();
 
     const soap: any = ev?.soap || {};
     const vs: any = soap.__vital_signs || {};
     const pe: any = ev?.exame_fisico || {};
+    const interRow = (inter ?? {}) as {
+      historia_clinica?: string | null; conduta_inicial?: string | null; hipotese_diagnostica?: string | null;
+      exames_relevantes?: string | null; previsao_alta?: string | null; peso_kg?: number | null;
+      paciente?: { alergias?: string | null } | { alergias?: string | null }[] | null;
+    };
+    const pacRel = Array.isArray(interRow.paciente) ? interRow.paciente[0] : interRow.paciente;
     const a: any = {
       cid_primary: soap.__cid_primary || "",
       cid_secondary: soap.__cid_secondary,
-      clinical_history: (inter as any)?.historia_clinica || null,
-      initial_conduct: (inter as any)?.conduta_inicial || null,
+      clinical_history: interRow.historia_clinica || null,
+      initial_conduct: interRow.conduta_inicial || null,
     };
+
+    // Reconstrucao COMPLETA (estrutura nova) para a reimpressao nao perder campo.
+    const amp = Array.isArray(soap.antecedentes) ? (soap.antecedentes as string[]).filter(Boolean).join("\n") : "";
+    const muc = (soap.__muc as string) || "";
+    const antro = (soap.__antropometria ?? {}) as { peso?: string; altura?: string; imc?: { value?: string; label?: string } | null };
+    const weightStr = (antro.peso || "").toString().trim() || (interRow.peso_kg != null ? String(interRow.peso_kg) : "");
+    const hyp = ((interRow.hipotese_diagnostica as string) || (soap.__diagnostic_hypotheses as string) || "").split("\n").map((s: string) => s.trim()).filter(Boolean);
+    const devicesStr = Array.isArray(soap.devices) ? (soap.devices as { label: string; detail?: string }[]).map(formatDeviceLabel).filter(Boolean).join("; ") : "";
+    const culturasStr = richHtmlToPlainText(soap.culturesHtml as string | undefined).trim();
+    const antibStr = richHtmlToPlainText(soap.antibioticos as string | undefined).trim();
+    const culturesAtb = [culturasStr && `Culturas: ${culturasStr}`, antibStr && `Antibióticos: ${antibStr}`].filter(Boolean).join("\n");
+    const utiJust = (soap.__uti_justificativa ?? {}) as { codigo?: string; outro?: string };
+    const utiReason = (utiJust.outro || "").trim() || (utiJust.codigo || "").trim();
+    const vasoativo = typeof soap.__uti_vasoativo === "boolean" ? (soap.__uti_vasoativo ? "Sim" : "Não") : "";
+    const ovm = (vs.glasgow_ovm ?? {}) as { ocular?: number; verbal?: number; motora?: number };
+    const num = (x: unknown): number | null => (x != null && x !== "" && !isNaN(Number(x)) ? Number(x) : null);
+    const isUtiAdm = ["red", "yellow", "blue", "outside", "uti_01", "uti_02", "uci_01", "uci_02"].includes(ctx.patientSector);
 
     // Leito/setor ATUAIS (após relocações), com fallback para o que veio em ctx.
     const live = await resolveCurrentBedSector(ctx.patientId);
@@ -551,14 +576,24 @@ export default function PacienteHubPage() {
       },
       hospitalName: currentHospital?.name,
       doctorName: soap.__validated_by_name || "Médico Assistente",
-      isUti: ["red", "yellow", "blue", "outside", "uti_01", "uti_02", "uci_01", "uci_02"].includes(ctx.patientSector),
+      isUti: isUtiAdm,
       hda: a.clinical_history || soap.subjective || "",
+      amp: amp || undefined,
+      muc: muc || undefined,
+      allergies: pacRel?.alergias || undefined,
+      weight: weightStr || undefined,
+      height: (antro.altura || "").toString().trim() || undefined,
+      imc: antro.imc && antro.imc.value ? { value: String(antro.imc.value), label: String(antro.imc.label ?? "") } : null,
       vitals: { pa: vs.pa, fc: vs.fc, fr: vs.fr, spo2: vs.spo2, tax: vs.temp, dx: vs.dx },
-      exam: { general: pe.general, cv: pe.cardiovascular, resp: pe.respiratory, abd: pe.abdomen, ext: pe.extremities },
+      exam: { general: pe.general, cv: pe.cardiovascular, resp: pe.respiratory, abd: pe.abdomen, ext: pe.extremities, neuro: pe.neurological, skin: pe.skin, other: pe.other },
       plan: splitDischargePrediction(a.initial_conduct || soap.plan).plan,
       cidPrimary: a.cid_primary || "",
       cidSecondary: a.cid_secondary,
-      dischargePredictionLabel: splitDischargePrediction(a.initial_conduct || soap.plan).label || "—",
+      dischargePredictionLabel: interRow.previsao_alta || splitDischargePrediction(a.initial_conduct || soap.plan).label || "—",
+      hypotheses: hyp.length ? hyp : undefined,
+      complementares: interRow.exames_relevantes || undefined,
+      scales: { glasgowTotal: num(vs.glasgow), glasgowEye: num(ovm.ocular), glasgowVerbal: num(ovm.verbal), glasgowMotor: num(ovm.motora), sedoanalgesia: !!vs.sedoanalgesia, rass: num(vs.rass) },
+      uti: isUtiAdm ? { admissionReason: utiReason || undefined, vasoativo: vasoativo || undefined, originSector: (soap.__uti_origem as string) || undefined, devices: devicesStr || undefined, culturesAtb: culturesAtb || undefined } : undefined,
       sapsPending,
     });
   };
