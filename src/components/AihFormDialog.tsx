@@ -147,6 +147,31 @@ export function AihFormDialog({ open, onOpenChange, patientId, patientName, orig
   const loadPatientData = async () => {
     setLoadingPatient(true);
     try {
+      // CID (seed) do paciente — lê a evolucao/admissao mais recente com __cid_primary
+      // (MESMA fonte do cabecalho clinico / usePatientCid). Preenche o CID-10 principal
+      // e secundario da APAC automaticamente. Antes ficava vazio (so manual), o que
+      // travava a emissao (UTI 1). So o codigo vai no campo de CID (antes do " - desc").
+      try {
+        const { data: evs } = await supabase
+          .from("evolucoes")
+          .select("soap, data_hora")
+          .eq("internacao_id", patientId)
+          .order("data_hora", { ascending: false })
+          .limit(5);
+        const onlyCode = (v: string) => v.split(/\s[-–—]\s/)[0].trim();
+        const withCid = ((evs ?? []) as { soap?: Record<string, unknown> }[])
+          .map((r) => (r?.soap ?? {}) as Record<string, unknown>)
+          .find((s) => typeof s.__cid_primary === "string" && !!(s.__cid_primary as string));
+        if (withCid) {
+          setCidPrimary(onlyCode(withCid.__cid_primary as string));
+          const sec = withCid.__cid_secondary;
+          const secArr = Array.isArray(sec)
+            ? (sec as unknown[]).filter((x): x is string => typeof x === "string" && !!x)
+            : typeof sec === "string" && sec ? [sec] : [];
+          if (secArr.length) setCidSecondary(onlyCode(secArr[0]));
+        }
+      } catch { /* best-effort: CID segue manual */ }
+
       // MIGRAÇÃO: patients + patient_registry → internacoes + paciente:pacientes.
       // patientId é o id da internação; os dados de cadastro vêm de pacientes.
       const { data } = await supabase
