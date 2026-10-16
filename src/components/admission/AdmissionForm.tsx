@@ -1439,6 +1439,19 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
             rass: sedoanalgesia && rass != null ? String(rass) : "",
             diurese: "", dor: "",
           },
+          // MUC, antropometria (altura/IMC) e origem (UTI) viviam SO no texto do SOAP
+          // (subjective/objective/assessment). Agora tambem como chaves estruturadas —
+          // aditivas — para a view read-only e a reimpressao consumirem a admissao
+          // completa a partir do banco, sem parse de texto. Peso ja esta em
+          // internacoes.peso_kg; alergias em pacientes.alergias; complementares em
+          // internacoes.exames_relevantes; previsao em internacoes.previsao_alta.
+          __muc: muc || null,
+          __antropometria: {
+            peso: weight || null,
+            altura: height || null,
+            imc: imc ? { value: imc.value, label: imc.label } : null,
+          },
+          ...(isUti ? { __uti_origem: originSector || null } : {}),
           __diagnostic_hypotheses: diagnosticHypotheses.trim() || null,
           __cid_primary: cidPrimary || null,
           __cid_secondary: cidSecondary || null,
