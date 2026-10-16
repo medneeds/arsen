@@ -96,7 +96,7 @@ export function AdmissaoReadOnlyView({ internacaoId }: Props) {
       const [{ data: evos }, { data: inter }] = await Promise.all([
         supabase
           .from("evolucoes")
-          .select("status, soap, data_hora")
+          .select("status, soap, exame_fisico, data_hora")
           .eq("internacao_id", internacaoId)
           .order("data_hora", { ascending: false }),
         supabase
@@ -106,7 +106,7 @@ export function AdmissaoReadOnlyView({ internacaoId }: Props) {
           .maybeSingle(),
       ]);
       if (cancel) return;
-      const adm = ((evos ?? []) as { status?: string; soap?: Record<string, unknown>; data_hora?: string }[])
+      const adm = ((evos ?? []) as { status?: string; soap?: Record<string, unknown>; exame_fisico?: Record<string, unknown>; data_hora?: string }[])
         .filter((e) => (e.soap as { __evolution_type?: string })?.__evolution_type === "admission");
       const root =
         adm.find((e) => e.status === "validated" && !(e.soap as { parent_id?: string })?.parent_id) ||
@@ -117,7 +117,9 @@ export function AdmissaoReadOnlyView({ internacaoId }: Props) {
         setD0({
           soap,
           vs: (soap.__vital_signs ?? {}) as Record<string, unknown>,
-          pe: (soap.__physical_exam ?? {}) as Record<string, unknown>,
+          // Exame fisico vive na COLUNA evolucoes.exame_fisico (nao em soap). Antes a
+          // view lia soap.__physical_exam (inexistente) e o exame nunca aparecia.
+          pe: (root.exame_fisico ?? soap.__physical_exam ?? {}) as Record<string, unknown>,
           validatedByName: (soap.__validated_by_name as string) ?? null,
           createdByName: (soap.__created_by_name as string) ?? null,
           dataHora: root.data_hora ?? null,
@@ -189,16 +191,21 @@ export function AdmissaoReadOnlyView({ internacaoId }: Props) {
           { label: "SpO₂", value: vs.spo2 },
           { label: "Temp", value: vs.temp },
           { label: "Dextro", value: vs.dx },
+          { label: "Glasgow", value: vs.glasgow },
+          { label: "RASS", value: vs.sedoanalgesia ? vs.rass : "" },
         ]}
       />
 
-      {(pe.general || pe.cardiovascular || pe.respiratory || pe.abdomen || pe.extremities) && (
+      {(pe.general || pe.cardiovascular || pe.respiratory || pe.abdomen || pe.neurological || pe.extremities || pe.skin || pe.other) && (
         <Group title="Exame físico">
           <Field label="Geral" value={pe.general} />
           <Field label="Cardiovascular" value={pe.cardiovascular} />
           <Field label="Respiratório" value={pe.respiratory} />
           <Field label="Abdome" value={pe.abdomen} />
+          <Field label="Neurológico" value={pe.neurological} />
           <Field label="Extremidades" value={pe.extremities} />
+          <Field label="Pele / tegumentar" value={pe.skin} />
+          <Field label="Outros" value={pe.other} />
         </Group>
       )}
 
