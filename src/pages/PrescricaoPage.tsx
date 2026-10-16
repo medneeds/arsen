@@ -11194,8 +11194,12 @@ const PrescricaoPage = () => {
             return list.filter(it => !isGeneric(it));
           };
           if (editingInsulinItemId) {
+            // Sincroniza o NOME com o esquema novo (mesma regra da criacao). Sem
+            // isso, ao editar o esquema (ex.: EV Continua -> Basal-Bolus) o nome
+            // ficava congelado no headline antigo enquanto o corpo mostrava o novo
+            // (nome e corpo dessincronizados no impresso, que le item.name).
             setItems(prev => stripGenericScheme(prev).map(it => it.id === editingInsulinItemId
-              ? { ...it, insulinPlan: plan } // instructions não é mais usado p/ insulina — evita duplicação no impresso
+              ? { ...it, insulinPlan: plan, name: `Insulinoterapia — ${desc.headline}` } // instructions não é mais usado p/ insulina — evita duplicação no impresso
               : it
             ));
             toast.success('Plano de insulinoterapia atualizado');
@@ -12043,12 +12047,19 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                   {item.doubleCheck && (
                     <span style={{ fontSize: '5.5pt', fontWeight: 800, marginRight: '4px', color: '#fff', backgroundColor: '#0f172a', padding: '0.5px 3px', borderRadius: '2px', letterSpacing: '0.3px', verticalAlign: 'middle' }}>2x CHECK</span>
                   )}
-                  <span style={{ fontWeight: 800 }}>{item.name}</span>
+                  <span style={{ fontWeight: 800 }}>{insulinDesc ? `Insulinoterapia — ${insulinDesc.headline}` : item.name}</span>
                   {item.presentation && item.presentation !== '-' && (
                     <span style={{ fontWeight: 500, color: '#334155', fontSize: '7.5pt' }}> ({abbrevPresentation(item.presentation)})</span>
                   )}
                 </div>
-                {item.category !== 'nutrition' && (() => {
+                {item.category !== 'nutrition' && !item.insulinPlan && (() => {
+                  // Insulina: o corpo generico (dose/via/BIC/vazao) nao se aplica —
+                  // a dose real vive no insulinPlan e o bloco estruturado abaixo
+                  // (insulinDesc) ja traz tudo para a enfermagem. Sem esse guard,
+                  // saiam residuais do createItem ("Qtd.: 1 UI . EV . BIC . BIC .
+                  // Vazao: conforme protocolo"). Mesma regra do impresso extra
+                  // (printExtraPrescription.buildLine2: if (it.insulinPlan) return '')
+                  // e da tela (insulin plan view com return cedo).
                   const isHydr = item.category === 'hydration';
                   // Hidratação: frase única da fonte única (buildHydrationLine)
                   // — mesma da tela compacta, com fases, vazão e TOTAL/24h
