@@ -291,8 +291,9 @@ export function applyInfusionProfileDefaults<T extends Record<string, any>>(
       out.infusionTimeUnit = profile.defaultInfusionTimeUnit;
     }
   }
-  if (profile.preferredAccess && isEmpty(out.accessType)) {
-    out.accessType = profile.preferredAccess;
-  }
+  // Acesso (central/periferico) NAO e mais auto-preenchido: aparecia no impresso
+  // ("central") sem o medico ter configurado. O acesso agora so entra quando
+  // escolhido explicitamente. profile.preferredAccess segue disponivel para
+  // consulta/sugestao na UI, mas nao grava no item automaticamente.
   return out;
 }

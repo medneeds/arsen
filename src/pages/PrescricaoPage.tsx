@@ -6923,16 +6923,16 @@ const PrescricaoPage = () => {
         base.infusionTime = infTime;
         if (!base.infusionTimeUnit) base.infusionTimeUnit = 'min';
       }
-      // Reconstituição (solvente + volume): concatenar nas instructions (não há campo dedicado)
+      // Reconstituição (solvente + volume): grava nos campos ESTRUTURADOS, que o
+      // buildPrepSegments ja renderiza como head "Reconstituir: X FA em SOLV VOL mL"
+      // na tela e no impresso (fonte unica). Antes era concatenado TAMBEM no texto
+      // livre `instructions`, e a reconstituicao saia DUPLICADA no impresso (head
+      // estruturado + linha de instrucao).
       const solv = (entry.reconSolvent || '').trim();
       const solvVol = (entry.reconVolume || '').trim();
       if (solv && solvVol) {
-        const reconLine = `Reconstituir em ${solvVol} mL de ${solv}`;
-        const current = (base.instructions || '').trim();
-        // Evita duplicar se já existir esta orientação
-        if (!current.toLowerCase().includes('reconstituir em')) {
-          base.instructions = current ? `${current} · ${reconLine}` : reconLine;
-        }
+        if (!base.reconstitutionSolvent) base.reconstitutionSolvent = solv;
+        if (!base.reconstitutionVolume) base.reconstitutionVolume = solvVol;
       }
       return base;
     });
@@ -12068,9 +12068,14 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                   // item; volume/fase e vazão já estão na frase).
                   const dose = isHydr ? '' : buildSolutoTokenLabeled(item);
                   const via  = item.route && item.route !== '-' ? abbrevRoute(item.route) : null;
-                  const freq = !isHydr && item.posology && item.posology !== '-' ? item.posology : null;
                   const access = item.accessType && item.accessType !== '-' ? item.accessType : null;
                   const { head, tail } = isHydr ? { head: [] as string[], tail: [] as string[] } : buildPrepSegments(item);
+                  // Posologia "Continuo/Continua" e redundante quando o modo ja e BIC
+                  // (bomba de infusao CONTINUA) — o tail ja mostra "BIC" + Vazao. Nesse
+                  // caso oculta a posologia para nao duplicar a informacao de continuidade.
+                  const freq = !isHydr && item.posology && item.posology !== '-'
+                    && !(tail.includes('BIC') && /^cont[íi]nu[ao]$/i.test(item.posology.trim()))
+                    ? item.posology : null;
                   const hasPrep = (head.length + tail.length) > 0;
                   // NOVA ORDEM (raciocínio do médico): DOSE · Dil. · Vol. · Via · Acesso · Intervalo · Modo · Infusão
                   // Segmentos do corpo da linha, na ordem definida. Cada um vira um "·"-separado.
