@@ -2805,13 +2805,27 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
         const SELECT_INTERN = "id, paciente_id, hipotese_diagnostica, queixa_principal, historia_clinica, conduta_inicial, paciente:pacientes(prontuario, nome_completo, nome_social, cpf, cns, data_nascimento, sexo, nome_mae, telefone, endereco)";
         let internacao: Record<string, unknown> | null = null;
         if (validPid) {
+          // `patientId` pode ser internacoes.id (fluxo do cockpit/mapa, onde
+          // patient.id = internacao ATIVA) OU pacientes.id (a PESSOA — aberto por
+          // Documentos do paciente/busca, que navegam pelo cadastro). Tenta como
+          // internacao e, se nao for, resolve a internacao ATIVA da pessoa. Antes
+          // so tentava .eq("id") -> abrindo pela pessoa, a APAC saia em branco (o
+          // hydrate abortava) e "nao reconhecia o atendimento ativo".
           const { data } = await supabase.from("internacoes").select(SELECT_INTERN).eq("id", validPid).maybeSingle();
           internacao = (data as Record<string, unknown> | null) ?? null;
-        } else if (fallbackName) {
-          // Fallback por NOME: APAC aberta SEM o id da internacao (so o nome, caso do
-          // redirect/abertura avulsa). Acha o paciente por nome com match UNICO (evita
-          // paciente errado) e a internacao ATIVA dele, para puxar prontuario/CID/
-          // diagnostico mesmo assim — antes a APAC saia vazia.
+          if (!internacao) {
+            const { data: byPac } = await supabase
+              .from("internacoes").select(SELECT_INTERN)
+              .eq("paciente_id", validPid).is("data_alta", null)
+              .order("data_entrada", { ascending: false }).limit(1).maybeSingle();
+            internacao = (byPac as Record<string, unknown> | null) ?? null;
+          }
+        }
+        if (!internacao && fallbackName) {
+          // Fallback por NOME: APAC aberta SEM id de internacao nem id de pessoa
+          // valido (so o nome, caso do redirect/abertura avulsa). Match UNICO por
+          // nome (evita paciente errado) e a internacao ATIVA dele, para puxar
+          // prontuario/CID/diagnostico mesmo assim — antes a APAC saia vazia.
           const { data: pacs } = await supabase
             .from("pacientes")
             .select("id")
@@ -2831,8 +2845,10 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
         }
         if (!internacao || cancelled) return;
         const internId = String(internacao.id ?? validPid ?? "");
-        // Propaga o id resolvido ao form (habilita importar admissao/evolucao e o vinculo da solicitacao).
-        if (!validPid && internId && !cancelled) {
+        // Propaga o id REAL da internacao ao form sempre que diferir do que veio na
+        // URL (id da pessoa, ou abertura so por nome). Sem isso, o salvar gravaria
+        // internacao_id errado (a pessoa) e o import de admissao/evolucao falhava.
+        if (internId && internId !== validPid && !cancelled) {
           onSelectPatient?.({ id: internId, name: fallbackName, bed_number: null, sector: null });
         }
         const pacienteId = (internacao as any).paciente_id as string | null;
