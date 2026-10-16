@@ -11,7 +11,7 @@
  * sugestões iniciais baseadas em peso, faixa de glicemia e meta.
  */
 
-export type InsulinScheme = 'basal_bolus' | 'sliding' | 'nph_fixed' | 'iv_continuous';
+export type InsulinScheme = 'basal_bolus' | 'sliding' | 'nph_fixed' | 'iv_continuous' | 'gik';
 
 export type BasalInsulin = 'NPH' | 'Glargina' | 'Detemir' | 'Degludeca';
 export type BolusInsulin = 'Regular' | 'Lispro' | 'Aspart' | 'Glulisina';
@@ -68,6 +68,12 @@ export interface InsulinPlan {
   ivAdjustmentRule?: string;        // texto livre / preset
   ivKMonitoring?: boolean;          // K+ a cada 2-4h em DKA
   ivTransitionRule?: string;        // critério para virar SC
+
+  /** ===== gik (glicoinsulinoterapia para HIPERCALEMIA — glicose + insulina, SEM K+) ===== */
+  gikInsulinUnits?: number;         // UI de insulina regular EV (default 10)
+  gikGlucose?: string;              // glicose (default "SG 50% 100 mL (50 g)")
+  gikInfusionTime?: string;         // tempo de infusao (default "15-30 min")
+  gikHgtMonitoring?: string;        // esquema de monitoramento de HGT (default "30 min, 1 h e depois 2/2h")
 
   /** Notas / orientações livres. */
   notes?: string;
@@ -334,6 +340,20 @@ export function describeInsulinPlan(plan: InsulinPlan): { headline: string; line
       // glicemia (ex.: "≤250 → SG5%"), mas nenhum protocolo tinha uma
       // conduta EXPLÍCITA de resgate para HGT < 70 (parar bomba + glicose).
       lines.push(`HGT < 70 → PARAR a bomba de insulina imediatamente. ${plan.hypoglycemiaProtocol?.trim() || DEFAULT_HYPO_PROTOCOL} Reavaliar antes de religar.`);
+      break;
+    }
+    case 'gik': {
+      // Glicoinsulinoterapia para HIPERCALEMIA: glicose + insulina regular EV,
+      // SEM potassio (o objetivo e deslocar K+ para o intracelular). Dose e
+      // monitoramento editaveis; defaults confirmados pelo gestor.
+      const u = plan.gikInsulinUnits ?? 10;
+      const g = plan.gikGlucose?.trim() || 'SG 50% 100 mL (50 g)';
+      const t = plan.gikInfusionTime?.trim() || '15-30 min';
+      headline = 'Glicoinsulinoterapia · Hipercalemia';
+      lines.push(`Insulina Regular ${u} UI EV + ${g} — correr em ${t}`);
+      lines.push('Se HGT > 250 mg/dL: fazer insulina SEM glicose (avaliar).');
+      lines.push(`Monitorar HGT: ${plan.gikHgtMonitoring?.trim() || '30 min, 1 h e depois 2/2h'} (risco de hipoglicemia tardia).`);
+      lines.push(`HGT < 70 → ${plan.hypoglycemiaProtocol?.trim() || DEFAULT_HYPO_PROTOCOL}`);
       break;
     }
   }

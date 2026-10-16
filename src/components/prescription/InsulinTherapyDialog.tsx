@@ -19,7 +19,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight, Syringe, Activity, Clock, Zap, Check, Plus, Trash2, AlertTriangle } from "lucide-react";
+import { ChevronLeft, ChevronRight, Syringe, Activity, Clock, Zap, Check, Plus, Trash2, AlertTriangle, Droplets } from "lucide-react";
 import {
   type InsulinPlan, type InsulinScheme, type SlidingRow, type InsulinDose,
   type BasalInsulin, type BolusInsulin,
@@ -46,6 +46,7 @@ const SCHEME_OPTIONS: { value: InsulinScheme; label: string; desc: string; icon:
   { value: 'sliding',      label: 'ESQUEMA DE RESGATE',   desc: 'Insulina Regular SC conforme HGT (sliding scale) — uso isolado',     icon: Syringe },
   { value: 'nph_fixed',    label: 'NPH FIXA',             desc: 'Doses fixas 2/3 manhã + 1/3 noite · 0,2 U/kg/dia',                   icon: Clock },
   { value: 'iv_continuous',label: 'INSULINA EV CONTÍNUA', desc: 'BIC · DKA, HHS, controle UTI ou pós-op cardíaco',                    icon: Zap },
+  { value: 'gik',          label: 'GLICOINSULINO (HIPERCALEMIA)', desc: 'Glicose + insulina regular EV, SEM potássio · desloca K+ para o intracelular', icon: Droplets },
 ];
 
 export function InsulinTherapyDialog({
@@ -134,6 +135,15 @@ export function InsulinTherapyDialog({
     if (plan.scheme === 'nph_fixed'   && !plan.nphDoses?.length   && plan.weightKg) recalcNph();
     if (plan.scheme === 'iv_continuous' && !plan.ivProtocol) applyIvProtocol('uti_glicemia');
     if (plan.scheme === 'sliding' && !plan.slidingRows?.length) updatePlan({ slidingRows: suggestSlidingByWeight(plan.weightKg) });
+    if (plan.scheme === 'gik' && plan.gikInsulinUnits == null) {
+      // Defaults confirmados pelo gestor para hipercalemia (editaveis).
+      updatePlan({
+        gikInsulinUnits: 10,
+        gikGlucose: 'SG 50% 100 mL (50 g)',
+        gikInfusionTime: '15-30 min',
+        gikHgtMonitoring: '30 min, 1 h e depois 2/2h',
+      });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, plan.scheme]);
 
@@ -207,8 +217,8 @@ export function InsulinTherapyDialog({
           <div className="space-y-4">
             {/* Peso & meta. NPH FIXA nao usa peso (doses fixas lancadas a mao) -> o
                 campo de peso fica oculto nesse esquema. */}
-            <div className={cn("grid gap-3", plan.scheme === 'nph_fixed' ? "grid-cols-1" : "grid-cols-2")}>
-              {plan.scheme !== 'nph_fixed' && (
+            <div className={cn("grid gap-3", (plan.scheme === 'nph_fixed' || plan.scheme === 'gik') ? "grid-cols-1" : "grid-cols-2")}>
+              {plan.scheme !== 'nph_fixed' && plan.scheme !== 'gik' && (
               <div>
                 <Label className="text-xs">Peso (kg)</Label>
                 <Input
@@ -223,6 +233,7 @@ export function InsulinTherapyDialog({
                 />
               </div>
               )}
+              {plan.scheme !== 'gik' && (
               <div>
                 <Label className="text-xs">Meta glicêmica</Label>
                 <Select value={plan.glycemicTarget} onValueChange={v => updatePlan({ glycemicTarget: v })}>
@@ -235,6 +246,7 @@ export function InsulinTherapyDialog({
                   </SelectContent>
                 </Select>
               </div>
+              )}
             </div>
 
             {plan.scheme === 'basal_bolus' && (
@@ -248,6 +260,36 @@ export function InsulinTherapyDialog({
             )}
             {plan.scheme === 'iv_continuous' && (
               <IvContinuousEditor plan={plan} onChange={updatePlan} onApplyProtocol={applyIvProtocol} />
+            )}
+            {plan.scheme === 'gik' && (
+              <div className="space-y-3 rounded-lg border border-border/60 bg-muted/30 p-3">
+                <div className="flex items-start gap-2 text-xs text-muted-foreground">
+                  <AlertTriangle className="h-3.5 w-3.5 mt-0.5 text-amber-500 shrink-0" />
+                  <span>Hipercalemia: glicose + insulina regular EV, <strong>sem potássio</strong> — desloca K+ para o intracelular (efeito transitório). Monitorar HGT pelo risco de hipoglicemia tardia.</span>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs">Insulina regular (UI, EV)</Label>
+                    <Input type="number" inputMode="decimal" step="1" value={plan.gikInsulinUnits ?? ''} onChange={e => updatePlan({ gikInsulinUnits: e.target.value ? Number(e.target.value) : undefined })} placeholder="10" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Glicose</Label>
+                    <Input value={plan.gikGlucose ?? ''} onChange={e => updatePlan({ gikGlucose: e.target.value })} placeholder="SG 50% 100 mL (50 g)" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Tempo de infusão</Label>
+                    <Input value={plan.gikInfusionTime ?? ''} onChange={e => updatePlan({ gikInfusionTime: e.target.value })} placeholder="15-30 min" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Monitoramento de HGT</Label>
+                    <Input value={plan.gikHgtMonitoring ?? ''} onChange={e => updatePlan({ gikHgtMonitoring: e.target.value })} placeholder="30 min, 1 h e depois 2/2h" />
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs">Conduta de hipoglicemia (HGT &lt; 70)</Label>
+                  <Input value={plan.hypoglycemiaProtocol ?? ''} onChange={e => updatePlan({ hypoglycemiaProtocol: e.target.value })} placeholder={DEFAULT_HYPO_PROTOCOL} />
+                </div>
+              </div>
             )}
 
             <div>
@@ -315,6 +357,7 @@ function validateStep2(plan: InsulinPlan): boolean {
     case 'sliding':     return !!(plan.slidingRows?.length);
     case 'nph_fixed':   return !!(plan.nphDoses?.length);
     case 'iv_continuous': return !!(plan.ivProtocol && plan.ivConcentration);
+    case 'gik':         return !!(plan.gikInsulinUnits && plan.gikInsulinUnits > 0);
   }
 }
 

@@ -11234,10 +11234,14 @@ const PrescricaoPage = () => {
             const grouped: PrescriptionItem = {
               ...baseItem,
               name: `Insulinoterapia — ${desc.headline}`,
-              dose: plan.totalDailyDose ? `${plan.totalDailyDose} U/dia` : (baseItem.dose || 'conforme esquema'),
-              route: plan.scheme === 'iv_continuous' ? 'Intravenosa' : 'Subcutânea',
-              posology: plan.scheme === 'iv_continuous' ? 'BIC' : (plan.hgtFrequency ?? 'conforme esquema'),
-              schedule: plan.scheme === 'iv_continuous' ? 'contínuo' : 'múltiplos horários',
+              dose: plan.scheme === 'gik'
+                ? `${plan.gikInsulinUnits ?? 10} UI EV`
+                : (plan.totalDailyDose ? `${plan.totalDailyDose} U/dia` : (baseItem.dose || 'conforme esquema')),
+              // GIK (hipercalemia) e infusao EV UNICA, nao contínua: via EV, dose
+              // unica, sem flag de bomba (BIC).
+              route: (plan.scheme === 'iv_continuous' || plan.scheme === 'gik') ? 'Intravenosa' : 'Subcutânea',
+              posology: plan.scheme === 'iv_continuous' ? 'BIC' : plan.scheme === 'gik' ? 'Dose única' : (plan.hgtFrequency ?? 'conforme esquema'),
+              schedule: plan.scheme === 'iv_continuous' ? 'contínuo' : plan.scheme === 'gik' ? 'ACM (hipercalemia)' : 'múltiplos horários',
               insulinPlan: plan, // instructions não é mais usado p/ insulina — evita duplicação no impresso
               highAlert: true,
               securityCategory: 'MAV',
