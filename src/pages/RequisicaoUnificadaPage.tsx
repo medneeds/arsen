@@ -3061,7 +3061,12 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
         prioridade: "rotina",
         status: "pendente",
         indicacao_clinica: null, // o laudo APAC já contempla o procedimento no corpo
-        observacoes: "[PROCEDIMENTO — Laudo APAC gerado]",
+        // Persiste as OBSERVACOES/justificativa reais (campo 37 do laudo), nao um
+        // placeholder: a reimpressao le `notes` (= observacoes) e sem isto o campo
+        // 37 saia VAZIO na 2a via (o texto so existia no estado do form). O
+        // apacData.observations ja vem com a linha de contraste (idempotente na
+        // reimpressao, que reaplica observationsWithContraste sem duplicar).
+        observacoes: apacData.observations || "[PROCEDIMENTO — Laudo APAC gerado]",
         solicitado_por: solicitadoPor,
       }).select("*").single();
       if (error) throw error;
