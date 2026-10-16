@@ -2442,34 +2442,68 @@ function askGuideOrApac(examLabel: string, formalLabel: string = "Imprimir APAC"
 async function fetchImagingApacPatientData(request: any): Promise<{
   record: string; cpf: string; cns: string; dob: string; sex: string;
   motherName: string; phone: string; address: string; city: string; uf: string;
+  diagnosis: string; cidPrimary: string; cidSecondary: string;
 }> {
   const empty = {
     record: "", cpf: "", cns: "", dob: "", sex: "",
     motherName: "", phone: "", address: "", city: "", uf: "",
+    diagnosis: "", cidPrimary: "", cidSecondary: "",
   };
-  // MIGRAÇÃO: patient_registry → pacientes. A linha da solicitação não carrega
-  // mais paciente_id (solicitacoes_exame não tem essa coluna), então na prática
-  // este fallback de reimpressão fica sem fonte; quando um id existir, lê pacientes.
-  const pacienteId = request?.paciente_id || request?.patient_registry_id;
-  if (!pacienteId) return empty;
+  // REIMPRESSÃO: a linha de solicitacoes_exame carrega `internacao_id` (NOT NULL)
+  // — re-hidrata o laudo a partir DELA: cadastro do paciente, diagnóstico
+  // (hipotese_diagnostica) e CID (seed nas evoluções). Não há snapshot (sem
+  // coluna document_payload no newsb) nem paciente_id na linha; antes isto lia
+  // `request.paciente_id` (coluna inexistente) e a reimpressão saía TODA em
+  // branco (sem prontuário, CID, diagnóstico). normalizeSolicitacao expõe
+  // internacao_id (e patient_id = internacao_id).
+  const internacaoId = request?.internacao_id || request?.patient_id || null;
+  if (!internacaoId) return empty;
   try {
-    const { data, error } = await supabase
-      .from("pacientes")
-      .select("prontuario, cpf, cns, data_nascimento, sexo, nome_mae, telefone, endereco")
-      .eq("id", pacienteId)
+    const { data: inter } = await supabase
+      .from("internacoes")
+      .select("hipotese_diagnostica, queixa_principal, paciente:pacientes(prontuario, cpf, cns, data_nascimento, sexo, nome_mae, telefone, endereco)")
+      .eq("id", internacaoId)
       .maybeSingle();
-    if (error || !data) return empty;
+    if (!inter) return empty;
+    const p = ((inter as any).paciente || {}) as Record<string, any>;
+    const sexoRaw = String(p.sexo || "").trim().toLowerCase();
+    const sex = sexoRaw.startsWith("m") ? "M" : sexoRaw.startsWith("f") ? "F" : "";
+    const diagnosis =
+      cleanDiagnosisText((inter as any).hipotese_diagnostica) ||
+      ((inter as any).queixa_principal || "");
+    // CID (seed): evolução/admissão MAIS RECENTE com __cid_primary (só o código,
+    // antes do " - descrição") — mesma fonte do formulário ao vivo.
+    let cidPrimary = ""; let cidSecondary = "";
+    try {
+      const { data: evos } = await supabase
+        .from("evolucoes").select("soap, data_hora")
+        .eq("internacao_id", internacaoId)
+        .order("data_hora", { ascending: false });
+      const onlyCode = (v: string) => v.split(/\s[-–—]\s/)[0].trim();
+      const withCid = ((evos ?? []) as { soap?: Record<string, unknown> }[])
+        .map((e) => (e?.soap ?? {}) as { __cid_primary?: unknown; __cid_secondary?: unknown })
+        .find((s) => typeof s.__cid_primary === "string" && !!(s.__cid_primary as string));
+      if (withCid?.__cid_primary) cidPrimary = onlyCode(String(withCid.__cid_primary));
+      if (withCid?.__cid_secondary) {
+        const sec = withCid.__cid_secondary;
+        const secStr = Array.isArray(sec) ? String((sec as unknown[])[0] ?? "") : String(sec);
+        if (secStr) cidSecondary = onlyCode(secStr);
+      }
+    } catch { /* seed de CID silencioso */ }
     return {
-      record: (data as any).prontuario || "",
-      cpf: (data as any).cpf || "",
-      cns: (data as any).cns || "",
-      dob: (data as any).data_nascimento || "",
-      sex: (data as any).sexo || "",
-      motherName: (data as any).nome_mae || "",
-      phone: (data as any).telefone || "",
-      address: (data as any).endereco || "",
+      record: p.prontuario || "",
+      cpf: p.cpf || "",
+      cns: p.cns || "",
+      dob: p.data_nascimento ? String(p.data_nascimento).slice(0, 10) : "",
+      sex,
+      motherName: p.nome_mae || "",
+      phone: p.telefone || "",
+      address: p.endereco || "",
       city: "", // MIGRAÇÃO: pacientes.endereco é campo único — sem município/UF estruturados
       uf: "",
+      diagnosis,
+      cidPrimary,
+      cidSecondary,
     };
   } catch {
     return empty;
@@ -2509,7 +2543,12 @@ async function buildApacHtmlFromProcedimentoRequest(request: any): Promise<strin
     return buildApacHtml(snap.data as Parameters<typeof buildApacHtml>[0]);
   }
   const items: any[] = Array.isArray(request?.items) ? request.items : [];
-  const patientData = await fetchImagingApacPatientData(request);
+  // Re-hidrata da internação: demografias + diagnóstico + CID (o `document_payload`
+  // nunca é gravado no newsb — sem coluna — então sem isto a reimpressão saía
+  // sem prontuário/CID/diagnóstico). Diagnóstico/CID vêm separados do bloco de
+  // identificação do paciente.
+  const { diagnosis: hydDiagnosis, cidPrimary: hydCid, cidSecondary: hydCid2, ...patientData } =
+    await fetchImagingApacPatientData(request);
   const doctor = splitDoctorNameCrm(request?.requested_by_name || "");
   return buildApacHtml({
     institution: APAC_INSTITUTION,
@@ -2526,9 +2565,9 @@ async function buildApacHtmlFromProcedimentoRequest(request: any): Promise<strin
         ? { code: match[2], name: match[1], qty: 1 }
         : { code: "", name: raw, qty: 1 };
     }),
-    diagnosis: request?.clinical_indication || "",
-    cidPrimary: "",
-    cidSecondary: "",
+    diagnosis: request?.clinical_indication || hydDiagnosis || "",
+    cidPrimary: hydCid || "",
+    cidSecondary: hydCid2 || "",
     cidAssociated: "",
     // O nome gravado ja traz "— COM CONTRASTE"; a linha do campo 37 e refeita a partir dele.
     observations: observationsWithContraste(
