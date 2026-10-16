@@ -3692,6 +3692,12 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
           actionLabel="Confirmar e Solicitar"
           onConfirmed={async () => {
             setProcApacValidationOpen(false);
+            // Deixa o PasswordConfirmDialog terminar a animacao de saida ANTES de
+            // handlePrint abrir o PostValidationPrintDialog (pop-up de opcoes). Sem
+            // o atraso, os dois modais Radix colidem (overlay/focus-trap em saida) e
+            // o pop-up de opcoes saía parcial/atras ou nao aparecia — era preciso
+            // reabrir pela lista. Mesmo atraso do fluxo das outras categorias.
+            await new Promise((r) => setTimeout(r, 280));
             await handlePrint();
           }}
         />
