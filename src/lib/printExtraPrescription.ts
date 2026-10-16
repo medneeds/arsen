@@ -11,6 +11,7 @@ import { buildNutritionParts, buildHydrationLine } from "@/lib/nutritionHydratio
 import { assembleInhalationInstruction } from "@/lib/inhalationInstruction";
 import { buildAtbLineParts } from "@/lib/atbLine";
 import { describeInsulinPlan, type InsulinPlan } from "@/lib/insulinTherapy";
+import { getInfusionProfile } from "@/lib/ivInfusionProfiles";
 import { resolveHeaderPatient, fmtIsoDate } from "@/lib/headerPatient";
 
 
@@ -252,8 +253,16 @@ function buildLine2(it: ExtraPrintItem): string {
 
   // Via
   if (it.route && it.route !== '-') parts.push(escape(it.route));
-  // Acesso (só quando preenchido)
-  if (it.accessType && it.accessType !== '-') parts.push(escape(it.accessType));
+  // Acesso: so quando preenchido E diferente do padrao clinico sugerido do perfil
+  // (mesma regra do impresso principal) — remove o "central" auto-default residual
+  // de itens ja salvos, preservando uma escolha real do medico.
+  {
+    const autoAccess = getInfusionProfile(it.name)?.preferredAccess;
+    if (it.accessType && it.accessType !== '-'
+      && it.accessType.toLowerCase() !== String(autoAccess ?? '').toLowerCase()) {
+      parts.push(escape(it.accessType));
+    }
+  }
   // Intervalo / posologia
   if (it.posology && it.posology !== '-') parts.push(escape(it.posology));
 
@@ -299,7 +308,7 @@ export async function printExtraPrescription(opts: ExtraPrintOptions) {
             <div style="font-size:9pt;font-weight:bold;color:#0f172a;line-height:1.4">
               ${regulatoryChip(it)}
               ${it.doubleCheck ? '<span style="display:inline-block;background:#0f172a;color:#fff;font-size:5.5pt;font-weight:800;padding:0.5pt 3pt;border-radius:2pt;margin-right:4pt;letter-spacing:0.3pt">2x CHECK</span>' : ''}
-              ${escape(it.name)}
+              ${it.insulinPlan ? escape(`Insulinoterapia — ${describeInsulinPlan(it.insulinPlan).headline}`) : escape(it.name)}
               ${it.presentation && it.presentation !== '-' ? `<span style="color:#334155;font-weight:500;font-size:8pt"> (${escape(it.presentation)})</span>` : ''}
               ${it.concentration ? `<span style="color:#334155;font-weight:500"> — ${escape(it.concentration)}</span>` : ''}
               <span style="background:#fff7ed;color:#9a3412;font-size:5.5pt;font-weight:800;padding:0.5pt 4pt;border-radius:2pt;margin-left:4pt;border:0.5pt solid #fdba74;letter-spacing:0.3pt">EXTRA</span>

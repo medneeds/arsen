@@ -12068,7 +12068,16 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                   // item; volume/fase e vazão já estão na frase).
                   const dose = isHydr ? '' : buildSolutoTokenLabeled(item);
                   const via  = item.route && item.route !== '-' ? abbrevRoute(item.route) : null;
-                  const access = item.accessType && item.accessType !== '-' ? item.accessType : null;
+                  // Acesso: so exibe quando difere do padrao clinico sugerido do
+                  // perfil (preferredAccess). O acesso auto-preenchido (ex.: "central"
+                  // para vasopressor) nao e mais gravado em itens novos, mas itens JA
+                  // salvos o carregam; comparar com o padrao remove esse residual sem
+                  // esconder uma escolha real do medico (ex.: periferico onde o padrao
+                  // era central).
+                  const autoAccess = getInfusionProfile(item.name)?.preferredAccess;
+                  const access = item.accessType && item.accessType !== '-'
+                    && item.accessType.toLowerCase() !== String(autoAccess ?? '').toLowerCase()
+                    ? item.accessType : null;
                   const { head, tail } = isHydr ? { head: [] as string[], tail: [] as string[] } : buildPrepSegments(item);
                   // Posologia "Continuo/Continua" e redundante quando o modo ja e BIC
                   // (bomba de infusao CONTINUA) — o tail ja mostra "BIC" + Vazao. Nesse
