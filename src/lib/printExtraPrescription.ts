@@ -298,8 +298,14 @@ export async function printExtraPrescription(opts: ExtraPrintOptions) {
   const itemsHtml = items.length
     ? items
         .map((it, idx) => {
-          const flagsChip = (it.flags || []).length
-            ? `<span style="background:#334155;color:#fff;font-size:6pt;font-weight:700;padding:0.5pt 4pt;border-radius:2pt;margin-left:4pt;letter-spacing:0.3pt">${escape((it.flags || []).join(', ').toUpperCase())}</span>`
+          // Flag "BI" (bomba de infusao) e redundante quando o corpo ja mostra "BIC"
+          // (bomba de infusao CONTINUA) — remove o badge BI nesse caso (mesma regra
+          // do impresso principal).
+          const shownFlags = (!it.insulinPlan && buildPrepSegments(it).tail.includes('BIC'))
+            ? (it.flags || []).filter(f => f.toLowerCase() !== 'bi')
+            : (it.flags || []);
+          const flagsChip = shownFlags.length
+            ? `<span style="background:#334155;color:#fff;font-size:6pt;font-weight:700;padding:0.5pt 4pt;border-radius:2pt;margin-left:4pt;letter-spacing:0.3pt">${escape(shownFlags.join(', ').toUpperCase())}</span>`
             : '';
           return `
         <tr style="page-break-inside:avoid">

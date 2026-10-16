@@ -12116,9 +12116,17 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                             }}>{seg.text}</span>
                           </span>
                         ))}
-                        {item.flags.length > 0 && (
-                          <span style={{ fontSize: '6.5pt', fontWeight: 700, marginLeft: '2px', color: '#fff', backgroundColor: '#0f172a', padding: '0.5px 4px', borderRadius: '2px', letterSpacing: '0.3px' }}>{item.flags.join(', ').toUpperCase()}</span>
-                        )}
+                        {(() => {
+                          // Flag "BI" (bomba de infusao) e redundante quando o corpo ja
+                          // mostra "BIC" (bomba de infusao CONTINUA) — remove o badge BI
+                          // nesse caso para nao duplicar a mesma informacao.
+                          const shownFlags = tail.includes('BIC')
+                            ? item.flags.filter(f => f.toLowerCase() !== 'bi')
+                            : item.flags;
+                          return shownFlags.length > 0 ? (
+                            <span style={{ fontSize: '6.5pt', fontWeight: 700, marginLeft: '2px', color: '#fff', backgroundColor: '#0f172a', padding: '0.5px 4px', borderRadius: '2px', letterSpacing: '0.3px' }}>{shownFlags.join(', ').toUpperCase()}</span>
+                          ) : null;
+                        })()}
                         {item.isExtra && (
                           <span style={{ fontSize: '5.5pt', fontWeight: 700, marginLeft: '2px', color: '#9a3412', backgroundColor: '#fff7ed', padding: '0.5px 4px', borderRadius: '2px', border: '0.5px solid #fdba74' }}>EXTRA</span>
                         )}
