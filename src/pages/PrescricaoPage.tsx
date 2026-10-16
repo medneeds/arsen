@@ -228,6 +228,7 @@ interface PrescriptionItem {
   volumeTotal?: string;       // Volume total (mL)
   concentration?: string;     // Concentração calculada ou manual
   ivBolus?: boolean;          // Marca administração EV em bolus (sem tempo de infusão / gotejamento).
+  hydrationOpen?: boolean;    // Hidratação em fluxo livre (aberto): suprime vazão/tempo, impresso mostra "correr ABERTO".
   pharmacyFilled?: boolean;  // Indica que campos de preparo foram preenchidos pela sugestão farmacêutica. Só p/ IV intermitente não-antimicrobiano e posologia ≠ Contínuo.
   // Nutrition-specific optional fields
   nutritionType?: 'diet_enteral' | 'diet_oral' | 'diet_parenteral' | 'water' | 'npt' | 'zero' | 'supplement';
@@ -1877,12 +1878,13 @@ function HydrationFields({
   const calcRateStr = isFinite(dripVal) && dripVal > 0 ? dripVal.toFixed(0) : '';
   const lastSyncedRateRef = React.useRef<string>('');
   React.useEffect(() => {
-    if (calcRateStr && calcRateStr !== item.infusionRate && calcRateStr !== lastSyncedRateRef.current) {
+    // Modo ABERTO (fluxo livre): nao sincroniza vazao — nao ha vazao a exibir.
+    if (!item.hydrationOpen && calcRateStr && calcRateStr !== item.infusionRate && calcRateStr !== lastSyncedRateRef.current) {
       lastSyncedRateRef.current = calcRateStr;
       onUpdate(item.id, 'infusionRate', calcRateStr);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [calcRateStr, item.infusionRate, item.id]);
+  }, [calcRateStr, item.infusionRate, item.id, item.hydrationOpen]);
 
   const handlePhasesChange = (v: string) => {
     const opt = HYDRATION_PHASE_OPTIONS.find(o => o.interval === v);
@@ -1920,7 +1922,28 @@ function HydrationFields({
           </SelectContent>
         </Select>
 
+        {/* Toggle Controlado <-> Aberto (fluxo livre) — so em via de infusao (EV).
+            Espelha a toggle de bolus: ao ligar, limpa tempo/vazao e o impresso
+            mostra "correr ABERTO" em vez de vazao/tempo. */}
         {!isOral && (
+          <div className="flex items-center gap-2 px-2 py-1 rounded-md border border-border/60 bg-muted/40">
+            <span className={`text-xs font-medium ${!item.hydrationOpen ? 'text-foreground' : 'text-muted-foreground'}`}>Controlado</span>
+            <Switch
+              checked={!!item.hydrationOpen}
+              onCheckedChange={(v) => {
+                onUpdate(item.id, 'hydrationOpen', (v as unknown as string));
+                if (v) {
+                  onUpdate(item.id, 'infusionTime', '');
+                  onUpdate(item.id, 'infusionRate', '');
+                }
+              }}
+              className="h-4 w-8"
+            />
+            <span className={`text-xs font-medium ${item.hydrationOpen ? 'text-foreground' : 'text-muted-foreground'}`}>Aberto</span>
+          </div>
+        )}
+
+        {!isOral && !item.hydrationOpen && (
           <>
             <NutFieldLabel>Tempo / fase:</NutFieldLabel>
             <Input
@@ -3972,6 +3995,7 @@ function ExtraPrescriptionDialog({
           volumeTotal: i.volumeTotal,
           concentration: i.concentration,
           ivBolus: i.ivBolus,
+          hydrationOpen: i.hydrationOpen,
           reconstitutionSolvent: i.reconstitutionSolvent,
           reconstitutionVolume: i.reconstitutionVolume,
           // Inalação
@@ -5315,7 +5339,8 @@ const PrescricaoPage = () => {
       if (empty(item.posology)) missing.push('fases / intervalo');
       // Via oral (VO, livre demanda) não tem infusão: tempo/vazão não são
       // obrigatórios e o alerta "tempo ou vazão" não deve aparecer.
-      if (!isOralLikeRoute(item.route) && empty(item.infusionTime) && empty(item.infusionRate)) {
+      // Modo ABERTO (fluxo livre) tambem nao exige tempo/vazao — correria aberto.
+      if (!isOralLikeRoute(item.route) && !item.hydrationOpen && empty(item.infusionTime) && empty(item.infusionRate)) {
         missing.push('tempo ou vazão');
       }
       return missing;
@@ -8048,6 +8073,7 @@ const PrescricaoPage = () => {
       infusionMode: it.infusionMode,
       infusionRate: it.infusionRate,
       ivBolus: it.ivBolus,
+      hydrationOpen: it.hydrationOpen,
       accessType: it.accessType,
       reconstitutionSolvent: it.reconstitutionSolvent,
       reconstitutionVolume: it.reconstitutionVolume,

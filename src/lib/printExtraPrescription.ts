@@ -92,6 +92,8 @@ export interface ExtraPrintItem {
   atbInfectionSite?: string;
   // IV
   ivBolus?: boolean;
+  // Hidratacao em fluxo livre (aberto) — impresso mostra "correr ABERTO".
+  hydrationOpen?: boolean;
 }
 
 export interface ExtraPrintPatient {

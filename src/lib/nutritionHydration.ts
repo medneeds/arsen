@@ -139,6 +139,8 @@ export interface HydrationLineFields {
   infusionMode?: string;      // 'BIC' | 'gts'
   /** Via de administração — oral suprime tempo/gotejamento */
   route?: string;
+  /** Correr em fluxo livre (aberto): suprime vazão/tempo, mostra "correr ABERTO". */
+  hydrationOpen?: boolean;
 }
 
 /**
@@ -161,7 +163,7 @@ export function buildHydrationLine(f: HydrationLineFields): string {
   const tUnit = f.infusionTimeUnit === 'h' ? 'h' : 'min';
   const rateLabel = f.infusionMode === 'gts' ? 'gts/min' : 'mL/h';
   let rate = '';
-  if (!isOral) {
+  if (!isOral && !f.hydrationOpen) {
     rate = f.infusionRate ? `${f.infusionRate} ${rateLabel}` : '';
     if (!rate && vol > 0 && tVal) {
       const tRaw = parseFloat(tVal.replace(',', '.'));
@@ -177,7 +179,8 @@ export function buildHydrationLine(f: HydrationLineFields): string {
   return [
     vol ? (hasPhases ? `${vol}mL/fase` : `${vol}mL`) : '',
     hasPhases ? `${phases} fase${phases > 1 ? 's' : ''} (${interval})` : (f.posology || ''),
-    !isOral && tVal ? `correr em ${tVal}${tUnit}` : '',
+    !isOral && f.hydrationOpen ? 'correr ABERTO' : '',
+    !isOral && !f.hydrationOpen && tVal ? `correr em ${tVal}${tUnit}` : '',
     rate ? `(${rate})` : '',
     total24 ? `total ${total24}mL/24h` : '',
   ].filter(Boolean).join(' · ');
