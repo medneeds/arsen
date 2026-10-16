@@ -254,7 +254,9 @@ export function AdmissionConsultDialog({ open, onOpenChange, patient, onChanged 
     const muc = (soap.__muc as string) || "";
     const antro = (soap.__antropometria ?? {}) as { peso?: string; altura?: string; imc?: { value?: string; label?: string } | null };
     const weightStr = (antro.peso || "").toString().trim() || (history?.peso_kg != null ? String(history.peso_kg) : "");
-    const hyp = (history?.hypotheses || (soap.__diagnostic_hypotheses as string) || "")
+    // Hipotese REAL = soap.__diagnostic_hypotheses; a coluna hipotese_diagnostica
+    // (history.hypotheses) e poluida com o CID (seed), entao fica so como fallback.
+    const hyp = ((soap.__diagnostic_hypotheses as string) || history?.hypotheses || "")
       .split("\n").map((s) => s.trim()).filter(Boolean);
     const devicesStr = Array.isArray(soap.devices)
       ? (soap.devices as { label: string; detail?: string }[]).map(formatDeviceLabel).filter(Boolean).join("; ")

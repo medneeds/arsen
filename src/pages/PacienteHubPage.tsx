@@ -535,7 +535,9 @@ export default function PacienteHubPage() {
     const muc = (soap.__muc as string) || "";
     const antro = (soap.__antropometria ?? {}) as { peso?: string; altura?: string; imc?: { value?: string; label?: string } | null };
     const weightStr = (antro.peso || "").toString().trim() || (interRow.peso_kg != null ? String(interRow.peso_kg) : "");
-    const hyp = ((interRow.hipotese_diagnostica as string) || (soap.__diagnostic_hypotheses as string) || "").split("\n").map((s: string) => s.trim()).filter(Boolean);
+    // Hipotese REAL = soap.__diagnostic_hypotheses; a coluna hipotese_diagnostica e
+    // poluida com o CID (seed), entao fica so como fallback.
+    const hyp = ((soap.__diagnostic_hypotheses as string) || (interRow.hipotese_diagnostica as string) || "").split("\n").map((s: string) => s.trim()).filter(Boolean);
     const devicesStr = Array.isArray(soap.devices) ? (soap.devices as { label: string; detail?: string }[]).map(formatDeviceLabel).filter(Boolean).join("; ") : "";
     const culturasStr = richHtmlToPlainText(soap.culturesHtml as string | undefined).trim();
     const antibStr = richHtmlToPlainText(soap.antibioticos as string | undefined).trim();
