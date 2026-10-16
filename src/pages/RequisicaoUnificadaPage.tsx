@@ -2461,11 +2461,24 @@ async function fetchImagingApacPatientData(request: any): Promise<{
   try {
     const { data: inter } = await supabase
       .from("internacoes")
-      .select("hipotese_diagnostica, queixa_principal, paciente:pacientes(prontuario, cpf, cns, data_nascimento, sexo, nome_mae, telefone, endereco)")
+      .select("paciente_id, hipotese_diagnostica, queixa_principal, paciente:pacientes(prontuario, cpf, cns, data_nascimento, sexo, nome_mae, telefone, endereco)")
       .eq("id", internacaoId)
       .maybeSingle();
     if (!inter) return empty;
-    const p = ((inter as any).paciente || {}) as Record<string, any>;
+    // Fallback: o embed paciente:pacientes(...) pode vir NULO (RLS no aninhado /
+    // relationship) mesmo com paciente_id valido -> a reimpressao saia sem
+    // prontuario/demografia. Busca direto, igual a hidratacao do formulario.
+    type PacRow = { prontuario?: string | null; cpf?: string | null; cns?: string | null; data_nascimento?: string | null; sexo?: string | null; nome_mae?: string | null; telefone?: string | null; endereco?: string | null };
+    const interRow = inter as { paciente_id?: string | null; paciente?: PacRow | null };
+    let p: PacRow = interRow.paciente ?? {};
+    if (!interRow.paciente && interRow.paciente_id) {
+      const { data: pac } = await supabase
+        .from("pacientes")
+        .select("prontuario, cpf, cns, data_nascimento, sexo, nome_mae, telefone, endereco")
+        .eq("id", interRow.paciente_id)
+        .maybeSingle();
+      p = (pac as PacRow | null) ?? {};
+    }
     const sexoRaw = String(p.sexo || "").trim().toLowerCase();
     const sex = sexoRaw.startsWith("m") ? "M" : sexoRaw.startsWith("f") ? "F" : "";
     const diagnosis =
