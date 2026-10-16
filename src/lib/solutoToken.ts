@@ -101,6 +101,39 @@ export function buildSolutoTokenLabeled(item: SolutoFields): string {
   return hasQty ? `Qtd.: ${s}` : s;
 }
 
+// ════════════════════════════════════════════════════════════════════════
+// VARIANTE CRUA (impresso) — so a quantidade PRESCRITA, sem dose/massa derivada
+// ════════════════════════════════════════════════════════════════════════
+// A pedido clinico (Artur): nos IMPRESSOS de prescricao, a linha "Qtd.:" deve
+// mostrar SO o que o medico prescreveu (ex.: "2 CP", "3 mL", "4 FA"), sem a
+// dose/massa calculada entre parenteses ("(20MG)", "(total 2g)", "(0,75 mg)").
+// A derivada no papel dava margem a erro de leitura pela equipe. O calculo
+// automatico (buildSolutoToken/Labeled) permanece na TELA/edicao, onde ajuda o
+// medico a conferir. A apresentacao exibida ao lado do NOME do item (campo
+// imprescindivel) e renderizada a parte e NAO passa por aqui.
+function buildSolutoTokenBare(item: SolutoFields): string {
+  const qtyRaw = (item.quantity || '').trim();
+  const qty = qtyRaw && qtyRaw !== '0' ? qtyRaw : '';
+  const unitShort = item.quantityUnit ? quantityUnitShort(item.quantityUnit) : '';
+  const qtyStr = qty && unitShort ? `${qty} ${unitShort}` : qty || '';
+  const doseRaw = (item.dose && item.dose !== '-') ? item.dose.trim().replace(/\.$/, '') : '';
+  // Bolsa/frasco prescrito em mL com Qtd padrao '1' e o volume REAL no campo dose
+  // (ex.: '100mL') -> o volume prescrito e o do dose, nao o enganoso "1 mL".
+  const isVolumeUnit = (item.quantityUnit || '').toLowerCase() === 'ml';
+  if (isVolumeUnit && qty === '1' && /^\d+(?:[.,]\d+)?\s*m[lL]\b$/i.test(doseRaw)) {
+    return doseRaw;
+  }
+  return qtyStr || doseRaw;
+}
+
+export function buildSolutoTokenLabeledBare(item: SolutoFields): string {
+  const s = buildSolutoTokenBare(item);
+  if (!s) return s;
+  const qtyRaw = (item.quantity || '').trim();
+  const hasQty = !!qtyRaw && qtyRaw !== '0';
+  return hasQty ? `Qtd.: ${s}` : s;
+}
+
 // Compõe o token de dose combinando `dose` (texto livre, geralmente do preset
 // do wizard) e `quantity`+`quantityUnit` (campos editados inline pelo médico).
 //

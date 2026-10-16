@@ -6,7 +6,7 @@
  * insulinoterapia agrupada com sub-linhas para enfermagem).
  */
 import { buildNormaZeroDocument, openPrintWindow, prepareLogo } from "@/lib/printNormaZero";
-import { buildSolutoTokenLabeled, buildPrepSegments } from "@/lib/solutoToken";
+import { buildSolutoTokenLabeledBare, buildPrepSegments } from "@/lib/solutoToken";
 import { buildNutritionParts, buildHydrationLine } from "@/lib/nutritionHydration";
 import { assembleInhalationInstruction } from "@/lib/inhalationInstruction";
 import { buildAtbLineParts } from "@/lib/atbLine";
@@ -245,7 +245,7 @@ function buildLine2(it: ExtraPrintItem): string {
 
   // Dose — combina quantity+quantityUnit+dose (buildSolutoTokenLabeled).
   // presentation e OBRIGATORIA: o total por etapa deriva da apresentacao x qtd.
-  const soluto = buildSolutoTokenLabeled({ quantity: it.quantity, quantityUnit: it.quantityUnit, dose: it.dose, presentation: it.presentation });
+  const soluto = buildSolutoTokenLabeledBare({ quantity: it.quantity, quantityUnit: it.quantityUnit, dose: it.dose, presentation: it.presentation });
   if (soluto) parts.push(escape(soluto));
 
   // Diluente + Volume (restante do head, após a dose)

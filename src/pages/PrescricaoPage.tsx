@@ -348,7 +348,7 @@ const DOSE_UNITS = ['mg', 'g', 'mcg', 'mL', 'UI', 'mEq', 'gota'];
 
 import {
   isNoDiluent,
-  ENTERAL_DILUTION_DEFAULT_ML, quantityUnitShort, buildSolutoTokenLabeled, buildPrepSegments, isContinuousInfusionShared, DRIP_FACTOR_MACRO, roundGtsToHospital, parseDecimalBR, isIVRoute, isOralLikeRoute } from "@/lib/solutoToken";
+  ENTERAL_DILUTION_DEFAULT_ML, quantityUnitShort, buildSolutoTokenLabeled, buildSolutoTokenLabeledBare, buildPrepSegments, isContinuousInfusionShared, DRIP_FACTOR_MACRO, roundGtsToHospital, parseDecimalBR, isIVRoute, isOralLikeRoute } from "@/lib/solutoToken";
 import { computeUnitsFromDose, splitDose } from "@/lib/doseToUnits";
 import { buildNutritionParts, buildHydrationLine } from "@/lib/nutritionHydration";
 import { buildAtbDayLine, buildAtbLineParts } from "@/lib/atbLine";
@@ -12066,7 +12066,9 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                   // (balanço hídrico), que o impresso não mostrava. A dose
                   // genérica e os prep segments não se aplicam (o soro É o
                   // item; volume/fase e vazão já estão na frase).
-                  const dose = isHydr ? '' : buildSolutoTokenLabeled(item);
+                  // IMPRESSO: so a quantidade prescrita (sem dose/massa derivada entre
+                  // parenteses). O calculo automatico fica na tela/edicao.
+                  const dose = isHydr ? '' : buildSolutoTokenLabeledBare(item);
                   const via  = item.route && item.route !== '-' ? abbrevRoute(item.route) : null;
                   // Acesso: so exibe quando difere do padrao clinico sugerido do
                   // perfil (preferredAccess). O acesso auto-preenchido (ex.: "central"
