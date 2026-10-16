@@ -118,10 +118,10 @@ export async function printAdmissionNormaZero(d: AdmissionPrintInput) {
     ${section("Medicações de uso contínuo (MUC)", row("Medicações", d.muc))}
     ${section("Alergias", row("Alergias", d.allergies || "Sem relato"))}
     ${section("Sinais vitais", row("SSVV admissionais", vitalsLine))}
+    ${section("Antropometria", row("Antropometria", antrop))}
     ${section("Exame físico",
       row("Estado geral", d.exam.general) + row("Cardiovascular", d.exam.cv) + row("Respiratório", d.exam.resp) +
       row("Abdome", d.exam.abd) + row("Extremidades", d.exam.ext) + row("Neurológico", d.exam.neuro) + row("Pele / Feridas", d.exam.skin) + row("Outros", d.exam.other))}
-    ${section("Antropometria", row("Antropometria", antrop))}
     ${section("Escalas", row("Escala neurológica", scalesStr))}
     ${section("Exames complementares", row("Complementares", d.complementares))}
     ${section("Plano terapêutico", row("Conduta", d.plan))}

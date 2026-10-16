@@ -87,7 +87,10 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
 export function AdmissaoReadOnlyView({ internacaoId }: Props) {
   const [loading, setLoading] = useState(true);
   const [d0, setD0] = useState<D0 | null>(null);
-  const [hist, setHist] = useState<{ historia_clinica?: string | null; conduta_inicial?: string | null; hipotese_diagnostica?: string | null } | null>(null);
+  const [hist, setHist] = useState<{
+    historia_clinica?: string | null; conduta_inicial?: string | null; hipotese_diagnostica?: string | null;
+    exames_relevantes?: string | null; previsao_alta?: string | null; peso_kg?: number | null; alergias?: string | null;
+  } | null>(null);
 
   useEffect(() => {
     let cancel = false;
@@ -101,7 +104,7 @@ export function AdmissaoReadOnlyView({ internacaoId }: Props) {
           .order("data_hora", { ascending: false }),
         supabase
           .from("internacoes")
-          .select("historia_clinica, conduta_inicial, hipotese_diagnostica")
+          .select("historia_clinica, conduta_inicial, hipotese_diagnostica, exames_relevantes, previsao_alta, peso_kg, paciente:pacientes(alergias)")
           .eq("id", internacaoId)
           .maybeSingle(),
       ]);
@@ -127,7 +130,21 @@ export function AdmissaoReadOnlyView({ internacaoId }: Props) {
       } else {
         setD0(null);
       }
-      setHist((inter as typeof hist) ?? null);
+      const interRow = inter as {
+        historia_clinica?: string | null; conduta_inicial?: string | null; hipotese_diagnostica?: string | null;
+        exames_relevantes?: string | null; previsao_alta?: string | null; peso_kg?: number | null;
+        paciente?: { alergias?: string | null } | { alergias?: string | null }[] | null;
+      } | null;
+      const pacRel = Array.isArray(interRow?.paciente) ? interRow?.paciente[0] : interRow?.paciente;
+      setHist(interRow ? {
+        historia_clinica: interRow.historia_clinica ?? null,
+        conduta_inicial: interRow.conduta_inicial ?? null,
+        hipotese_diagnostica: interRow.hipotese_diagnostica ?? null,
+        exames_relevantes: interRow.exames_relevantes ?? null,
+        previsao_alta: interRow.previsao_alta ?? null,
+        peso_kg: interRow.peso_kg ?? null,
+        alergias: pacRel?.alergias ?? null,
+      } : null);
       setLoading(false);
     })();
     return () => { cancel = true; };
@@ -183,6 +200,18 @@ export function AdmissaoReadOnlyView({ internacaoId }: Props) {
         </Group>
       )}
 
+      {toLines((soap.__muc as string) || "").length > 0 && (
+        <Group title="Medicações de uso contínuo (MUC)">
+          <Field label="MUC" hideLabel lines={toLines((soap.__muc as string) || "")} />
+        </Group>
+      )}
+
+      {(hist?.alergias || soap.__allergies) && (
+        <Group title="Alergias">
+          <Field label="Alergias" hideLabel value={hist?.alergias || (soap.__allergies as string)} />
+        </Group>
+      )}
+
       <VitalsLine
         items={[
           { label: "PA", value: vs.pa },
@@ -195,6 +224,19 @@ export function AdmissaoReadOnlyView({ internacaoId }: Props) {
           { label: "RASS", value: vs.sedoanalgesia ? vs.rass : "" },
         ]}
       />
+
+      {(() => {
+        const a = (soap.__antropometria ?? {}) as { peso?: string; altura?: string; imc?: { value?: string; label?: string } | null };
+        const peso = (a.peso || "").toString().trim() || (hist?.peso_kg != null ? String(hist.peso_kg) : "");
+        const altura = (a.altura || "").toString().trim();
+        const imc = a.imc && a.imc.value ? `${a.imc.value} (${a.imc.label ?? ""})`.replace(" ()", "") : "";
+        const items = [peso && `Peso ${peso} kg`, altura && `Altura ${altura} m`, imc && `IMC ${imc}`].filter(Boolean) as string[];
+        return items.length > 0 ? (
+          <Group title="Antropometria">
+            <Field label="Antropometria" hideLabel value={items.join(" · ")} />
+          </Group>
+        ) : null;
+      })()}
 
       {(pe.general || pe.cardiovascular || pe.respiratory || pe.abdomen || pe.neurological || pe.extremities || pe.skin || pe.other) && (
         <Group title="Exame físico">
@@ -209,9 +251,21 @@ export function AdmissaoReadOnlyView({ internacaoId }: Props) {
         </Group>
       )}
 
+      {hist?.exames_relevantes && (
+        <Group title="Exames complementares">
+          <Field label="Complementares" hideLabel lines={toLines(hist.exames_relevantes)} />
+        </Group>
+      )}
+
       {(hist?.conduta_inicial || soap.plan) && (
         <Group title="Plano terapêutico">
           <Field label="Conduta inicial" hideLabel value={hist?.conduta_inicial || soap.plan} />
+        </Group>
+      )}
+
+      {hist?.previsao_alta && (
+        <Group title="Previsão de alta">
+          <Field label="Previsão de alta" hideLabel value={hist.previsao_alta} />
         </Group>
       )}
 
@@ -227,16 +281,35 @@ export function AdmissaoReadOnlyView({ internacaoId }: Props) {
         const antibioticos = richHtmlToPlainText(soap.antibioticos as string | undefined);
         const sofa = soap.__uti_sofa as { total?: unknown } | undefined;
         const sofaTotal = sofa && sofa.total != null ? String(sofa.total) : "";
-        const hasUti = justificativaUti || vasoativo || devices || culturas || antibioticos || sofaTotal;
+        const origem = (soap.__uti_origem as string) || "";
+        const hasUti = justificativaUti || vasoativo || devices || culturas || antibioticos || sofaTotal || origem;
         if (!hasUti) return null;
         return (
           <Group title="Cuidados intensivos (UTI)">
             <Field label="Justificativa de admissão UTI" value={justificativaUti} />
             <Field label="Droga vasoativa" value={vasoativo} />
+            <Field label="Origem" value={origem} />
             <Field label="Dispositivos invasivos" value={devices} />
             <Field label="Culturas" value={culturas} />
             <Field label="Antibióticos em curso" value={antibioticos} />
             <Field label="SOFA (total)" value={sofaTotal} />
+          </Group>
+        );
+      })()}
+
+      {(() => {
+        // Dados cirurgicos — so na admissao de enfermaria cirurgica (soap.__surgical).
+        const s = (soap.__surgical ?? {}) as { procedimento?: string; especialidade?: string; cirurgiao?: string; dataHora?: string; anestesia?: string; carater?: string };
+        const has = s.procedimento || s.especialidade || s.cirurgiao || s.dataHora || s.anestesia || s.carater;
+        if (!has) return null;
+        return (
+          <Group title="Dados cirúrgicos">
+            <Field label="Procedimento" value={s.procedimento} />
+            <Field label="Especialidade" value={s.especialidade} />
+            <Field label="Cirurgião" value={s.cirurgiao} />
+            <Field label="Data / hora" value={s.dataHora} />
+            <Field label="Anestesia" value={s.anestesia} />
+            <Field label="Caráter" value={s.carater} />
           </Group>
         );
       })()}
