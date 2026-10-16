@@ -2794,19 +2794,47 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
   useEffect(() => {
     setPatientRegistryId(null); // reseta ao trocar de paciente, evita ID obsoleto
     const validPid = asUuidOrNull(patientId);
-    if (!validPid) return;
+    const fallbackName = (initialPatientName || "").trim();
+    if (!validPid && !fallbackName) return;
     let cancelled = false;
     (async () => {
       try {
         // MIGRAÇÃO: patientId é internacoes.id. Junta internacao → pacientes.
         //   admission_histories → internacoes (queixa/história/hipótese/conduta)
         //   patient_registry → pacientes; patient_registry_id → paciente_id
-        const { data: internacao } = await supabase
-          .from("internacoes")
-          .select("paciente_id, hipotese_diagnostica, queixa_principal, historia_clinica, conduta_inicial, paciente:pacientes(prontuario, nome_completo, nome_social, cpf, cns, data_nascimento, sexo, nome_mae, telefone, endereco)")
-          .eq("id", validPid)
-          .maybeSingle();
+        const SELECT_INTERN = "id, paciente_id, hipotese_diagnostica, queixa_principal, historia_clinica, conduta_inicial, paciente:pacientes(prontuario, nome_completo, nome_social, cpf, cns, data_nascimento, sexo, nome_mae, telefone, endereco)";
+        let internacao: Record<string, unknown> | null = null;
+        if (validPid) {
+          const { data } = await supabase.from("internacoes").select(SELECT_INTERN).eq("id", validPid).maybeSingle();
+          internacao = (data as Record<string, unknown> | null) ?? null;
+        } else if (fallbackName) {
+          // Fallback por NOME: APAC aberta SEM o id da internacao (so o nome, caso do
+          // redirect/abertura avulsa). Acha o paciente por nome com match UNICO (evita
+          // paciente errado) e a internacao ATIVA dele, para puxar prontuario/CID/
+          // diagnostico mesmo assim — antes a APAC saia vazia.
+          const { data: pacs } = await supabase
+            .from("pacientes")
+            .select("id")
+            .or(`nome_completo.ilike.%${fallbackName}%,nome_social.ilike.%${fallbackName}%`)
+            .limit(2);
+          if (pacs && pacs.length === 1) {
+            const { data } = await supabase
+              .from("internacoes")
+              .select(SELECT_INTERN)
+              .eq("paciente_id", (pacs[0] as { id: string }).id)
+              .is("data_alta", null)
+              .order("data_entrada", { ascending: false })
+              .limit(1)
+              .maybeSingle();
+            internacao = (data as Record<string, unknown> | null) ?? null;
+          }
+        }
         if (!internacao || cancelled) return;
+        const internId = String(internacao.id ?? validPid ?? "");
+        // Propaga o id resolvido ao form (habilita importar admissao/evolucao e o vinculo da solicitacao).
+        if (!validPid && internId && !cancelled) {
+          onSelectPatient?.({ id: internId, name: fallbackName, bed_number: null, sector: null });
+        }
         const pacienteId = (internacao as any).paciente_id as string | null;
         if (!cancelled) setPatientRegistryId(pacienteId); // guarda paciente_id (antes: registry_id)
 
@@ -2836,16 +2864,23 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
           const { data: evos } = await supabase
             .from("evolucoes")
             .select("soap, data_hora")
-            .eq("internacao_id", validPid)
+            .eq("internacao_id", internId)
             .order("data_hora", { ascending: false });
-          const adm = ((evos ?? []) as { soap?: Record<string, unknown> }[])
-            .find((e) => (e.soap as { __evolution_type?: string } | undefined)?.__evolution_type === "admission");
-          const s = (adm?.soap ?? {}) as { __cid_primary?: unknown; __cid_secondary?: unknown };
-          if (!cancelled && s.__cid_primary) {
-            setCidPrimary((prev) => (prev.trim() ? prev : String(s.__cid_primary)));
+          // Seed do CID: a evolucao/admissao MAIS RECENTE com __cid_primary (o D0 e
+          // uma evolucao, entao quando so ha admissao vem dela; ao evoluir, o topo
+          // vence). Antes so olhava a evolucao de admissao e perdia o CID posto numa
+          // evolucao posterior. So o CODIGO vai pro campo de CID (antes do " - desc").
+          const onlyCode = (v: string) => v.split(/\s[-–—]\s/)[0].trim();
+          const withCid = ((evos ?? []) as { soap?: Record<string, unknown> }[])
+            .map((e) => (e?.soap ?? {}) as { __cid_primary?: unknown; __cid_secondary?: unknown })
+            .find((s) => typeof s.__cid_primary === "string" && !!(s.__cid_primary as string));
+          if (!cancelled && withCid?.__cid_primary) {
+            setCidPrimary((prev) => (prev.trim() ? prev : onlyCode(String(withCid.__cid_primary))));
           }
-          if (!cancelled && s.__cid_secondary) {
-            setCidSecondary((prev) => (prev.trim() ? prev : String(s.__cid_secondary)));
+          if (!cancelled && withCid?.__cid_secondary) {
+            const sec = withCid.__cid_secondary;
+            const secStr = Array.isArray(sec) ? String((sec as unknown[])[0] ?? "") : String(sec);
+            if (secStr) setCidSecondary((prev) => (prev.trim() ? prev : onlyCode(secStr)));
           }
         } catch { /* seed de CID silencioso */ }
 
@@ -2867,7 +2902,9 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
       }
     })();
     return () => { cancelled = true; };
-  }, [patientId]);
+    // onSelectPatient (inline no pai) fora das deps de proposito — evita re-run a cada render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [patientId, initialPatientName]);
 
   const addProcedure = (proc: { code: string; name: string }) => {
     if (selectedProcedures.find((p) => p.code === proc.code)) { toast.info("Procedimento já adicionado"); return; }
