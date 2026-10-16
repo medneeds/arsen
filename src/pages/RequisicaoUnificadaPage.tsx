@@ -2939,7 +2939,22 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
           }
         } catch { /* seed de CID silencioso */ }
 
-        const r = (internacao as any).paciente || null;
+        let r = (internacao as any).paciente || null;
+        // Fallback: o embed paciente:pacientes(...) pode vir NULO (RLS no recurso
+        // aninhado, ou relationship nao resolvida) mesmo com paciente_id valido e
+        // cadastro existente. Sem isto o effect abortava aqui e o laudo saia SEM
+        // prontuario/demografia (sintoma do APAC "em branco" apesar do cadastro).
+        // Busca direto em pacientes, igual fetchImagingApacPatientData ja faz.
+        if (!r && pacienteId && !cancelled) {
+          try {
+            const { data: pac } = await supabase
+              .from("pacientes")
+              .select("prontuario, nome_completo, nome_social, cpf, cns, data_nascimento, sexo, nome_mae, telefone, endereco")
+              .eq("id", pacienteId)
+              .maybeSingle();
+            r = (pac as Record<string, unknown> | null) || null;
+          } catch { /* fallback silencioso */ }
+        }
         if (!r || cancelled) return;
         setPatientRecord(r.prontuario || "");
         setApacPatientName(r.nome_social || r.nome_completo || "");
