@@ -173,18 +173,27 @@ export function AdmissaoReadOnlyView({ internacaoId }: Props) {
   // e foram removidos daqui — a estrutura segue a realidade dos campos do sistema.
   const cidPrimary = (soap.__cid_primary as string) || "";
   const cidSecondary = (soap.__cid_secondary as string) || "";
-  const hipoteses = (hist?.hipotese_diagnostica as string) || (soap.__diagnostic_hypotheses as string) || "";
+  // Hipotese diagnostica REAL = soap.__diagnostic_hypotheses. A coluna
+  // internacoes.hipotese_diagnostica e poluida com o CID (seed) no salvamento
+  // (hipotese_diagnostica = parsedDiagnoses/cidPrimary quando ha CID), entao NAO e
+  // usada aqui — senao a Hipotese exibe o CID em vez da hipotese do medico.
+  const hipoteses = (soap.__diagnostic_hypotheses as string) || "";
   const antecedentes = Array.isArray(soap.antecedentes)
     ? (soap.antecedentes as string[]).filter(Boolean).flatMap((a) => toLines(a))
     : [];
 
   return (
     <div className="space-y-8">
-      {(cidPrimary || cidSecondary || toLines(hipoteses).length > 0) && (
-        <Group title="Diagnóstico">
+      {(cidPrimary || cidSecondary) && (
+        <Group title="Diagnóstico (CID-10)">
           <Field label="CID primário" value={cidPrimary} />
           <Field label="CID secundário" value={cidSecondary} />
-          <Field label="Hipóteses diagnósticas" lines={toLines(hipoteses)} />
+        </Group>
+      )}
+
+      {toLines(hipoteses).length > 0 && (
+        <Group title="Hipóteses diagnósticas">
+          <Field label="Hipóteses diagnósticas" hideLabel lines={toLines(hipoteses)} />
         </Group>
       )}
 
@@ -220,8 +229,6 @@ export function AdmissaoReadOnlyView({ internacaoId }: Props) {
           { label: "SpO₂", value: vs.spo2 },
           { label: "Temp", value: vs.temp },
           { label: "Dextro", value: vs.dx },
-          { label: "Glasgow", value: vs.glasgow },
-          { label: "RASS", value: vs.sedoanalgesia ? vs.rass : "" },
         ]}
       />
 
@@ -250,6 +257,24 @@ export function AdmissaoReadOnlyView({ internacaoId }: Props) {
           <Field label="Outros" value={pe.other} />
         </Group>
       )}
+
+      {(() => {
+        // Escalas — Glasgow (+ O/V/M) e RASS (quando sob sedoanalgesia continua).
+        // Secao propria, apos o exame fisico, como no formulario (nm-glasgow/nm-escores).
+        const glasgow = String(vs.glasgow ?? "").trim();
+        const ovm = (vs.glasgow_ovm ?? {}) as { ocular?: unknown; verbal?: unknown; motora?: unknown };
+        const glasgowStr = glasgow
+          ? `${glasgow}${(ovm.ocular || ovm.verbal || ovm.motora) ? ` (O${ovm.ocular ?? "-"} V${ovm.verbal ?? "-"} M${ovm.motora ?? "-"})` : ""}`
+          : "";
+        const rass = vs.sedoanalgesia && vs.rass ? String(vs.rass).trim() : "";
+        if (!glasgowStr && !rass) return null;
+        return (
+          <Group title="Escalas">
+            <Field label="Glasgow" value={glasgowStr} />
+            <Field label="RASS (sedoanalgesia)" value={rass} />
+          </Group>
+        );
+      })()}
 
       {hist?.exames_relevantes && (
         <Group title="Exames complementares">
@@ -288,11 +313,11 @@ export function AdmissaoReadOnlyView({ internacaoId }: Props) {
           <Group title="Cuidados intensivos (UTI)">
             <Field label="Justificativa de admissão UTI" value={justificativaUti} />
             <Field label="Droga vasoativa" value={vasoativo} />
-            <Field label="Origem" value={origem} />
             <Field label="Dispositivos invasivos" value={devices} />
             <Field label="Culturas" value={culturas} />
             <Field label="Antibióticos em curso" value={antibioticos} />
             <Field label="SOFA (total)" value={sofaTotal} />
+            <Field label="Origem" value={origem} />
           </Group>
         );
       })()}
