@@ -1,10 +1,11 @@
-import { forwardRef } from "react";
+import { forwardRef, useEffect, useState } from "react";
 import { ROUND_SECTIONS, STATUS_OPTIONS, type RoundStatus } from "@/data/roundChecklistSchema";
 import { getSectorDisplayLabel } from "@/utils/bedNaming";
 import { format } from "date-fns";
 import { DocumentHeader } from "@/components/DocumentHeader";
 import { useHeaderPatient } from "@/hooks/useHeaderPatient";
 import { asUuidOrNull } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 interface PrintableRoundProps {
   patientName: string;
@@ -38,6 +39,39 @@ const PrintableRound = forwardRef<HTMLDivElement, PrintableRoundProps>(
       record: patientRecord,
       age: patientAge,
     });
+
+    // Seed (CID) + descricao + hipoteses diagnosticas da evolucao/admissao MAIS
+    // RECENTE (soap.__cid_primary / __diagnostic_hypotheses). O D0 da admissao e uma
+    // evolucao, entao quando so ha admissao vem dela; ao evoluir, o topo vence.
+    const [diag, setDiag] = useState<{ cidCode: string; cidDesc: string; hypotheses: string }>(
+      { cidCode: "", cidDesc: "", hypotheses: "" },
+    );
+    useEffect(() => {
+      const id = asUuidOrNull(patientId);
+      if (!id) { setDiag({ cidCode: "", cidDesc: "", hypotheses: "" }); return; }
+      let alive = true;
+      (async () => {
+        const { data } = await supabase
+          .from("evolucoes")
+          .select("soap, data_hora")
+          .eq("internacao_id", id)
+          .order("data_hora", { ascending: false })
+          .limit(5);
+        if (!alive) return;
+        const rows = ((data ?? []) as { soap?: Record<string, unknown> }[])
+          .map((r) => (r?.soap ?? {}) as Record<string, unknown>);
+        const cidRaw = String(
+          (rows.find((s) => typeof s.__cid_primary === "string" && !!(s.__cid_primary as string))?.__cid_primary) ?? "",
+        );
+        const cidCode = cidRaw.split(/\s[-–—]\s/)[0].trim();
+        const cidDesc = cidRaw.slice(cidCode.length).replace(/^\s*[-–—]\s*/, "").trim();
+        const hypotheses = String(
+          (rows.find((s) => typeof s.__diagnostic_hypotheses === "string" && !!(s.__diagnostic_hypotheses as string))?.__diagnostic_hypotheses) ?? "",
+        ).trim();
+        setDiag({ cidCode, cidDesc, hypotheses });
+      })();
+      return () => { alive = false; };
+    }, [patientId]);
 
     return (
       <div ref={ref} className="print-round-container" style={{ display: "none" }}>
@@ -74,7 +108,11 @@ const PrintableRound = forwardRef<HTMLDivElement, PrintableRoundProps>(
           emission={format(new Date(), "dd/MM/yyyy HH:mm:ss")}
           width="100%"
           patient={headerPatient}
-          extras={[["Diagnósticos", diagnosis]]}
+          extras={[
+            ["CID (seed)", diag.cidCode || undefined],
+            ["Descrição do CID", diag.cidDesc || undefined],
+            ["Hipóteses diagnósticas", (diag.hypotheses || diagnosis) || undefined],
+          ]}
         />
 
         {/* Legend */}
