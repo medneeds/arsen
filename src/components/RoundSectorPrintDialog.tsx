@@ -9,6 +9,10 @@ import { format } from "date-fns";
 import type { Patient } from "@/types/patient";
 import { getSectorDisplayLabel } from "@/utils/bedNaming";
 import { printRoundDocument, type RoundPrintItem } from "@/lib/printRound";
+import { fetchNumerosAtendimento } from "@/lib/internacaoComPaciente";
+import { fetchRoundDiagnosisByInternacao } from "@/lib/roundDiagnosis";
+import { withTimeout } from "@/lib/resolvePatientHeader";
+import { asUuidOrNull } from "@/lib/utils";
 import { toast } from "sonner";
 
 interface Props {
@@ -58,25 +62,50 @@ export function RoundSectorPrintDialog({ open, onOpenChange, patients, sectorLab
     });
   };
 
-  const items: RoundPrintItem[] = useMemo(() => {
-    return eligible
-      .filter((p) => selected.has(p.id))
-      .map((p) => ({
-        patientName: p.name,
-        patientSector: getSectorDisplayLabel(p.sector) || String(p.sector),
-        patientBed: p.bedNumber,
-        patientAge: p.age != null ? String(p.age) : null,
-        roundDate,
-      }));
-  }, [eligible, selected, roundDate]);
+  const [printing, setPrinting] = useState(false);
 
-  const handlePrint = () => {
-    if (items.length === 0) {
+  const handlePrint = async () => {
+    const chosen = eligible.filter((p) => selected.has(p.id));
+    if (chosen.length === 0) {
       toast.error("Selecione ao menos um leito para imprimir.");
       return;
     }
-    printRoundDocument(items, true);
-    onOpenChange(false);
+    setPrinting(true);
+    try {
+      // IDs de internacao (Patient.id = internacoes.id para leito ocupado).
+      const ids = chosen.map((p) => p.id).filter((id): id is string => !!asUuidOrNull(id));
+      // Hidrata atendimento e CID/hipoteses em LOTE (nao vinham no Patient). Teto
+      // de tempo para a janela de impressao nao travar: se pendurar, imprime com o
+      // que ja tem.
+      const [atendMap, diagMap] = await Promise.all([
+        withTimeout(fetchNumerosAtendimento(ids), 6000, {} as Record<string, string>),
+        withTimeout(fetchRoundDiagnosisByInternacao(ids), 6000, {} as Awaited<ReturnType<typeof fetchRoundDiagnosisByInternacao>>),
+      ]);
+      const items: RoundPrintItem[] = chosen.map((p) => {
+        const diag = diagMap[p.id];
+        const hyp = diag?.hypotheses?.trim();
+        return {
+          patientName: p.name,
+          patientSector: getSectorDisplayLabel(p.sector) || String(p.sector),
+          patientBed: p.bedNumber,
+          patientAge: p.age != null ? String(p.age) : null,
+          patientRecord: p.prontuario ?? null,
+          patientAtendimento: atendMap[p.id] ?? null,
+          patientCid: diag?.cid || null,
+          // Prefere a hipotese do soap (mesma fonte do round de 1 paciente);
+          // fallback para a hipotese_diagnostica da internacao (p.diagnoses).
+          patientDiagnoses: hyp ? [hyp] : (p.diagnoses ?? null),
+          roundDate,
+        };
+      });
+      printRoundDocument(items, true);
+      onOpenChange(false);
+    } catch (err) {
+      console.error("[RoundSectorPrint] falha ao hidratar/imprimir:", err);
+      toast.error("Não foi possível gerar o PDF do round.");
+    } finally {
+      setPrinting(false);
+    }
   };
 
   return (
@@ -145,9 +174,9 @@ export function RoundSectorPrintDialog({ open, onOpenChange, patients, sectorLab
 
           <DialogFooter>
             <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-            <Button onClick={handlePrint} disabled={selected.size === 0}>
+            <Button onClick={handlePrint} disabled={selected.size === 0 || printing}>
               <Printer className="h-4 w-4 mr-2" />
-              Gerar PDF ({selected.size})
+              {printing ? "Gerando…" : `Gerar PDF (${selected.size})`}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -14,6 +14,8 @@ export interface RoundPrintItem {
   patientBed: string;
   patientAge?: string | null;
   patientRecord?: string | null;
+  patientAtendimento?: string | null;  // numero de atendimento (internacoes.numero_atendimento)
+  patientCid?: string | null;          // CID (seed) — soap.__cid_primary da evolucao/admissao mais recente
   patientDiagnoses?: string[] | null;  // hipóteses diagnósticas
   patientAllergies?: string[] | null;  // alergias
   roundDate: string;
@@ -87,10 +89,16 @@ function renderPage(it: RoundPrintItem, blank: boolean, logoDataUrl: string): st
         bed: it.patientBed,
         sector: getSectorDisplayLabel(it.patientSector),
         record: it.patientRecord,
+        atendimento: it.patientAtendimento,
         age: it.patientAge,
         allergies: allergies.join(" • "),
       },
-      extras: [["Diagnósticos", diagnoses.join(" • ")]],
+      // 3a linha: CID (seed) + hipoteses diagnosticas. Cada entrada so sai quando
+      // ha valor (extras oculta vazios) — paciente sem CID nao gera linha quebrada.
+      extras: [
+        ["CID", it.patientCid || undefined],
+        ["Hipóteses diagnósticas", diagnoses.join(" • ") || undefined],
+      ],
     },
     logoDataUrl,
   );
