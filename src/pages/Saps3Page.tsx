@@ -639,8 +639,27 @@ export default function Saps3Page({
         }
 
         const r: any = sapsRow;
-        // MIGRAÇÃO: avaliacoes_saps3 não tem patient_name → nome vem do contexto.
-        const namePref = patientNameFromContext || "";
+        // Nome do paciente: avaliacoes_saps3 nao guarda nome (migracao). Preferir o
+        // contexto da navegacao; se vier VAZIO, BUSCAR do prontuario via join
+        // internacao -> pacientes (nome_social || nome_completo). Sem isso, o campo
+        // obrigatorio "nome do paciente" ficava vazio quando a rota "completar SAPS
+        // pendente" nao carregava o nome no contexto, e travava a validacao E o
+        // salvar rascunho mesmo com o paciente ja reconhecido.
+        const internIdForName = patientIdParam || r.internacao_id || null;
+        let namePref = patientNameFromContext || "";
+        if (!namePref && internIdForName) {
+          try {
+            const { data: iNome } = await supabase
+              .from("internacoes")
+              .select("paciente:pacientes(nome_completo, nome_social)")
+              .eq("id", internIdForName)
+              .maybeSingle();
+            type PacNome = { nome_completo?: string | null; nome_social?: string | null };
+            const rel = (iNome as { paciente?: PacNome | PacNome[] } | null)?.paciente;
+            const pac = Array.isArray(rel) ? rel[0] : rel;
+            namePref = pac?.nome_social || pac?.nome_completo || "";
+          } catch { /* best-effort: mantem vazio, nao quebra o fluxo */ }
+        }
         // MIGRAÇÃO: patient_id → internacao_id (o "paciente" alvo é a internação).
         if (!patientIdParam && r.internacao_id) {
           setCompletingPatientId(r.internacao_id);
