@@ -111,7 +111,7 @@ export function HighAlertGuideDialog({ open, onOpenChange, onAddItem }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[88vh] flex flex-col p-0 gap-0">
+      <DialogContent className="max-w-4xl max-h-[88vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-4 py-3 border-b border-border bg-critical-soft">
           <DialogTitle className="flex items-center gap-2 text-base">
             <AlertTriangle className="h-5 w-5 text-critical-on-soft" />
@@ -171,8 +171,10 @@ export function HighAlertGuideDialog({ open, onOpenChange, onAddItem }: Props) {
           </div>
         </div>
 
-        {/* List */}
-        <ScrollArea className="flex-1 px-4 py-3">
+        {/* List — min-h-0 permite a area encolher dentro do flex-col e ativar o
+            scroll interno; sem isso a lista crescia alem do dialog e os ultimos
+            farmacos ficavam inacessiveis (sem rolagem). */}
+        <ScrollArea className="flex-1 min-h-0 px-4 py-3">
           {filtered.length === 0 ? (
             <div className="text-center text-sm text-muted-foreground py-8">
               Nenhuma droga MAV encontrada para "{query}".
