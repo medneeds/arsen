@@ -1,3 +1,5 @@
+import { resolveSectorCode } from "@/config/sectorCoverage";
+
 /**
  * Classificação de complexidade de setores para o fluxo de
  * Transferência Interna.
@@ -134,17 +136,26 @@ export function sectorRequiresSaps(sector?: string | null): boolean {
 }
 
 /**
- * Deriva o modo de admissao a partir do codigo de setor.
+ * Deriva o modo de admissao a partir do setor.
  *   - UTI/UCI (ADMISSION_UTI_SECTORS) -> "uti"
  *   - Sala Vermelha (sala_vermelha)   -> "emergencia"
- *   - qualquer outro                  -> "enfermaria" (inclui Sala Laranja)
+ *   - qualquer outro                  -> "enfermaria" (inclui Sala Laranja e UCI 1)
  *
- * Correspondencia EXATA do codigo (sem trim/lowercase) para preservar
- * byte-a-byte o antigo `isUti = UTI_SECTORS.includes(patient.sector)`.
+ * ROBUSTEZ (bug producao): `patient.sector` chega ora como CODIGO (red/yellow/
+ * uti_02...), ora como NOME/ROTULO ("UTI 2") dependendo da origem (usePatients x
+ * usePatientLive x fluxo de alocacao). O match EXATO antigo falhava em silencio
+ * quando vinha o nome -> leito intensivo caia em "enfermaria". Agora casa pelo
+ * valor cru (preserva byte-a-byte o comportamento historico) OU pelo codigo
+ * canonico resolvido por resolveSectorCode (trata nome/rotulo/departamento).
+ * UCI 1 (blue) NAO esta em ADMISSION_UTI_SECTORS -> continua "enfermaria"
+ * (nivel intermediario, sem SAPS) por decisao clinica.
  */
 export function admissionModeForSector(sector: string): AdmissionMode {
-  if ((ADMISSION_UTI_SECTORS as readonly string[]).includes(sector)) return "uti";
-  if (sector === "sala_vermelha") return "emergencia";
+  const code = resolveSectorCode(sector);
+  const isUtiSector = (s: string | undefined): boolean =>
+    s != null && (ADMISSION_UTI_SECTORS as readonly string[]).includes(s);
+  if (isUtiSector(sector) || isUtiSector(code)) return "uti";
+  if (sector === "sala_vermelha" || code === "sala_vermelha") return "emergencia";
   return "enfermaria";
 }
 
