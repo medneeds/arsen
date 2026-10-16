@@ -859,6 +859,54 @@ const ReadOnlyView: React.FC<{
 
   return (
     <div className="space-y-2 text-xs leading-relaxed">
+      {/* 1. Diagnosticos (CID-10) — snapshot da evolucao (GAP B). Previsao de alta,
+          paliativo e isolamento sao campos do PACIENTE (nao da evolucao) e aparecem
+          no contexto/cabecalho, nao no snapshot por evolucao. */}
+      {(() => {
+        const cid1 = String((soap as { __cid_primary?: string }).__cid_primary || "").trim();
+        const cid2 = String((soap as { __cid_secondary?: string }).__cid_secondary || "").trim();
+        if (!cid1 && !cid2) return null;
+        return (
+          <div>
+            <strong className="text-primary">Diagnósticos (CID-10):</strong>
+            <ul className="ml-4 mt-1 text-foreground/90 list-disc">
+              {cid1 && <li><span className="font-medium">Primário:</span> {cid1}</li>}
+              {cid2 && <li><span className="font-medium">Secundário:</span> {cid2}</li>}
+            </ul>
+          </div>
+        );
+      })()}
+
+      {/* 2. Hipoteses diagnosticas */}
+      {(() => {
+        const hypos: string[] = Array.isArray(diagnosticHypotheses)
+          ? diagnosticHypotheses.filter(Boolean)
+          : typeof diagnosticHypotheses === "string" && diagnosticHypotheses.trim()
+            ? diagnosticHypotheses.split("\n").filter(Boolean)
+            : [];
+        return hypos.length > 0 ? (
+          <div>
+            <strong className="text-foreground">Hipóteses Diagnósticas:</strong>
+            <ol className="ml-4 mt-1 text-foreground/90 list-decimal space-y-1">
+              {hypos.map((h, i) => <li key={i}>{h}</li>)}
+            </ol>
+          </div>
+        ) : null;
+      })()}
+
+      {/* 3. Antecedentes clinicos */}
+      {Array.isArray(antecedentes) && antecedentes.filter(Boolean).length > 0 && (
+        <div>
+          <strong className="text-foreground">Antecedentes Clínicos:</strong>
+          <ol className="ml-4 mt-1 text-foreground/90 list-decimal space-y-1">
+            {antecedentes.filter(Boolean).map((a, i) => (
+              <li key={i}>{a}</li>
+            ))}
+          </ol>
+        </div>
+      )}
+
+      {/* 4. Sinais vitais */}
       {hasVitals && (
         <div className="rounded-lg border border-border bg-muted/30 p-2">
           <p className="text-xs font-medium text-muted-foreground tracking-wider mb-1">SINAIS VITAIS</p>
@@ -872,37 +920,31 @@ const ReadOnlyView: React.FC<{
           </p>
         </div>
       )}
-      {(richHtmlToPlainText(soap.subjective) || richHtmlToPlainText(soap.assessment)) && (
+
+      {/* 5. Exame fisico */}
+      {hasExam && (
         <div>
-          <strong className="text-muted-foreground">Evolução:</strong>{" "}
-          <span
-            className="prose prose-sm max-w-none text-foreground [&_p]:my-1 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0"
-            dangerouslySetInnerHTML={{
-              __html: [soap.subjective, soap.assessment]
-                .map(t => sanitizeRichHtml(toRichHtml(t)))
-                .filter(Boolean).join(""),
-            }}
+          <strong className="text-released">Exame físico:</strong>
+          <ul className="ml-4 mt-1 text-foreground/90 list-disc">
+            {EXAM_FIELDS.filter(f => physicalExam[f.key]).map(f => (
+              <li key={f.key}><span className="font-medium">{f.label}:</span> {physicalExam[f.key]}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* 6. Exames complementares */}
+      {richHtmlToPlainText(soap.objective) && (
+        <div>
+          <strong className="text-released">Exames complementares:</strong>
+          <div
+            className="prose prose-sm max-w-none mt-1 text-foreground [&_p]:my-1 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0"
+            dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(toRichHtml(soap.objective)) }}
           />
         </div>
       )}
-      {(hasExam || richHtmlToPlainText(soap.objective)) && (
-        <div>
-          <strong className="text-released">Objetivo:</strong>
-          {hasExam && (
-            <ul className="ml-4 mt-1 text-foreground/90 list-disc">
-              {EXAM_FIELDS.filter(f => physicalExam[f.key]).map(f => (
-                <li key={f.key}><span className="font-medium">{f.label}:</span> {physicalExam[f.key]}</li>
-              ))}
-            </ul>
-          )}
-          {richHtmlToPlainText(soap.objective) && (
-            <div
-              className="prose prose-sm max-w-none mt-1 text-foreground [&_p]:my-1 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0"
-              dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(toRichHtml(soap.objective)) }}
-            />
-          )}
-        </div>
-      )}
+
+      {/* 7. Dispositivos invasivos */}
       {hasDevices && (
         <div>
           <strong className="text-warning-on-soft">Dispositivos invasivos:</strong>
@@ -926,6 +968,8 @@ const ReadOnlyView: React.FC<{
           </ul>
         </div>
       )}
+
+      {/* 8. Culturas */}
       {hasCultures && (
         <div>
           <strong className="text-critical-on-soft">Culturas:</strong>
@@ -935,6 +979,8 @@ const ReadOnlyView: React.FC<{
           />
         </div>
       )}
+
+      {/* 9. Antibioticos em curso */}
       {hasAntibioticos && (
         <div>
           <strong className="text-critical-on-soft">Antibióticos em curso:</strong>
@@ -944,36 +990,23 @@ const ReadOnlyView: React.FC<{
           />
         </div>
       )}
-      {/* Antecedentes clínicos */}
-      {Array.isArray(antecedentes) && antecedentes.filter(Boolean).length > 0 && (
+
+      {/* 10. Evolucao (Subjetivo + Avaliacao) */}
+      {(richHtmlToPlainText(soap.subjective) || richHtmlToPlainText(soap.assessment)) && (
         <div>
-          <strong className="text-foreground">Antecedentes Clínicos:</strong>
-          <ol className="ml-4 mt-1 text-foreground/90 list-decimal space-y-1">
-            {antecedentes.filter(Boolean).map((a, i) => (
-              <li key={i}>{a}</li>
-            ))}
-          </ol>
+          <strong className="text-muted-foreground">Evolução:</strong>{" "}
+          <span
+            className="prose prose-sm max-w-none text-foreground [&_p]:my-1 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0"
+            dangerouslySetInnerHTML={{
+              __html: [soap.subjective, soap.assessment]
+                .map(t => sanitizeRichHtml(toRichHtml(t)))
+                .filter(Boolean).join(""),
+            }}
+          />
         </div>
       )}
 
-      {/* Hipóteses diagnósticas */}
-      {(() => {
-        const hypos: string[] = Array.isArray(diagnosticHypotheses)
-          ? diagnosticHypotheses.filter(Boolean)
-          : typeof diagnosticHypotheses === "string" && diagnosticHypotheses.trim()
-            ? diagnosticHypotheses.split("\n").filter(Boolean)
-            : [];
-        return hypos.length > 0 ? (
-          <div>
-            <strong className="text-foreground">Hipóteses Diagnósticas:</strong>
-            <ol className="ml-4 mt-1 text-foreground/90 list-decimal space-y-1">
-              {hypos.map((h, i) => <li key={i}>{h}</li>)}
-            </ol>
-          </div>
-        ) : null;
-      })()}
-
-      {/* Plano terapêutico — itens ou texto livre */}
+      {/* 11. Plano terapeutico — itens ou texto livre */}
       {(() => {
         const items = Array.isArray(planItems) ? planItems.filter(Boolean) : [];
         const planText = richHtmlToPlainText(soap.plan);
