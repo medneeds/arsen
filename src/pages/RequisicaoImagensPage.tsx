@@ -146,8 +146,13 @@ const RequisicaoImagensPage = () => {
   // do painel/evolucao: snapshot __cid_primary/__cid_secondary nas evolucoes da
   // internacao (usePatientCid). So preenche o que ainda estiver em branco.
   const apacPatientId = searchParams.get("patientId");
+  // internacoes.id ATIVO resolvido a partir do patientId da URL (que pode ser a
+  // PESSOA — pacientes.id — quando aberto pelo historico/busca). Preenchido pelo
+  // hydrate abaixo; alimenta o CID da admissao (usePatientCid) e o salvar. Antes
+  // o CID vinha de usePatientCid(patientId cru) → pela pessoa, nao achava nada.
+  const [resolvedInternacaoId, setResolvedInternacaoId] = useState<string | null>(null);
   const { cidPrimary: admCidPrimary, cidSecondary: admCidSecondary } =
-    usePatientCid(apacPatientId && apacPatientId.length > 10 ? apacPatientId : null);
+    usePatientCid(resolvedInternacaoId);
   useEffect(() => {
     if (admCidPrimary) setCidPrimary((prev) => prev || admCidPrimary);
   }, [admCidPrimary]);
@@ -209,23 +214,43 @@ const RequisicaoImagensPage = () => {
       try {
         // MIGRAÇÃO: patientId é internacoes.id. Junta internacao → pacientes.
         //   patients/patient_registry → pacientes; admission_histories → internacoes.
-        const { data: internacao, error } = await supabase
-          .from("internacoes")
-          .select(`
-            paciente_id, hipotese_diagnostica, queixa_principal,
+        const INTERNACAO_SEL = `
+            id, paciente_id, hipotese_diagnostica, queixa_principal,
             paciente:pacientes (
               nome_completo, nome_social, prontuario, cns, cpf,
               data_nascimento, sexo, nome_mae, telefone, endereco
             )
-          `)
-          .eq("id", patientId)
-          .maybeSingle();
+          `;
+        // `patientId` pode ser internacoes.id (fluxo do mapa/cockpit, onde
+        // patient.id = internacao ATIVA) OU pacientes.id (historico/busca/
+        // documentos por cadastro, que navegam pela PESSOA). Tenta como
+        // internacao e, se nao for, resolve a internacao ATIVA da pessoa — senao
+        // o paciente nao hidrata e a APAC "nao reconhece o atendimento ativo".
+        let internacao: any = null;
+        {
+          const { data } = await supabase
+            .from("internacoes").select(INTERNACAO_SEL).eq("id", patientId).maybeSingle();
+          internacao = data;
+        }
+        if (!internacao) {
+          const { data } = await supabase
+            .from("internacoes").select(INTERNACAO_SEL)
+            .eq("paciente_id", patientId).is("data_alta", null)
+            .order("data_entrada", { ascending: false }).limit(1).maybeSingle();
+          internacao = data;
+        }
 
-        if (error || !internacao) {
+        if (!internacao) {
           // Silent fail — keep URL values
           if (urlBed) toast.info(`Leito ${urlBed}${urlSector ? ` · ${urlSector}` : ""}`);
           return;
         }
+
+        // id REAL da internacao resolvida: quando o patientId da URL era a PESSOA
+        // (pacientes.id), o id da internacao ATIVA difere. Usado no CID da
+        // admissao (usePatientCid) e na query de observacoes abaixo.
+        const internId: string = (internacao as any).id ?? patientId;
+        setResolvedInternacaoId(internId);
 
         const reg: any = (internacao as any).paciente || null;
 
@@ -262,8 +287,24 @@ const RequisicaoImagensPage = () => {
         // degradados (o médico preenche; a busca usa o catálogo vivo cid10_codes
         // via CidSearchInput). Diagnóstico vem de internacoes.hipotese_diagnostica
         // (fallback: queixa_principal).
+        // hipotese_diagnostica pode vir como TEXTO simples ou como texto em
+        // formato de lista JSON (`["ICC...","DRC..."]`) nos pacientes migrados.
+        // Parseia e junta pra nao imprimir colchetes/aspas na guia.
+        const rawHip = (internacao as any).hipotese_diagnostica;
+        let hipText = "";
+        if (rawHip != null && String(rawHip).trim() !== "") {
+          const s = String(rawHip).trim();
+          try {
+            const parsed = JSON.parse(s);
+            hipText = Array.isArray(parsed)
+              ? parsed.filter((x) => x != null && String(x).trim() !== "").map((x) => String(x).trim()).join("; ")
+              : s;
+          } catch {
+            hipText = s;
+          }
+        }
         const diagFromInternacao =
-          (internacao as any).hipotese_diagnostica ||
+          hipText ||
           (internacao as any).queixa_principal ||
           "";
         if (diagFromInternacao) setDiagnosis((prev) => prev || diagFromInternacao);
@@ -276,7 +317,7 @@ const RequisicaoImagensPage = () => {
           const { data: latestEvol } = await supabase
             .from("evolucoes")
             .select("soap, data_hora")
-            .eq("internacao_id", patientId)
+            .eq("internacao_id", internId)
             .order("data_hora", { ascending: false })
             .limit(1)
             .maybeSingle();
@@ -390,10 +431,26 @@ const RequisicaoImagensPage = () => {
     // requested_by_name. Os metadados de CID/diagnóstico/médico vão para
     // observacoes; o solicitante vira FK profissional (solicitado_por).
     const pid = searchParams.get("patientId");
-    const internacaoId = pid && pid.length > 10 ? pid : null;
     // A solicitacao de APAC PRECISA de internacao vinculada (solicitacoes_exame.
-    // internacao_id e NOT NULL). Sem ela nao ha como gerar os "solicitados", a guia
-    // nem o historico. Antes isso era pulado em silencio -> "nao gerava nada".
+    // internacao_id e NOT NULL). O `patientId` da URL pode ser a internacoes.id
+    // (mapa/cockpit) OU a pacientes.id (historico/busca/documentos por cadastro).
+    // Resolve os dois: tenta como internacao e, se nao for, acha a internacao
+    // ATIVA da pessoa. Antes so aceitava a internacao.id -> abrindo pela pessoa,
+    // "nao reconhecia o atendimento ativo" e nao gerava a solicitacao.
+    let internacaoId: string | null = null;
+    if (pid && pid.length > 10) {
+      const { data: asInter } = await supabase
+        .from("internacoes").select("id").eq("id", pid).maybeSingle();
+      if ((asInter as { id?: string } | null)?.id) {
+        internacaoId = pid;
+      } else {
+        const { data: byPac } = await supabase
+          .from("internacoes").select("id")
+          .eq("paciente_id", pid).is("data_alta", null)
+          .order("data_entrada", { ascending: false }).limit(1).maybeSingle();
+        internacaoId = (byPac as { id?: string } | null)?.id ?? null;
+      }
+    }
     if (!internacaoId) {
       toast.error("Abra a APAC a partir do paciente (pelo mapa/painel): sem internação vinculada não é possível registrar a solicitação.");
       return;
