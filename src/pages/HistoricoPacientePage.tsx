@@ -620,6 +620,15 @@ export default function HistoricoPacientePage() {
 
     try {
       if (e.event_type === "evolution") {
+        // Abrir a janela ANTES de qualquer await — popup blocker bloqueia
+        // window.open chamado apos awaits fora do tick do clique (Safari/iPad a
+        // beira do leito bloqueia de forma deterministica). Mesmo contrato das
+        // demais superficies (Timeline/EvolutionForm): era a UNICA chamada de
+        // printEvolution sem a janela pre-aberta, e por isso a reimpressao da
+        // evolucao pelo Historico falhava em silencio.
+        const printWin = window.open("", "_blank", "width=1024,height=768");
+        if (printWin) printWin.document.write("<html><body style='font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;color:#475569'>Preparando evolução…</body></html>");
+        if (!printWin) { alert("Permita pop-ups para imprimir."); setPrintingId(null); return; }
         // MIGRAÇÃO: clinical_evolutions → evolucoes. A linha nova não tem o mesmo
         // shape do EvolutionRecord (campos dedicados viraram JSON `soap`/`exame_fisico`),
         // então mapeamos aqui antes de reaproveitar o builder printEvolution — mesma
@@ -663,7 +672,7 @@ export default function HistoricoPacientePage() {
           patientName: patientName ?? undefined,
           patientBed: patientBed ?? undefined,
           patientSector: patientSector ?? undefined,
-        });
+        }, printWin);
         setPrintingId(null);
         return;
       }
