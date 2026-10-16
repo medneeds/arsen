@@ -304,6 +304,12 @@ export const printEvolution = async (
           ? `<h2 class="nz-section">Sinais Vitais</h2><div style="padding:5pt 7pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:8pt">${vitalsRow}</div>`
           : ""
       }
+      ${examRows ? `<h2 class="nz-section">Exame Físico</h2><table class="nz" style="font-size:8.5pt"><tbody>${examRows}</tbody></table>` : ""}
+      ${
+        richHtmlToPlainText(toRichHtml(s.objective))
+          ? `<h2 class="nz-section">Exames Complementares</h2><div class="nz-rich" style="padding:6pt 8pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:8.5pt;line-height:1.35">${renderRich(s.objective)}</div>`
+          : ""
+      }
       ${(() => {
         // ── Dispositivos invasivos — compacto, linha corrida ─────────────
         // A seção só existe se houver dispositivo com rótulo utilizável, e
@@ -360,16 +366,22 @@ export const printEvolution = async (
         return `<h2 class="nz-section">Culturas</h2>`
           + `<div class="nz-rich" style="padding:5pt 7pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:8pt;line-height:1.35">${html}</div>`;
       })()}
+      ${(() => {
+        // ── Antibioticos em curso — irmao de culturas/devices no soap_data.
+        // Mesma regra: so sai se houver conteudo (rich text). GAP: existia na
+        // tela read-only e no soap, mas nunca no impresso (culturas ja tinha
+        // sido corrigida; antibioticos ficou para tras).
+        const atb = (s as { antibioticos?: unknown }).antibioticos;
+        if (typeof atb !== "string") return "";
+        const html = toRichHtml(atb);
+        if (!richHtmlToPlainText(html).trim()) return "";
+        return `<h2 class="nz-section">Antibióticos em curso</h2>`
+          + `<div class="nz-rich" style="padding:5pt 7pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:8pt;line-height:1.35">${html}</div>`;
+      })()}
       <h2 class="nz-section">Evolução</h2>
       <div class="nz-rich" style="padding:6pt 8pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:8.5pt;line-height:1.35">
         ${evolucaoOut}
       </div>
-      ${examRows ? `<h2 class="nz-section">Exame Físico</h2><table class="nz" style="font-size:8.5pt"><tbody>${examRows}</tbody></table>` : ""}
-      ${
-        richHtmlToPlainText(toRichHtml(s.objective))
-          ? `<h2 class="nz-section">Exames Complementares</h2><div class="nz-rich" style="padding:6pt 8pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:8.5pt;line-height:1.35">${renderRich(s.objective)}</div>`
-          : ""
-      }
       ${(() => {
         // Plano por itens (novo) ou texto livre (legado)
         const planItemsArr: string[] = Array.isArray((s as any).planItems) ? (s as any).planItems.filter(Boolean) : [];
