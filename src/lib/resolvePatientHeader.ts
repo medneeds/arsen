@@ -15,6 +15,20 @@ import { detectUnidentified } from "@/lib/unidentifiedDetector";
 import { formatAge } from "@/lib/patientAge";
 import { fetchInternacaoComPaciente } from "@/lib/internacaoComPaciente";
 
+/**
+ * Corre uma promise com teto de tempo. Se estourar, resolve com `fallback` em
+ * vez de pendurar — NUNCA rejeita. Usado nas resolucoes de identidade/leito da
+ * impressao: uma consulta lenta/pendurada deixava a janela de impressao presa
+ * no splash "Preparando..." para sempre (sem erro, sem PDF). Com o teto, o
+ * impresso sai com os dados que a tela ja tinha, em vez de nao sair.
+ */
+export function withTimeout<T>(p: PromiseLike<T>, ms: number, fallback: T): Promise<T> {
+  return Promise.race([
+    Promise.resolve(p),
+    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms)),
+  ]);
+}
+
 export interface ResolvedPatientHeader {
   /** Nome canônico (pacientes.nome_completo → fallback) */
   name: string;
@@ -58,11 +72,18 @@ export async function resolveCurrentBedSector(
 ): Promise<{ bed: string | null; sector: string | null }> {
   if (!patientId) return { bed: null, sector: null };
   try {
-    const { data } = await supabase
-      .from("internacoes")
-      .select("leito:leitos(numero), setor:setores(nome)")
-      .eq("id", patientId)
-      .maybeSingle();
+    const { data } = await withTimeout(
+      (async () => {
+        const r = await supabase
+          .from("internacoes")
+          .select("leito:leitos(numero), setor:setores(nome)")
+          .eq("id", patientId)
+          .maybeSingle();
+        return { data: r.data };
+      })(),
+      5000,
+      { data: null },
+    );
     return {
       bed: (data as any)?.leito?.numero ?? null,
       sector: (data as any)?.setor?.nome ?? null,
@@ -152,7 +173,11 @@ export async function resolvePatientHeader(
   // Identidade a partir da internação (patientId == internacoes.id) → pacientes.
   if (patientId) {
     try {
-      const internacao = await fetchInternacaoComPaciente(patientId);
+      const internacao = await withTimeout(
+        fetchInternacaoComPaciente(patientId),
+        5000,
+        { paciente: null, numeroAtendimento: null } as Awaited<ReturnType<typeof fetchInternacaoComPaciente>>,
+      );
       paciente = internacao.paciente;
       numeroAtendimento = internacao.numeroAtendimento;
     } catch {

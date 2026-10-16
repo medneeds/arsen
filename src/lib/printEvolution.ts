@@ -9,6 +9,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { buildNormaZeroDocument, buildStandardHeaderHtml, openPrintWindow, prepareLogo } from "@/lib/printNormaZero";
 import { resolveHeaderPatient } from "@/lib/headerPatient";
+import { withTimeout } from "@/lib/resolvePatientHeader";
 import type { HeaderInput } from "@/lib/documentHeaderLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { toRichHtml, richHtmlToPlainText } from "@/components/ui/rich-text-editor";
@@ -103,7 +104,12 @@ export const printEvolution = async (
     );
   }
 
-  const logo = await prepareLogo();
+  // Blindagem: qualquer falha/lentidao na geracao escreve uma pagina de erro na
+  // janela (em vez de deixar o splash "Preparando..." eterno) e registra o erro
+  // no console. Os await de rede abaixo tem teto de tempo (withTimeout) para nao
+  // pendurar; o impresso sai com os dados que a tela ja tinha.
+  try {
+  const logo = await withTimeout(prepareLogo(), 6000, "");
 
   const validatedAt = fmtSafe(evo.validated_at, "dd/MM/yyyy 'às' HH:mm", "") || null;
 
@@ -150,11 +156,18 @@ export const printEvolution = async (
       // EvolutionRecord é internacoes.id. medical_history→pacientes.comorbidades,
       // uti_allergies→pacientes.alergias, birth_date→pacientes.data_nascimento.
       // DEGRADADO: coluna `age` não existe em pacientes → idade só via data_nascimento.
-      const { data: iRow } = await supabase
-        .from("internacoes")
-        .select("data_admissao_uti, data_entrada, paciente:pacientes(comorbidades, alergias, data_nascimento)")
-        .eq("id", (evo as any).patient_id)
-        .maybeSingle();
+      const { data: iRow } = await withTimeout(
+        (async () => {
+          const r = await supabase
+            .from("internacoes")
+            .select("data_admissao_uti, data_entrada, paciente:pacientes(comorbidades, alergias, data_nascimento)")
+            .eq("id", (evo as any).patient_id)
+            .maybeSingle();
+          return { data: r.data };
+        })(),
+        5000,
+        { data: null },
+      );
 
       const ir = iRow as { data_admissao_uti?: string | null; data_entrada?: string | null } | null;
       sectorAdmDate = ir?.data_admissao_uti || ir?.data_entrada || null;
@@ -186,7 +199,7 @@ export const printEvolution = async (
   // Identificacao do paciente: cabecalho padronizado (modelo assistencial). Os dados
   // que esta funcao ja buscou valem mais; o resto (sexo, peso, mae...) vem do cadastro.
   const noAllergy = patientAllergies === "—" || patientAllergies === "SEM ALERGIAS CONHECIDAS";
-  const headerPatient = await resolveHeaderPatient(evo.patient_id, {
+  const headerBase = {
     name: baseName.toUpperCase(),
     socialName: ctx?.patientSocialName,
     bed: ctx?.patientBed || evo.patient_bed,
@@ -197,16 +210,28 @@ export const printEvolution = async (
     age: patientAge ?? undefined,
     sectorAdmission: sectorAdmDate ? formatBirthDateBR(sectorAdmDate) : undefined,
     allergies: noAllergy ? undefined : patientAllergies,
-  });
+  };
+  // Teto de tempo: se a resolucao de identidade pendurar, usa o cabecalho base
+  // (dados da tela) em vez de prender a janela no splash.
+  const headerPatient = await withTimeout(resolveHeaderPatient(evo.patient_id, headerBase), 7000, headerBase);
 
   // ─── Buscar dados do paciente ANTES de montar o patientHeader ──────
   
   const hypothesesText = (evo as any).diagnostic_hypotheses?.toString().trim() || "";
   // CID: prefere o SNAPSHOT da evolucao (soap.__cid_*) quando presente — reflete o CID
   // daquela evolucao, inclusive edicoes por evolucao; fallback ao nivel paciente (ctx).
-  const snapCid = ((evo as { soap_data?: { __cid_primary?: string; __cid_secondary?: string } }).soap_data) ?? {};
-  const cidPrimary = (snapCid.__cid_primary ?? "").trim() || ctx?.cidPrimary?.trim() || "";
-  const cidSecondary = (snapCid.__cid_secondary ?? "").trim() || ctx?.cidSecondary?.trim() || "";
+  const snapCid = ((evo as { soap_data?: { __cid_primary?: unknown; __cid_secondary?: unknown } }).soap_data) ?? {};
+  // __cid_* pode vir STRING (uma evolucao normal) ou ARRAY (CID secundario
+  // multiplo — como a admissao/D0 grava). Coagir ANTES do .trim(): sem isso,
+  // (array).trim() lanca "trim is not a function" e a geracao do PDF falhava
+  // em silencio (janela presa no splash "Preparando evolucao..."). Atingia toda
+  // evolucao duplicada a partir de admissao.
+  const cidToStr = (v: unknown): string =>
+    typeof v === "string" ? v
+    : Array.isArray(v) ? v.map((x) => (typeof x === "string" ? x : String(x ?? ""))).filter(Boolean).join("; ")
+    : v == null ? "" : String(v);
+  const cidPrimary = cidToStr(snapCid.__cid_primary).trim() || cidToStr(ctx?.cidPrimary).trim() || "";
+  const cidSecondary = cidToStr(snapCid.__cid_secondary).trim() || cidToStr(ctx?.cidSecondary).trim() || "";
   const hasDiagnostics = hypothesesText || cidPrimary || cidSecondary;
 
   const diagnosticsHtml = hasDiagnostics
@@ -519,5 +544,24 @@ export const printEvolution = async (
       html,
       intercurrence ? "Preparando intercorrência…" : "Preparando evolução…"
     );
+  }
+  } catch (err) {
+    // NUNCA deixar a janela presa no splash "Preparando...": escreve uma pagina
+    // de erro legivel e registra o detalhe no console (para diagnostico).
+    console.error("[printEvolution] falha ao gerar o documento:", err);
+    const detalhe = err instanceof Error ? err.message : String(err);
+    if (printWin) {
+      try {
+        printWin.document.open();
+        printWin.document.write(
+          `<html><body style="font-family:sans-serif;padding:24px;color:#991b1b">`
+          + `<h2 style="margin:0 0 8px">Nao foi possivel gerar a evolucao</h2>`
+          + `<p style="color:#334155">Tente imprimir novamente. Se persistir, informe o detalhe abaixo ao suporte.</p>`
+          + `<pre style="white-space:pre-wrap;background:#f8fafc;border:1px solid #e2e8f0;padding:8px;border-radius:4px;color:#475569;font-size:12px">${detalhe.replace(/[<>&]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" }[c] || c))}</pre>`
+          + `</body></html>`,
+        );
+        printWin.document.close();
+      } catch { /* janela pode ter sido fechada pelo usuario */ }
+    }
   }
 };

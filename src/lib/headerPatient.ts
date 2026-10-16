@@ -7,7 +7,7 @@
  * sobrescrito. Nunca lanca: se a consulta falhar, devolve o que veio.
  */
 import { supabase } from "@/integrations/supabase/client";
-import { resolvePatientHeader, resolveCurrentBedSector } from "@/lib/resolvePatientHeader";
+import { resolvePatientHeader, resolveCurrentBedSector, withTimeout } from "@/lib/resolvePatientHeader";
 import { getSectorDisplayLabel } from "@/utils/bedNaming";
 import type { HeaderPatient } from "@/lib/documentHeaderLayout";
 
@@ -36,7 +36,9 @@ export async function resolveHeaderPatient(
 ): Promise<HeaderPatient> {
   if (!patientId) return base;
   try {
-    const [ident, live, inter] = await Promise.all([
+    // Teto de tempo global: identidade/leito/peso que pendurem nao prendem a
+    // janela de impressao no splash — devolve `base` (dados da tela) e o PDF sai.
+    const racePromise = Promise.all([
       resolvePatientHeader(patientId, base.name, null),
       resolveCurrentBedSector(patientId),
       (async () => {
@@ -52,6 +54,9 @@ export async function resolveHeaderPatient(
         }
       })(),
     ]);
+    const raced = await withTimeout<Awaited<typeof racePromise> | null>(racePromise, 7000, null);
+    if (!raced) return base;
+    const [ident, live, inter] = raced;
     const fromDb: HeaderPatient = {
       name: ident.name !== "—" ? ident.name : undefined,
       socialName: ident.socialName,
