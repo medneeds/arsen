@@ -720,6 +720,40 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
   const sofaTotal = useMemo(() => calcularSofaTotal(sofaRespostas), [sofaRespostas]);
   const sofaPreenchidos = useMemo(() => componentesPreenchidos(sofaRespostas), [sofaRespostas]);
 
+  // ── Completude por secao (check verde no cabecalho de cada AccordionSectionItem).
+  // Espelha o comportamento ja existente na evolucao (EvolutionForm.completion): quando
+  // a secao tem conteudo, o icone vira o check verde. Antes a admissao nao passava
+  // `complete`, entao o check nunca acendia. ──
+  const completion = useMemo(() => {
+    const hasText = (v: string) => !!v && v.trim().length > 0;
+    const hasRich = (v: string) => richHtmlToPlainText(v || "").trim().length > 0;
+    return {
+      diagnostico: hasText(cidPrimary),
+      hipoteses: hypothesesItems.some(hasText),
+      hda: hasText(hda),
+      antecedentes: antecedentesItems.some(hasText),
+      muc: hasText(muc),
+      alergias: hasText(allergies),
+      vitais: [pa, fc, fr, spo2, tax, dx].some(hasText),
+      antropometria: hasText(weight) || hasText(height),
+      exame: [physGeneral, physCv, physResp, physAbd, physNeuro, physExt, physSkin, physOther].some(hasText),
+      glasgow: glasgowTotal != null || (sedoanalgesia && rass != null),
+      complementares: hasRich(complementares),
+      plano: planItems.some(hasText),
+      previsao: noPrediction || hasText(predictionDate),
+      utiJustif: hasText(utiJustificativa) || hasText(utiJustificativaOutro),
+      utiVaso: utiVasoativo != null,
+      utiDisp: admDevices.length > 0 || hasRich(culturesHtml) || hasRich(antibioticosHtml),
+      utiSofa: sofaTotal != null && sofaTotal > 0,
+      utiComp: hasText(originSector),
+      cirurgicos: hasText(surgProcedimento) || hasText(surgEspecialidade),
+    };
+  }, [cidPrimary, hypothesesItems, hda, antecedentesItems, muc, allergies, pa, fc, fr, spo2, tax, dx,
+      weight, height, physGeneral, physCv, physResp, physAbd, physNeuro, physExt, physSkin, physOther,
+      glasgowTotal, sedoanalgesia, rass, complementares, planItems, noPrediction, predictionDate,
+      utiJustificativa, utiJustificativaOutro, utiVasoativo, admDevices, culturesHtml, antibioticosHtml,
+      sofaTotal, originSector, surgProcedimento, surgEspecialidade]);
+
   // Rótulo da justificativa para o SOAP/impresso: quando "outro", usa o texto
   // digitado (ou o valor legado de admissionReason como fallback).
   const utiJustificativaTexto = utiJustificativaOutro.trim() || admissionReason.trim();
@@ -1750,7 +1784,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
             className="rounded-lg border border-border bg-card divide-y divide-border"
           >
           {/* 1. Diagnostico CID — primario (obrigatorio) + secundario ao lado (opcional) */}
-          <AccordionSectionItem id="em-cid" icon={FileText} iconColor="text-foreground" label="Diagnóstico (CID-10)" hint="Primário obrigatório; secundário opcional" required>
+          <AccordionSectionItem id="em-cid" complete={completion.diagnostico} icon={FileText} iconColor="text-foreground" label="Diagnóstico (CID-10)" hint="Primário obrigatório; secundário opcional" required>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <ReqLabel missing={attempted && missing.cidPrimary}>CID primário</ReqLabel>
@@ -1765,7 +1799,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
           </AccordionSectionItem>
 
           {/* 2. Hipoteses diagnosticas */}
-          <AccordionSectionItem id="em-hipoteses" icon={Stethoscope} iconColor="text-muted-foreground" label="Hipóteses diagnósticas">
+          <AccordionSectionItem id="em-hipoteses" complete={completion.hipoteses} icon={Stethoscope} iconColor="text-muted-foreground" label="Hipóteses diagnósticas">
             <ItemListField
               items={hypothesesItems}
               onChange={setHypothesesItems}
@@ -1776,14 +1810,14 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
           </AccordionSectionItem>
 
           {/* 3. HDA */}
-          <AccordionSectionItem id="em-hda" icon={FileText} iconColor="text-muted-foreground" label="História admissional (HDA)" required>
+          <AccordionSectionItem id="em-hda" complete={completion.hda} icon={FileText} iconColor="text-muted-foreground" label="História admissional (HDA)" required>
             <ReqLabel missing={attempted && missing.hda}>HDA — História da Doença Atual</ReqLabel>
             <Textarea value={hda} onChange={e => setHda(e.target.value)} rows={3}
               placeholder="Paciente admitido com..." className={cn("mt-1", reqRing(attempted && missing.hda))} />
           </AccordionSectionItem>
 
           {/* 4. Antecedentes morbidos pessoais */}
-          <AccordionSectionItem id="em-antecedentes" icon={ClipboardList} iconColor="text-muted-foreground" label="Antecedentes mórbidos pessoais">
+          <AccordionSectionItem id="em-antecedentes" complete={completion.antecedentes} icon={ClipboardList} iconColor="text-muted-foreground" label="Antecedentes mórbidos pessoais">
             <ItemListField
               items={antecedentesItems}
               onChange={setAntecedentesItems}
@@ -1793,12 +1827,12 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
           </AccordionSectionItem>
 
           {/* 5. MUC — medicacoes de uso continuo */}
-          <AccordionSectionItem id="em-muc" icon={Pill} iconColor="text-muted-foreground" label="MUC — Medicações de uso contínuo">
+          <AccordionSectionItem id="em-muc" complete={completion.muc} icon={Pill} iconColor="text-muted-foreground" label="MUC — Medicações de uso contínuo">
             <Textarea value={muc} onChange={e => setMuc(e.target.value)} rows={3} className="mt-1" placeholder="Uma medicação por linha..." />
           </AccordionSectionItem>
 
           {/* 6. Alergias */}
-          <AccordionSectionItem id="em-alergias" icon={AlertTriangle} iconColor="text-warning-on-soft" label="Alergias medicamentosas">
+          <AccordionSectionItem id="em-alergias" complete={completion.alergias} icon={AlertTriangle} iconColor="text-warning-on-soft" label="Alergias medicamentosas">
             <div className="flex flex-wrap items-center gap-3">
               <ToggleGroup type="single" value={allergyMode ?? ""} onValueChange={v => { if (v === "nao" || v === "sim") handleAllergyMode(v); }}>
                 <ToggleGroupItem value="nao" className="data-[state=on]:bg-released data-[state=on]:text-white">Sem relato</ToggleGroupItem>
@@ -1811,7 +1845,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
           </AccordionSectionItem>
 
           {/* 7. Sinais vitais */}
-          <AccordionSectionItem id="em-vitais" icon={HeartPulse} iconColor="text-released-on-soft" label="Sinais vitais">
+          <AccordionSectionItem id="em-vitais" complete={completion.vitais} icon={HeartPulse} iconColor="text-released-on-soft" label="Sinais vitais">
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               <div><Label className="text-xs">PA sistólica</Label><Input value={paSys} onChange={e => setPaSys(e.target.value)} placeholder="120" className="mt-1" inputMode="numeric" /></div>
               <div><Label className="text-xs">PA diastólica</Label><Input value={paDia} onChange={e => setPaDia(e.target.value)} placeholder="80" className="mt-1" inputMode="numeric" /></div>
@@ -1823,7 +1857,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
           </AccordionSectionItem>
 
           {/* 8. Antropometria e dextro */}
-          <AccordionSectionItem id="em-antropometria" icon={Activity} iconColor="text-muted-foreground" label="Antropometria e dextro">
+          <AccordionSectionItem id="em-antropometria" complete={completion.antropometria} icon={Activity} iconColor="text-muted-foreground" label="Antropometria e dextro">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               <div><Label className="text-xs">Peso (kg)</Label><Input value={weight} onChange={e => setWeight(e.target.value)} placeholder="kg" className="mt-1" inputMode="decimal" /></div>
               <div><Label className="text-xs">Altura (m ou cm)</Label><Input value={height} onChange={e => setHeight(e.target.value)} placeholder="1,70 ou 170" className="mt-1" inputMode="decimal" /></div>
@@ -1838,7 +1872,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
           </AccordionSectionItem>
 
           {/* 9. Exame fisico — mesmos campos da evolucao (EXAM_FIELDS, inclui pele/outros) */}
-          <AccordionSectionItem id="em-exame" icon={Stethoscope} iconColor="text-muted-foreground" label="Exame físico" hint="Mesmos campos da evolução">
+          <AccordionSectionItem id="em-exame" complete={completion.exame} icon={Stethoscope} iconColor="text-muted-foreground" label="Exame físico" hint="Mesmos campos da evolução">
             <div>
               <Label className="text-xs">Estado geral</Label>
               <Textarea value={examFieldState.general.value} onChange={e => examFieldState.general.set(e.target.value)} rows={1} className="mt-1" />
@@ -1862,7 +1896,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
           </AccordionSectionItem>
 
           {/* 10. Glasgow + escores ao vivo */}
-          <AccordionSectionItem id="em-glasgow" icon={Brain} iconColor="text-muted-foreground" label="Glasgow + escores ao vivo"
+          <AccordionSectionItem id="em-glasgow" complete={completion.glasgow} icon={Brain} iconColor="text-muted-foreground" label="Glasgow + escores ao vivo"
             hint={glasgowTotal != null ? `Glasgow ${glasgowTotal} / 15` : "Selecione O / V / M"}>
             <div className="space-y-3">
               <GlasgowRow label="Abertura ocular (1-4)" options={GLASGOW_EYE} value={glasgowEye} onSelect={setGlasgowEye} />
@@ -1904,7 +1938,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
           </AccordionSectionItem>
 
           {/* 11. Exames complementares — mesmo widget da evolucao (RichTextEditor) */}
-          <AccordionSectionItem id="em-exames-comp" icon={FileText} iconColor="text-muted-foreground" label="Exames Complementares" hint="Laboratoriais e de imagem — opcional">
+          <AccordionSectionItem id="em-exames-comp" complete={completion.complementares} icon={FileText} iconColor="text-muted-foreground" label="Exames Complementares" hint="Laboratoriais e de imagem — opcional">
             <RichTextEditor
               value={complementares}
               onChange={setComplementares}
@@ -1914,7 +1948,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
           </AccordionSectionItem>
 
           {/* 12. Plano terapeutico */}
-          <AccordionSectionItem id="em-conduta" icon={Pill} iconColor="text-muted-foreground" label="Plano terapêutico" required>
+          <AccordionSectionItem id="em-conduta" complete={completion.plano} icon={Pill} iconColor="text-muted-foreground" label="Plano terapêutico" required>
             <ReqLabel missing={attempted && missing.plan}>Conduta inicial</ReqLabel>
             <div className="mt-1">
               <ItemListField
@@ -1928,7 +1962,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
           </AccordionSectionItem>
 
           {/* 13. Previsao de alta */}
-          <AccordionSectionItem id="em-previsao" icon={CalendarDays} iconColor="text-muted-foreground" label="Previsão de alta">
+          <AccordionSectionItem id="em-previsao" complete={completion.previsao} icon={CalendarDays} iconColor="text-muted-foreground" label="Previsão de alta">
             <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-3 items-end">
               <div>
                 <Label className="text-xs flex items-center gap-1"><Hash className="h-3 w-3" /> Dias previstos</Label>
@@ -2008,7 +2042,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
           >
             {/* ORDEM UNIFICADA (igual ao padrao da emergencia), para importacao de
                 dados entre admissoes aproveitar os campos na mesma sequencia. */}
-            <AccordionSectionItem id="nm-diagnostico" icon={FileText} iconColor="text-foreground" label="Diagnóstico (CID-10)" hint="Busca por código ou descrição" required>
+            <AccordionSectionItem id="nm-diagnostico" complete={completion.diagnostico} icon={FileText} iconColor="text-foreground" label="Diagnóstico (CID-10)" hint="Busca por código ou descrição" required>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <ReqLabel missing={attempted && missing.cidPrimary}>CID primário</ReqLabel>
@@ -2023,7 +2057,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
               </div>
             </AccordionSectionItem>
 
-            <AccordionSectionItem id="nm-hipoteses" icon={Stethoscope} iconColor="text-foreground" label="Hipóteses Diagnósticas" hint="Um item por hipótese — sincroniza automaticamente com o painel clínico">
+            <AccordionSectionItem id="nm-hipoteses" complete={completion.hipoteses} icon={Stethoscope} iconColor="text-foreground" label="Hipóteses Diagnósticas" hint="Um item por hipótese — sincroniza automaticamente com o painel clínico">
               <ItemListField
                 items={hypothesesItems}
                 onChange={setHypothesesItems}
@@ -2035,13 +2069,13 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
               </p>
             </AccordionSectionItem>
 
-            <AccordionSectionItem id="nm-hda" icon={FileText} iconColor="text-muted-foreground" label="História admissional (HDA)" required>
+            <AccordionSectionItem id="nm-hda" complete={completion.hda} icon={FileText} iconColor="text-muted-foreground" label="História admissional (HDA)" required>
               <ReqLabel missing={attempted && missing.hda}>HDA — História da Doença Atual</ReqLabel>
               <Textarea value={hda} onChange={e => setHda(e.target.value)} rows={4}
                 placeholder="Paciente admitido com..." className={cn("mt-1", reqRing(attempted && missing.hda))} />
             </AccordionSectionItem>
 
-            <AccordionSectionItem id="nm-antecedentes" icon={ClipboardList} iconColor="text-foreground" label="Antecedentes mórbidos pessoais" hint="Acrescente um a um">
+            <AccordionSectionItem id="nm-antecedentes" complete={completion.antecedentes} icon={ClipboardList} iconColor="text-foreground" label="Antecedentes mórbidos pessoais" hint="Acrescente um a um">
               <ItemListField
                 items={antecedentesItems}
                 onChange={setAntecedentesItems}
@@ -2050,12 +2084,12 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
               />
             </AccordionSectionItem>
 
-            <AccordionSectionItem id="nm-muc" icon={Pill} iconColor="text-muted-foreground" label="MUC — Medicações de Uso Contínuo">
+            <AccordionSectionItem id="nm-muc" complete={completion.muc} icon={Pill} iconColor="text-muted-foreground" label="MUC — Medicações de Uso Contínuo">
               <Textarea value={muc} onChange={e => setMuc(e.target.value)} rows={3} className="mt-1"
                 placeholder="Uma medicação por linha..." />
             </AccordionSectionItem>
 
-            <AccordionSectionItem id="nm-alergias" icon={AlertTriangle} iconColor="text-warning-on-soft" label="Alergias medicamentosas">
+            <AccordionSectionItem id="nm-alergias" complete={completion.alergias} icon={AlertTriangle} iconColor="text-warning-on-soft" label="Alergias medicamentosas">
               <div className="flex flex-wrap items-center gap-3">
                 <ToggleGroup
                   type="single"
@@ -2076,7 +2110,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
               </div>
             </AccordionSectionItem>
 
-            <AccordionSectionItem id="nm-vitais" icon={HeartPulse} iconColor="text-released-on-soft" label="Sinais vitais admissionais">
+            <AccordionSectionItem id="nm-vitais" complete={completion.vitais} icon={HeartPulse} iconColor="text-released-on-soft" label="Sinais vitais admissionais">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 <div><Label className="text-xs">FC (bpm)</Label><Input value={fc} onChange={e => setFc(e.target.value)} placeholder="bpm" className="mt-1" inputMode="numeric" /></div>
                 <div><Label className="text-xs">PA sistólica</Label><Input value={paSys} onChange={e => setPaSys(e.target.value)} placeholder="120" className="mt-1" inputMode="numeric" /></div>
@@ -2089,7 +2123,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
               </div>
             </AccordionSectionItem>
 
-            <AccordionSectionItem id="nm-antropometria" icon={Activity} iconColor="text-foreground" label="Antropometria" hint="IMC calculado automaticamente">
+            <AccordionSectionItem id="nm-antropometria" complete={completion.antropometria} icon={Activity} iconColor="text-foreground" label="Antropometria" hint="IMC calculado automaticamente">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <Label className="text-xs">Altura (m ou cm)</Label>
@@ -2114,7 +2148,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
               </div>
             </AccordionSectionItem>
 
-            <AccordionSectionItem id="nm-exame" icon={Stethoscope} iconColor="text-muted-foreground" label="Exame físico" hint="Mesmos campos da evolução">
+            <AccordionSectionItem id="nm-exame" complete={completion.exame} icon={Stethoscope} iconColor="text-muted-foreground" label="Exame físico" hint="Mesmos campos da evolução">
               <div>
                 <Label className="text-xs">Estado geral</Label>
                 <Textarea
@@ -2144,7 +2178,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
             </AccordionSectionItem>
 
             <AccordionSectionItem
-              id="nm-glasgow"
+              id="nm-glasgow" complete={completion.glasgow}
               icon={Brain}
               iconColor="text-muted-foreground"
               label="Escala de Coma de Glasgow"
@@ -2185,7 +2219,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
             </AccordionSectionItem>
 
             {/* Painel de escores ao vivo — qSOFA + NEWS2 */}
-            <AccordionSectionItem id="nm-escores" icon={Gauge} iconColor="text-muted-foreground" label="Escores ao vivo" hint="Recalculados a cada mudança">
+            <AccordionSectionItem id="nm-escores" complete={completion.glasgow} icon={Gauge} iconColor="text-muted-foreground" label="Escores ao vivo" hint="Recalculados a cada mudança">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="rounded-md border border-border bg-background p-3">
                   <p className="text-xs uppercase tracking-wide text-muted-foreground">qSOFA</p>
@@ -2222,7 +2256,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
 
             {/* Exames complementares — mesmo widget da evolucao (RichTextEditor).
                 Persistido em internacoes.exames_relevantes no handleSubmit. */}
-            <AccordionSectionItem id="nm-exames-comp" icon={FileText} iconColor="text-muted-foreground" label="Exames Complementares" hint="Laboratoriais e de imagem — opcional">
+            <AccordionSectionItem id="nm-exames-comp" complete={completion.complementares} icon={FileText} iconColor="text-muted-foreground" label="Exames Complementares" hint="Laboratoriais e de imagem — opcional">
               <RichTextEditor
                 value={complementares}
                 onChange={setComplementares}
@@ -2231,7 +2265,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
               />
             </AccordionSectionItem>
 
-            <AccordionSectionItem id="nm-plano" icon={Pill} iconColor="text-muted-foreground" label="Plano terapêutico" required>
+            <AccordionSectionItem id="nm-plano" complete={completion.plano} icon={Pill} iconColor="text-muted-foreground" label="Plano terapêutico" required>
               <ReqLabel missing={attempted && missing.plan}>Conduta inicial</ReqLabel>
               <div className="mt-1">
                 <ItemListField
@@ -2244,7 +2278,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
               </div>
             </AccordionSectionItem>
 
-            <AccordionSectionItem id="nm-previsao" icon={CalendarDays} iconColor="text-warning-on-soft" label="Previsão de alta" hint="Dias e data sincronizados">
+            <AccordionSectionItem id="nm-previsao" complete={completion.previsao} icon={CalendarDays} iconColor="text-warning-on-soft" label="Previsão de alta" hint="Dias e data sincronizados">
               <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-3 items-end">
                 <div>
                   <Label className="text-xs flex items-center gap-1"><Hash className="h-3 w-3" /> Dias de internação previstos</Label>
@@ -2277,7 +2311,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
             {/* ───── UTI ───── */}
             {isUti && (
             <>
-              <AccordionSectionItem id="nm-uti-justif" icon={AlertTriangle} iconColor="text-warning-on-soft" label="Justificativa de admissão na UTI">
+              <AccordionSectionItem id="nm-uti-justif" complete={completion.utiJustif} icon={AlertTriangle} iconColor="text-warning-on-soft" label="Justificativa de admissão na UTI">
                 <div className="flex flex-wrap gap-1.5">
                   {UTI_JUSTIFICATIVAS.map(j => (
                     <button
@@ -2304,7 +2338,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
                 )}
               </AccordionSectionItem>
 
-              <AccordionSectionItem id="nm-uti-vaso" icon={HeartPulse} iconColor="text-muted-foreground" label="Droga vasoativa">
+              <AccordionSectionItem id="nm-uti-vaso" complete={completion.utiVaso} icon={HeartPulse} iconColor="text-muted-foreground" label="Droga vasoativa">
                 <div className="flex flex-wrap items-center gap-3">
                   <ToggleGroup
                     type="single"
@@ -2322,7 +2356,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
                   com a evolucao. Persiste nas MESMAS chaves do soap (devices /
                   culturesHtml / antibioticos), ancorado em internacao_id: o que
                   for preenchido aqui aparece na evolucao e vice-versa. */}
-              <AccordionSectionItem id="nm-uti-disp" icon={Activity} iconColor="text-muted-foreground" label="Dispositivos, Culturas e Antibióticos">
+              <AccordionSectionItem id="nm-uti-disp" complete={completion.utiDisp} icon={Activity} iconColor="text-muted-foreground" label="Dispositivos, Culturas e Antibióticos">
                 <DevicesCulturesSection
                   devices={admDevices}
                   onDevicesChange={setAdmDevices}
@@ -2336,7 +2370,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
               </AccordionSectionItem>
 
               <AccordionSectionItem
-                id="nm-uti-sofa"
+                id="nm-uti-sofa" complete={completion.utiSofa}
                 icon={Gauge}
                 iconColor="text-muted-foreground"
                 label="SOFA — admissão"
@@ -2368,7 +2402,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
                 </div>
               </AccordionSectionItem>
 
-              <AccordionSectionItem id="nm-uti-comp" icon={ClipboardList} iconColor="text-warning-on-soft" label="Dados complementares UTI">
+              <AccordionSectionItem id="nm-uti-comp" complete={completion.utiComp} icon={ClipboardList} iconColor="text-warning-on-soft" label="Dados complementares UTI">
                 <div>
                   <Label className="text-xs">Origem (setor anterior)</Label>
                   <Select
@@ -2437,7 +2471,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
               defaultValue={["cirurgicos"]}
               className="rounded-lg border border-border bg-card divide-y divide-border"
             >
-            <AccordionSectionItem id="cirurgicos" icon={ClipboardList} iconColor="text-foreground" label="Dados cirúrgicos" hint="Centro Cirúrgico / Clínica Cirúrgica — opcional">
+            <AccordionSectionItem id="cirurgicos" complete={completion.cirurgicos} icon={ClipboardList} iconColor="text-foreground" label="Dados cirúrgicos" hint="Centro Cirúrgico / Clínica Cirúrgica — opcional">
               <div className="space-y-3">
                 <div>
                   <Label className="text-xs">Procedimento realizado / proposto</Label>
