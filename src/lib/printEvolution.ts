@@ -202,8 +202,11 @@ export const printEvolution = async (
   // ─── Buscar dados do paciente ANTES de montar o patientHeader ──────
   
   const hypothesesText = (evo as any).diagnostic_hypotheses?.toString().trim() || "";
-  const cidPrimary = ctx?.cidPrimary?.trim() || "";
-  const cidSecondary = ctx?.cidSecondary?.trim() || "";
+  // CID: prefere o SNAPSHOT da evolucao (soap.__cid_*) quando presente — reflete o CID
+  // daquela evolucao, inclusive edicoes por evolucao; fallback ao nivel paciente (ctx).
+  const snapCid = ((evo as { soap_data?: { __cid_primary?: string; __cid_secondary?: string } }).soap_data) ?? {};
+  const cidPrimary = (snapCid.__cid_primary ?? "").trim() || ctx?.cidPrimary?.trim() || "";
+  const cidSecondary = (snapCid.__cid_secondary ?? "").trim() || ctx?.cidSecondary?.trim() || "";
   const hasDiagnostics = hypothesesText || cidPrimary || cidSecondary;
 
   const diagnosticsHtml = hasDiagnostics

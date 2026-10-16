@@ -426,6 +426,14 @@ export function useEvolutions(
       if (updates.diagnostic_hypotheses !== undefined) {
         mergedSoap.__diagnostic_hypotheses = updates.diagnostic_hypotheses;
       }
+      // Mantem a chave string __diagnostic_hypotheses (lida pelo impresso e por
+      // mapEvolution) em sincronia com o array diagnosticHypotheses editado na timeline
+      // via soap_data. Sem isso, editar a hipotese numa evolucao ja validada nao refletia
+      // no PDF (saia a hipotese antiga).
+      if (Array.isArray(mergedSoap.diagnosticHypotheses)) {
+        mergedSoap.__diagnostic_hypotheses =
+          (mergedSoap.diagnosticHypotheses as string[]).filter(Boolean).join("\n") || null;
+      }
 
       const payload: any = { soap: mergedSoap };
       if (updates.physical_exam !== undefined) payload.exame_fisico = updates.physical_exam;
