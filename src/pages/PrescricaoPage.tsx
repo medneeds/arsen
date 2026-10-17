@@ -8723,7 +8723,40 @@ const PrescricaoPage = () => {
 
   // Show loading animation while contexts are resolving
   const isReady = !!currentHospital && !!currentState && patient.name !== '';
-  
+
+  // Rules of Hooks: cockpitPatient (useMemo) e usePageReady PRECISAM vir ANTES de
+  // qualquer early return. Antes ficavam depois do `if (!isReady) return` abaixo —
+  // quando isReady ia de false->true (paciente/contexto resolvendo async), a
+  // contagem de hooks do componente aumentava e o React lancava o erro #310
+  // ("Rendered more hooks than during the previous render"), caindo na
+  // ErrorBoundary ("Recarregar / Limpar dados locais"). Movidos para ca.
+  const cockpitPatient: Patient = useMemo(() => ({
+    id: searchParams.get('patientId') || 'prescricao-stub',
+    bedNumber: patient.bed,
+    name: patient.name,
+    age: typeof patient.age === 'string' ? patient.age.replace(/\s*anos?$/i, '') : patient.age,
+    sector: (initialPatientSector as Patient['sector']) || 'outside',
+    diagnoses: [],
+    medicalHistory: [],
+    relevantExams: [],
+    pendencies: [],
+    schedule: [],
+    admissionHistory: '',
+    admissionDate: patient.admissionDate,
+    utiAllergies: (patient.allergies ?? '')
+      .split(/[,\n;]/)
+      .map(s => s.trim())
+      .filter(Boolean),
+    clinicalStatus: 'regular',
+    // Tarja de sinalizacao (transferencia) deriva SO de admissionStatus. O
+    // cockpit e montado a mao aqui (sem spread de livePatient), entao o campo
+    // sumia e a tarja nao aparecia na Prescricao. livePatientForBed ja e chaveado
+    // pelo patientId da URL (=internacao) e traz o admissionStatus derivado.
+    admissionStatus: livePatientForBed?.admissionStatus,
+  }), [patient, searchParams, initialPatientSector, livePatientForBed]);
+
+  const pageReady = usePageReady({ loading: authLoading });
+
   if (!isReady) {
     return (
       <div className="max-w-6xl mx-auto p-4 sm:p-6 flex flex-col items-center justify-center min-h-[60vh] animate-fade-in">
@@ -8761,32 +8794,6 @@ const PrescricaoPage = () => {
     );
   }
 
-  const cockpitPatient: Patient = useMemo(() => ({
-    id: searchParams.get('patientId') || 'prescricao-stub',
-    bedNumber: patient.bed,
-    name: patient.name,
-    age: typeof patient.age === 'string' ? patient.age.replace(/\s*anos?$/i, '') : patient.age,
-    sector: (initialPatientSector as Patient['sector']) || 'outside',
-    diagnoses: [],
-    medicalHistory: [],
-    relevantExams: [],
-    pendencies: [],
-    schedule: [],
-    admissionHistory: '',
-    admissionDate: patient.admissionDate,
-    utiAllergies: (patient.allergies ?? '')
-      .split(/[,\n;]/)
-      .map(s => s.trim())
-      .filter(Boolean),
-    clinicalStatus: 'regular',
-    // Tarja de sinalizacao (transferencia) deriva SO de admissionStatus. O
-    // cockpit e montado a mao aqui (sem spread de livePatient), entao o campo
-    // sumia e a tarja nao aparecia na Prescricao. livePatientForBed ja e chaveado
-    // pelo patientId da URL (=internacao) e traz o admissionStatus derivado.
-    admissionStatus: livePatientForBed?.admissionStatus,
-  }), [patient, searchParams, initialPatientSector, livePatientForBed]);
-
-  const pageReady = usePageReady({ loading: authLoading });
   if (!pageReady) {
     return <PageLoader message="Carregando prescrição" subMessage={patient?.name || undefined} />;
   }
