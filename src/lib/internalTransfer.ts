@@ -240,8 +240,21 @@ export async function completeInternalTransfer(
     if (destErr) throw destErr;
     const dest = destLeito as { id: string; status: string; setor_id: string } | null;
     if (!dest) return { ok: false, error: "Leito de destino não encontrado. Atualize o mapa e tente de novo." };
-    if (dest.status === "ocupado") {
-      return { ok: false, error: `Leito ${targetBedRow.bedNumber} já foi ocupado. Selecione outro leito.` };
+    // Ocupacao do destino pela FONTE CANONICA: existe internacao ATIVA (data_alta
+    // nula) nesse leito? O leitos.status pode ficar ORFAO ('ocupado' sem internacao,
+    // quando a saida do ocupante anterior nao resetou o status) — e o mapa (que usa
+    // "sem internacao aberta") mostra vago enquanto esta checagem, lendo leitos.status,
+    // travava a transferencia com "ja foi ocupado". Agora so bloqueia se houver
+    // paciente ATIVO no destino; status orfao e corrigido no passo 4 (set 'ocupado').
+    const { data: destOcupacao } = await supabase
+      .from("internacoes")
+      .select("id")
+      .eq("leito_id", targetBedRow.id)
+      .is("data_alta", null)
+      .limit(1)
+      .maybeSingle();
+    if (destOcupacao) {
+      return { ok: false, error: `Leito ${targetBedRow.bedNumber} já tem paciente ativo. Selecione outro leito.` };
     }
 
     // 2) Internação de origem ainda ativa? Guarda o leito de origem para liberar depois.
