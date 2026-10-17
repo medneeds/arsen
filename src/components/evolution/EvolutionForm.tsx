@@ -30,6 +30,7 @@ import { toast } from "sonner";
 import type { EvolutionRecord } from "@/hooks/useEvolutions";
 import { calculateNEWS2, news2RiskLabels, parseVitalNumber } from "@/lib/news2";
 import { ItemListEditor } from "@/components/ItemListEditor";
+import { EvolutionReadOnlyView } from "@/components/evolution/EvolutionReadOnlyView";
 import { AccordionSectionItem as SectionItem } from "@/components/shared/AccordionSectionItem";
 
 interface SOAPData {
@@ -224,7 +225,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
   if (readOnly) {
     return (
       <div className="space-y-3">
-        <ReadOnlyView
+        <EvolutionReadOnlyView
           soap={soap}
           vitals={vitals}
           physicalExam={physicalExam}
@@ -232,9 +233,14 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
           culturesHtml={culturesHtml}
           antibioticosHtml={antibioticosHtml}
           planItems={planItems}
+          planText={soap.plan}
           pendenciasItems={pendenciasItems}
-          diagnosticHypotheses={(soap as any).diagnosticHypotheses ?? null}
-          antecedentes={Array.isArray((soap as any).antecedentes) ? (soap as any).antecedentes : []}
+          diagnosticHypotheses={(soap as { diagnosticHypotheses?: string | string[] | null }).diagnosticHypotheses ?? null}
+          antecedentes={Array.isArray((soap as { antecedentes?: unknown }).antecedentes) ? ((soap as { antecedentes?: unknown }).antecedentes as string[]) : []}
+          createdByName={evo?.created_by_name ?? null}
+          validatedByName={evo?.validated_by_name ?? null}
+          validatedAt={evo?.validated_at ?? null}
+          isValidated={isValidated}
         />
         {isValidated && (
           <div className="flex items-center gap-2 justify-end">
