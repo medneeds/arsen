@@ -283,9 +283,21 @@ export function usePatients(department?: Department, sector?: string) {
       //  - SAIDAS (alta/obito/transf. externa): a internacao fica ABERTA ate a
       //    liberacao fisica (Opcao A), com o status de saida em internacoes.status
       //    (internmentStatus) — dai derivamos a tarja.
-      const pendingTransferIds = await pendingTransferPromise;
-      const sectorEntryById = await sectorEntryPromise;
-      const exitDocsById = await exitDocsPromise;
+      // TETO DE TEMPO nas consultas SECUNDARIAS (tarjas). Sem isso, uma resposta
+      // que nunca chega (starvation no gateway HTTP/1.1) deixava isLoading preso e
+      // o PageLoader eterno no Painel clinico — o watchdog acima cobria so leitos.
+      // Estourou o teto: segue sem a tarja (degrada), nunca trava a tela.
+      const SECUNDARIA_TIMEOUT_MS = 8000;
+      const comTeto = <T,>(p: PromiseLike<T>, fallback: T): Promise<T> =>
+        Promise.race([
+          Promise.resolve(p).catch(() => fallback),
+          new Promise<T>((resolve) => setTimeout(() => resolve(fallback), SECUNDARIA_TIMEOUT_MS)),
+        ]);
+      const [pendingTransferIds, sectorEntryById, exitDocsById] = await Promise.all([
+        comTeto(pendingTransferPromise, new Set<string>()),
+        comTeto(sectorEntryPromise, new Map<string, string>()),
+        comTeto(exitDocsPromise, new Map<string, "death" | "discharge">()),
+      ]);
 
       // ENTRADA do atendimento (sem desfecho): sinaliza no mapa o que falta concluir.
       //  - Admissao pendente: internacao ativa com admissao_validada_em NULL. Query
@@ -296,9 +308,16 @@ export function usePatients(department?: Department, sector?: string) {
       const validatedIds = new Set<string>();
       const sapsPendingIds = new Set<string>();
       {
+        const semResposta = { data: null, error: { message: "timeout" } } as const;
         const [valRes, sapsRes] = await Promise.all([
-          supabase.from("internacoes").select("id, admissao_validada_em").is("data_alta", null),
-          supabase.from("avaliacoes_saps3").select("internacao_id").eq("status", "pendente"),
+          comTeto(
+            supabase.from("internacoes").select("id, admissao_validada_em").is("data_alta", null),
+            semResposta as any,
+          ),
+          comTeto(
+            supabase.from("avaliacoes_saps3").select("internacao_id").eq("status", "pendente"),
+            semResposta as any,
+          ),
         ]);
         if (!valRes.error && valRes.data) {
           validationAvailable = true;
