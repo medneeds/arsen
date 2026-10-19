@@ -42,6 +42,14 @@ test("autor resolvido entra como requested_by_name e requested_by_crm", () => {
   assert.strictEqual(req.requested_by_crm, "11788");
 });
 
+test("CPF do autor entra como requested_by_cpf (APAC campo 40/41)", () => {
+  const req = applyAuthor(normalizeSolicitacao(row, ctx), { ...autor, cpf: "051.111.222-33" });
+  assert.strictEqual(req.requested_by_cpf, "051.111.222-33");
+  // autor sem cpf (coluna nula ou nao selecionada) nao vira "null" no impresso
+  const semCpf = applyAuthor(normalizeSolicitacao(row, ctx), autor);
+  assert.strictEqual(semCpf.requested_by_cpf, null);
+});
+
 test("sem autor resolvido: devolve o pedido intacto (nao quebra a guia)", () => {
   const req = normalizeSolicitacao(row, ctx);
   assert.strictEqual(applyAuthor(req, null), req);

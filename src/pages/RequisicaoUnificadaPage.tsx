@@ -611,7 +611,7 @@ const RequisicaoUnificadaPage = () => {
     queryFn: async (): Promise<Map<string, ProfissionalLite>> => {
       const { data } = await supabase
         .from("profissionais")
-        .select("id, nome, crm:numero_conselho")
+        .select("id, nome, crm:numero_conselho, cpf")
         .in("id", solicitanteIds);
       const m = new Map<string, ProfissionalLite>();
       ((data ?? []) as unknown as ProfissionalLite[]).forEach((r) => m.set(r.id, r));
@@ -2590,7 +2590,7 @@ async function buildApacHtmlFromProcedimentoRequest(request: any): Promise<strin
         return raw.replace(/\s\([^)]+\)\s*$/, "");
       }),
     ),
-    doctor: { name: doctor.name, cpf: "", crm: doctor.crm },
+    doctor: { name: doctor.name, cpf: request?.requested_by_cpf || "", crm: doctor.crm },
     today: format(new Date(), "dd/MM/yyyy"),
   });
 }
@@ -2835,9 +2835,9 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
     if (!user) return;
     const load = async () => {
       // MIGRAÇÃO: profiles → profissionais (full_name→nome, crm→numero_conselho).
-      // profissionais não tem coluna cpf → doctorCPF não é hidratado.
-      const { data } = await supabase.from("profissionais").select("nome, numero_conselho").eq("user_id", user.id).maybeSingle();
-      if (data) { setDoctorName((data as any).nome || ""); setDoctorCRM((data as any).numero_conselho || ""); }
+      // profissionais TEM coluna cpf; o CPF do profissional e hidratado a partir dela.
+      const { data } = await supabase.from("profissionais").select("nome, numero_conselho, cpf").eq("user_id", user.id).maybeSingle();
+      if (data) { setDoctorName((data as any).nome || ""); setDoctorCRM((data as any).numero_conselho || ""); setDoctorCPF((data as any).cpf || ""); }
     };
     load();
   }, [user]);
@@ -4404,7 +4404,7 @@ async function printSavedRequisition(row: { solicitado_por?: string | null }, ct
     if (row.solicitado_por) {
       const { data: p } = await supabase
         .from("profissionais")
-        .select("id, nome, crm:numero_conselho")
+        .select("id, nome, crm:numero_conselho, cpf")
         .eq("id", row.solicitado_por)
         .maybeSingle();
       prof = (p as unknown as ProfissionalLite | null) ?? null;

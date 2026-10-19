@@ -171,10 +171,10 @@ const RequisicaoImagensPage = () => {
       if (meta.crm && !doctorCRM) setDoctorCRM(String(meta.crm));
 
       // MIGRAÇÃO: profiles → profissionais (full_name→nome, crm→numero_conselho).
-      // profissionais NÃO tem coluna cpf → CPF só vem de user_metadata (acima).
+      // profissionais TEM coluna cpf; o CPF vem dela (fallback para user_metadata).
       const { data, error } = await supabase
         .from("profissionais")
-        .select("nome, numero_conselho")
+        .select("nome, numero_conselho, cpf")
         .eq("user_id", user.id)
         .maybeSingle();
       if (error) {
@@ -184,18 +184,22 @@ const RequisicaoImagensPage = () => {
       if (data) {
         const fn = (data as any).nome || meta.full_name || "";
         const cr = (data as any).numero_conselho || meta.crm || "";
+        const cp = (data as any).cpf || meta.cpf || "";
         if (fn) setDoctorName(String(fn));
         if (cr) setDoctorCRM(String(cr));
+        if (cp) setDoctorCPF(String(cp));
       }
     };
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
-  // MIGRAÇÃO: profissionais não tem coluna cpf — não há onde persistir o CPF do
-  // médico. Degradado para no-op (o valor digitado segue apenas no formulário).
+  // profissionais TEM coluna cpf e o CPF ja e hidratado dela na carga. Persistir o
+  // valor digitado (update em profissionais por user_id) seria uma escrita nova no
+  // banco — fica fora de escopo ate aval. O CPF digitado segue valido no formulario
+  // para a impressao atual.
   const handleSaveDoctorCPF = async () => {
-    /* sem coluna de destino no schema novo */
+    /* no-op: hidratacao e via leitura de profissionais.cpf; persistir requer aval */
   };
 
   // Auto-hydrate patient data from URL params (patientId) + patient_registry (prontuário real)

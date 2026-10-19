@@ -17,6 +17,7 @@ export interface ProfissionalLite {
   id: string;
   nome: string | null;
   crm: string | null;
+  cpf?: string | null;
 }
 
 export interface SolicitacaoContext {
@@ -72,6 +73,7 @@ export function normalizeSolicitacao(row: any, ctx: SolicitacaoContext) {
     solicitado_por: row.solicitado_por ?? null,
     requested_by_name: "",
     requested_by_crm: null as string | null,
+    requested_by_cpf: null as string | null,
     // MIGRAÇÃO: sem coluna document_payload — o snapshot vem de itens[n].document_payload.
     document_payload: extractDocumentPayload(row.itens),
     patient_registry_id: null, // MIGRAÇÃO: sem coluna no schema novo
@@ -86,5 +88,10 @@ export function applyAuthor<T extends NormalizedSolicitacao>(
   prof: ProfissionalLite | null | undefined,
 ): T {
   if (!prof) return req;
-  return { ...req, requested_by_name: prof.nome ?? "", requested_by_crm: prof.crm ?? null };
+  return {
+    ...req,
+    requested_by_name: prof.nome ?? "",
+    requested_by_crm: prof.crm ?? null,
+    requested_by_cpf: prof.cpf ?? null,
+  };
 }

@@ -1970,6 +1970,7 @@ export type Database = {
           atualizado_em: string
           cargo: string | null
           conselho: string | null
+          cpf: string | null
           criado_em: string
           email: string | null
           hospital_id: string | null
@@ -1984,6 +1985,7 @@ export type Database = {
           atualizado_em?: string
           cargo?: string | null
           conselho?: string | null
+          cpf?: string | null
           criado_em?: string
           email?: string | null
           hospital_id?: string | null
@@ -1998,6 +2000,7 @@ export type Database = {
           atualizado_em?: string
           cargo?: string | null
           conselho?: string | null
+          cpf?: string | null
           criado_em?: string
           email?: string | null
           hospital_id?: string | null
