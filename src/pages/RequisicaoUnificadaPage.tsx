@@ -950,7 +950,11 @@ const RequisicaoUnificadaPage = () => {
         concluido_por: concluidoPor,
       };
       if (resultFiles.length > 0) {
-        updateData.resultado_dados = { files: resultFiles };
+        // Merge para NAO apagar o snapshot clinico do laudo APAC (chave "apac"
+        // em resultado_dados), que a 2a via le para reconstruir diagnostico/CID
+        // editados. Sobrescrever direto perderia o snapshot ao anexar resultado.
+        const prev = (viewingRequest.result_data as Record<string, unknown> | null) || {};
+        updateData.resultado_dados = { ...prev, files: resultFiles };
       }
       const { error } = await supabase
         .from("solicitacoes_exame")
@@ -2563,6 +2567,13 @@ async function buildApacHtmlFromProcedimentoRequest(request: any): Promise<strin
   const { diagnosis: hydDiagnosis, cidPrimary: hydCid, cidSecondary: hydCid2, ...patientData } =
     await fetchImagingApacPatientData(request);
   const doctor = splitDoctorNameCrm(request?.requested_by_name || "");
+  // Snapshot clinico gravado em resultado_dados.apac (ver registrarProcedimento):
+  // tem PRIORIDADE sobre a re-hidratacao da internacao, para a 2a via reproduzir
+  // o diagnostico e o CID EDITADOS pelo medico, nao os valores da internacao.
+  // Solicitacoes antigas (sem snapshot) caem no comportamento anterior.
+  const apacSnap = (request?.resultado_dados as {
+    apac?: { diagnosis?: string; cidPrimary?: string; cidSecondary?: string; cidAssociated?: string };
+  } | null | undefined)?.apac;
   return buildApacHtml({
     institution: APAC_INSTITUTION,
     patient: {
@@ -2578,10 +2589,10 @@ async function buildApacHtmlFromProcedimentoRequest(request: any): Promise<strin
         ? { code: match[2], name: match[1], qty: 1 }
         : { code: "", name: raw, qty: 1 };
     }),
-    diagnosis: request?.clinical_indication || hydDiagnosis || "",
-    cidPrimary: hydCid || "",
-    cidSecondary: hydCid2 || "",
-    cidAssociated: "",
+    diagnosis: apacSnap?.diagnosis || request?.clinical_indication || hydDiagnosis || "",
+    cidPrimary: apacSnap?.cidPrimary || hydCid || "",
+    cidSecondary: apacSnap?.cidSecondary || hydCid2 || "",
+    cidAssociated: apacSnap?.cidAssociated || "",
     // O nome gravado ja traz "— COM CONTRASTE"; a linha do campo 37 e refeita a partir dele.
     observations: observationsWithContraste(
       request?.notes || "",
@@ -3075,13 +3086,31 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
         }),
         prioridade: "rotina",
         status: "pendente",
-        indicacao_clinica: null, // o laudo APAC já contempla o procedimento no corpo
+        // Diagnostico Inicial (campo 33) editavel pelo medico: persiste em
+        // indicacao_clinica para a 2a via reler o texto EDITADO, em vez de
+        // re-derivar da internacao (hipotese_diagnostica). Antes era null e a
+        // reimpressao perdia a edicao manual do diagnostico.
+        indicacao_clinica: apacData.diagnosis?.trim() || null,
         // Persiste as OBSERVACOES/justificativa reais (campo 37 do laudo), nao um
         // placeholder: a reimpressao le `notes` (= observacoes) e sem isto o campo
         // 37 saia VAZIO na 2a via (o texto so existia no estado do form). O
         // apacData.observations ja vem com a linha de contraste (idempotente na
         // reimpressao, que reaplica observationsWithContraste sem duplicar).
         observacoes: apacData.observations || "[PROCEDIMENTO — Laudo APAC gerado]",
+        // Snapshot clinico do laudo (CID 34/35/36 + diagnostico) no unico jsonb
+        // disponivel sem migration. Nao existe coluna document_payload nem coluna
+        // de CID em solicitacoes_exame; sem isto a 2a via re-derivava o CID da
+        // internacao e perdia o CID EDITADO pelo medico. Chave namespaced "apac"
+        // para nao colidir com os arquivos de resultado ({ files }); a 2a via le
+        // com prioridade e handleSaveResult faz merge para preservar.
+        resultado_dados: {
+          apac: {
+            diagnosis: apacData.diagnosis?.trim() || "",
+            cidPrimary: apacData.cidPrimary?.trim() || "",
+            cidSecondary: apacData.cidSecondary?.trim() || "",
+            cidAssociated: apacData.cidAssociated?.trim() || "",
+          },
+        },
         solicitado_por: solicitadoPor,
       }).select("*").single();
       if (error) throw error;
