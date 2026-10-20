@@ -2828,8 +2828,20 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
   const [cidAssociated, setCidAssociated] = useState("");
   const [observations, setObservations] = useState("");
   const [observationsAutoFilled, setObservationsAutoFilled] = useState(false);
+  // Marca se o medico EDITOU manualmente cada campo clinico. A auto-hidratacao
+  // nunca sobrescreve um campo editado — o que o medico digita e o que o laudo
+  // consome (handlePrint le o state atual). Usamos ref (nao state) porque a
+  // hidratacao e assincrona: o ref e lido com o valor ATUAL dentro do efeito,
+  // pegando ate a edicao feita durante a janela de carregamento.
+  const userEditedFields = useRef({ diagnosis: false, cid: false, obs: false });
 
-  useEffect(() => { setApacPatientName(initialPatientName); }, [initialPatientName]);
+  useEffect(() => {
+    setApacPatientName(initialPatientName);
+    // Novo paciente (o NOME mudou) -> libera a re-hidratacao limpando as marcas
+    // de edicao. A propagacao do id real (onSelectPatient) muda patientId mas NAO
+    // o nome, entao nao reseta aqui e o que o medico editou e preservado.
+    userEditedFields.current = { diagnosis: false, cid: false, obs: false };
+  }, [initialPatientName]);
 
   useEffect(() => {
     if (!user) return;
@@ -2909,13 +2921,15 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
         // Diagnóstico e justificativa a partir da própria internação.
         // MIGRAÇÃO: CID (primary_cid10/secondary_cid10) não tem coluna em
         // internacoes → cidPrimary/cidSecondary degradados (ficam em branco).
-        setDiagnosis(cleanDiagnosisText((internacao as any).hipotese_diagnostica));
+        if (!userEditedFields.current.diagnosis) {
+          setDiagnosis(cleanDiagnosisText((internacao as any).hipotese_diagnostica));
+        }
         const admParts: string[] = [];
         if ((internacao as any).queixa_principal)     admParts.push(`QP: ${(internacao as any).queixa_principal}`);
         if ((internacao as any).historia_clinica)     admParts.push(`HDA: ${(internacao as any).historia_clinica}`);
         if ((internacao as any).hipotese_diagnostica) admParts.push(`HD: ${cleanDiagnosisText((internacao as any).hipotese_diagnostica)}`);
         if ((internacao as any).conduta_inicial)      admParts.push(`Conduta: ${(internacao as any).conduta_inicial}`);
-        if (admParts.length > 0) {
+        if (admParts.length > 0 && !userEditedFields.current.obs) {
           setObservations(prev => {
             if (prev.trim()) return prev;
             setObservationsAutoFilled(true);
@@ -2942,7 +2956,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
           const withCid = ((evos ?? []) as { soap?: Record<string, unknown> }[])
             .map((e) => (e?.soap ?? {}) as { __cid_primary?: unknown; __cid_secondary?: unknown })
             .find((s) => typeof s.__cid_primary === "string" && !!(s.__cid_primary as string));
-          if (!cancelled && withCid?.__cid_primary) {
+          if (!cancelled && !userEditedFields.current.cid && withCid?.__cid_primary) {
             setCidPrimary((prev) => (prev.trim() ? prev : onlyCode(String(withCid.__cid_primary))));
           }
           if (!cancelled && withCid?.__cid_secondary) {
@@ -3013,6 +3027,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
     setPatientDOB(""); setPatientSex(""); setPatientMotherName("");
     setPatientPhone(""); setPatientAddress("");
     setSelectedProcedures([]); setDiagnosis(""); setCidPrimary(""); setCidSecondary(""); setCidAssociated(""); setObservations("");
+    userEditedFields.current = { diagnosis: false, cid: false, obs: false };
     toast.info("Formulário limpo");
   };
 
@@ -3191,6 +3206,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
       if ((data as any).conduta_inicial) parts.push(`Conduta: ${(data as any).conduta_inicial}`);
       if (parts.length === 0) { toast.info("Admissão sem dados preenchidos"); return; }
       setObservations(prev => prev ? prev + "\n\n" + parts.join("\n") : parts.join("\n"));
+      userEditedFields.current.obs = true;
       toast.success("Dados da admissão importados");
     } catch { toast.error("Não foi possível importar admissão"); }
     finally { setImportingAdmission(false); }
@@ -3223,7 +3239,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
         .eq("id", validPid)
         .maybeSingle();
       const diagFromInternacao = cleanDiagnosisText((internacao as any)?.hipotese_diagnostica);
-      if (diagFromInternacao) setDiagnosis(diagFromInternacao);
+      if (diagFromInternacao) { setDiagnosis(diagFromInternacao); userEditedFields.current.diagnosis = true; }
 
       // Observações a partir do SOAP
       let imported = false;
@@ -3252,6 +3268,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
         if (obsText) {
           setObservations(obsText);
           setObservationsAutoFilled(true);
+          userEditedFields.current.obs = true;
           imported = true;
         }
       }
@@ -3535,9 +3552,9 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div><Label className="text-xs text-muted-foreground">Diagnóstico Inicial</Label><Input value={diagnosis} onChange={(e) => setDiagnosis(e.target.value)} placeholder="Descreva o diagnóstico" /></div>
+              <div><Label className="text-xs text-muted-foreground">Diagnóstico Inicial</Label><Input value={diagnosis} onChange={(e) => { setDiagnosis(e.target.value); userEditedFields.current.diagnosis = true; }} placeholder="Descreva o diagnóstico" /></div>
               <div className="grid grid-cols-3 gap-2">
-                <div><Label className="text-xs text-muted-foreground">CID-10 Principal *</Label><Input value={cidPrimary} onChange={(e) => setCidPrimary(e.target.value)} placeholder="I63.9" className="font-mono" /></div>
+                <div><Label className="text-xs text-muted-foreground">CID-10 Principal *</Label><Input value={cidPrimary} onChange={(e) => { setCidPrimary(e.target.value); userEditedFields.current.cid = true; }} placeholder="I63.9" className="font-mono" /></div>
                 <div><Label className="text-xs text-muted-foreground">Secundário</Label><Input value={cidSecondary} onChange={(e) => setCidSecondary(e.target.value)} className="font-mono" /></div>
                 <div><Label className="text-xs text-muted-foreground">Associado</Label><Input value={cidAssociated} onChange={(e) => setCidAssociated(e.target.value)} className="font-mono" /></div>
               </div>
@@ -3560,7 +3577,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
                     </Button>
                   </div>
                 </div>
-                <Textarea value={observations} onChange={(e) => { setObservations(e.target.value); setObservationsAutoFilled(false); }} placeholder="Informações clínicas relevantes..." rows={6} />
+                <Textarea value={observations} onChange={(e) => { setObservations(e.target.value); setObservationsAutoFilled(false); userEditedFields.current.obs = true; }} placeholder="Informações clínicas relevantes..." rows={6} />
               </div>
             </CardContent>
           </Card>
