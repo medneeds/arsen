@@ -282,6 +282,16 @@ export function AdmissaoReadOnlyView({ internacaoId }: Props) {
         </Group>
       )}
 
+      {(() => {
+        // Especialidades — campo livre no soap, exibido antes do Plano.
+        const esp = richHtmlToPlainText(soap.especialidades as string | undefined).trim();
+        return esp ? (
+          <Group title="Especialidades">
+            <Field label="Especialidades" hideLabel lines={toLines(esp)} />
+          </Group>
+        ) : null;
+      })()}
+
       {(hist?.conduta_inicial || soap.plan) && (
         <Group title="Plano terapêutico">
           <Field label="Conduta inicial" hideLabel value={hist?.conduta_inicial || soap.plan} />

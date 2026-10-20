@@ -85,6 +85,10 @@ interface EvolutionFormProps {
   /** Antibioticos em curso (HTML rico) — chave propria do soap (soap.antibioticos). */
   antibioticosHtml?: string;
   onAntibioticosChange?: (html: string) => void;
+  /** Especialidades envolvidas no cuidado (HTML rico) — chave propria do soap
+   *  (soap.especialidades). Campo livre, opcional, exibido antes do Plano. */
+  especialidadesHtml?: string;
+  onEspecialidadesChange?: (html: string) => void;
   /** Data de admissão no setor — base p/ presets do date picker dos dispositivos. */
   admissionDate?: string | null;
   /** Registro da evolução (usado para impressão unificada via printEvolution). */
@@ -136,6 +140,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
   devices, onDevicesChange,
   culturesHtml, onCulturesChange,
   antibioticosHtml, onAntibioticosChange,
+  especialidadesHtml, onEspecialidadesChange,
   admissionDate,
   evo,
   patientId,
@@ -591,6 +596,24 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
           />
         </SectionItem>
 
+        {onEspecialidadesChange && (
+        <SectionItem
+          id="especialidades"
+          icon={Stethoscope}
+          iconColor="text-muted-foreground"
+          label="Especialidades"
+          hint="Especialidades envolvidas no cuidado — campo livre, opcional"
+          complete={!!especialidadesHtml && richHtmlToPlainText(especialidadesHtml).trim().length > 0}
+        >
+          <RichTextEditor
+            value={especialidadesHtml || ""}
+            onChange={(html) => onEspecialidadesChange(html)}
+            placeholder="Especialidades acompanhando o caso, pareceres em andamento, condutas de especialistas..."
+            minHeight={120}
+          />
+        </SectionItem>
+        )}
+
         {!hidePlan && (
         <SectionItem
           id="plan"
@@ -754,6 +777,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
               devices={devices}
               culturesHtml={culturesHtml}
               antibioticosHtml={antibioticosHtml}
+              especialidadesHtml={especialidadesHtml}
               planItems={planItems}
               pendenciasItems={pendenciasItems}
               diagnosticHypotheses={(soap as any).diagnosticHypotheses ?? null}
@@ -834,11 +858,12 @@ const ReadOnlyView: React.FC<{
   devices?: EvolutionDevice[];
   culturesHtml?: string;
   antibioticosHtml?: string;
+  especialidadesHtml?: string;
   planItems?: string[];
   pendenciasItems?: string[];
   diagnosticHypotheses?: string | string[] | null;
   antecedentes?: string[];
-}> = ({ soap, vitals, physicalExam, devices, culturesHtml, antibioticosHtml, planItems, pendenciasItems, diagnosticHypotheses, antecedentes }) => {
+}> = ({ soap, vitals, physicalExam, devices, culturesHtml, antibioticosHtml, especialidadesHtml, planItems, pendenciasItems, diagnosticHypotheses, antecedentes }) => {
   const hasVitals = Object.values(vitals).some(v => String(v ?? "").trim());
   const hasExam = Object.values(physicalExam).some(v => String(v ?? "").trim());
   const hasDevices = Array.isArray(devices) && devices.length > 0;
@@ -1008,6 +1033,17 @@ const ReadOnlyView: React.FC<{
                 .map(t => sanitizeRichHtml(toRichHtml(t)))
                 .filter(Boolean).join(""),
             }}
+          />
+        </div>
+      )}
+
+      {/* Especialidades — campo livre, exibido antes do Plano (ordem da tela) */}
+      {!!especialidadesHtml && richHtmlToPlainText(especialidadesHtml).trim().length > 0 && (
+        <div>
+          <strong className="text-muted-foreground">Especialidades:</strong>{" "}
+          <span
+            className="prose prose-sm max-w-none text-foreground [&_p]:my-1 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0"
+            dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(toRichHtml(especialidadesHtml)) }}
           />
         </div>
       )}

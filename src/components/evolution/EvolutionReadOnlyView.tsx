@@ -194,6 +194,17 @@ export function EvolutionReadOnlyView({
         </Group>
       )}
 
+      {/* Especialidades — campo livre, lido direto do soap jsonb (sem prop
+          dedicada): a timeline e o modo read-only ja passam o soap completo. */}
+      {(() => {
+        const esp = (soap as { especialidades?: string }).especialidades;
+        return richHtmlToPlainText(esp) ? (
+          <Group title="Especialidades">
+            <div className="text-sm text-foreground [&_p]:my-0.5" dangerouslySetInnerHTML={{ __html: rich(esp) }} />
+          </Group>
+        ) : null;
+      })()}
+
       {plan.length > 0 ? (
         <Group title="Plano terapêutico">
           <Field label="Plano" hideLabel lines={plan} />

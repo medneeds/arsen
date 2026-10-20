@@ -35,6 +35,8 @@ export interface AdmissionPrintInput {
   dischargePredictionLabel: string;
   hypotheses?: string[];
   complementares?: string;
+  /** Especialidades envolvidas — campo livre, impresso antes do Plano. */
+  especialidades?: string;
   scales?: {
     glasgowTotal?: number | null;
     glasgowEye?: number | null;
@@ -124,6 +126,7 @@ export async function printAdmissionNormaZero(d: AdmissionPrintInput) {
       row("Abdome", d.exam.abd) + row("Extremidades", d.exam.ext) + row("Neurológico", d.exam.neuro) + row("Pele / Feridas", d.exam.skin) + row("Outros", d.exam.other))}
     ${section("Escalas", row("Escala neurológica", scalesStr))}
     ${section("Exames complementares", row("Complementares", d.complementares))}
+    ${section("Especialidades", row("Especialidades", d.especialidades))}
     ${section("Plano terapêutico", row("Conduta", d.plan))}
     ${section("Previsão de alta", row("Previsão de alta", stripDischargeDays(d.dischargePredictionLabel)))}
     ${d.isUti ? section("Justificativa de admissão (UTI/UCI)", row("Motivo", d.uti?.admissionReason) + row("Droga vasoativa", d.uti?.vasoativo)) : ""}

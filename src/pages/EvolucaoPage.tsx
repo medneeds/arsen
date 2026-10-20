@@ -160,6 +160,7 @@ const EvolucaoPage = () => {
   const [newDevices, setNewDevices] = useState<import("@/lib/devicesCatalog").EvolutionDevice[]>([]);
   const [newCulturesHtml, setNewCulturesHtml] = useState("");
   const [newAntibioticos, setNewAntibioticos] = useState("");
+  const [newEspecialidades, setNewEspecialidades] = useState("");
   const [creating, setCreating] = useState(false);
   const [diagnosticsReplicated, setDiagnosticsReplicated] = useState(false);
   const [diagnosticHypotheses, setDiagnosticHypotheses] = useState<string[]>([]);
@@ -177,6 +178,7 @@ const EvolucaoPage = () => {
   const serializeForm = (pendOverride?: string[]) => JSON.stringify({
     soap: newSoap, vitals: newVitals, exam: newExam,
     devices: newDevices, culturesHtml: newCulturesHtml, antibioticos: newAntibioticos,
+    especialidades: newEspecialidades,
     diagnosticHypotheses, antecedentes, planItems, pendenciasItems: pendOverride ?? pendenciasItems,
   });
 
@@ -202,7 +204,7 @@ const EvolucaoPage = () => {
     isDirtyRef.current = dirty;
     setDirty(dirty);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [newSoap, newVitals, newExam, newDevices, newCulturesHtml, newAntibioticos,
+  }, [newSoap, newVitals, newExam, newDevices, newCulturesHtml, newAntibioticos, newEspecialidades,
       diagnosticHypotheses, antecedentes, planItems, pendenciasItems, showNewForm]);
 
   // Registra callback de salvar rascunho para o sidebar usar
@@ -321,6 +323,7 @@ const EvolucaoPage = () => {
     setNewDevices([]);
     setNewCulturesHtml("");
     setNewAntibioticos("");
+    setNewEspecialidades("");
     setDiagnosticsReplicated(false);
     setDiagnosticHypotheses([]);
     // Resetar campos por item — sem isso persistem entre evoluções
@@ -361,6 +364,7 @@ const EvolucaoPage = () => {
   const handleSaveDraftEvolution = async () => {
     const soapWithExtras = {
       ...newSoap, devices: newDevices, culturesHtml: newCulturesHtml, antibioticos: newAntibioticos,
+      especialidades: newEspecialidades,
     } as any;
     const hypoStr = Array.isArray(diagnosticHypotheses)
       ? diagnosticHypotheses.filter(Boolean).join("\n")
@@ -389,6 +393,7 @@ const EvolucaoPage = () => {
       devices: newDevices,
       culturesHtml: newCulturesHtml,
       antibioticos: newAntibioticos,
+      especialidades: newEspecialidades,
     } as any;
     const hypoStr = Array.isArray(diagnosticHypotheses)
       ? diagnosticHypotheses.filter(Boolean).join("\n")
@@ -445,6 +450,7 @@ const EvolucaoPage = () => {
     const srcSoap: any = source.soap_data || {};
     const isAdmissionSource = source.evolution_type === "admission";
     const { devices: srcDevices, culturesHtml: srcCulturesHtml, antibioticos: srcAntibioticos,
+            especialidades: srcEspecialidades,
             planItems: srcPlanItems, pendenciasItems: srcPendencias,
             antecedentes: srcAntecSoap,
             diagnosticHypotheses: srcSoapHypo,
@@ -494,6 +500,7 @@ const EvolucaoPage = () => {
     setNewDevices(Array.isArray(srcDevices) ? srcDevices : []);
     setNewCulturesHtml(typeof srcCulturesHtml === "string" ? srcCulturesHtml : "");
     setNewAntibioticos(typeof srcAntibioticos === "string" ? srcAntibioticos : "");
+    setNewEspecialidades(typeof srcEspecialidades === "string" ? srcEspecialidades : "");
 
     // Plano — da admissao: itens estruturados ou quebrados do texto (via normalizador).
     setPlanItems(norm ? norm.planItems : (Array.isArray(srcPlanItems) ? srcPlanItems.filter(Boolean) : []));
@@ -816,6 +823,8 @@ const EvolucaoPage = () => {
               onCulturesChange={setNewCulturesHtml}
               antibioticosHtml={newAntibioticos}
               onAntibioticosChange={setNewAntibioticos}
+              especialidadesHtml={newEspecialidades}
+              onEspecialidadesChange={setNewEspecialidades}
               admissionDate={
                 getEffectiveAdmissionDate({
                   utiAdmissionDate: livePatient?.utiAdmissionDate,

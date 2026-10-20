@@ -646,6 +646,10 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
   const [admDevices, setAdmDevices] = useState<EvolutionDevice[]>([]);
   const [culturesHtml, setCulturesHtml] = useState("");
   const [antibioticosHtml, setAntibioticosHtml] = useState("");
+  // Especialidades envolvidas no cuidado — campo livre, antes do plano. Persiste
+  // na mesma chave do soap da evolucao (soap.especialidades), ancorado em
+  // internacao_id: a evolucao (timeline/read-only/impresso) ja le essa chave.
+  const [especialidadesHtml, setEspecialidadesHtml] = useState("");
   // originOutros: estado só de UI. Controla se o setor de origem foi informado
   // como texto livre ("Outros"); originSector continua sendo a string persistida.
   const [originOutros, setOriginOutros] = useState(false);
@@ -924,6 +928,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
         setAdmDevices(Array.isArray(d.admDevices) ? d.admDevices : []);
         setCulturesHtml(typeof d.culturesHtml === "string" ? d.culturesHtml : (d.culturesAtb ?? ""));
         setAntibioticosHtml(typeof d.antibioticosHtml === "string" ? d.antibioticosHtml : "");
+        setEspecialidadesHtml(typeof d.especialidadesHtml === "string" ? d.especialidadesHtml : "");
         // UTI estruturado — retrocompat: rascunho antigo só tem admissionReason
         // (texto). admissionReason -> campo "outro" da justificativa.
         {
@@ -1054,7 +1059,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
           diagnosticHypotheses, diagnosticHypothesesItems: hypothesesItems,
           noPrediction, predictionDate, predictionDays,
           admissionReason, originSector, originOutros,
-          admDevices, culturesHtml, antibioticosHtml,
+          admDevices, culturesHtml, antibioticosHtml, especialidadesHtml,
           utiJustificativa, utiJustificativaOutro, utiVasoativo, sofaRespostas,
           surgProcedimento, surgEspecialidade, surgCirurgiao, surgDataHora, surgAnestesia, surgCarater,
           savedAt: new Date().toISOString(),
@@ -1077,7 +1082,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
     physSkin, physOther, complementares,
     plan, planItems, cidPrimary, cidSecondary, diagnosticHypotheses, hypothesesItems,
     noPrediction, predictionDate, predictionDays,
-    admissionReason, originSector, originOutros, admDevices, culturesHtml, antibioticosHtml,
+    admissionReason, originSector, originOutros, admDevices, culturesHtml, antibioticosHtml, especialidadesHtml,
     utiJustificativa, utiJustificativaOutro, utiVasoativo, sofaRespostas,
     surgProcedimento, surgEspecialidade, surgCirurgiao, surgDataHora, surgAnestesia, surgCarater,
   ]);
@@ -1095,7 +1100,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
     physSkin, physOther, complementares,
     plan, cidPrimary, cidSecondary, diagnosticHypotheses,
     noPrediction, predictionDate, predictionDays,
-    admissionReason, originSector, admDevices, culturesHtml, antibioticosHtml,
+    admissionReason, originSector, admDevices, culturesHtml, antibioticosHtml, especialidadesHtml,
     utiJustificativa, utiJustificativaOutro, utiVasoativo, sofaRespostas,
     surgProcedimento, surgEspecialidade, surgCirurgiao, surgDataHora, surgAnestesia, surgCarater,
   ]);
@@ -1112,7 +1117,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
     hda, amp, muc, allergies, weight, height, pa, fc, fr, spo2, tax, dx,
     physGeneral, physCv, physResp, physAbd, physExt, physNeuro, physSkin, physOther, complementares,
     plan, cidPrimary, cidSecondary, diagnosticHypotheses,
-    admissionReason, originSector, culturesHtml, antibioticosHtml,
+    admissionReason, originSector, culturesHtml, antibioticosHtml, especialidadesHtml,
     utiJustificativaOutro,
     surgProcedimento, surgEspecialidade, surgCirurgiao, surgDataHora, surgAnestesia, surgCarater,
   ].some(v => typeof v === "string" && v.trim().length > 0)
@@ -1189,7 +1194,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
         physSkin, physOther, complementares,
         plan, cidPrimary, cidSecondary, diagnosticHypotheses,
         noPrediction, predictionDate, predictionDays,
-        admissionReason, originSector, originOutros, admDevices, culturesHtml, antibioticosHtml,
+        admissionReason, originSector, originOutros, admDevices, culturesHtml, antibioticosHtml, especialidadesHtml,
         utiJustificativa, utiJustificativaOutro, utiVasoativo, sofaRespostas,
         surgProcedimento, surgEspecialidade, surgCirurgiao, surgDataHora, surgAnestesia, surgCarater,
         savedAt: new Date().toISOString(),
@@ -1256,6 +1261,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
       plan, cidPrimary, cidSecondary,
       hypotheses: hypothesesItems,
       complementares: richHtmlToPlainText(complementares).trim() || undefined,
+      especialidades: richHtmlToPlainText(especialidadesHtml).trim() || undefined,
       scales: { glasgowTotal, glasgowEye, glasgowVerbal, glasgowMotor, sedoanalgesia, rass },
       sectorAdmissionDate,
       dischargePredictionLabel,
@@ -1461,6 +1467,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
           devices: admDevices,
           culturesHtml,
           antibioticos: antibioticosHtml,
+          especialidades: especialidadesHtml,
           __patient_name: patient.name,
           __patient_bed: patient.bed,
           __patient_sector: patient.sector,
@@ -1947,6 +1954,16 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
             />
           </AccordionSectionItem>
 
+          {/* 11b. Especialidades — campo livre, ANTES do plano (ordem pedida). */}
+          <AccordionSectionItem id="em-especialidades" complete={richHtmlToPlainText(especialidadesHtml).trim().length > 0} icon={Stethoscope} iconColor="text-muted-foreground" label="Especialidades" hint="Especialidades envolvidas no cuidado — campo livre, opcional">
+            <RichTextEditor
+              value={especialidadesHtml}
+              onChange={setEspecialidadesHtml}
+              placeholder="Especialidades acompanhando o caso, pareceres em andamento, condutas de especialistas..."
+              minHeight={120}
+            />
+          </AccordionSectionItem>
+
           {/* 12. Plano terapeutico */}
           <AccordionSectionItem id="em-conduta" complete={completion.plano} icon={Pill} iconColor="text-muted-foreground" label="Plano terapêutico" required>
             <ReqLabel missing={attempted && missing.plan}>Conduta inicial</ReqLabel>
@@ -2261,6 +2278,16 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
                 value={complementares}
                 onChange={setComplementares}
                 placeholder="Cole resultados laboratoriais ou de imagem..."
+                minHeight={120}
+              />
+            </AccordionSectionItem>
+
+            {/* Especialidades — campo livre, ANTES do plano (ordem pedida). */}
+            <AccordionSectionItem id="nm-especialidades" complete={richHtmlToPlainText(especialidadesHtml).trim().length > 0} icon={Stethoscope} iconColor="text-muted-foreground" label="Especialidades" hint="Especialidades envolvidas no cuidado — campo livre, opcional">
+              <RichTextEditor
+                value={especialidadesHtml}
+                onChange={setEspecialidadesHtml}
+                placeholder="Especialidades acompanhando o caso, pareceres em andamento, condutas de especialistas..."
                 minHeight={120}
               />
             </AccordionSectionItem>

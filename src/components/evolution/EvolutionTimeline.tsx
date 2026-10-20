@@ -833,6 +833,8 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                           onCulturesChange={(html) => updateLocal(evo.id, "soap", "culturesHtml", html)}
                           antibioticosHtml={typeof (data.soap as Record<string, unknown>).antibioticos === "string" ? (data.soap as Record<string, unknown>).antibioticos as string : ""}
                           onAntibioticosChange={(html) => updateLocal(evo.id, "soap", "antibioticos", html)}
+                          especialidadesHtml={typeof (data.soap as Record<string, unknown>).especialidades === "string" ? (data.soap as Record<string, unknown>).especialidades as string : ""}
+                          onEspecialidadesChange={(html) => updateLocal(evo.id, "soap", "especialidades", html)}
                           admissionDate={admissionDate || null}
                           evo={evo}
                           patientId={patientId || null}

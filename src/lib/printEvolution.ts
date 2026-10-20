@@ -411,6 +411,16 @@ export const printEvolution = async (
         ${evolucaoOut}
       </div>
       ${(() => {
+        // Especialidades — campo livre no soap_data, impresso ANTES do plano
+        // (mesma ordem da tela). So sai se houver conteudo real.
+        const esp = (s as { especialidades?: unknown }).especialidades;
+        if (typeof esp !== "string") return "";
+        const html = toRichHtml(esp);
+        if (!richHtmlToPlainText(html).trim()) return "";
+        return `<h2 class="nz-section">Especialidades</h2>`
+          + `<div class="nz-rich" style="padding:5pt 7pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:8pt;line-height:1.35">${html}</div>`;
+      })()}
+      ${(() => {
         // Plano por itens (novo) ou texto livre (legado)
         const planItemsArr: string[] = Array.isArray((s as any).planItems) ? (s as any).planItems.filter(Boolean) : [];
         const planText = richHtmlToPlainText(toRichHtml(s.plan));

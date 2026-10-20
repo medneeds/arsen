@@ -594,6 +594,7 @@ export default function PacienteHubPage() {
       dischargePredictionLabel: interRow.previsao_alta || splitDischargePrediction(a.initial_conduct || soap.plan).label || "—",
       hypotheses: hyp.length ? hyp : undefined,
       complementares: interRow.exames_relevantes || undefined,
+      especialidades: richHtmlToPlainText(soap.especialidades as string | undefined).trim() || undefined,
       scales: { glasgowTotal: num(vs.glasgow), glasgowEye: num(ovm.ocular), glasgowVerbal: num(ovm.verbal), glasgowMotor: num(ovm.motora), sedoanalgesia: !!vs.sedoanalgesia, rass: num(vs.rass) },
       uti: isUtiAdm ? { admissionReason: utiReason || undefined, vasoativo: vasoativo || undefined, originSector: (soap.__uti_origem as string) || undefined, devices: devicesStr || undefined, culturesAtb: culturesAtb || undefined } : undefined,
       sapsPending,

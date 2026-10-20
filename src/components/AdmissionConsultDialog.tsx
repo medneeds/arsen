@@ -313,6 +313,7 @@ export function AdmissionConsultDialog({ open, onOpenChange, patient, onChanged 
       dischargePredictionLabel: history?.previsao_alta || splitDischargePrediction(planTxt, ass).label || "—",
       hypotheses: hyp.length ? hyp : undefined,
       complementares: history?.exames_relevantes || undefined,
+      especialidades: richHtmlToPlainText(soap.especialidades as string | undefined).trim() || undefined,
       scales: {
         glasgowTotal: num(vs.glasgow),
         glasgowEye: num(ovm.ocular),
