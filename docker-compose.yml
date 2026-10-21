@@ -1,0 +1,10 @@
+services:
+  nginx:
+    build: .
+    restart: unless-stopped
+    networks:
+      - dokploy-network
+
+networks:
+  dokploy-network:
+    external: true
