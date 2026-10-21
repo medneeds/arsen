@@ -12,6 +12,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Building2,
+  Rocket,
   Layers,
   Palette,
   Stethoscope,
@@ -442,6 +443,7 @@ export function AppSidebar() {
     if (role === "super_admin") {
       return [
         { title: "Hospitais", icon: Building2, link: "/painel-super-admin", profiles: [accessProfile] },
+        { title: "Implantação", icon: Rocket, link: "/implantacao", profiles: [accessProfile] },
         ...menu,
       ];
     }

@@ -102,6 +102,7 @@ const ApresentacaoPage = lazy(() => import("./pages/ApresentacaoPage"));
 const IpAllowlistPage = lazy(() => import("./pages/admin/IpAllowlistPage"));
 const HospitaisAdminPage = lazy(() => import("./pages/admin/HospitaisAdminPage"));
 const AdminHospitalPage = lazy(() => import("./pages/admin/AdminHospitalPage"));
+const ImplantacaoPage = lazy(() => import("./pages/admin/ImplantacaoPage"));
 const Relatorio1Page = lazy(() => import("./pages/Relatorio1Page"));
 const RelatorioJunhoPage = lazy(() => import("./pages/RelatorioJunhoPage"));
 const Apresentacao1Page = lazy(() => import("./pages/Apresentacao1Page"));
@@ -375,6 +376,9 @@ const App = () => {
               <Route path="/painel-super-admin" element={<ProtectedRoute><HospitaisAdminPage /></ProtectedRoute>} />
               {/* Painel administrativo do hospital (admin da unidade): estrutura, dados, branding. */}
               <Route path="/painel-admin" element={<ProtectedRoute><AdminHospitalPage /></ProtectedRoute>} />
+              {/* Assistente de implantacao de instituicao (super-admin). A pagina embrulha
+                  o conteudo em MainLayout internamente e faz o gating de papel. */}
+              <Route path="/implantacao" element={<ProtectedRoute><ImplantacaoPage /></ProtectedRoute>} />
               <Route path="/relatorio-1" element={<Relatorio1Page />} />
               <Route path="/relatorio-junho" element={<RelatorioJunhoPage />} />
               <Route path="/apresentacao-1" element={<Apresentacao1Page />} />
