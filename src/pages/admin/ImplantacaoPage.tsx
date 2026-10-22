@@ -14,6 +14,11 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Rocket, Building2, Palette, Layers, DoorOpen, Bed, Users, ClipboardList,
   Check, ChevronLeft, ChevronRight, Plus, Trash2, Star, ShieldAlert, Loader2,
@@ -22,12 +27,14 @@ import {
 /**
  * Assistente de Implantacao de Instituicao (super-admin).
  *
- * ESCOPO DESTA ENTREGA: layout navegavel, SEM gravar no banco. Nenhuma chamada
- * Supabase de escrita, nenhum insert. O botao final "Provisionar" so mostra um
- * toast. O objetivo e validar visualmente o fluxo em dev antes de ligar o
- * backend (RPC criar_hospital_com_admin + insercoes de estrutura/equipe).
+ * FASE 2: o botao "Provisionar" grava de verdade, orquestrando (ver provisionar()):
+ *   A) edge criar-hospital-admin  -> cria hospital + conta admin (so super_admin);
+ *   B) RPC provisionar_estrutura_hospital (SECURITY DEFINER, transacional) -> identidade + alas/setores/leitos;
+ *   C) edge provisionar-equipe -> contas de login da equipe + vinculos.
+ * Confirmacao antes de gravar; em falha parcial, reexecuta sem recriar o que ja subiu.
+ * O backend (migration + edge) e aplicado pelo Artur no Studio/deploy; o front so chama.
  *
- * Todo o estado vive em useState local e serve apenas para navegacao e revisao.
+ * Todo o estado de formulario vive em useState local.
  */
 
 // ── Vocabulario travado pelas CHECK constraints do banco (mesmo do AdminHospitalPage) ──
@@ -97,6 +104,16 @@ interface PessoaForm {
   conselho: string; numeroConselho: string; cargo: string;
 }
 
+// Fase 2 — resultado do provisionamento real.
+interface EquipeResult { nome: string; email: string; ok: boolean; tempPassword?: string; error?: string; }
+interface EstruturaCounts { identidade: boolean; alas: number; setores: number; leitos: number; }
+interface ProvisionResult {
+  adminEmail: string;
+  adminTempPassword: string;
+  counts: EstruturaCounts;
+  equipe: EquipeResult[];
+}
+
 function uid() {
   return typeof crypto !== "undefined" && crypto.randomUUID
     ? crypto.randomUUID()
@@ -143,6 +160,14 @@ export default function ImplantacaoPage() {
   const [identificadores, setIdentificadores] = useState<Set<string>>(
     () => new Set(["prontuario", "cpf", "data_nascimento", "nome_mae"]),
   );
+
+  // Fase 2 — estado do provisionamento real.
+  const [provisioning, setProvisioning] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [createdHospitalId, setCreatedHospitalId] = useState<string | null>(null); // p/ retry sem recriar hospital
+  const [structureDone, setStructureDone] = useState(false); // p/ retry sem reprovisionar estrutura
+  const [resultado, setResultado] = useState<ProvisionResult | null>(null);
+  const [erro, setErro] = useState<string | null>(null);
 
   const setoresByAla = useMemo(() => {
     const m = new Map<string, SetorForm[]>();
@@ -195,8 +220,100 @@ export default function ImplantacaoPage() {
   const goNext = () => setStep((s) => Math.min(STEPS.length - 1, s + 1));
   const goBack = () => setStep((s) => Math.max(0, s - 1));
 
-  const provisionar = () => {
-    toast("Provisionamento será ligado na próxima fase");
+  const soDigitos = (s: string) => s.replace(/\D/g, "");
+
+  // Orquestra o provisionamento real: A) hospital+admin (edge criar-hospital-admin),
+  // B) estrutura+identidade (RPC transacional provisionar_estrutura_hospital),
+  // C) equipe (edge provisionar-equipe). Em falha parcial, guarda createdHospitalId
+  // e structureDone para reexecutar sem recriar o que ja subiu.
+  const provisionar = async () => {
+    setConfirmOpen(false);
+    setErro(null);
+    if (!inst.nome.trim() || !inst.adminNome.trim() || !inst.adminEmail.trim()) {
+      setErro("Preencha nome da instituição, nome e e-mail do administrador."); setStep(0); return;
+    }
+    if (soDigitos(inst.cnpj).length !== 14) { setErro("CNPJ deve ter 14 dígitos."); setStep(0); return; }
+    if (alas.length === 0) { setErro("Adicione ao menos uma ala."); setStep(2); return; }
+
+    setProvisioning(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers = session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : undefined;
+
+      // A — hospital + admin (pula se ja criado numa tentativa anterior).
+      let hospitalId = createdHospitalId;
+      let adminTempPassword = resultado?.adminTempPassword ?? "";
+      if (!hospitalId) {
+        const { data: resA, error: errA } = await supabase.functions.invoke<{
+          success?: boolean; hospitalId?: string; tempPassword?: string; error?: string;
+        }>("criar-hospital-admin", {
+          body: {
+            nomeHospital: inst.nome.trim(), cnpj: soDigitos(inst.cnpj), endereco: inst.endereco.trim(),
+            adminNome: inst.adminNome.trim(), adminEmail: inst.adminEmail.trim().toLowerCase(),
+          },
+          headers,
+        });
+        if (errA || !resA?.success || !resA.hospitalId) {
+          throw new Error(resA?.error || errA?.message || "Falha ao criar hospital/admin.");
+        }
+        hospitalId = resA.hospitalId;
+        adminTempPassword = resA.tempPassword ?? "";
+        setCreatedHospitalId(hospitalId);
+      }
+
+      // B — estrutura + identidade (RPC transacional; pula se ja feita).
+      let counts: EstruturaCounts = resultado?.counts ?? { identidade: false, alas: 0, setores: 0, leitos: 0 };
+      if (!structureDone) {
+        const rpc = supabase.rpc as unknown as (
+          fn: string, args: Record<string, unknown>,
+        ) => Promise<{ data: EstruturaCounts | null; error: { message: string } | null }>;
+        const { data: resB, error: errB } = await rpc("provisionar_estrutura_hospital", {
+          p_hospital_id: hospitalId,
+          p_identidade: {
+            sigla: ident.sigla, slogan: ident.slogan,
+            cor_primaria: ident.corPrimaria, cor_secundaria: ident.corSecundaria, cor_destaque: ident.corDestaque,
+          },
+          p_estrutura: {
+            alas: alas.map((a) => ({ tmp: a.id, nome: a.nome, descricao: a.descricao })),
+            setores: setores.map((s) => ({ tmp: s.id, ala_tmp: s.alaId, nome: s.nome, tipo: s.tipo, aplica_saps: s.aplicaSaps })),
+            leitos: leitos.map((l) => ({ tmp: l.id, setor_tmp: l.setorId, numero: l.numero, tipo: l.tipo })),
+          },
+        });
+        if (errB) throw new Error(errB.message || "Falha ao provisionar estrutura.");
+        counts = resB ?? counts;
+        setStructureDone(true);
+      }
+
+      // C — equipe (edge, por pessoa; dup de e-mail vira aviso por pessoa).
+      let equipe: EquipeResult[] = resultado?.equipe ?? [];
+      if (pessoas.length > 0) {
+        const { data: resC, error: errC } = await supabase.functions.invoke<{
+          success?: boolean; results?: EquipeResult[]; error?: string;
+        }>("provisionar-equipe", {
+          body: {
+            hospitalId,
+            pessoas: pessoas.map((p) => ({
+              nome: p.nome, email: p.email, papel: p.papel,
+              conselho: p.conselho, numeroConselho: p.numeroConselho, cargo: p.cargo,
+              perfilAcesso: p.perfilPrincipal, perfisAcesso: p.perfis, setorIds: [],
+            })),
+          },
+          headers,
+        });
+        if (errC || !resC?.success) throw new Error(resC?.error || errC?.message || "Falha ao provisionar equipe.");
+        equipe = resC.results ?? [];
+      }
+
+      setResultado({ adminEmail: inst.adminEmail.trim().toLowerCase(), adminTempPassword, counts, equipe });
+      setStep(STEPS.length - 1);
+      toast.success("Instituição provisionada.");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Erro ao provisionar.";
+      setErro(msg);
+      toast.error(msg);
+    } finally {
+      setProvisioning(false);
+    }
   };
 
   return (
@@ -243,11 +360,28 @@ export default function ImplantacaoPage() {
               Avançar <ChevronRight className="ml-1 h-4 w-4" />
             </Button>
           ) : (
-            <Button onClick={provisionar} className="gap-2">
-              <Rocket className="h-4 w-4" /> Provisionar
+            <Button onClick={() => setConfirmOpen(true)} disabled={provisioning} className="gap-2">
+              {provisioning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Rocket className="h-4 w-4" />}
+              {provisioning ? "Provisionando..." : "Provisionar"}
             </Button>
           )}
         </div>
+
+        <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Provisionar instituição?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Isto cria a instituição, o administrador e as contas de login da equipe
+                de verdade no banco (com senhas provisórias). Revise antes de confirmar.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={provisionar}>Provisionar</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </MainLayout>
   );
@@ -845,9 +979,58 @@ export default function ImplantacaoPage() {
           </CardContent>
         </Card>
 
-        <p className="rounded-md bg-warning-soft px-3 py-2 text-xs text-warning-on-soft">
-          Esta é uma prévia visual. O botão "Provisionar" ainda não grava nada no banco.
-        </p>
+        {erro && (
+          <p className="rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive">{erro}</p>
+        )}
+
+        {resultado ? (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base text-released-on-soft">
+                <Check className="h-4 w-4" /> Instituição provisionada
+              </CardTitle>
+              <CardDescription>
+                {resultado.counts.alas} alas · {resultado.counts.setores} setores · {resultado.counts.leitos} leitos
+                {resultado.counts.identidade ? " · identidade visual" : ""}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3 text-xs">
+              <div>
+                <p className="font-medium text-foreground">Administrador</p>
+                <p className="text-muted-foreground">
+                  {resultado.adminEmail} — senha provisória:{" "}
+                  <span className="font-mono text-foreground">{resultado.adminTempPassword}</span>
+                </p>
+              </div>
+              {resultado.equipe.length > 0 && (
+                <div>
+                  <p className="font-medium text-foreground">Equipe</p>
+                  <ul className="mt-1 space-y-1">
+                    {resultado.equipe.map((m) => (
+                      <li key={m.email} className="flex items-center gap-2">
+                        {m.ok
+                          ? <Check className="h-3 w-3 shrink-0 text-released-on-soft" />
+                          : <ShieldAlert className="h-3 w-3 shrink-0 text-destructive" />}
+                        <span className="text-foreground">{m.nome || m.email}</span>
+                        {m.ok
+                          ? <span className="text-muted-foreground">— senha: <span className="font-mono text-foreground">{m.tempPassword}</span></span>
+                          : <span className="text-destructive">— {m.error}</span>}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              <p className="text-muted-foreground">
+                Anote as senhas provisórias — elas não serão exibidas de novo.
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <p className="rounded-md bg-warning-soft px-3 py-2 text-xs text-warning-on-soft">
+            Ao provisionar, a instituição e as contas de login são criadas de verdade no banco.
+            Revise tudo acima antes de confirmar.
+          </p>
+        )}
       </div>
     );
   }
