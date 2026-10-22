@@ -3004,6 +3004,83 @@ export type Database = {
           },
         ]
       }
+      solicitacoes_implantacao: {
+        Row: {
+          admin_user_id: string | null
+          avaliado_em: string | null
+          avaliado_por: string | null
+          cnpj: string | null
+          contato_email: string | null
+          contato_nome: string | null
+          contato_telefone: string | null
+          criado_em: string
+          criado_por: string | null
+          endereco: string | null
+          enviado_em: string | null
+          expira_em: string | null
+          hospital_id: string | null
+          hospital_nome: string | null
+          id: string
+          ip: unknown
+          observacoes_avaliador: string | null
+          status: string
+          token: string
+          user_agent: string | null
+        }
+        Insert: {
+          admin_user_id?: string | null
+          avaliado_em?: string | null
+          avaliado_por?: string | null
+          cnpj?: string | null
+          contato_email?: string | null
+          contato_nome?: string | null
+          contato_telefone?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          endereco?: string | null
+          enviado_em?: string | null
+          expira_em?: string | null
+          hospital_id?: string | null
+          hospital_nome?: string | null
+          id?: string
+          ip?: unknown
+          observacoes_avaliador?: string | null
+          status?: string
+          token: string
+          user_agent?: string | null
+        }
+        Update: {
+          admin_user_id?: string | null
+          avaliado_em?: string | null
+          avaliado_por?: string | null
+          cnpj?: string | null
+          contato_email?: string | null
+          contato_nome?: string | null
+          contato_telefone?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          endereco?: string | null
+          enviado_em?: string | null
+          expira_em?: string | null
+          hospital_id?: string | null
+          hospital_nome?: string | null
+          id?: string
+          ip?: unknown
+          observacoes_avaliador?: string | null
+          status?: string
+          token?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solicitacoes_implantacao_hospital_id_fkey"
+            columns: ["hospital_id"]
+            isOneToOne: false
+            referencedRelation: "hospitais"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       solicitacoes_pre_cadastro: {
         Row: {
           atualizado_em: string

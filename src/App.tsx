@@ -103,6 +103,8 @@ const IpAllowlistPage = lazy(() => import("./pages/admin/IpAllowlistPage"));
 const HospitaisAdminPage = lazy(() => import("./pages/admin/HospitaisAdminPage"));
 const AdminHospitalPage = lazy(() => import("./pages/admin/AdminHospitalPage"));
 const ImplantacaoPage = lazy(() => import("./pages/admin/ImplantacaoPage"));
+const ImplantacoesPage = lazy(() => import("./pages/admin/ImplantacoesPage"));
+const ImplantacaoPublicaPage = lazy(() => import("./pages/ImplantacaoPublicaPage"));
 const Relatorio1Page = lazy(() => import("./pages/Relatorio1Page"));
 const RelatorioJunhoPage = lazy(() => import("./pages/RelatorioJunhoPage"));
 const Apresentacao1Page = lazy(() => import("./pages/Apresentacao1Page"));
@@ -299,6 +301,8 @@ const App = () => {
               <Route path="/sign-up" element={<SignupRedirectPage />} />
               <Route path="/cadastro" element={<SignupRedirectPage />} />
               <Route path="/pre-cadastro" element={<PreCadastroPage />} />
+              {/* Form PUBLICO de implantacao (link de uso unico ?k=token). Sem ProtectedRoute. */}
+              <Route path="/implantacao" element={<ImplantacaoPublicaPage />} />
               <Route path="/" element={<ProtectedRoute><ProfileHomeRedirect /></ProtectedRoute>} />
               {/* Escolha de setor logo apos o login. Fica FORA do MainLayout:
                   antes de escolher o setor, a navegacao lateral apontaria para
@@ -376,9 +380,11 @@ const App = () => {
               <Route path="/painel-super-admin" element={<ProtectedRoute><HospitaisAdminPage /></ProtectedRoute>} />
               {/* Painel administrativo do hospital (admin da unidade): estrutura, dados, branding. */}
               <Route path="/painel-admin" element={<ProtectedRoute><AdminHospitalPage /></ProtectedRoute>} />
-              {/* Assistente de implantacao de instituicao (super-admin). A pagina embrulha
+              {/* Painel super-admin: gera o link publico e aprova/reprova as submissoes. */}
+              <Route path="/admin/implantacoes" element={<ProtectedRoute><ImplantacoesPage /></ProtectedRoute>} />
+              {/* Assistente de provisionamento direto (super-admin). A pagina embrulha
                   o conteudo em MainLayout internamente e faz o gating de papel. */}
-              <Route path="/implantacao" element={<ProtectedRoute><ImplantacaoPage /></ProtectedRoute>} />
+              <Route path="/admin/implantacao" element={<ProtectedRoute><ImplantacaoPage /></ProtectedRoute>} />
               <Route path="/relatorio-1" element={<Relatorio1Page />} />
               <Route path="/relatorio-junho" element={<RelatorioJunhoPage />} />
               <Route path="/apresentacao-1" element={<Apresentacao1Page />} />

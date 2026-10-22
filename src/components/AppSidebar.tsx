@@ -443,7 +443,8 @@ export function AppSidebar() {
     if (role === "super_admin") {
       return [
         { title: "Hospitais", icon: Building2, link: "/painel-super-admin", profiles: [accessProfile] },
-        { title: "Implantação", icon: Rocket, link: "/implantacao", profiles: [accessProfile] },
+        { title: "Implantação", icon: Rocket, link: "/admin/implantacoes", profiles: [accessProfile] },
+        { title: "Provisionar direto", icon: Rocket, link: "/admin/implantacao", profiles: [accessProfile] },
         ...menu,
       ];
     }
