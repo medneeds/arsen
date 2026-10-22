@@ -446,9 +446,17 @@ export default function PacienteHubPage() {
   const sapsExpired = sapsPending && sapsElapsedMs > SAPS_DEADLINE_MS;
   const sapsRemainingMs = SAPS_DEADLINE_MS - sapsElapsedMs;
 
+  // O Hub pode chegar só com ?patientId= (volta do SAPS 3 / Admissão). Nesse caso
+  // o nome vem do banco (identifiers) para não abrir os módulos sem paciente
+  // identificado — a Requisição bloqueava o envio com "identificar o paciente".
+  const navCtx = {
+    ...ctx,
+    patientName: ctx.patientName || identifiers.registry?.socialName || identifiers.registry?.fullName || "",
+  };
+
   const goTo = (path: string) => {
     const qs = new URLSearchParams();
-    Object.entries(ctx).forEach(([k, v]) => v && qs.set(k, v));
+    Object.entries(navCtx).forEach(([k, v]) => v && qs.set(k, v));
     navigate(`${path}?${qs.toString()}`);
   };
 
@@ -459,7 +467,7 @@ export default function PacienteHubPage() {
   const goMovimentar = () => {
     const qs = new URLSearchParams();
     if (ctx.patientId) qs.set("patientId", ctx.patientId);
-    if (ctx.patientName) qs.set("patientName", ctx.patientName);
+    if (navCtx.patientName) qs.set("patientName", navCtx.patientName);
     if (ctx.patientBed) qs.set("patientBed", ctx.patientBed);
     if (ctx.patientSector) qs.set("patientSector", ctx.patientSector);
     if (ctx.patientAge) qs.set("patientAge", ctx.patientAge);
@@ -483,7 +491,7 @@ export default function PacienteHubPage() {
 
   const handleGoSaps = async () => {
     const qs = new URLSearchParams();
-    Object.entries(ctx).forEach(([k, v]) => v && qs.set(k, v));
+    Object.entries(navCtx).forEach(([k, v]) => v && qs.set(k, v));
     // Se ja existe ficha (pendente do defer, ou validada p/ consulta), abre a
     // MESMA linha via completeSapsId — a /saps3 hidrata e ATUALIZA, sem criar
     // uma segunda ficha. Sem ficha ainda, cai no caminho de alocacao.

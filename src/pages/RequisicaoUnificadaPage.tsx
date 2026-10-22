@@ -50,6 +50,8 @@ import {
 import { toast } from "sonner";
 import { cn, asUuidOrNull } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchInternacaoComPaciente } from "@/lib/internacaoComPaciente";
+import { resolveCurrentBedSector } from "@/lib/resolvePatientHeader";
 import { useSigtapSearch } from "@/hooks/useSigtapSearch";
 import { fromSolicitacaoStatusDb } from "@/lib/solicitacaoStatus";
 import { normalizeSolicitacao, applyAuthor, type ProfissionalLite, type SolicitacaoContext } from "@/lib/solicitacaoNormalize";
@@ -530,6 +532,25 @@ const RequisicaoUnificadaPage = () => {
     // tela escolher as rotinas certas (UTI x Enfermaria).
     setFormPatientSector(toSectorCode(patientSector));
     if (patientId || patientName) setActiveSubTab("solicitar");
+
+    // Chegou só com o id (ex.: volta do SAPS/Admissão para /paciente?patientId=…
+    // sem patientName): resolve nome/leito/setor da internação no banco. Sem isso
+    // o envio bloqueava com "identificar o paciente" mesmo com paciente válido.
+    let cancelled = false;
+    if (patientId && !patientName) {
+      (async () => {
+        const [{ paciente }, bedSector] = await Promise.all([
+          fetchInternacaoComPaciente(patientId).catch(() => ({ paciente: null })),
+          resolveCurrentBedSector(patientId),
+        ]);
+        if (cancelled) return;
+        const nome = paciente?.nome_social || paciente?.nome_completo || "";
+        if (nome) setFormPatientName(nome);
+        if (!patientBed && bedSector.bed) setFormPatientBed(bedSector.bed);
+        if (!patientSector && bedSector.sector) setFormPatientSector(toSectorCode(bedSector.sector));
+      })();
+    }
+    return () => { cancelled = true; };
   }, [searchParams.get("patientId"), searchParams.get("patientName")]);
 
   // ── Sync category from URL (?categoria=, ?especial=) — sem escopo ──
