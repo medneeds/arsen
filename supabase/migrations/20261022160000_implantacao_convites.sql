@@ -86,8 +86,9 @@ begin
     raise exception 'Apenas o super_admin pode gerar link de implantacao.';
   end if;
 
-  -- token url-safe (sem +, /, =)
-  v_token := translate(encode(gen_random_bytes(24), 'base64'), '+/=', '-_');
+  -- token url-safe (sem +, /, =). gen_random_bytes vive no schema extensions
+  -- no Supabase (pgcrypto), por isso qualificado explicitamente.
+  v_token := translate(encode(extensions.gen_random_bytes(24), 'base64'), '+/=', '-_');
 
   insert into public.solicitacoes_implantacao
     (token, status, contato_nome, contato_email, expira_em, criado_por)

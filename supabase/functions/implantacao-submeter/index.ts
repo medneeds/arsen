@@ -66,18 +66,20 @@ Deno.serve(async (req) => {
       return json(410, { error: "Este link expirou. Peca um novo a equipe.", code: "expirado" });
     }
 
-    // 2) Valida os campos
-    if (!hospitalNome || !cnpjDigits || !contatoNome || !contatoEmail || !senha) {
-      return json(400, { error: "Preencha hospital, CNPJ, nome e e-mail de contato e senha." });
+    // 2) Valida os campos (CNPJ e opcional; se vier, tem que ter 14 digitos)
+    if (!hospitalNome || !contatoNome || !contatoEmail || !senha) {
+      return json(400, { error: "Preencha hospital, nome e e-mail de contato e senha." });
     }
-    if (cnpjDigits.length !== 14) return json(400, { error: "CNPJ deve ter 14 digitos." });
+    if (cnpjDigits && cnpjDigits.length !== 14) return json(400, { error: "CNPJ, se informado, deve ter 14 digitos." });
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(contatoEmail)) return json(400, { error: "E-mail de contato invalido." });
     if (senha.length < 8) return json(400, { error: "A senha deve ter ao menos 8 caracteres." });
 
-    // 3) Duplicidades (mensagem clara antes de tocar no Auth)
-    const { data: cnpjDup } = await admin.from("hospitais").select("id, nome").eq("cnpj", cnpjDigits).maybeSingle();
-    if (cnpjDup) {
-      return json(409, { error: `CNPJ ja cadastrado para o hospital "${cnpjDup.nome}".`, code: "cnpj_duplicado" });
+    // 3) Duplicidades (mensagem clara antes de tocar no Auth). So checa CNPJ se informado.
+    if (cnpjDigits) {
+      const { data: cnpjDup } = await admin.from("hospitais").select("id, nome").eq("cnpj", cnpjDigits).maybeSingle();
+      if (cnpjDup) {
+        return json(409, { error: `CNPJ ja cadastrado para o hospital "${cnpjDup.nome}".`, code: "cnpj_duplicado" });
+      }
     }
     const { data: emailDup } = await admin.from("profissionais").select("id").eq("email", contatoEmail).maybeSingle();
     if (emailDup) {
@@ -111,7 +113,7 @@ Deno.serve(async (req) => {
       .from("solicitacoes_implantacao")
       .update({
         hospital_nome: hospitalNome,
-        cnpj: cnpjDigits,
+        cnpj: cnpjDigits || null,
         endereco: endereco || null,
         contato_nome: contatoNome,
         contato_email: contatoEmail,

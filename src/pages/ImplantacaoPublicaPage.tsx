@@ -113,7 +113,7 @@ export default function ImplantacaoPublicaPage() {
 
   const validate = (): string | null => {
     if (form.hospitalNome.trim().length < 3) return "Informe o nome do hospital.";
-    if (onlyDigits(form.cnpj).length !== 14) return "CNPJ invalido (14 digitos).";
+    if (form.cnpj && onlyDigits(form.cnpj).length !== 14) return "CNPJ invalido (14 digitos).";
     if (form.contatoNome.trim().length < 5) return "Informe o nome do responsavel.";
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.contatoEmail)) return "E-mail invalido.";
     if (form.contatoTelefone && onlyDigits(form.contatoTelefone).length < 10) return "Telefone invalido.";
@@ -226,7 +226,7 @@ export default function ImplantacaoPublicaPage() {
           <div className="grid md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="cnpj" className="flex items-center gap-1">
-                <IdCard className="h-3.5 w-3.5" /> CNPJ *
+                <IdCard className="h-3.5 w-3.5" /> CNPJ <span className="text-xs text-muted-foreground">(opcional)</span>
               </Label>
               <Input
                 id="cnpj"
@@ -234,7 +234,6 @@ export default function ImplantacaoPublicaPage() {
                 onChange={(e) => update("cnpj", formatCnpj(e.target.value))}
                 placeholder="00.000.000/0000-00"
                 inputMode="numeric"
-                required
               />
             </div>
             <div className="space-y-2">

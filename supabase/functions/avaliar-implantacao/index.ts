@@ -98,7 +98,7 @@ Deno.serve(async (req) => {
     }
     const { data: hospitalId, error: rpcErr } = await userClient.rpc("criar_hospital_com_admin", {
       p_nome_hospital: sol.hospital_nome,
-      p_cnpj: String(sol.cnpj ?? "").replace(/\D/g, ""),
+      p_cnpj: (String(sol.cnpj ?? "").replace(/\D/g, "") || null),
       p_endereco: sol.endereco ?? "",
       p_admin_user_id: sol.admin_user_id,
       p_admin_nome: sol.contato_nome,
