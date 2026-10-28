@@ -1,73 +1,82 @@
-# Welcome to your Lovable project
+# Arsen
 
-## Project info
+Prontuário eletrônico do **Hospital Municipal Djalma Marques (Socorrão I)**, São Luís/MA.
 
-**URL**: https://lovable.dev/projects/e3a22fbd-3938-40cf-b893-0b6a5806f5c8
+> ⚠️ **Sistema em uso clínico real, à beira do leito.** Erro de software vira erro
+> assistencial. Dose, via, diluição, identificação de paciente e documento clínico
+> exigem cuidado redobrado e simulação de casos de borda antes de qualquer alteração.
 
-## How can I edit this code?
+"Mapeando cuidados, salvando vidas."
 
-There are several ways of editing your application.
+## Tecnologias
 
-**Use Lovable**
+- **Vite** + **React** + **TypeScript**
+- **Tailwind CSS** + **shadcn/ui**
+- **Supabase self-hosted** (Postgres 15.8, GoTrue, Storage, PostgREST, Realtime, Edge Functions)
+- **bun** como gerenciador de pacotes
+- **Dokploy** para build e deploy
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/e3a22fbd-3938-40cf-b893-0b6a5806f5c8) and start prompting.
+## Pré-requisitos
 
-Changes made via Lovable will be committed automatically to this repo.
+- [bun](https://bun.sh) instalado.
+- O projeto **vive de bun**. Dependência se adiciona com `bun`, **nunca com `npm install`**
+  (mexe nos lockfiles e já quebrou o deploy várias vezes).
 
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+## Rodando localmente
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+# 1. Clonar
+git clone https://github.com/medneeds/arsen.git
+cd arsen
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+# 2. Instalar dependências
+bun install
 
-# Step 3: Install the necessary dependencies.
-npm i
+# 3. Variáveis de ambiente (ver .env.example / peça ao time os valores)
+cp .env.example .env   # e preencha VITE_SUPABASE_URL / VITE_SUPABASE_PUBLISHABLE_KEY
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+# 4. Subir o dev server
+bun run dev
 ```
 
-**Edit a file directly in GitHub**
+Em produção/dev as variáveis `VITE_*` vêm dos **build args do Dokploy**, não do `.env` do
+repositório — o `.env` do repo não afeta o build.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Validação obrigatória antes de cada commit
 
-**Use GitHub Codespaces**
+```sh
+npx tsc --noEmit -p tsconfig.app.json   # o -p é OBRIGATORIO (sem ele, nao checa nada)
+npx vite build
+npm run test                            # roda a suite (src/tests/*.test.ts)
+npx eslint <arquivos alterados>
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+`vite build` **não** valida tipos (esbuild remove tipos sem checar). A meta não é zerar os
+erros de tipo — é **não aumentar** o baseline.
 
-## What technologies are used for this project?
+## Banco de dados
 
-This project is built with:
+O Supabase é **self-hosted**. Toda migration é aplicada **manualmente** pelo responsável
+(SQL Editor do Studio) — **não rode migrations** a partir do repositório. `git ≠ banco`:
+commitar um arquivo em `supabase/migrations` **não** o aplica.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## Branches e ambientes
 
-## How can I deploy this project?
+| Branch | Ambiente | Deploy (Dokploy) |
+|---|---|---|
+| `main` | Produção | frontend (`hmdm.arsen.com.br`) + backend `supabase.arsen.com.br` |
+| `staging` | Desenvolvimento | frontend (`dev.arsen.com.br`) + backend `api.arsen.com.br` |
+| `versao-estavel` | Marcador de versão estável | — |
+| `site` | Landing page | `arsen.com.br` |
 
-Simply open [Lovable](https://lovable.dev/projects/e3a22fbd-3938-40cf-b893-0b6a5806f5c8) and click on Share -> Publish.
+Deploy é feito pelo **Dokploy** (build por branch). Outros desenvolvedores trabalham na
+mesma branch — **sempre `git fetch` antes de escrever**.
 
-## Can I connect a custom domain to my Lovable project?
+## Contribuindo
 
-Yes, you can!
+- Português do Brasil, direto ao ponto.
+- **Commit por caminho explícito** (nunca `git add -A`), **um commit por correção**,
+  mensagem sem acentos/crases descrevendo o quê, a causa raiz e a correção.
+- **Push só com autorização explícita, caso a caso.**
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+As regras completas de trabalho neste repositório estão em [`CLAUDE.md`](./CLAUDE.md).
