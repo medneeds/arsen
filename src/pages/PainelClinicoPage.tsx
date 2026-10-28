@@ -622,11 +622,28 @@ export default function PainelClinicoPage() {
                       </TableCell>
                       {showSapsColumn && (
                       <TableCell className="text-center align-middle">
-                        {(sectorRequiresSaps(patient.sector) || sectorRequiresSaps(patient.sectorName)) && sapsScores[patient.id] ? (
-                          sapsScores[patient.id].status === 'pendente' ? (
+                        {/* DERIVADO: o setor exige SAPS e a internacao ainda nao tem
+                            ficha 'validada' -> PENDENTE, mesmo sem nenhuma linha em
+                            avaliacoes_saps3 (ex.: admitido por via que nao criava a
+                            stub). Com ficha validada -> mostra o escore. */}
+                        {(() => {
+                          const requires = sectorRequiresSaps(patient.sector) || sectorRequiresSaps(patient.sectorName);
+                          if (!requires) return <span className="text-xs text-muted-foreground">—</span>;
+                          const ficha = sapsScores[patient.id];
+                          if (ficha && ficha.status === "validada") {
+                            return (
+                              <div className="inline-flex flex-col items-center gap-1.5">
+                                <span className={cn("inline-flex min-w-[88px] items-center justify-center rounded-md border px-3 py-1 text-[13px] font-bold leading-tight", sapsMortalityBlockClass(ficha.mortality))}>
+                                  {formatMortality(ficha.mortality)}
+                                </span>
+                                <span className="font-mono text-xs font-bold leading-none text-foreground">{ficha.score}</span>
+                              </div>
+                            );
+                          }
+                          return (
                             <div
                               className="inline-flex flex-col items-center gap-1.5"
-                              title={sapsScores[patient.id].pending_since ? `SAPS 3 pendente desde ${new Date(sapsScores[patient.id].pending_since as string).toLocaleString("pt-BR")}` : "SAPS 3 pendente"}
+                              title={ficha?.pending_since ? `SAPS 3 pendente desde ${new Date(ficha.pending_since as string).toLocaleString("pt-BR")}` : "SAPS 3 pendente"}
                             >
                               <span className="text-xs font-semibold leading-tight text-warning-on-soft">Pendente</span>
                               <button
@@ -635,7 +652,8 @@ export default function PainelClinicoPage() {
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   const params = new URLSearchParams();
-                                  params.set("completeSapsId", sapsScores[patient.id].id);
+                                  // Ficha-rascunho existente -> retoma; senao ficha nova.
+                                  if (ficha?.id) params.set("completeSapsId", ficha.id);
                                   params.set("fromAllocation", "true");
                                   params.set("patientName", patient.name);
                                   if (patient.id) params.set("patientId", patient.id);
@@ -649,17 +667,8 @@ export default function PainelClinicoPage() {
                                 Preencher
                               </button>
                             </div>
-                          ) : (
-                            <div className="inline-flex flex-col items-center gap-1.5">
-                              <span className={cn("inline-flex min-w-[88px] items-center justify-center rounded-md border px-3 py-1 text-[13px] font-bold leading-tight", sapsMortalityBlockClass(sapsScores[patient.id].mortality))}>
-                                {formatMortality(sapsScores[patient.id].mortality)}
-                              </span>
-                              <span className="font-mono text-xs font-bold leading-none text-foreground">{sapsScores[patient.id].score}</span>
-                            </div>
-                          )
-                        ) : (
-                          <span className="text-xs text-muted-foreground">—</span>
-                        )}
+                          );
+                        })()}
                       </TableCell>
                       )}
                       <TableCell className="align-middle">
@@ -957,8 +966,14 @@ function SapsPendingGlobalBanner({
   sapsScores: Record<string, { score: number; mortality: number; status: string; pending_since: string | null }>;
   onComplete: (p: Patient) => void;
 }) {
+  // DERIVADO (mesma regra do mapa/celula): pendente = setor exige SAPS e a
+  // internacao NAO tem ficha 'validada'. Inclui quem nunca teve linha criada.
   const pendingPatients = useMemo(
-    () => patients.filter((p) => sapsScores[p.id]?.status === "pendente"),
+    () => patients.filter((p) =>
+      (sectorRequiresSaps(p.sector) || sectorRequiresSaps(p.sectorName)) &&
+      sapsScores[p.id]?.status !== "validada" &&
+      !p.isVacant && !!p.name?.trim(),
+    ),
     [patients, sapsScores],
   );
 

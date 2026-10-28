@@ -136,6 +136,25 @@ export function sectorRequiresSaps(sector?: string | null): boolean {
 }
 
 /**
+ * SAPS 3 PENDENTE e ESTADO DERIVADO da invariante clinica — NAO uma linha stub
+ * opcional em avaliacoes_saps3. Fonte unica de verdade para TODAS as telas
+ * (mapa, painel clinico, hub, banner): um paciente deve o SAPS 3 quando o setor
+ * exige SAPS (UTI 1/UTI 2/UCI 2) e ainda NAO existe ficha VALIDADA para a
+ * internacao. Tanto a ausencia de ficha quanto uma ficha ainda em preenchimento
+ * (status 'pendente') contam como pendente.
+ *
+ * CAUSA RAIZ que isto corrige: antes o pendente dependia de alguem ter criado
+ * uma linha stub 'pendente' no clique opcional "Depois" da admissao. Pacientes
+ * admitidos por qualquer outra via (pre-alocacao, ocupacao manual, dado antigo)
+ * ou com a ficha pulada nunca eram cobrados — a tarja simplesmente nao nascia.
+ * Derivar fecha o buraco: todo leito critico sem SAPS validado fica pendente,
+ * independentemente do caminho de admissao.
+ */
+export function sapsPendente(sector: string | null | undefined, temFichaValidada: boolean): boolean {
+  return sectorRequiresSaps(sector) && !temFichaValidada;
+}
+
+/**
  * Deriva o modo de admissao a partir do setor.
  *   - UTI/UCI (ADMISSION_UTI_SECTORS) -> "uti"
  *   - Sala Vermelha (sala_vermelha)   -> "emergencia"

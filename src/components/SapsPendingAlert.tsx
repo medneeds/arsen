@@ -89,7 +89,14 @@ export function SapsPendingAlert({
 
   const handleComplete = () => {
     const params = new URLSearchParams();
-    params.set("completeSapsId", pending.id);
+    // Ficha-rascunho existente -> retoma (Caminho A). Sem linha ainda -> ficha
+    // nova pelo contexto do paciente (Caminho B); fromAllocation garante que a
+    // tela de SAPS reconheca o paciente ja admitido e monte o formulario.
+    if (pending.id) {
+      params.set("completeSapsId", pending.id);
+    } else {
+      params.set("fromAllocation", "true");
+    }
     if (patientName) params.set("patientName", patientName);
     if (patientId) params.set("patientId", patientId);
     if (patientBed) params.set("patientBed", patientBed);

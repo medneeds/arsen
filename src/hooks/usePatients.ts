@@ -305,8 +305,14 @@ export function usePatients(department?: Department, sector?: string) {
       //    fica false e a tarja fica INERTE (nao marca ninguem indevidamente).
       //  - SAPS pendente: avaliacoes_saps3 com status 'pendente' (ancorado em internacao_id).
       let validationAvailable = false;
+      let sapsAvailable = false;
       const validatedIds = new Set<string>();
-      const sapsPendingIds = new Set<string>();
+      // Internacoes que JA tem ficha SAPS 'validada'. O pendente e DERIVADO
+      // (setor exige SAPS e NAO ha validada) — nao mais a presenca de uma linha
+      // stub 'pendente'. Assim todo leito critico sem SAPS validado fica
+      // pendente, independentemente do caminho de admissao (antes so aparecia
+      // quem passou pelo clique opcional "Depois").
+      const sapsValidadaIds = new Set<string>();
       {
         const semResposta = { data: null, error: { message: "timeout" } } as const;
         const [valRes, sapsRes] = await Promise.all([
@@ -315,7 +321,7 @@ export function usePatients(department?: Department, sector?: string) {
             semResposta as any,
           ),
           comTeto(
-            supabase.from("avaliacoes_saps3").select("internacao_id").eq("status", "pendente"),
+            supabase.from("avaliacoes_saps3").select("internacao_id, status"),
             semResposta as any,
           ),
         ]);
@@ -325,8 +331,14 @@ export function usePatients(department?: Department, sector?: string) {
             if (r.admissao_validada_em) validatedIds.add(r.id);
           }
         }
-        for (const r of (sapsRes.data as { internacao_id: string | null }[] | null) ?? []) {
-          if (r.internacao_id) sapsPendingIds.add(r.internacao_id);
+        // GUARDA (falha segura): so deriva o pendente quando a leitura de fichas
+        // teve sucesso. Se falhar/timeout, sapsValidadaIds fica vazio — sem este
+        // gate, TODO paciente critico viraria "SAPS pendente" num blip de rede.
+        if (!sapsRes.error && sapsRes.data) {
+          sapsAvailable = true;
+          for (const r of sapsRes.data as { internacao_id: string | null; status: string | null }[]) {
+            if (r.internacao_id && r.status === "validada") sapsValidadaIds.add(r.internacao_id);
+          }
         }
       }
 
@@ -375,11 +387,11 @@ export function usePatients(department?: Department, sector?: string) {
             // Precedencia (decisao do Artur): admissao pendente ANTES de SAPS.
             if (validationAvailable && !validatedIds.has(p.id)) {
               p.admissionStatus = "admissao_pendente";
-            } else if (sapsPendingIds.has(p.id) && sectorRequiresSaps(p.sector)) {
+            } else if (sapsAvailable && sectorRequiresSaps(p.sector) && !sapsValidadaIds.has(p.id)) {
               // REGRA ABSOLUTA (Artur): SAPS 3 so se aplica a UTI 1/UTI 2/UCI 2.
-              // A linha pendente em avaliacoes_saps3 ancora em internacao_id e
-              // acompanha o paciente na desescalada (UTI -> enfermaria). Sem este
-              // gate, a tarja viajava para setores onde SAPS nao se aplica.
+              // DERIVADO: pendente = setor exige SAPS E internacao sem ficha
+              // 'validada'. O gate por setor garante que a tarja nao viaje para
+              // setores onde SAPS nao se aplica (ex.: desescalada p/ enfermaria).
               p.admissionStatus = "saps_pendente";
             }
             break;

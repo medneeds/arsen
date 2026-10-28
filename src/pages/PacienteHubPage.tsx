@@ -12,6 +12,7 @@ import { printAdmissionNormaZero } from "@/lib/printAdmission";
 import { formatDeviceLabel } from "@/lib/devicesCatalog";
 import { richHtmlToPlainText } from "@/components/ui/rich-text-editor";
 import { resolveCurrentBedSector } from "@/lib/resolvePatientHeader";
+import { sapsPendente } from "@/lib/sectorComplexity";
 import { useHospital } from "@/contexts/HospitalContext";
 import { fromEvolucaoStatusDb } from "@/lib/evolucaoStatus";
 import { formatDistanceToNow } from "date-fns";
@@ -386,9 +387,13 @@ export default function PacienteHubPage() {
       .order("criado_em", { ascending: false })
       .limit(1)
       .maybeSingle();
-    const isPend = sapsRow?.status === "pendente";
     const isValid = sapsRow?.status === "validada";
-    setSapsPending(!!isPend);
+    // DERIVADO: pendente = setor exige SAPS e NAO ha ficha validada (inclui quem
+    // nunca teve linha criada). O cronometro de TRAVA (sapsSince -> sapsExpired)
+    // fica ancorado SO numa ficha real: sem linha, nao vence, entao a derivacao
+    // sinaliza a pendencia mas NAO introduz lock novo (falha para o lado seguro).
+    const isPend = sapsPendente(ctx.patientSector, isValid);
+    setSapsPending(isPend);
     setSapsSince(isPend ? (sapsRow?.pending_since ?? null) : null);
     setSapsFichaId(sapsRow?.id ?? null);
     setSapsScore(isValid ? (sapsRow?.escore_total ?? null) : null);
