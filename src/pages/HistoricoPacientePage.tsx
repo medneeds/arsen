@@ -1175,6 +1175,7 @@ export default function HistoricoPacientePage() {
           <div className="relative flex-1 min-w-[200px] max-w-sm">
             <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <Input
+              data-keep-readonly
               placeholder="Buscar no histórico..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -1182,6 +1183,7 @@ export default function HistoricoPacientePage() {
             />
           </div>
           <Input
+            data-keep-readonly
             type="date"
             value={fromDate}
             onChange={(e) => setFromDate(e.target.value)}
@@ -1189,6 +1191,7 @@ export default function HistoricoPacientePage() {
             placeholder="De"
           />
           <Input
+            data-keep-readonly
             type="date"
             value={toDate}
             onChange={(e) => setToDate(e.target.value)}

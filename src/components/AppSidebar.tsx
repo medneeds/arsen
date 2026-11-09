@@ -416,7 +416,9 @@ export function AppSidebar() {
         { title: "Mapa de Leitos", icon: LayoutDashboard, link: "/mapa", profiles: [accessProfile] },
         { title: "Painel Clínico", icon: ClipboardCheck, link: "/painel-clinico", profiles: [accessProfile] },
         { title: coordLabel, icon: Shield, profiles: [accessProfile], items: [
-          { name: "Histórico de Paciente", link: "/global-search?intent=historico", profiles: [accessProfile] },
+          // "Histórico de Paciente" apontava para /global-search, rota inexistente
+          // (caía no NotFound). O histórico é aberto pela busca "Buscar Paciente"
+          // no topo da sidebar (SidebarPatientSearch → /paciente ou /historico-paciente).
           { name: "Round Multiprofissional", link: "/round", profiles: [accessProfile] },
           { name: "Relatórios", link: "/relatorios", profiles: [accessProfile] },
         ]},
