@@ -178,14 +178,14 @@ import { Switch } from "@/components/ui/switch";
 const CONTEXT_CHIP =
   "inline-flex items-center gap-1.5 h-7 rounded-md border border-border bg-background px-2 text-xs font-medium text-foreground transition-colors";
 
-interface DigitalSignature {
+export interface DigitalSignature {
   doctorName: string;
   crm: string;
   signedAt: string;
   hash: string;
 }
 
-interface PrescriptionItem {
+export interface PrescriptionItem {
   id: string;
   name: string;
   presentation: string;
@@ -850,7 +850,7 @@ function applyIvClinicalAutofills(baseItem: PrescriptionItem, medName: string, p
 // assinatura { head, tail } para não alterar os call sites.
 
 
-interface PatientHeader {
+export interface PatientHeader {
   name: string;
   birthDate: string;
   age: string;
@@ -878,7 +878,53 @@ const CATEGORY_ICONS: Record<string, React.ElementType> = {
   Wind, TestTube, ClipboardList, FileText, Syringe, Zap,
 };
 
-const TAB_ORDER: PrescriptionCategory[] = [
+/**
+ * CSS de impressao da prescricao oficial: esconde a pagina e mostra so o portal
+ * #prescription-print-root. Compartilhado com o Historico do paciente, que
+ * reimprime a prescricao no mesmo layout.
+ */
+export const PRESCRIPTION_PRINT_CSS = `
+        @media print {
+          /* Margem inferior maior reserva espaço para o rodapé fixo + numeração */
+          @page {
+            size: A4 portrait;
+            margin: 5mm 12mm 16mm 12mm;
+          }
+          /* Numeração de página nativa do motor de impressão (robusta) */
+          @page {
+            @bottom-right {
+              content: "Pág. " counter(page) "/" counter(pages);
+              font-size: 6pt;
+              color: #94a3b8;
+            }
+          }
+          html, body { display: block !important; height: auto !important; overflow: visible !important; background: #ffffff !important; }
+          body > *:not(#prescription-print-root) { display: none !important; }
+          #prescription-print-root {
+            display: block !important;
+            position: static !important;
+            inset: auto !important;
+            width: auto !important;
+            min-height: auto !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+            pointer-events: auto !important;
+            background: #ffffff !important;
+          }
+          #prescription-print-root * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          /* Rodapé de identificação repetido em todas as páginas */
+          #prescription-page-footer {
+            display: block !important;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+          }
+        }
+        #prescription-page-footer { display: none; }
+      `;
+
+export const TAB_ORDER: PrescriptionCategory[] = [
   'nutrition', 'hydration', 'replacement', 'medication', 'antimicrobial',
   'high_alert', 'inhalation', 'hemotherapy', 'care', 'nonstandard',
 ];
@@ -8810,46 +8856,7 @@ const PrescricaoPage = () => {
           patientSector={initialPatientSector}
         />
       {/* Print styles — hide everything except portal */}
-      <style dangerouslySetInnerHTML={{ __html: `
-        @media print {
-          /* Margem inferior maior reserva espaço para o rodapé fixo + numeração */
-          @page {
-            size: A4 portrait;
-            margin: 5mm 12mm 16mm 12mm;
-          }
-          /* Numeração de página nativa do motor de impressão (robusta) */
-          @page {
-            @bottom-right {
-              content: "Pág. " counter(page) "/" counter(pages);
-              font-size: 6pt;
-              color: #94a3b8;
-            }
-          }
-          html, body { display: block !important; height: auto !important; overflow: visible !important; background: #ffffff !important; }
-          body > *:not(#prescription-print-root) { display: none !important; }
-          #prescription-print-root {
-            display: block !important;
-            position: static !important;
-            inset: auto !important;
-            width: auto !important;
-            min-height: auto !important;
-            opacity: 1 !important;
-            visibility: visible !important;
-            pointer-events: auto !important;
-            background: #ffffff !important;
-          }
-          #prescription-print-root * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          /* Rodapé de identificação repetido em todas as páginas */
-          #prescription-page-footer {
-            display: block !important;
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-          }
-        }
-        #prescription-page-footer { display: none; }
-      ` }} />
+      <style dangerouslySetInnerHTML={{ __html: PRESCRIPTION_PRINT_CSS }} />
 
       {/* Banner didático — peso e alergias obrigatórios para liberar a prescrição */}
       {(!patient.weight.trim() || !patient.allergies.trim()) && (
@@ -11951,7 +11958,9 @@ const PrescricaoPage = () => {
 };
 
 // === PRINTABLE PRESCRIPTION (portal-based, ATM guide aesthetic) ===
-function PrintablePrescription({ patient, items, itemsByCategory, digitalSignature, prescriptionDate, hospitalName }: {
+// Exportado para o Historico do paciente reimprimir no MESMO layout oficial
+// (HistoricoPacientePage carrega este modulo sob demanda, so no clique).
+export function PrintablePrescription({ patient, items, itemsByCategory, digitalSignature, prescriptionDate, hospitalName }: {
   patient: PatientHeader;
   items: PrescriptionItem[];
   itemsByCategory: Record<PrescriptionCategory, PrescriptionItem[]>;

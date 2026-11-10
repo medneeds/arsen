@@ -1,7 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ComponentType } from "react";
+import { createPortal } from "react-dom";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useHospital } from "@/contexts/HospitalContext";
+import { carregarPrescricaoParaImpressao } from "@/lib/prescricaoImpressaoHistorico";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -292,6 +294,45 @@ export default function HistoricoPacientePage() {
   const [fromDate, setFromDate] = useState<string>("");
   const [toDate, setToDate] = useState<string>("");
   const [printingId, setPrintingId] = useState<string | null>(null);
+  // Reimpressao da prescricao no layout OFICIAL (PrintablePrescription da
+  // PrescricaoPage, carregado sob demanda). Montado num portal fora da tela e
+  // impresso com window.print(), igual a tela de Prescricao.
+  const [rxPrint, setRxPrint] = useState<{
+    Comp: ComponentType<any>;
+    css: string;
+    props: Record<string, unknown>;
+  } | null>(null);
+  useEffect(() => {
+    if (!rxPrint) return;
+    let cleaned = false;
+    let tPrint: ReturnType<typeof setTimeout> | undefined;
+    let tFallback: ReturnType<typeof setTimeout> | undefined;
+    const cleanup = () => {
+      if (cleaned) return;
+      cleaned = true;
+      window.removeEventListener("afterprint", cleanup);
+      setRxPrint(null);
+      setPrintingId(null);
+    };
+    window.addEventListener("afterprint", cleanup);
+    // Mesmo contrato da PrescricaoPage: espera o portal pintar antes de
+    // imprimir e so desmonta no afterprint (o "Salvar como PDF" de alguns
+    // navegadores le o DOM depois que o dialogo abre).
+    const raf = requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        tPrint = setTimeout(() => {
+          window.print();
+          tFallback = setTimeout(cleanup, 30000);
+        }, 500);
+      });
+    });
+    return () => {
+      cancelAnimationFrame(raf);
+      if (tPrint) clearTimeout(tPrint);
+      if (tFallback) clearTimeout(tFallback);
+      window.removeEventListener("afterprint", cleanup);
+    };
+  }, [rxPrint]);
   const [printingSaps, setPrintingSaps] = useState<string | null>(null);
   // Timeline de atendimentos: cada atendimento nasce RETRAIDO (Set vazio =
   // tudo colapsado, inclusive o ativo) para economizar espaco com muitos
@@ -678,45 +719,40 @@ export default function HistoricoPacientePage() {
       }
 
       if (e.event_type === "prescription") {
-        // MIGRAÇÃO: prescriptions → prescricoes. Colunas: itens→items, versao→version,
-        // criado_em→created_at, observacoes→notes. `patient_data` não existe no schema
-        // novo (identidade vem de internacoes→pacientes) → degradado (não usado no impresso).
-        const { data: rx } = await supabase
-          .from("prescricoes")
-          .select("itens,status,versao,criado_em,observacoes")
-          .eq("id", rawId)
-          .maybeSingle();
-        if (!rx) { alert("Prescrição não encontrada."); setPrintingId(null); return; }
-        const data = {
-          items: (rx as any).itens,
-          status: (rx as any).status,
-          version: (rx as any).versao,
-          created_at: (rx as any).criado_em,
-          notes: (rx as any).observacoes,
-        };
-        const items = Array.isArray(data.items) ? data.items as any[] : [];
-        const rows  = items.map((it: any, i: number) => `
-          <tr>
-            <td>${i + 1}</td>
-            <td><strong>${it.medication || it.name || it.description || ""}</strong>${it.presentation ? ` <span style="color:#64748b">(${it.presentation})</span>` : ""}</td>
-            <td>${it.dose || ""}</td>
-            <td>${it.route || ""}</td>
-            <td>${it.frequency || it.frequencia || ""}</td>
-          </tr>`).join("");
-        const html = `<div class="hist">
-          <p class="doc-title">Prescrição Médica · ${format(new Date(data.created_at), "dd/MM/yyyy 'às' HH:mm")}</p>
-          <div class="grid2" style="margin-bottom:14px">
-            <div><div class="section-lbl">Status</div><div class="section-val"><span class="badge">${data.status ?? ""}</span></div></div>
-            <div><div class="section-lbl">Versão</div><div class="section-val">${data.version ?? ""}</div></div>
-          </div>
-          <table>
-            <thead><tr><th>#</th><th>Medicamento</th><th>Dose</th><th>Via</th><th>Frequência</th></tr></thead>
-            <tbody>${rows || "<tr><td colspan='5' style='text-align:center;color:#94a3b8'>Sem itens registrados</td></tr>"}</tbody>
-          </table>
-          ${data.notes ? `<div class="section"><div class="section-lbl">Observações</div><div class="section-val">${data.notes}</div></div>` : ""}
-        </div>`;
-        await printHistoryDoc("Prescrição médica", html, "assistencial", "PRESC");
-        setPrintingId(null); return;
+        // Reimprime no MESMO layout da tela de Prescricao ("Prescricao medica
+        // diaria"). Antes montava aqui uma tabela simplificada propria, que lia
+        // campos inexistentes (medication/frequency) e saia diferente/incompleta.
+        // Somente leitura: nao passa pelo editor (cujo imprimir grava no banco).
+        const [mod, dados] = await Promise.all([
+          import("@/pages/PrescricaoPage"),
+          carregarPrescricaoParaImpressao(rawId, {
+            name: patientName,
+            bed: patientBed,
+            sector: patientSector,
+          }),
+        ]);
+        if (!dados) { alert("Prescrição não encontrada."); setPrintingId(null); return; }
+        const itemsByCategory = Object.fromEntries(
+          mod.TAB_ORDER.map((cat) => [cat, [] as typeof dados.items]),
+        ) as Record<string, typeof dados.items>;
+        dados.items.forEach((item) => {
+          const cat = item.category in itemsByCategory ? item.category : "nonstandard";
+          itemsByCategory[cat].push(item);
+        });
+        // printingId so e limpo depois da impressao (efeito do rxPrint).
+        setRxPrint({
+          Comp: mod.PrintablePrescription,
+          css: mod.PRESCRIPTION_PRINT_CSS,
+          props: {
+            patient: dados.patient,
+            items: dados.items,
+            itemsByCategory,
+            digitalSignature: dados.digitalSignature,
+            prescriptionDate: format(new Date(), "dd/MM/yyyy HH:mm:ss", { locale: ptBR }),
+            hospitalName: currentHospital?.name || "HOSPITAL MUNICIPAL",
+          },
+        });
+        return;
       }
 
       if (e.event_type === "exam_request") {
@@ -1147,6 +1183,27 @@ export default function HistoricoPacientePage() {
 
   return (
     <div>
+      {rxPrint && createPortal(
+        <div
+          id="prescription-print-root"
+          aria-hidden
+          style={{
+            position: "fixed",
+            left: "-10000px",
+            top: 0,
+            width: "186mm",
+            minHeight: "1px",
+            opacity: 0,
+            visibility: "hidden",
+            pointerEvents: "none",
+            background: "#ffffff",
+          }}
+        >
+          <style dangerouslySetInnerHTML={{ __html: rxPrint.css }} />
+          <rxPrint.Comp {...rxPrint.props} />
+        </div>,
+        document.body,
+      )}
       {/* Cabecalho PADRAO do fluxo clinico (ClinicalHeader): integra o Historico
           ao guarda-chuva do painel (navegacao de modulos + voltar + contexto do
           paciente), no lugar do header proprio com "Voltar". A impressao do
