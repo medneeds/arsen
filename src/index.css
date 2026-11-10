@@ -669,40 +669,40 @@
 }
 
 /* ============================================================
-   Modo Gestor — somente leitura
+   Modo Gestor / Coordenador — somente leitura
    ============================================================ */
-body.gestor-readonly [data-readonly-hide],
-body.gestor-readonly button[title*="Edição"],
-body.gestor-readonly button[title*="edição"],
-body.gestor-readonly button[title*="Editar"],
-body.gestor-readonly button[title*="Excluir"],
-body.gestor-readonly button[title*="Deletar"],
-body.gestor-readonly button[title*="Remover"],
-body.gestor-readonly button[title*="Mover"],
-body.gestor-readonly button[title*="Transferir"],
-body.gestor-readonly button[title*="Movimentar"],
-body.gestor-readonly button[aria-label*="Edit"],
-body.gestor-readonly button[aria-label*="Editar"],
-body.gestor-readonly button[aria-label*="Excluir"],
-body.gestor-readonly button[aria-label*="Remover"] {
+body:is(.gestor-readonly, .coordenador-readonly) [data-readonly-hide],
+body:is(.gestor-readonly, .coordenador-readonly) button[title*="Edição"],
+body:is(.gestor-readonly, .coordenador-readonly) button[title*="edição"],
+body:is(.gestor-readonly, .coordenador-readonly) button[title*="Editar"],
+body:is(.gestor-readonly, .coordenador-readonly) button[title*="Excluir"],
+body:is(.gestor-readonly, .coordenador-readonly) button[title*="Deletar"],
+body:is(.gestor-readonly, .coordenador-readonly) button[title*="Remover"],
+body:is(.gestor-readonly, .coordenador-readonly) button[title*="Mover"],
+body:is(.gestor-readonly, .coordenador-readonly) button[title*="Transferir"],
+body:is(.gestor-readonly, .coordenador-readonly) button[title*="Movimentar"],
+body:is(.gestor-readonly, .coordenador-readonly) button[aria-label*="Edit"],
+body:is(.gestor-readonly, .coordenador-readonly) button[aria-label*="Editar"],
+body:is(.gestor-readonly, .coordenador-readonly) button[aria-label*="Excluir"],
+body:is(.gestor-readonly, .coordenador-readonly) button[aria-label*="Remover"] {
   display: none !important;
 }
 
-body.gestor-readonly main input:not([type="search"]):not([type="checkbox"]):not([type="radio"]),
-body.gestor-readonly main textarea,
-body.gestor-readonly main [contenteditable="true"] {
+body:is(.gestor-readonly, .coordenador-readonly) main input:not([type="search"]):not([type="checkbox"]):not([type="radio"]):not([data-keep-readonly]),
+body:is(.gestor-readonly, .coordenador-readonly) main textarea,
+body:is(.gestor-readonly, .coordenador-readonly) main [contenteditable="true"] {
   pointer-events: none !important;
   background-color: transparent !important;
   border-color: transparent !important;
   user-select: text;
 }
 
-body.gestor-readonly main button:has(svg.lucide-grip-vertical),
-body.gestor-readonly main button:has(svg.lucide-plus):not([data-keep-readonly]) {
+body:is(.gestor-readonly, .coordenador-readonly) main button:has(svg.lucide-grip-vertical),
+body:is(.gestor-readonly, .coordenador-readonly) main button:has(svg.lucide-plus):not([data-keep-readonly]) {
   display: none !important;
 }
 
-body.gestor-readonly main::before {
+body:is(.gestor-readonly, .coordenador-readonly) main::before {
   content: "Modo Gestor — somente leitura";
   position: fixed;
   top: 0.5rem;
@@ -718,6 +718,10 @@ body.gestor-readonly main::before {
   color: hsl(var(--primary));
   border: 1px solid hsl(var(--primary) / 0.3);
   pointer-events: none;
+}
+
+body.coordenador-readonly main::before {
+  content: "Modo Coordenador — somente leitura";
 }
 
 /* ── Mobile safe-area & touch optimization ──────────────────── */
@@ -739,7 +743,7 @@ body.gestor-readonly main::before {
 
 /* Hide gestor read-only badge on mobile (não cabe sem ocluir) */
 @media (max-width: 767px) {
-  body.gestor-readonly main::before {
+  body:is(.gestor-readonly, .coordenador-readonly) main::before {
     display: none;
   }
 }

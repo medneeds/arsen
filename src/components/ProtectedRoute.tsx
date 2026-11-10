@@ -46,6 +46,20 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   // em todas as telas autenticadas — inclusive /mapa (fora do MainLayout), de onde
   // partem as transferencias. Fonte unica de sectorRequiresSaps em todo o app.
   useSapsSectors(!!user);
+
+  // Coordenador = consulta transversal SOMENTE LEITURA. A classe fica aqui (e nao
+  // no MainLayout) porque /mapa esta fora do MainLayout. Classe propria para nao
+  // colidir com o efeito do modo Gestor, que remove `gestor-readonly`. As regras
+  // visuais estao em index.css; a garantia final de escrita continua sendo o RLS.
+  const isCoordenadorReadOnly = role === "coordenador";
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    document.body.classList.toggle("coordenador-readonly", isCoordenadorReadOnly);
+    return () => {
+      document.body.classList.remove("coordenador-readonly");
+    };
+  }, [isCoordenadorReadOnly]);
+
   const termosJaAceitos = !!user && termosAceitosNaAba.has(chaveTermos(user.id));
   const [hasShownLoading, setHasShownLoading] = useState(false);
   const [showTermsDialog, setShowTermsDialog] = useState(false);
