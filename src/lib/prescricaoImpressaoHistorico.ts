@@ -10,6 +10,11 @@ export interface PrescricaoParaImpressao {
   patient: PatientHeader;
   items: PrescriptionItem[];
   digitalSignature: DigitalSignature | null;
+  /**
+   * Quando a prescrição foi validada (ISO). Vai como data de emissão no
+   * impresso — reimprimir NÃO pode carimbar a data do dia do clique.
+   */
+  validadaEm: string | null;
 }
 
 /** Alergias: formato canônico do banco (uma por linha) → exibição (", "). Igual à PrescricaoPage. */
@@ -42,7 +47,7 @@ export async function carregarPrescricaoParaImpressao(
 ): Promise<PrescricaoParaImpressao | null> {
   const { data: rx } = await supabase
     .from("prescricoes")
-    .select("internacao_id, itens, assinatura_digital")
+    .select("internacao_id, itens, assinatura_digital, criado_em")
     .eq("id", prescricaoId)
     .maybeSingle();
   if (!rx) return null;
@@ -105,9 +110,20 @@ export async function carregarPrescricaoParaImpressao(
     .filter((it): it is PrescriptionItem => !!it && typeof it === "object")
     .map((it) => normalizeLegacyIntervalFlags(it));
 
-  return {
-    patient,
-    items,
-    digitalSignature: ((rx as { assinatura_digital?: unknown }).assinatura_digital as DigitalSignature | null) ?? null,
-  };
+  const digitalSignature =
+    ((rx as { assinatura_digital?: unknown }).assinatura_digital as DigitalSignature | null) ?? null;
+
+  // Data da validação, na mesma regra da faixa "validada às" da tela de
+  // Prescrição: a validação mais recente entre os itens ativos. Sem itens
+  // validados, cai para a assinatura digital e, por último, para a criação.
+  const validadoMs = items
+    .filter((i) => i.status === "active" && i.validatedAt)
+    .map((i) => new Date(i.validatedAt as string).getTime())
+    .filter((t) => !Number.isNaN(t));
+  const valida = (v: unknown) => (typeof v === "string" && !Number.isNaN(new Date(v).getTime()) ? v : null);
+  const validadaEm = validadoMs.length > 0
+    ? new Date(Math.max(...validadoMs)).toISOString()
+    : valida(digitalSignature?.signedAt) ?? valida((rx as { criado_em?: unknown }).criado_em);
+
+  return { patient, items, digitalSignature, validadaEm };
 }

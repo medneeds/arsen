@@ -41,10 +41,10 @@ import { SectionLoader } from "@/components/SectionLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { printDischargeDocument, fromAltaTipoDb, type DischargeDocType, type DischargeDocPayload } from "@/lib/dischargeDocuments";
 import { printEvolution } from "@/lib/printEvolution";
-import type { EvolutionRecord } from "@/hooks/useEvolutions";
+import { mapEvolution, type EvolutionRecord } from "@/hooks/useEvolutions";
+import { resolvePatientHeader, resolveCurrentBedSector } from "@/lib/resolvePatientHeader";
 import { printRequisitionGuideWithGasometriaPrompt } from "@/lib/printRequisitionWithGasometriaPrompt";
 import { printProcedimentoRequest, printTerapeuticoRequest } from "@/pages/RequisicaoUnificadaPage";
-import { fromEvolucaoStatusDb } from "@/lib/evolucaoStatus";
 
 const PRINTABLE_TYPES = new Set<TimelineEventType>([
   "evolution",
@@ -680,40 +680,42 @@ export default function HistoricoPacientePage() {
           .eq("id", rawId)
           .maybeSingle();
         if (!data) { alert("Evolução não encontrada."); setPrintingId(null); return; }
-        const d = data as any;
-        const soap = (d.soap as any) || {};
-        const evoRecord: EvolutionRecord = {
-          id: d.id,
-          patient_id: d.internacao_id ?? null,
-          patient_registry_id: null,
-          archived_at: null,
-          archive_reason: null,
-          patient_name: soap.__patient_name ?? (patientName ?? ""),
-          patient_bed: soap.__patient_bed ?? (patientBed ?? null),
-          patient_sector: soap.__patient_sector ?? (patientSector ?? null),
-          soap_data: { subjective: "", objective: "", assessment: "", plan: "", ...soap },
-          vital_signs: { pa: "", fc: "", fr: "", temp: "", spo2: "", glasgow: "", diurese: "", dor: "", ...(soap.__vital_signs ?? {}) },
-          physical_exam: { general: "", cardiovascular: "", respiratory: "", abdomen: "", neurological: "", extremities: "", skin: "", other: "", ...((d.exame_fisico as any) ?? {}) },
-          status: fromEvolucaoStatusDb(d.status) as EvolutionRecord["status"],
-          evolution_type: soap.__evolution_type ?? undefined,
-          diagnostic_hypotheses: soap.__diagnostic_hypotheses ?? null,
-          cid_primary: soap.__cid_primary ?? null,
-          cid_secondary: soap.__cid_secondary ?? null,
-          validated_at: soap.__validated_at ?? null,
-          validated_by: soap.__validated_by ?? null,
-          validated_by_name: soap.__validated_by_name ?? null,
-          suspended_at: soap.__suspended_at ?? null,
-          suspension_reason: d.motivo_suspensao ?? null,
-          created_by: soap.__created_by ?? d.profissional_id ?? "",
-          created_by_name: soap.__created_by_name ?? null,
-          created_at: d.criado_em ?? d.data_hora,
-          updated_at: d.atualizado_em ?? d.criado_em ?? d.data_hora,
-        };
-        await printEvolution(evoRecord, {
-          patientName: patientName ?? undefined,
-          patientBed: patientBed ?? undefined,
-          patientSector: patientSector ?? undefined,
-        }, printWin);
+        // Mesmo registro e mesmo cabecalho da impressao feita na tela de
+        // Evolucao (EvolutionForm/EvolutionTimeline): mapEvolution + identidade
+        // completa (prontuario, atendimento, nascimento, CPF/CNS, nome social) e
+        // leito/setor atuais. Antes so ia nome/leito/setor e o impresso saia
+        // com o cabecalho incompleto, diferente do gerado ao criar a evolucao.
+        const evoRecord: EvolutionRecord = mapEvolution(data);
+        const internacaoId = (data as { internacao_id?: string | null }).internacao_id ?? null;
+        const nomeBase = evoRecord.patient_name || patientName || null;
+        try {
+          const resolved = await resolvePatientHeader(internacaoId, nomeBase, currentHospital?.id || null, null);
+          let currentBed = evoRecord.patient_bed || patientBed || undefined;
+          let currentSector = evoRecord.patient_sector || patientSector || undefined;
+          if (internacaoId) {
+            const live = await resolveCurrentBedSector(internacaoId);
+            if (live.bed) currentBed = live.bed;
+            if (live.sector) currentSector = live.sector;
+          }
+          await printEvolution(evoRecord, {
+            patientName: resolved.name || nomeBase || undefined,
+            patientBed: currentBed,
+            patientSector: currentSector,
+            patientRecord: resolved.prontuario || undefined,
+            patientAtendimento: resolved.atendimento || undefined,
+            patientSocialName: resolved.socialName || undefined,
+            patientCpf: resolved.cpf || undefined,
+            patientCns: resolved.cns || undefined,
+            patientBirthDate: resolved.birthDate || undefined,
+          }, printWin);
+        } catch (err) {
+          console.error("[Historico] falha ao resolver identidade da evolucao — imprimindo com dados basicos:", err);
+          await printEvolution(evoRecord, {
+            patientName: nomeBase ?? undefined,
+            patientBed: evoRecord.patient_bed || patientBed || undefined,
+            patientSector: evoRecord.patient_sector || patientSector || undefined,
+          }, printWin);
+        }
         setPrintingId(null);
         return;
       }
@@ -748,7 +750,12 @@ export default function HistoricoPacientePage() {
             items: dados.items,
             itemsByCategory,
             digitalSignature: dados.digitalSignature,
-            prescriptionDate: format(new Date(), "dd/MM/yyyy HH:mm:ss", { locale: ptBR }),
+            // Data em que a prescricao foi VALIDADA, nao a do clique em imprimir.
+            prescriptionDate: format(
+              dados.validadaEm ? new Date(dados.validadaEm) : new Date(),
+              "dd/MM/yyyy HH:mm:ss",
+              { locale: ptBR },
+            ),
             hospitalName: currentHospital?.name || "HOSPITAL MUNICIPAL",
           },
         });
