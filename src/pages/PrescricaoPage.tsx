@@ -8239,6 +8239,9 @@ const PrescricaoPage = () => {
   // Guia de Psicotrópicos só dispara para itens controlled=true (catálogo). high_alert puro NÃO gera receita.
   const hasActivePsy = items.some(i => {
     if (i.status !== 'active') return false;
+    // Catálogo regulatório (seed MAV/344) manda primeiro: cobre regras
+    // institucionais como a Fenitoína, que o catálogo do banco não marca como controlada.
+    if (findRegulatoryInfo(i.name)?.controlled) return true;
     const cat = findControlledCatalog?.(i.name);
     if (cat?.controlled) return true;
     // Fallback heurístico legado quando o item não está no catálogo
@@ -11120,6 +11123,7 @@ const PrescricaoPage = () => {
         patient={patient}
         controlledItems={items.filter(i => {
           if (i.status !== 'active') return false;
+          if (findRegulatoryInfo(i.name)?.controlled) return true;
           const cat = findControlledCatalog?.(i.name);
           if (cat?.controlled) return true;
           return !cat && (i.category === 'high_alert' || isPsychotropicMedication(i.name));
