@@ -111,6 +111,27 @@ function buildInstructions(row: CatalogRow, p: PresentationRow): string | undefi
   return parts.length ? parts.join(" • ") : undefined;
 }
 
+/**
+ * Heparina nao fracionada tem DOIS usos com preparo diferente:
+ *   - Ampola 5.000UI/0,25mL -> SUBCUTANEA (profilaxia de TEV, 5.000UI 8/8h ou
+ *     12/12h). Sem diluente, sem bomba, sem tempo/vazao.
+ *   - Frasco-ampola 5.000UI/mL (5mL) -> ENDOVENOSA (bolus + BIC).
+ * O cadastro do banco (apresentacoes_medicamento) tem as duas como EV com a
+ * diluicao da BIC, entao qualquer escolha virava infusao e travava a validacao
+ * cobrando "tempo ou vazao" ate para a profilaxia SC. Aqui a ampola de 0,25mL
+ * passa a entrar como SC e as duas opcoes mostram a via no rotulo. O medico
+ * continua podendo trocar a via no item.
+ */
+function applyPresentationOverrides(row: CatalogRow, p: PresentationRow): PresentationRow {
+  const nome = (row.generic_name || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  if (!/heparina/.test(nome) || /enoxa|dalte|nadro|baixo peso/.test(nome)) return p;
+  const texto = `${p.form ?? ""} ${p.concentration ?? ""}`.toLowerCase();
+  if (/0[,.]25\s*ml/.test(texto)) {
+    return { ...p, route: "Subcutânea", standard_dilution: null, infusion_time: null };
+  }
+  return p;
+}
+
 function rowsToEntries(
   catalog: CatalogRow[],
   presentations: PresentationRow[]
@@ -126,7 +147,8 @@ function rowsToEntries(
   for (const row of catalog) {
     const cat = classifyCategory(row);
     const isStandard = !!row.notes && /HMDM\s*2026/i.test(row.notes);
-    const list = presByMed.get(row.id);
+    const list = presByMed.get(row.id)?.map((p) => applyPresentationOverrides(row, p));
+    const sempreMostrarVia = /heparina/i.test(row.generic_name || "") && (list?.length ?? 0) > 1;
     if (!list || list.length === 0) {
       entries.push({
         id: `cat-${row.id}`,
@@ -155,7 +177,7 @@ function rowsToEntries(
 
     for (const p of list) {
       const chaveFormaConc = `${(p.form ?? "").toLowerCase().trim()}::${(p.concentration ?? "").toLowerCase().trim()}`;
-      const precisaMostrarVia = (mesmaFormaConc.get(chaveFormaConc) ?? 0) > 1 && !!p.route;
+      const precisaMostrarVia = (sempreMostrarVia || (mesmaFormaConc.get(chaveFormaConc) ?? 0) > 1) && !!p.route;
       entries.push({
         id: `cat-${row.id}-${p.form ?? ""}-${p.concentration ?? ""}-${p.route ?? ""}`,
         name: row.generic_name,

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ComponentType } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 import { createPortal } from "react-dom";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -256,6 +257,9 @@ const ALLOWED_PROFILES = new Set([
   "coord_multi",
 ]);
 
+// Papeis do servidor (profissionais.papel) com acesso ao historico.
+const ALLOWED_ROLES = new Set(["admin", "super_admin", "dev", "medico", "gestor", "coordenador"]);
+
 export default function HistoricoPacientePage() {
   // Necessario para os reimpressos: o nome do hospital entra no cabecalho do
   // receituario e do documento medico.
@@ -276,8 +280,14 @@ export default function HistoricoPacientePage() {
   // acontece apos TODOS os hooks (abaixo), para nao violar as regras de hooks com
   // um return adiantado. As queries ficam desabilitadas quando sem acesso, entao
   // nenhum dado e buscado para quem nao pode ver.
+  // O login novo nao grava mais "active_access_profile" (effectiveProfiles e
+  // sempre [] no schema novo), entao a guarda olhava so o storage e barrava
+  // quem logou depois da migracao — ex.: coordenador Lucas (18/11/2026). A
+  // fonte confiavel e o papel do servidor (profissionais.papel via useAuth).
+  const { role } = useAuth();
   const hasAccess = ALLOWED_PROFILES.has(accessProfile)
-    || availableProfiles.some((p) => ALLOWED_PROFILES.has(p));
+    || availableProfiles.some((p) => ALLOWED_PROFILES.has(p))
+    || ALLOWED_ROLES.has(String(role ?? ""));
 
   const patientId = searchParams.get("patientId");
   const patientRegistryId = searchParams.get("patientRegistryId");
