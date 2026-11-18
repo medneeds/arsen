@@ -7,12 +7,12 @@ Instruções permanentes para trabalho neste repositório.
 Arsen é o prontuário eletrônico do **Hospital Municipal Djalma Marques (Socorrão I)**, São Luís/MA. Está em **uso clínico real, à beira do leito**. Erro de software vira erro assistencial.
 
 - Product owner e diretor clínico: **Artur Batista**, médico. Ele aprova antes da execução.
-- Branch de trabalho: **`staging`** (é a que o Dokploy puxa para `dev.arsen.com.br`). A `main` está centenas de commits atrás — **não use a `main` como referência do estado atual**.
+- Branch de trabalho: **`staging`** (é a que o Dokploy puxa para **`dev-hmdm.arsen.com.br`**, com **auto-deploy ligado**: todo push na `staging` publica na hora, sem barreira). A `main` está centenas de commits atrás — **não use a `main` como referência do estado atual**.
 - Outros desenvolvedores commitam na mesma branch. **Sempre `git fetch` antes de escrever.**
 
 ## Regras não negociáveis
 
-1. **Nunca rode migration.** O Supabase é self-hosted em `api.arsen.com.br`. Toda migration é aplicada pelo Artur, manualmente, pelo SQL Editor. Você pode escrever o arquivo `.sql` e explicar; não pode aplicar.
+1. **Banco: leitura livre, escrita só com aval caso a caso.** O Supabase de teste da staging é self-hosted em `api.arsen.com.br`. Consultas de leitura você roda direto; qualquer escrita (DDL, DML, função, RLS, trigger, migration) só é executada depois do "pode rodar" do Artur para aquele comando específico. Ver seção "Banco de dados — o fluxo".
 2. **Antes de propor qualquer mudança de banco** (tabela, coluna, RLS, trigger), pare e avise: o que muda, por quê, risco, reversibilidade. Espere aval.
 3. **Prefira solução sem banco.** Verifique se o modelo atual já suporta o que se quer antes de propor mudança estrutural.
 4. **Nunca commite nem dê push sem autorização explícita, caso a caso.**
@@ -62,16 +62,18 @@ Rode os testes que cobrem o que você mudou. Se nenhum cobrir e a mudança tocar
 
 ## Arquitetura de dados — leia antes de qualquer query
 
-Três níveis:
+O schema `public` usa **nomes em português**. Três níveis (conferido nas FKs do banco em 18/11/2026):
 
 | Tabela | O que é |
 |---|---|
-| `patient_registry` | identidade permanente da pessoa / prontuário |
-| `patient_encounters` | atendimento/internação; abre na entrada, fecha na alta/óbito/transferência externa |
-| `patients` | **LEITOS**, não pessoas (nome historicamente enganoso; tem `bed_number`, `is_vacant`) |
+| `pacientes` | identidade permanente da pessoa / prontuário |
+| `internacoes` | atendimento/internação; tem `paciente_id` → `pacientes` e `leito_id` → `leitos` |
+| `leitos` | o leito físico (tem `setor_id` → `setores`) |
 
-- **Todo dado clínico ancora em `encounter_id`**, nunca no id da linha de leito — senão há vazamento de dado ao reusar ou transferir leito.
-- `patient_id` muda a cada transferência; `patient_registry_id` / `registry_id` acompanham a pessoa. Filtrar por `patient_id` onde se quer a pessoa já causou bug de reabertura de atendimento.
+- **Todo dado clínico ancora em `internacao_id`** (`prescricoes`, `evolucoes`, `altas`, `transferencias`...), nunca no `leito_id` — senão há vazamento de dado ao reusar ou transferir leito.
+- `leito_id` muda a cada transferência (`transferencias` registra `leito_origem_id` / `leito_destino_id`); `paciente_id` acompanha a pessoa. Filtrar por leito onde se quer a pessoa já causou bug de reabertura de atendimento.
+
+> **Nomes antigos em inglês** (`patient_registry`, `patient_encounters`, `patients`) **não existem neste banco.** Ainda são referenciados em `supabase/functions/dev-console-ops`, `backup-restore`, `export-user-data` e em `src/tests/transfer-history-simulation.ts` — esses trechos falham contra o banco atual. Não use esses nomes em código novo.
 
 ## Padrões de falha recorrentes neste projeto
 
@@ -106,26 +108,43 @@ O layout da AIH só existe no DOM com o diálogo aberto: extrair o print root pa
 
 ## O que só o Artur pode validar
 
-Nada visual é verificável por você: interface, layout de impressão, comportamento de diálogo. Entregue com a lista explícita do que ele precisa testar em `dev.arsen.com.br`.
+Nada visual é verificável por você: interface, layout de impressão, comportamento de diálogo. Entregue com a lista explícita do que ele precisa testar em `dev-hmdm.arsen.com.br`.
 
 ## Banco de dados — o fluxo, sem exceção
 
-Você **não tem** e **não deve ter** acesso de escrita ao banco. O Supabase é self-hosted em `api.arsen.com.br`, e quem aplica qualquer coisa é o Artur, pelo SQL Editor do Studio.
+O Supabase de teste da staging é self-hosted em `api.arsen.com.br` (compose `supabase` no projeto "Arsen Dev" do Dokploy). É o mesmo banco que a aplicação da staging usa — confirmado nas variáveis do Dokploy (`VITE_SUPABASE_URL=https://api.arsen.com.br`).
+
+**Acesso direto (desde 18/11/2026).** Nas sessões do Claude Code no ambiente de nuvem "arsen", o SQL roda direto pelo endpoint `POST https://api.arsen.com.br/pg/query` (pg-meta via Kong), com a `service_role` nos headers `apikey` e `Authorization: Bearer`. Conecta como `supabase_admin` — acesso total, ignora RLS. **A chave nunca vai para arquivo, commit ou repositório.** Ela não está salva no ambiente: se a sessão não a tiver, peça ao Artur.
 
 O fluxo é este:
 
-1. Você escreve o SQL e explica o que faz, qual o risco e se é reversível.
-2. O Artur revisa e roda no Studio.
-3. Ele cola o retorno aqui.
-4. Só então você conclui qualquer coisa sobre o estado do banco.
+1. **Leitura** (SELECT, `pg_get_functiondef`, inspeção de RLS/FK/colunas): roda direto, sem pedir.
+2. **Escrita** (DDL, DML, função, RLS, trigger, migration): você mostra o SQL e explica o que faz, o risco e se é reversível. **Só executa depois do "pode rodar" do Artur para aquele comando.** Aval não se estende ao próximo.
+3. Depois de executar, **confirme o efeito com uma consulta de leitura** — não conclua pelo retorno do comando.
 
-**Nunca conclua o estado do banco lendo `supabase/migrations`.** Commitar migration não a aplica. Este projeto já teve os dois desvios: migration no git nunca aplicada, e função criada direto no banco sem migration nenhuma.
+**Nunca conclua o estado do banco lendo `supabase/migrations`.** Commitar migration não a aplica. Este projeto já teve os dois desvios: migration no git nunca aplicada, e função criada direto no banco sem migration nenhuma. O banco **não tem** a tabela `supabase_migrations.schema_migrations` — não há registro no banco de quais arquivos já foram aplicados.
 
-Quando precisar saber algo do banco, escreva a consulta para o Artur rodar. Regras para essas consultas:
+Regras para as consultas:
 
-- **Uma consulta por vez.** O SQL Editor mostra apenas o resultado da última quando se roda várias juntas.
-- `"Success. No rows returned"` é ambíguo: pode ser DDL sem retorno, ou tabela/coluna inexistente. Desempate com uma consulta isolada.
+- O endpoint retorna só o resultado do último statement: **uma consulta por vez** quando precisar do retorno.
+- Retorno vazio é ambíguo: pode ser DDL sem retorno, ou filtro sem linhas. Desempate com uma consulta isolada. Tabela/coluna inexistente vem como erro `42P01`/`42703`.
 - Para inspecionar função: `pg_get_functiondef(oid)`, não `prosrc` — o `prosrc` omite assinatura, `SECURITY DEFINER`, `search_path` e grants.
+
+**O `.env` versionado engana.** Ele aponta para `https://newsb.arsen.com.br`; o Dokploy sobrescreve com as variáveis da aplicação. A fonte da verdade sobre qual banco a staging usa são as variáveis no Dokploy.
+
+## Dokploy
+
+Painel em `https://painel-hmdm.arsen.com.br`. Nas sessões no ambiente "arsen", o token de API é injetado pelo proxy (header `x-api-key`) — você não o vê nem o envia. Use a API REST (`/api/project.all`, `/api/application.one?applicationId=...`) ou `npx @dokploy/cli` (sem instalar no projeto).
+
+O token enxerga um projeto, **"Arsen Dev"**:
+
+| Serviço | Tipo | Detalhe |
+|---|---|---|
+| Arsen Dev | aplicação | GitHub `medneeds/arsen`, branch `staging`, railpack, auto-deploy, domínio `dev-hmdm.arsen.com.br` |
+| supabase | compose | o Supabase de `api.arsen.com.br` |
+
+- **Leitura livre:** status, deployments, logs de build e runtime, configuração, nomes de variáveis. Não imprima valores de variáveis secretas.
+- **Ação só com aval caso a caso:** deploy, redeploy, restart, stop, mudança de variável, exclusão — da aplicação **e** do compose do Supabase.
 
 **Antes de propor qualquer migration**, verifique se o modelo de dados atual já resolve o problema. Solução na camada de apresentação ou lógica é sempre preferível a mudança estrutural.
 
