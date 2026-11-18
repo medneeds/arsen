@@ -1,3 +1,4 @@
+import { useIsCoordenador } from "@/hooks/useIsCoordenador";
 import React, { useState, useRef, useMemo, useCallback, useEffect } from "react";
 import { formatPresentation } from "@/lib/formatPresentation";
 import { createPortal, flushSync } from "react-dom";
@@ -4839,6 +4840,12 @@ async function resolveProfissionalId(userId: string | null | undefined): Promise
 
 const PrescricaoPage = () => {
   const { user, loading: authLoading } = useAuth();
+  // Coordenador so valida prescricao se for coordenador MEDICO (regra HMDM,
+  // 18/11/2026). Coordenacao de enfermagem/multi ou sem conselho/cargo
+  // preenchido: consulta e impressao, sem validar.
+  const { isCoordenador, kind: coordKind } = useIsCoordenador();
+  const coordCannotValidate = isCoordenador && coordKind !== 'medico';
+  const COORD_VALIDATION_MSG = "Coordenação de enfermagem/multiprofissional não valida prescrição — apenas o médico ou o coordenador médico.";
   // Perfil do medico logado (tabela profiles). Usado como fallback de nome/CRM
   // na reimpressao da Guia ATM: ate entao o nome so existia dentro do
   // SignPrescriptionDialog, e a 2a via estourava ReferenceError quando nao
@@ -6051,6 +6058,7 @@ const PrescricaoPage = () => {
   // Após o corte das 05h, revalidar gera NOVA VERSÃO (parent_id) preservando o
   // snapshot do dia anterior (auditoria/CCIH).
   const applyValidation = useCallback((action: { type: 'all' } | { type: 'item'; itemId: string }) => {
+    if (coordCannotValidate) { toast.error(COORD_VALIDATION_MSG); return; }
     const now = new Date().toISOString();
     const cutoff = setSeconds(setMinutes(setHours(startOfDay(new Date()), 5), 0), 0);
     const isPast = isAfter(new Date(), cutoff);
@@ -6148,6 +6156,7 @@ const PrescricaoPage = () => {
 
   // Solicita validação em bloco — checa alertas antes; pode pular senha se sessão ativa
   const requestValidateAll = useCallback(() => {
+    if (coordCannotValidate) { toast.error(COORD_VALIDATION_MSG); return; }
     const activeItems = items.filter(i => i.status === 'active');
     if (activeItems.length === 0) {
       toast.error("Nenhum item ativo para validar");
@@ -6185,6 +6194,7 @@ const PrescricaoPage = () => {
 
   // Solicita validação individual — checa alertas relativos ao item
   const requestValidateItem = useCallback((id: string) => {
+    if (coordCannotValidate) { toast.error(COORD_VALIDATION_MSG); return; }
     const miss = itemMissingMap.get(id);
     if (miss && miss.length > 0) {
       toast.error("Validação bloqueada — preencha os campos obrigatórios", {
@@ -9364,7 +9374,7 @@ const PrescricaoPage = () => {
                   variant="ghost"
                   size="icon"
                   onClick={requestValidateAll}
-                  disabled={allItemsValidated}
+                  disabled={allItemsValidated || coordCannotValidate}
                   aria-label="Validar prescrição"
                   className={cn(
                     "h-7 w-7 transition-colors",
@@ -10605,7 +10615,7 @@ const PrescricaoPage = () => {
             size="sm"
             variant={prescriptionLocked ? "outline" : "default"}
             onClick={requestValidateAll}
-            disabled={allItemsValidated}
+            disabled={allItemsValidated || coordCannotValidate}
             className={cn(
               "gap-2 text-xs",
               !prescriptionLocked && "bg-released hover:bg-released text-white"

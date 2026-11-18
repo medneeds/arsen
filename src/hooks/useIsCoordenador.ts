@@ -16,6 +16,27 @@ import { supabase } from "@/integrations/supabase/client";
  * tem coluna equivalente → `kind` DEGRADADO para `null` (a UI cai no rótulo
  * genérico "Coord. Multi").
  */
+/**
+ * Sub-tipo do coordenador a partir do cadastro (profissionais.conselho/cargo),
+ * ja que o schema novo nao tem coluna propria. CRM ou cargo "medic..." =>
+ * medico; COREN ou cargo "enferm..." => enfermagem; outro conselho => multi;
+ * nada preenchido => null (tratado como NAO medico onde isso importa, ex.:
+ * validacao de prescricao).
+ */
+export function deriveCoordKind(
+  conselho?: string | null,
+  cargo?: string | null,
+): "medico" | "enfermagem" | "multi" | null {
+  const norm = (v?: string | null) =>
+    (v || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+  const c = norm(conselho);
+  const g = norm(cargo);
+  if (/\bcrm\b/.test(c) || /medic/.test(g)) return "medico";
+  if (/\bcoren\b/.test(c) || /enferm/.test(g)) return "enfermagem";
+  if (c || g) return "multi";
+  return null;
+}
+
 export function useIsCoordenador(): {
   isCoordenador: boolean;
   kind: "medico" | "enfermagem" | "multi" | null;
@@ -38,14 +59,14 @@ export function useIsCoordenador(): {
     setLoading(true);
     supabase
       .from("profissionais")
-      .select("papel")
+      .select("papel, conselho, cargo")
       .eq("user_id", user.id)
       .maybeSingle()
       .then(({ data }) => {
         if (cancelled) return;
-        const isCoord = (data as { papel?: string } | null)?.papel === "coordenador";
-        // MIGRAÇÃO: sem coluna de sub-tipo → kind degradado para null.
-        setState({ isCoordenador: isCoord, kind: null });
+        const row = data as { papel?: string; conselho?: string | null; cargo?: string | null } | null;
+        const isCoord = row?.papel === "coordenador";
+        setState({ isCoordenador: isCoord, kind: isCoord ? deriveCoordKind(row?.conselho, row?.cargo) : null });
         setLoading(false);
       });
     return () => {
