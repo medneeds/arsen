@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Copy, IdCard, ChevronDown, ShieldAlert, Pin } from "lucide-react";
+import { Copy, IdCard, ChevronDown, ChevronRight, ShieldAlert } from "lucide-react";
 import { format, parseISO, isValid } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
@@ -127,7 +127,8 @@ export function PatientIdentityHeader({
         <button
           type="button"
           onClick={pinControl.onToggle}
-          title={pinControl.pinned ? "Desafixar (recolhe ao tirar o mouse)" : "Fixar painel aberto"}
+          title={pinControl.pinned ? "Recolher painel" : "Abrir painel"}
+          aria-label={pinControl.pinned ? "Recolher painel" : "Abrir painel"}
           aria-pressed={pinControl.pinned}
           className={cn(
             "absolute -left-2 -top-2 z-10 inline-flex h-6 w-6 items-center justify-center rounded-full border shadow-sm transition-colors",
@@ -136,7 +137,7 @@ export function PatientIdentityHeader({
               : "border-border bg-card text-muted-foreground hover:border-primary/30 hover:bg-primary/10 hover:text-primary",
           )}
         >
-          <Pin className={cn("h-3 w-3", pinControl.pinned && "fill-current")} />
+          <ChevronRight className="h-3.5 w-3.5" />
         </button>
       )}
 

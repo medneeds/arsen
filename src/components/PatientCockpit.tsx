@@ -136,7 +136,9 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
   const [showFullId, setShowFullId] = useState(false);
   const [recordEditOpen, setRecordEditOpen] = useState(false);
   const [pinned, setPinned] = useState(false);
-  const [hovering, setHovering] = useState(false);
+  // Abertura/fechamento SO por clique (pedido HMDM 19/11/2026): a expansao ao
+  // passar o mouse abria o painel sem querer. "pinned" = painel aberto.
+  const hovering = false;
   const [docDialogOpen, setDocDialogOpen] = useState(false);
   const [roundPrintOpen, setRoundPrintOpen] = useState(false);
   const [receituarioOpen, setReceituarioOpen] = useState(false);
@@ -404,8 +406,6 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
   return (
     <TooltipProvider delayDuration={300}>
       <aside
-        onMouseEnter={() => variant === "fixed" && setHovering(true)}
-        onMouseLeave={() => variant === "fixed" && !pinned && setHovering(false)}
         className={cn(
           variant === "fixed" && [
             // Sticky: entra no fluxo do documento — sem sobreposição de conteúdo.
@@ -437,7 +437,6 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
             type="button"
             title="Expandir painel do paciente"
             onClick={() => setPinned(true)}
-            onMouseEnter={() => setHovering(true)}
             className={cn(
               "group relative flex flex-col items-center justify-center w-full",
               // Altura generosa limitada ao viewport: o rail cresce o suficiente para
