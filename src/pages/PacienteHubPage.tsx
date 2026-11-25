@@ -518,7 +518,7 @@ export default function PacienteHubPage() {
     // CID sem coluna → usa o preservado no JSON soap.__cid_*).
     const { data: inter } = await supabase
       .from("internacoes")
-      .select("historia_clinica, conduta_inicial, hipotese_diagnostica, exames_relevantes, previsao_alta, peso_kg, paciente:pacientes(alergias)")
+      .select("historia_clinica, conduta_inicial, hipotese_diagnostica, exames_relevantes, previsao_alta, previsao_alta_hospitalar, peso_kg, paciente:pacientes(alergias)")
       .eq("id", ctx.patientId)
       .maybeSingle();
 
@@ -527,7 +527,7 @@ export default function PacienteHubPage() {
     const pe: any = ev?.exame_fisico || {};
     const interRow = (inter ?? {}) as {
       historia_clinica?: string | null; conduta_inicial?: string | null; hipotese_diagnostica?: string | null;
-      exames_relevantes?: string | null; previsao_alta?: string | null; peso_kg?: number | null;
+      exames_relevantes?: string | null; previsao_alta?: string | null; previsao_alta_hospitalar?: string | null; peso_kg?: number | null;
       paciente?: { alergias?: string | null } | { alergias?: string | null }[] | null;
     };
     const pacRel = Array.isArray(interRow.paciente) ? interRow.paciente[0] : interRow.paciente;
@@ -599,7 +599,7 @@ export default function PacienteHubPage() {
       plan: splitDischargePrediction(a.initial_conduct || soap.plan).plan,
       cidPrimary: a.cid_primary || "",
       cidSecondary: a.cid_secondary,
-      dischargePredictionLabel: interRow.previsao_alta || splitDischargePrediction(a.initial_conduct || soap.plan).label || "—",
+      dischargePredictionLabel: interRow.previsao_alta || interRow.previsao_alta_hospitalar || splitDischargePrediction(a.initial_conduct || soap.plan).label || "—",
       hypotheses: hyp.length ? hyp : undefined,
       complementares: interRow.exames_relevantes || undefined,
       especialidades: richHtmlToPlainText(soap.especialidades as string | undefined).trim() || undefined,

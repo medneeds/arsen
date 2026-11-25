@@ -4,6 +4,7 @@ import { calcDIH, getMapDihAnchorDate } from "@/lib/dihCalc";
 import { useSectorStayTimer } from "@/hooks/useSectorStayTimer";
 import { isExtraBed } from "@/utils/bedNaming";
 import { formatDateBR } from "@/utils/dateUtils";
+import { ClinicalFlagBadges } from "@/components/ClinicalFlagBadges";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -958,11 +959,28 @@ export function UtiPatientCard({
                     className="hidden md:flex shrink-0 items-center gap-1 text-muted-foreground bg-muted/50 px-2 py-1 rounded-md cursor-not-allowed"
                     title="Edite em Edição Avançada ou via Evolução Médica"
                   >
-                    <span className="text-xs">Previsão de Alta:</span>
+                    <span className="text-xs">Alta {derivedUtiUnit}:</span>
                     <span className="text-xs font-medium w-20 truncate">
                       {previsaoAltaDate || "—"}
                     </span>
                   </div>
+
+                  {/* Previsao de alta HOSPITALAR — coluna propria, distinta da alta da UTI/UCI. */}
+                  <div
+                    className="hidden md:flex shrink-0 items-center gap-1 text-muted-foreground bg-muted/50 px-2 py-1 rounded-md cursor-not-allowed"
+                    title="Previsão de alta hospitalar — edite via Evolução Médica"
+                  >
+                    <span className="text-xs">Alta hosp.:</span>
+                    <span className="text-xs font-medium w-20 truncate">
+                      {formatDateBR(patient.hospitalDischargePrediction || "") || "—"}
+                    </span>
+                  </div>
+
+                  {/* Precaucao/isolamento e paliativo (internacoes) */}
+                  <ClinicalFlagBadges
+                    isPalliative={patient.isPalliative}
+                    isolationPrecautions={patient.isolationPrecautions}
+                  />
 
                   {/* Critical badge removido — alertas críticos tratados em outro local */}
                 </div>

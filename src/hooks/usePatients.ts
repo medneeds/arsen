@@ -103,6 +103,9 @@ export function usePatients(department?: Department, sector?: string) {
       // Exceção: previsão de alta agora tem coluna própria (internacoes.previsao_alta).
       utiAdmissionDate: active?.data_admissao_uti ? [active.data_admissao_uti] : [],
       utiDischargePrediction: active?.previsao_alta ? [active.previsao_alta] : [],
+      hospitalDischargePrediction: active?.previsao_alta_hospitalar ?? '',
+      isPalliative: active?.paliativo === true,
+      isolationPrecautions: active?.precaucao_isolamento ?? '',
       utiAllergies: [],
       utiAdmissionReason: [],
       utiCurrentStatus: [],
@@ -197,7 +200,7 @@ export function usePatients(department?: Department, sector?: string) {
               ),
               internacoes (
                 id, status, data_entrada, data_alta, queixa_principal, historia_clinica,
-                hipotese_diagnostica, conduta_inicial, exames_relevantes, pendencias, agenda, previsao_alta, data_admissao_uti,
+                hipotese_diagnostica, conduta_inicial, exames_relevantes, pendencias, agenda, previsao_alta, previsao_alta_hospitalar, paliativo, precaucao_isolamento, data_admissao_uti,
                 setor_classificacao_id, leito_id, paciente_id, registrado_por,
                 paciente:pacientes (
                   id, nome_completo, nome_social, data_nascimento, prontuario
@@ -419,6 +422,9 @@ export function usePatients(department?: Department, sector?: string) {
       if (updates.schedule !== undefined) internacaoUpdates.agenda = updates.schedule.join('\n');
       if (updates.internmentStatus !== undefined) internacaoUpdates.status = updates.internmentStatus;
       if (updates.utiDischargePrediction !== undefined) internacaoUpdates.previsao_alta = (updates.utiDischargePrediction || []).join('\n') || null;
+      if (updates.hospitalDischargePrediction !== undefined) internacaoUpdates.previsao_alta_hospitalar = updates.hospitalDischargePrediction?.trim() || null;
+      if (updates.isPalliative !== undefined) internacaoUpdates.paliativo = updates.isPalliative === true;
+      if (updates.isolationPrecautions !== undefined) internacaoUpdates.precaucao_isolamento = updates.isolationPrecautions?.trim() || null;
       if (updates.utiAdmissionDate !== undefined) internacaoUpdates.data_admissao_uti = (updates.utiAdmissionDate || [])[0] || null;
 
       // Campos de cadastro do paciente.
@@ -780,6 +786,9 @@ export function usePatients(department?: Department, sector?: string) {
                 medicalResponsibility: undefined,
                 utiAdmissionDate: [],
                 utiDischargePrediction: [],
+                hospitalDischargePrediction: '',
+                isPalliative: false,
+                isolationPrecautions: '',
                 utiAllergies: [],
                 utiAdmissionReason: [],
                 utiCurrentStatus: [],

@@ -201,7 +201,7 @@ export function AdmissionConsultDialog({ open, onOpenChange, patient, onChanged 
       // initial_conduct→conduta_inicial). CID primário/secundário sem coluna → null.
       const { data: inter } = await supabase
         .from("internacoes")
-        .select("historia_clinica, conduta_inicial, hipotese_diagnostica, exames_relevantes, previsao_alta, peso_kg, paciente:pacientes(alergias)")
+        .select("historia_clinica, conduta_inicial, hipotese_diagnostica, exames_relevantes, previsao_alta, previsao_alta_hospitalar, peso_kg, paciente:pacientes(alergias)")
         .eq("id", patient.id)
         .maybeSingle();
       const i: any = inter || {};
@@ -213,7 +213,8 @@ export function AdmissionConsultDialog({ open, onOpenChange, patient, onChanged 
         initial_conduct: i.conduta_inicial ?? null,
         hypotheses: i.hipotese_diagnostica ?? null,
         exames_relevantes: i.exames_relevantes ?? null,
-        previsao_alta: i.previsao_alta ?? null,
+        // UTI/UCI grava em previsao_alta; enfermaria/emergencia em previsao_alta_hospitalar.
+        previsao_alta: i.previsao_alta || i.previsao_alta_hospitalar || null,
         peso_kg: i.peso_kg ?? null,
         alergias: pacRel?.alergias ?? null,
       });

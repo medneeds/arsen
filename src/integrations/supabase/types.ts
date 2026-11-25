@@ -921,8 +921,12 @@ export type Database = {
           leito_id: string
           numero_atendimento: string | null
           paciente_id: string
+          paliativo: boolean
           pendencias: string | null
           peso_kg: number | null
+          precaucao_isolamento: string | null
+          previsao_alta: string | null
+          previsao_alta_hospitalar: string | null
           queixa_principal: string | null
           registrado_por: string | null
           setor_classificacao_id: string | null
@@ -943,8 +947,12 @@ export type Database = {
           leito_id: string
           numero_atendimento?: string | null
           paciente_id: string
+          paliativo?: boolean
           pendencias?: string | null
           peso_kg?: number | null
+          precaucao_isolamento?: string | null
+          previsao_alta?: string | null
+          previsao_alta_hospitalar?: string | null
           queixa_principal?: string | null
           registrado_por?: string | null
           setor_classificacao_id?: string | null
@@ -965,8 +973,12 @@ export type Database = {
           leito_id?: string
           numero_atendimento?: string | null
           paciente_id?: string
+          paliativo?: boolean
           pendencias?: string | null
           peso_kg?: number | null
+          precaucao_isolamento?: string | null
+          previsao_alta?: string | null
+          previsao_alta_hospitalar?: string | null
           queixa_principal?: string | null
           registrado_por?: string | null
           setor_classificacao_id?: string | null

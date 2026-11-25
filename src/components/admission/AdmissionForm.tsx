@@ -512,6 +512,10 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
   const isUti = selectedPathway === "uti";
   const isEmergencia = selectedPathway === "emergencia";
   const isEnfermaria = selectedPathway === "enfermaria";
+  // Previsao de alta PARAMETRIZADA por caminho: na UTI/UCI e a alta do setor
+  // (internacoes.previsao_alta); em enfermaria/emergencia e a alta hospitalar
+  // (internacoes.previsao_alta_hospitalar). Sao datas diferentes.
+  const predictionTitle = isUti ? "Previsão de alta da UTI/UCI" : "Previsão de alta hospitalar";
   // Dados cirurgicos: secao OPCIONAL da via enfermaria, habilitada pelo toggle
   // "paciente cirurgico" (nao mais uma via propria).
   const isCirurgica = isEnfermaria && surgicalPatient;
@@ -1366,7 +1370,11 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
           // mapa como utiDischargePrediction e exibida no card). Antes so ia pro
           // texto do SOAP, entao o chip "Previsao de Alta" do card ficava "—".
           // Guarda a data ISO (predictionDate); "sem previsao" grava null.
-          previsao_alta: noPrediction ? null : (predictionDate || null),
+          // UTI/UCI -> previsao_alta; demais caminhos -> previsao_alta_hospitalar.
+          // So a coluna do caminho atual e escrita: a outra fica como esta.
+          ...(isUti
+            ? { previsao_alta: noPrediction ? null : (predictionDate || null) }
+            : { previsao_alta_hospitalar: noPrediction ? null : (predictionDate || null) }),
           status: "ativa",
         } as any)
         .eq("id", patient.id);
@@ -1441,6 +1449,8 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
                         ` | anestesia ${surgAnestesia.trim() || "—"}` +
                         ` | caráter ${surgCaraterLabel || "—"}`
                       : ""),
+        // Rotulo fixo "Previsao de alta:" — splitDischargePrediction e o normalizador
+        // da admissao dependem dele. A distincao UTI x hospitalar fica nas colunas.
         plan: `${plan}\n\nPrevisão de alta: ${dischargePredictionLabel}`,
       };
 
@@ -1764,7 +1774,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
               </div>
             </div>
             <div>
-              <Label className="text-xs flex items-center gap-1"><CalendarDays className="h-3 w-3" /> Previsão de alta</Label>
+              <Label className="text-xs flex items-center gap-1"><CalendarDays className="h-3 w-3" /> {predictionTitle}</Label>
               <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-3 items-end mt-1">
                 <div>
                   <Label className="text-xs flex items-center gap-1"><Hash className="h-3 w-3" /> Dias previstos</Label>
@@ -1979,7 +1989,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
           </AccordionSectionItem>
 
           {/* 13. Previsao de alta */}
-          <AccordionSectionItem id="em-previsao" complete={completion.previsao} icon={CalendarDays} iconColor="text-muted-foreground" label="Previsão de alta">
+          <AccordionSectionItem id="em-previsao" complete={completion.previsao} icon={CalendarDays} iconColor="text-muted-foreground" label={predictionTitle}>
             <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-3 items-end">
               <div>
                 <Label className="text-xs flex items-center gap-1"><Hash className="h-3 w-3" /> Dias previstos</Label>
@@ -2305,7 +2315,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
               </div>
             </AccordionSectionItem>
 
-            <AccordionSectionItem id="nm-previsao" complete={completion.previsao} icon={CalendarDays} iconColor="text-warning-on-soft" label="Previsão de alta" hint="Dias e data sincronizados">
+            <AccordionSectionItem id="nm-previsao" complete={completion.previsao} icon={CalendarDays} iconColor="text-warning-on-soft" label={predictionTitle} hint="Dias e data sincronizados">
               <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-3 items-end">
                 <div>
                   <Label className="text-xs flex items-center gap-1"><Hash className="h-3 w-3" /> Dias de internação previstos</Label>

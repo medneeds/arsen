@@ -82,6 +82,7 @@ import { SignalInternalTransferDialog } from "./SignalInternalTransferDialog";
 import { OperationalRelocationDialog } from "./OperationalRelocationDialog";
 import { DischargeStatusRibbon } from "./DischargeStatusRibbon";
 import { sectorLabelFromCode } from "@/lib/hospitalSectors";
+import { ClinicalFlagBadges } from "@/components/ClinicalFlagBadges";
 
 // Helper function to format date input as DD/MM/YYYY
 const formatDateInput = (value: string): string => {
@@ -1623,6 +1624,15 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                               <span className="tracking-widest opacity-70 transition-all duration-300">{displayName}</span>
                             ) : patient.name ? patient.name : <span className="preserve-case text-muted-foreground italic">Clique para adicionar nome</span>}
                           </p>
+                          {/* Precaucao, paliativo e previsao de alta hospitalar (internacoes) */}
+                          {!namesHidden && (
+                            <ClinicalFlagBadges
+                              className="mt-1"
+                              isPalliative={patient.isPalliative}
+                              isolationPrecautions={patient.isolationPrecautions}
+                              hospitalDischargePrediction={patient.hospitalDischargePrediction}
+                            />
+                          )}
                           
                           {/* Allocation Pending Badge - Hidden when status bar is visible, kept for dialog functionality */}
                           <div className={cn(allocationStatusBarConfig && "sr-only")}>

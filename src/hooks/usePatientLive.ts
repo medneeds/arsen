@@ -47,6 +47,7 @@ const INTERNACAO_SELECT = `
   id, status, data_entrada, data_alta,
   queixa_principal, historia_clinica, hipotese_diagnostica, conduta_inicial,
   exames_relevantes, pendencias, agenda, setor_classificacao_id, leito_id, paciente_id,
+  previsao_alta, previsao_alta_hospitalar, paliativo, precaucao_isolamento,
   paciente:pacientes(id, nome_completo, nome_social, data_nascimento),
   leito:leitos(numero),
   setor:setores(nome)
@@ -84,7 +85,12 @@ function rowToPatient(row: any): Patient {
     utiAllergies: [],
     utiDevices: [],
     utiDailyConducts: [],
-    utiDischargePrediction: [],
+    // Previsoes/precaucao/paliativo: colunas proprias de internacoes (fonte unica
+    // com a evolucao e o mapa de leitos).
+    utiDischargePrediction: row.previsao_alta ? [row.previsao_alta] : [],
+    hospitalDischargePrediction: row.previsao_alta_hospitalar ?? "",
+    isPalliative: row.paliativo === true,
+    isolationPrecautions: row.precaucao_isolamento ?? "",
     utiCulturesAntibiotics: [],
     utiCurrentStatus: [],
     utiAdmissionDate: undefined,

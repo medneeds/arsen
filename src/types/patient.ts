@@ -89,6 +89,12 @@ export interface Patient {
   // UTI-specific fields
   utiAdmissionDate?: string[];
   utiDischargePrediction?: string[];
+  /** Previsao de alta hospitalar (internacoes.previsao_alta_hospitalar, ISO). Diferente da alta da UTI. */
+  hospitalDischargePrediction?: string;
+  /** Cuidados paliativos (internacoes.paliativo). */
+  isPalliative?: boolean;
+  /** Precaucao/isolamento vigente (internacoes.precaucao_isolamento). */
+  isolationPrecautions?: string;
   utiAllergies?: string[];
   utiAdmissionReason?: string[];
   utiCurrentStatus?: string[];

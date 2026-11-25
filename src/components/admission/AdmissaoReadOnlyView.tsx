@@ -89,7 +89,7 @@ export function AdmissaoReadOnlyView({ internacaoId }: Props) {
   const [d0, setD0] = useState<D0 | null>(null);
   const [hist, setHist] = useState<{
     historia_clinica?: string | null; conduta_inicial?: string | null; hipotese_diagnostica?: string | null;
-    exames_relevantes?: string | null; previsao_alta?: string | null; peso_kg?: number | null; alergias?: string | null;
+    exames_relevantes?: string | null; previsao_alta?: string | null; previsao_alta_hospitalar?: string | null; peso_kg?: number | null; alergias?: string | null;
   } | null>(null);
 
   useEffect(() => {
@@ -104,7 +104,7 @@ export function AdmissaoReadOnlyView({ internacaoId }: Props) {
           .order("data_hora", { ascending: false }),
         supabase
           .from("internacoes")
-          .select("historia_clinica, conduta_inicial, hipotese_diagnostica, exames_relevantes, previsao_alta, peso_kg, paciente:pacientes(alergias)")
+          .select("historia_clinica, conduta_inicial, hipotese_diagnostica, exames_relevantes, previsao_alta, previsao_alta_hospitalar, peso_kg, paciente:pacientes(alergias)")
           .eq("id", internacaoId)
           .maybeSingle(),
       ]);
@@ -132,7 +132,7 @@ export function AdmissaoReadOnlyView({ internacaoId }: Props) {
       }
       const interRow = inter as {
         historia_clinica?: string | null; conduta_inicial?: string | null; hipotese_diagnostica?: string | null;
-        exames_relevantes?: string | null; previsao_alta?: string | null; peso_kg?: number | null;
+        exames_relevantes?: string | null; previsao_alta?: string | null; previsao_alta_hospitalar?: string | null; peso_kg?: number | null;
         paciente?: { alergias?: string | null } | { alergias?: string | null }[] | null;
       } | null;
       const pacRel = Array.isArray(interRow?.paciente) ? interRow?.paciente[0] : interRow?.paciente;
@@ -141,7 +141,8 @@ export function AdmissaoReadOnlyView({ internacaoId }: Props) {
         conduta_inicial: interRow.conduta_inicial ?? null,
         hipotese_diagnostica: interRow.hipotese_diagnostica ?? null,
         exames_relevantes: interRow.exames_relevantes ?? null,
-        previsao_alta: interRow.previsao_alta ?? null,
+        // UTI/UCI grava em previsao_alta; enfermaria/emergencia em previsao_alta_hospitalar.
+        previsao_alta: interRow.previsao_alta || interRow.previsao_alta_hospitalar || null,
         peso_kg: interRow.peso_kg ?? null,
         alergias: pacRel?.alergias ?? null,
       } : null);
