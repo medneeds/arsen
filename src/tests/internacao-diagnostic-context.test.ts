@@ -16,6 +16,8 @@ import {
   diagnosticContextLines,
   formatPredictionDate,
   DIAGNOSTIC_SNAPSHOT_KEY,
+  hasActivePrecaution,
+  NO_PRECAUTION,
 } from "../lib/internacaoDiagnosticContext.ts";
 
 test("UTI/UCI e hospitalar mapeiam para colunas diferentes", () => {
@@ -157,4 +159,25 @@ test("data legada em texto livre passa como esta", () => {
   assert.strictEqual(formatPredictionDate("30/11/2026 (D+5)"), "30/11/2026 (D+5)");
   assert.strictEqual(formatPredictionDate("2026-11-30T00:00:00Z"), "30/11/2026");
   assert.strictEqual(formatPredictionDate(""), "");
+});
+
+// ─── "Sem precaução" registra ausencia, nao e isolamento ───────────────────
+
+test("'Sem precaução' (opcao do seletor) nao conta como precaucao vigente", () => {
+  assert.strictEqual(hasActivePrecaution(NO_PRECAUTION), false);
+  assert.strictEqual(hasActivePrecaution("Sem precaução"), false);
+  assert.strictEqual(hasActivePrecaution("  sem precaucao "), false, "sem acento e caixa baixa tambem");
+  assert.strictEqual(hasActivePrecaution("SEM PRECAUÇÃO"), false);
+});
+
+test("vazio/nulo nao e precaucao; presets reais sao", () => {
+  for (const v of [null, undefined, "", "   "]) assert.strictEqual(hasActivePrecaution(v), false);
+  for (const v of ["Contato", "Gotículas", "Aerossóis", "Contato + Gotículas", "Reverso (Imunossuprimido)", "MRSA - contato"]) {
+    assert.strictEqual(hasActivePrecaution(v), true, v);
+  }
+});
+
+test("no impresso 'Sem precaução' continua escrito (ausencia registrada e informacao)", () => {
+  const lines = diagnosticContextLines({ utiDischargePrediction: "", hospitalDischargePrediction: "", isPalliative: false, isolationPrecautions: NO_PRECAUTION });
+  assert.deepStrictEqual(lines[0], { label: "Precaução / Isolamento", value: "Sem precaução" });
 });

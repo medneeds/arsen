@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { format, parseISO, isValid as isValidDate } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ItemListEditor } from "@/components/ItemListEditor";
+import { hasActivePrecaution } from "@/lib/internacaoDiagnosticContext";
 
 export interface DiagnosticsPanelProps {
   cidPrimary?: string;
@@ -148,7 +149,8 @@ export function DiagnosticsPanel({
     onIsolationChange(value);
   };
 
-  const hasIsolation = !!isolationPrecautions?.trim();
+  // "Sem precaução" registra ausencia: nao vira selo nem destaque de isolamento.
+  const hasIsolation = hasActivePrecaution(isolationPrecautions);
   const hasAnyPrediction = !!(utiDischargePrediction?.trim() || hospitalDischargePrediction?.trim());
   const [predictionEnabled, setPredictionEnabled] = useState<boolean>(hasAnyPrediction);
 

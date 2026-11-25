@@ -49,6 +49,20 @@ export function fromInternacaoRow(row: InternacaoDiagRow | null | undefined): Pa
   };
 }
 
+/** Opcao do seletor que REGISTRA a ausencia de precaucao (gravada como texto). */
+export const NO_PRECAUTION = "Sem precaução";
+
+/**
+ * Ha precaucao/isolamento VIGENTE? Vazio e "Sem precaução" nao contam: o mapa e
+ * o painel nao podem exibir "Sem precaução" como selo de isolamento.
+ */
+export function hasActivePrecaution(v: string | null | undefined): boolean {
+  const s = (v ?? "").trim();
+  if (!s) return false;
+  const norm = (x: string) => x.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  return norm(s) !== norm(NO_PRECAUTION);
+}
+
 /** Valor gravado na coluna: texto vazio vira null; paliativo e sempre boolean. */
 export function toColumnValue(field: DiagnosticContextField, value: string | boolean): string | boolean | null {
   if (field === "isPalliative") return value === true;

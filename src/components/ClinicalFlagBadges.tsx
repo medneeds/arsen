@@ -1,6 +1,7 @@
 import { HeartHandshake, ShieldAlert, CalendarClock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDateBR } from "@/utils/dateUtils";
+import { hasActivePrecaution } from "@/lib/internacaoDiagnosticContext";
 
 /**
  * Marcacoes clinicas da internacao exibidas no mapa de leitos. Fonte unica:
@@ -16,11 +17,12 @@ export function ClinicalFlagBadges({
 }: {
   isPalliative?: boolean;
   isolationPrecautions?: string;
-  /** Quando informado, mostra o chip "Alta hosp." (cards fora da UTI). */
+  /** Quando informado, mostra o chip "Prev. alta hosp." (cards fora da UTI). */
   hospitalDischargePrediction?: string;
   className?: string;
 }) {
-  const isolation = (isolationPrecautions ?? "").trim();
+  // "Sem precaução" e ausencia registrada: nao exibe selo de isolamento no mapa.
+  const isolation = hasActivePrecaution(isolationPrecautions) ? (isolationPrecautions ?? "").trim() : "";
   const hospital = (hospitalDischargePrediction ?? "").trim();
   if (!isPalliative && !isolation && !hospital) return null;
   return (
@@ -46,10 +48,10 @@ export function ClinicalFlagBadges({
       {hospital && (
         <span
           className="inline-flex items-center gap-1 rounded-md bg-muted/50 px-1.5 py-0.5 text-xs text-muted-foreground"
-          title="Previsão de alta hospitalar"
+          title="Previsão de alta hospitalar (não é a data da alta efetiva)"
         >
           <CalendarClock className="h-3 w-3 shrink-0" aria-hidden />
-          Alta hosp.: <span className="font-medium">{formatDateBR(hospital)}</span>
+          Prev. alta hosp.: <span className="font-medium">{formatDateBR(hospital)}</span>
         </span>
       )}
     </div>

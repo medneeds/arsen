@@ -957,9 +957,9 @@ export function UtiPatientCard({
                   {/* Discharge Prediction — somente leitura (edite via Edição Avançada / Evolução) */}
                   <div
                     className="hidden md:flex shrink-0 items-center gap-1 text-muted-foreground bg-muted/50 px-2 py-1 rounded-md cursor-not-allowed"
-                    title="Edite em Edição Avançada ou via Evolução Médica"
+                    title="Previsão de alta da UTI/UCI (não é a data da alta efetiva) — edite em Edição Avançada ou via Evolução Médica"
                   >
-                    <span className="text-xs">Alta {derivedUtiUnit}:</span>
+                    <span className="text-xs">Prev. alta {derivedUtiUnit}:</span>
                     <span className="text-xs font-medium w-20 truncate">
                       {previsaoAltaDate || "—"}
                     </span>
@@ -968,9 +968,9 @@ export function UtiPatientCard({
                   {/* Previsao de alta HOSPITALAR — coluna propria, distinta da alta da UTI/UCI. */}
                   <div
                     className="hidden md:flex shrink-0 items-center gap-1 text-muted-foreground bg-muted/50 px-2 py-1 rounded-md cursor-not-allowed"
-                    title="Previsão de alta hospitalar — edite via Evolução Médica"
+                    title="Previsão de alta hospitalar (não é a data da alta efetiva) — edite via Evolução Médica"
                   >
-                    <span className="text-xs">Alta hosp.:</span>
+                    <span className="text-xs">Prev. alta hosp.:</span>
                     <span className="text-xs font-medium w-20 truncate">
                       {formatDateBR(patient.hospitalDischargePrediction || "") || "—"}
                     </span>
