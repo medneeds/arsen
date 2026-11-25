@@ -21,6 +21,8 @@ import {
   diagnosticContextLines,
   fromInternacaoRow,
   resolveDiagnosticContextForDisplay,
+  hasActivePrecaution,
+  toHypothesesList,
   type InternacaoDiagRow,
   type PatientDiagnosticContext,
 } from "@/lib/internacaoDiagnosticContext";
@@ -261,18 +263,47 @@ export const printEvolution = async (
   const diagLines = diagnosticContextLines(
     resolveDiagnosticContextForDisplay(evo.status === "validated", evo.soap_data, liveDiag),
   );
-  const hasDiagnostics = hypothesesText || cidPrimary || cidSecondary || diagLines.length > 0;
-
+  // ── Diagnosticos (compacto): CID 1/2 em tabela + UMA linha de caixas com as
+  // previsoes de alta (por extenso: nao confundir com a alta efetiva), precaucao
+  // e paliativo. Precaucao so ganha destaque quando VIGENTE ("Sem precaução" nao).
+  const situShort: Record<string, string> = {
+    "Precaução / Isolamento": "Precaução",
+    "Cuidados paliativos": "Paliativo",
+  };
+  const situWidth = (label: string) =>
+    label.startsWith("Previsão") ? "1.3fr" : label.startsWith("Precaução") ? "1fr" : ".7fr";
+  const situHtml = diagLines.length > 0
+    ? `<div class="ev-situ" style="grid-template-columns:${diagLines.map((l) => situWidth(l.label)).join(" ")}">${diagLines
+        .map((l) => {
+          const warn = l.label.startsWith("Precaução") && hasActivePrecaution(l.value) ? " ev-warn" : "";
+          return `<div class="ev-kv${warn}"><span>${escape(situShort[l.label] ?? l.label)}</span><b>${escape(l.value)}</b></div>`;
+        })
+        .join("")}</div>`
+    : "";
+  const hasDiagnostics = cidPrimary || cidSecondary || diagLines.length > 0;
   const diagnosticsHtml = hasDiagnostics
     ? `
       <h2 class="nz-section">Diagnósticos</h2>
-      <table class="nz" style="font-size:8.5pt;margin-bottom:3pt"><tbody>
-        ${cidPrimary ? `<tr><th style="width:140px">CID-10 Primário</th><td>${escape(cidPrimary)}</td></tr>` : ""}
-        ${cidSecondary ? `<tr><th>CID-10 Secundário</th><td>${escape(cidSecondary)}</td></tr>` : ""}
-        ${diagLines.map((l) => `<tr><th>${escape(l.label)}</th><td>${escape(l.value)}</td></tr>`).join("")}
-        ${hypothesesText ? `<tr><th>Hipóteses Diagnósticas</th><td>${escape(hypothesesText)}</td></tr>` : ""}
-      </tbody></table>
+      ${cidPrimary || cidSecondary ? `<table class="nz" style="font-size:8.5pt;margin-bottom:3pt"><tbody>
+        ${cidPrimary ? `<tr><th style="width:132px;white-space:nowrap">CID-10 Primário</th><td>${escape(cidPrimary)}</td></tr>` : ""}
+        ${cidSecondary ? `<tr><th style="width:132px;white-space:nowrap">CID-10 Secundário</th><td>${escape(cidSecondary)}</td></tr>` : ""}
+      </tbody></table>` : ""}
+      ${situHtml}
     `
+    : "";
+
+  // ── Hipoteses diagnosticas — secao propria, numerada. Antes saiam numa celula
+  // unica e as quebras de linha se perdiam ("A B C" emendado). Fonte: array do
+  // soap (diagnosticHypotheses) ou o texto legado __diagnostic_hypotheses.
+  const soapHypo = (evo.soap_data as { diagnosticHypotheses?: unknown } | undefined)?.diagnosticHypotheses;
+  const hypothesesList = toHypothesesList(soapHypo).length > 0 ? toHypothesesList(soapHypo) : toHypothesesList(hypothesesText);
+  const hypothesesHtml = hypothesesList.length > 0
+    ? `<h2 class="nz-section">Hipóteses Diagnósticas</h2>
+       <table style="width:100%;border-collapse:collapse;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;margin-bottom:3pt"><tbody>
+         ${hypothesesList.map((h, i) =>
+           `<tr><td style="width:18pt;padding:2pt 4pt;font-weight:700;color:#0054A6;vertical-align:top;font-size:8pt">${i + 1}.</td><td style="padding:2pt 4pt;font-size:8.5pt;line-height:1.35">${escape(h)}</td></tr>`
+         ).join("")}
+       </tbody></table>`
     : "";
 
   // Antecedentes clínicos — buscar em múltiplas fontes:
@@ -312,7 +343,7 @@ export const printEvolution = async (
       }).join('')}</ul>`
     : '';
 
-  let sectionsHtml = diagnosticsHtml + antecedentesHtml;
+  let sectionsHtml = diagnosticsHtml + hypothesesHtml + antecedentesHtml;
 
   if (intercurrence) {
     const evoTypeLabel = {
@@ -330,45 +361,39 @@ export const printEvolution = async (
   } else {
     const s = evo.soap_data;
     const v = evo.vital_signs;
-    const vitalsRow = [
-      v.pa && `PA ${v.pa}`,
-      v.fc && `FC ${v.fc}`,
-      v.fr && `FR ${v.fr}`,
-      v.temp && `T ${v.temp}°C`,
-      v.spo2 && `SpO<sub>2</sub> ${v.spo2}%`,
-      v.glasgow && `Glasgow ${v.glasgow}`,
-      v.diurese && `Diurese ${v.diurese} mL/24h`,
-      v.dor && `Dor ${v.dor}`,
-    ]
-      .filter(Boolean)
-      .join(" • ");
+    // ── Sinais vitais em faixa de celulas: rotulo pequeno, valor em destaque e a
+    // unidade menor ao lado (nada quebra linha). So entram os preenchidos.
+    const vitalsCells = [
+      { l: "PA", v: v.pa, u: "mmHg" },
+      { l: "FC", v: v.fc, u: "bpm" },
+      { l: "FR", v: v.fr, u: "irpm" },
+      { l: "Temp", v: v.temp, u: "°C" },
+      { l: "SpO<sub>2</sub>", v: v.spo2, u: "%" },
+      { l: "Glasgow", v: v.glasgow, u: "" },
+      { l: "Diurese", v: v.diurese, u: "mL/24h" },
+      { l: "Dor", v: v.dor, u: "" },
+    ].filter((c) => String(c.v ?? "").trim());
+    const vitalsHtml = vitalsCells.length > 0
+      ? `<table class="ev-vitals"><tr>${vitalsCells
+          .map((c) => `<td><span>${c.l}</span><b>${escape(String(c.v).trim())}</b>${c.u ? `<i>${c.u}</i>` : ""}</td>`)
+          .join("")}</tr></table>`
+      : "";
 
-    const examRows = EXAM_LABELS.filter((f) => evo.physical_exam[f.key])
-      .map(
-        (f) =>
-          `<tr><th style="width:120px">${f.label}</th><td>${escape(evo.physical_exam[f.key])}</td></tr>`
-      )
-      .join("");
+    // ── Exame fisico em 2 colunas (pares rotulo | texto), mesmo padrao de tabela.
+    const examFilled = EXAM_LABELS.filter((f) => evo.physical_exam[f.key]);
+    const examRowsArr: string[] = [];
+    for (let i = 0; i < examFilled.length; i += 2) {
+      const x = examFilled[i];
+      const y = examFilled[i + 1];
+      examRowsArr.push(
+        `<tr><th>${x.label}</th><td>${escape(evo.physical_exam[x.key])}</td>`
+        + (y ? `<th>${y.label}</th><td>${escape(evo.physical_exam[y.key])}</td>` : `<th class="ev-empty"></th><td class="ev-empty"></td>`)
+        + `</tr>`,
+      );
+    }
+    const examRows = examRowsArr.join("");
 
-    // Unifica Subjetivo + Avaliação em "Evolução" preservando HTML rico
-    const subjHtml = toRichHtml(s.subjective);
-    const assessHtml = toRichHtml(s.assessment);
-    const evolucaoHtml = [subjHtml, assessHtml].filter((h) => richHtmlToPlainText(h)).join("");
-    const evolucaoOut = evolucaoHtml || "<em>—</em>";
-
-    sectionsHtml += `
-      ${
-        vitalsRow
-          ? `<h2 class="nz-section">Sinais Vitais</h2><div style="padding:5pt 7pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:8pt">${vitalsRow}</div>`
-          : ""
-      }
-      ${examRows ? `<h2 class="nz-section">Exame Físico</h2><table class="nz" style="font-size:8.5pt"><tbody>${examRows}</tbody></table>` : ""}
-      ${
-        richHtmlToPlainText(toRichHtml(s.objective))
-          ? `<h2 class="nz-section">Exames Complementares</h2><div class="nz-rich" style="padding:6pt 8pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:8.5pt;line-height:1.35">${renderRich(s.objective)}</div>`
-          : ""
-      }
-      ${(() => {
+    const devCol = (() => {
         // ── Dispositivos invasivos — compacto, linha corrida ─────────────
         // A seção só existe se houver dispositivo com rótulo utilizável, e
         // cada item mostra APENAS o que está preenchido: sem data não sai
@@ -396,19 +421,17 @@ export const printEvolution = async (
           const tom = deviceAlertTone(dias);
           const cor = tom === "red" ? "#b91c1c" : tom === "amber" ? "#b45309" : "#047857";
 
-          return `<span style="white-space:nowrap">${escape(rotulo)}`
-            + (dataTxt ? ` <span style="color:#64748b">${escape(dataTxt)}</span>` : "")
-            + (dias !== null ? ` <strong style="color:${cor}">D${dias}</strong>` : "")
-            + `</span>`;
+          const sufixo = (dataTxt ? ` <span style="color:#64748b">${escape(dataTxt)}</span>` : "")
+            + (dias !== null ? ` <strong style="color:${cor}">D${dias}</strong>` : "");
+          return `${escape(rotulo)}${sufixo ? `<span style="white-space:nowrap">${sufixo}</span>` : ""}`;
         }).filter(Boolean);
 
         if (itens.length === 0) return "";
-        return `<h2 class="nz-section">Dispositivos Invasivos</h2>`
-          + `<div style="padding:5pt 7pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:8pt;line-height:1.6">`
-          + itens.join(` <span style="color:#cbd5e1">&middot;</span> `)
-          + `</div>`;
-      })()}
-      ${(() => {
+        return `<div class="ev-col"><div class="ev-h">Dispositivos invasivos</div><ul class="ev-box ev-ul">`
+          + itens.map((it) => `<li>${it}</li>`).join("")
+          + `</ul></div>`;
+      })();
+    const culCol = (() => {
         // ── Culturas — mesma regra dos dispositivos: só sai se houver ─────
         // culturesHtml é irmão de devices dentro do soap_data e sofria do
         // mesmo esquecimento: existia na tela e em nenhum impresso.
@@ -421,10 +444,9 @@ export const printEvolution = async (
         if (typeof culturas !== "string") return "";
         const html = toRichHtml(culturas);
         if (!richHtmlToPlainText(html).trim()) return "";
-        return `<h2 class="nz-section">Culturas</h2>`
-          + `<div class="nz-rich" style="padding:5pt 7pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:8pt;line-height:1.35">${html}</div>`;
-      })()}
-      ${(() => {
+        return `<div class="ev-col"><div class="ev-h">Culturas</div><div class="ev-box nz-rich">${html}</div></div>`;
+      })();
+    const atbCol = (() => {
         // ── Antibioticos em curso — irmao de culturas/devices no soap_data.
         // Mesma regra: so sai se houver conteudo (rich text). GAP: existia na
         // tela read-only e no soap, mas nunca no impresso (culturas ja tinha
@@ -433,9 +455,34 @@ export const printEvolution = async (
         if (typeof atb !== "string") return "";
         const html = toRichHtml(atb);
         if (!richHtmlToPlainText(html).trim()) return "";
-        return `<h2 class="nz-section">Antibióticos em curso</h2>`
-          + `<div class="nz-rich" style="padding:5pt 7pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:8pt;line-height:1.35">${html}</div>`;
-      })()}
+        return `<div class="ev-col"><div class="ev-h">Antibióticos em curso</div><div class="ev-box nz-rich">${html}</div></div>`;
+      })();
+
+    // ── Dispositivos | Culturas | Antibioticos lado a lado (so as colunas com
+    // conteudo; nenhuma caixa vazia). O h2 oculto marca a linha para a quebra
+    // de pagina (sectionRows divide por h2) e o bloco nao se parte entre paginas.
+    const triCols = [devCol, culCol, atbCol].filter(Boolean);
+    const triWidths = triCols.length === 3 ? "1fr 1.25fr 1.15fr" : triCols.map(() => "1fr").join(" ");
+    const triGroupHtml = triCols.length > 0
+      ? `<h2 class="nz-section ev-hidden"></h2><div class="ev-g3" style="grid-template-columns:${triWidths}">${triCols.join("")}</div>`
+      : "";
+
+
+    // Unifica Subjetivo + Avaliação em "Evolução" preservando HTML rico
+    const subjHtml = toRichHtml(s.subjective);
+    const assessHtml = toRichHtml(s.assessment);
+    const evolucaoHtml = [subjHtml, assessHtml].filter((h) => richHtmlToPlainText(h)).join("");
+    const evolucaoOut = evolucaoHtml || "<em>—</em>";
+
+    sectionsHtml += `
+      ${vitalsHtml ? `<h2 class="nz-section">Sinais Vitais</h2>${vitalsHtml}` : ""}
+      ${examRows ? `<h2 class="nz-section">Exame Físico</h2><table class="nz ev-exam" style="font-size:8.5pt"><tbody>${examRows}</tbody></table>` : ""}
+      ${
+        richHtmlToPlainText(toRichHtml(s.objective))
+          ? `<h2 class="nz-section">Exames Complementares</h2><div class="nz-rich" style="padding:6pt 8pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:8.5pt;line-height:1.35">${renderRich(s.objective)}</div>`
+          : ""
+      }
+      ${triGroupHtml}
       <h2 class="nz-section">Evolução</h2>
       <div class="nz-rich" style="padding:6pt 8pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:8.5pt;line-height:1.35">
         ${evolucaoOut}
@@ -570,6 +617,31 @@ export const printEvolution = async (
       .nz-rich u { text-decoration: underline; }
       /* O header do paciente repete via <thead> nativo — sem position:fixed. */
       #patient-header-repeat { background: #fff; }
+      /* Diagnosticos: caixas de previsao de alta / precaucao / paliativo em uma linha. */
+      .ev-situ { display: grid; gap: 4pt; margin-bottom: 3pt; }
+      .ev-kv { border: .75pt solid #cbd5e1; border-radius: 3pt; padding: 3pt 6pt; background: #f8fafc; }
+      .ev-kv span { display: block; white-space: nowrap; font-size: 6.8pt; text-transform: uppercase; letter-spacing: .3pt; color: #64748b; font-weight: 700; }
+      .ev-kv b { font-size: 9pt; color: #0f172a; }
+      .ev-warn { border-color: #f59e0b; background: #fffbeb; } .ev-warn b { color: #92400e; }
+      /* Sinais vitais em faixa de celulas. */
+      .ev-vitals { width: 100%; border-collapse: separate; border-spacing: 3pt 0; table-layout: fixed; margin: 0 -3pt; }
+      .ev-vitals td { border: .75pt solid #e2e8f0; border-radius: 3pt; padding: 3pt 5pt; background: #f8fafc; }
+      .ev-vitals span { display: block; font-size: 6.8pt; text-transform: uppercase; color: #64748b; font-weight: 700; letter-spacing: .3pt; }
+      .ev-vitals b { font-size: 9pt; white-space: nowrap; }
+      .ev-vitals i { font-style: normal; font-size: 7pt; color: #64748b; margin-left: 2pt; white-space: nowrap; }
+      /* Exame fisico em 2 colunas. */
+      table.nz.ev-exam { table-layout: fixed; }
+      table.nz.ev-exam th { width: 108px; vertical-align: top; white-space: nowrap; }
+      table.nz.ev-exam td { vertical-align: top; line-height: 1.35; }
+      table.nz.ev-exam .ev-empty { background: transparent; }
+      /* Dispositivos | Culturas | Antibioticos lado a lado. */
+      h2.nz-section.ev-hidden { display: none; }
+      .ev-g3 { display: grid; column-gap: 8pt; align-items: stretch; margin-top: 6pt; break-inside: avoid; }
+      .ev-col { display: flex; flex-direction: column; }
+      .ev-h { font-size: 8pt; font-weight: 700; text-transform: uppercase; letter-spacing: .5pt; color: #fff; background: #0054A6; padding: 2.5pt 6pt; border-radius: 3pt 3pt 0 0; }
+      .ev-box { flex: 1; border: 1px solid #e2e8f0; border-top: none; background: #f8fafc; padding: 4pt 6pt; border-radius: 0 0 3pt 3pt; font-size: 8.3pt; line-height: 1.35; margin: 0; }
+      .ev-ul { list-style: none; } .ev-ul li { margin: 0 0 1.5pt 0; padding-left: 7pt; text-indent: -7pt; }
+      .ev-ul li::before { content: "▪"; color: #94a3b8; margin-right: 3pt; font-size: 6pt; }
     `,
   });
 
