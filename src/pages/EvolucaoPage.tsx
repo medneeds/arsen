@@ -29,6 +29,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { useEvolutions, EvolutionRecord } from "@/hooks/useEvolutions";
+import { buildDiagnosticsSlots, toHypothesesList } from "@/components/evolution/diagnosticsSlots";
 import { usePatientCid } from "@/hooks/usePatientCid";
 import { usePatientLive } from "@/hooks/usePatientLive";
 import { mergeLiveIntoLocal, diffPendencyToggles, pendencyKeys } from "@/lib/pendenciasSync";
@@ -38,7 +39,6 @@ import { usePatientDiagnosticContext } from "@/hooks/usePatientDiagnosticContext
 import { isWithin24h } from "@/hooks/useDischargeAlert";
 import { EvolutionForm } from "@/components/evolution/EvolutionForm";
 import { EvolutionTimeline } from "@/components/evolution/EvolutionTimeline";
-import { DiagnosticsPanel } from "@/components/evolution/DiagnosticsPanel";
 import type { Patient } from "@/types/patient";
 import { getEffectiveAdmissionDate } from "@/lib/dihCalc";
 import { isSemAlergia } from "@/lib/allergyStatus";
@@ -248,6 +248,7 @@ const EvolucaoPage = () => {
     isPalliative, isolationPrecautions,
     updateUtiDischargePrediction, updateHospitalDischargePrediction,
     updateIsPalliative, updateIsolationPrecautions,
+    refresh: refreshDiagnosticContext,
   } = usePatientDiagnosticContext(initialPatientId || null);
 
   // Live patient row (realtime sync with Painel Clínico)
@@ -351,10 +352,10 @@ const EvolucaoPage = () => {
   const handleClearDiagnostics = () => {
     if (cidPrimary) updateCidPrimary("");
     if (cidSecondary?.length) updateCidSecondary([]);
-    if (utiDischargePrediction) updateUtiDischargePrediction("");
-    if (hospitalDischargePrediction) updateHospitalDischargePrediction("");
-    if (isPalliative) updateIsPalliative(false);
-    if (isolationPrecautions) updateIsolationPrecautions("");
+    // Previsoes, paliativo e precaucao NAO sao limpos aqui: sao estado da
+    // internacao (internacoes.*, lidos pelo mapa de leitos), nao conteudo
+    // replicado da evolucao anterior. Limpar daqui apagaria, por exemplo, a
+    // precaucao de contato do paciente no mapa. Alteram-se nos proprios campos.
     setDiagnosticHypotheses([]);
     setDiagnosticsReplicated(false);
   };
@@ -533,9 +534,11 @@ const EvolucaoPage = () => {
             : [];
       setAntecedentes(resolvedAntec);
     }
-    // Pré-carregar previsão de alta da origem — já está no hook via realtime,
-    // mas garantir que o campo reflita o valor salvo no banco ao duplicar
-    // (o hook usePatientDiagnosticContext já faz isso automaticamente via fetch)
+    // Previsoes de alta (UTI/UCI e hospitalar), paliativo e precaucao NAO vem da
+    // fonte duplicada: sao estado da internacao, lidos de internacoes.* pelo
+    // usePatientDiagnosticContext (ao montar e por realtime). Inclui a previsao
+    // gravada na admissao. Recarrega aqui para refletir o banco no momento da copia.
+    void refreshDiagnosticContext();
     setShowNewForm(true);
     setDiagnosticsReplicated(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -598,36 +601,29 @@ const EvolucaoPage = () => {
     );
   }
 
-  // Painel Diagnósticos SEGMENTADO (igual à admissão): Diagnóstico (main) +
-  // Hipóteses + Antecedentes em seções separadas. A Revisão usa o painel completo.
-  const makeDiagnosticsPanel = (render: "all" | "main" | "hypotheses" | "antecedentes") => (
-    <DiagnosticsPanel
-      render={render}
-      cidPrimary={cidPrimary}
-      cidSecondary={cidSecondary}
-      onCidPrimaryChange={updateCidPrimary}
-      onCidSecondaryChange={updateCidSecondary}
-      utiDischargePrediction={utiDischargePrediction}
-      onUtiDischargePredictionChange={updateUtiDischargePrediction}
-      hospitalDischargePrediction={hospitalDischargePrediction}
-      onHospitalDischargePredictionChange={updateHospitalDischargePrediction}
-      isPalliative={isPalliative}
-      onPalliativeChange={updateIsPalliative}
-      isolationPrecautions={isolationPrecautions}
-      onIsolationChange={updateIsolationPrecautions}
-      diagnosticHypotheses={diagnosticHypotheses}
-      onDiagnosticHypothesesChange={(v) => setDiagnosticHypotheses(Array.isArray(v) ? v : v.split("\n").filter(Boolean))}
-      antecedentes={antecedentes}
-      onAntecedentesChange={setAntecedentes}
-      showUtiPrediction={isUtiSector}
-      replicated={diagnosticsReplicated}
-      onClearAll={handleClearDiagnostics}
-    />
-  );
-  const diagnosticsSlot = makeDiagnosticsPanel("main");
-  const hypothesesSlot = makeDiagnosticsPanel("hypotheses");
-  const antecedentesSlot = makeDiagnosticsPanel("antecedentes");
-  const diagnosticsReviewSlot = makeDiagnosticsPanel("all");
+  // Painel Diagnósticos SEGMENTADO (igual à admissão) — fonte unica em
+  // buildDiagnosticsSlots, a mesma usada pelo rascunho reaberto na linha do tempo.
+  const { diagnosticsSlot, hypothesesSlot, antecedentesSlot, diagnosticsReviewSlot } = buildDiagnosticsSlots({
+    cidPrimary,
+    cidSecondary,
+    onCidPrimaryChange: updateCidPrimary,
+    onCidSecondaryChange: updateCidSecondary,
+    utiDischargePrediction,
+    onUtiDischargePredictionChange: updateUtiDischargePrediction,
+    hospitalDischargePrediction,
+    onHospitalDischargePredictionChange: updateHospitalDischargePrediction,
+    isPalliative,
+    onPalliativeChange: updateIsPalliative,
+    isolationPrecautions,
+    onIsolationChange: updateIsolationPrecautions,
+    diagnosticHypotheses,
+    onDiagnosticHypothesesChange: (v) => setDiagnosticHypotheses(toHypothesesList(v)),
+    antecedentes,
+    onAntecedentesChange: setAntecedentes,
+    showUtiPrediction: isUtiSector,
+    replicated: diagnosticsReplicated,
+    onClearAll: handleClearDiagnostics,
+  });
 
   // Banner de alerta quando alta prevista está nas próximas 24h
   const dischargeAlert = isWithin24h(utiDischargePrediction) && (
@@ -809,6 +805,8 @@ const EvolucaoPage = () => {
               hypothesesSlot={hypothesesSlot}
               antecedentesSlot={antecedentesSlot}
               diagnosticsReviewSlot={diagnosticsReviewSlot}
+              diagnosticHypotheses={diagnosticHypotheses}
+              antecedentes={antecedentes}
               showDevices={isUtiSector}
               planItems={planItems}
               onPlanItemsChange={setPlanItems}
@@ -866,6 +864,7 @@ const EvolucaoPage = () => {
             cidPrimary={cidPrimary}
             cidSecondary={Array.isArray(cidSecondary) ? cidSecondary.join(", ") : cidSecondary}
             diagnosticsSlot={diagnosticsReviewSlot}
+            showUtiPrediction={isUtiSector}
             showDevices={isUtiSector}
             onUpdate={updateEvolution}
             onValidate={validateEvolution}

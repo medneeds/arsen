@@ -13,7 +13,7 @@ import { format, parseISO, isValid as isValidDate } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ItemListEditor } from "@/components/ItemListEditor";
 
-interface DiagnosticsPanelProps {
+export interface DiagnosticsPanelProps {
   cidPrimary?: string;
   cidSecondary?: string[];
   onCidPrimaryChange?: (value: string) => void;

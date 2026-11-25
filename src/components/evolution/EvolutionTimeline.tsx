@@ -22,7 +22,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { cn } from "@/lib/utils";
 import { EvolutionRecord } from "@/hooks/useEvolutions";
 import { EvolutionForm } from "./EvolutionForm";
-import { DiagnosticsPanel } from "./DiagnosticsPanel";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePatientDiagnosticContext } from "@/hooks/usePatientDiagnosticContext";
 import {
@@ -30,6 +29,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
+import { buildDiagnosticsSlots, toHypothesesList } from "@/components/evolution/diagnosticsSlots";
 
 /**
  * Data valida ou null. Blinda contra created_at/validated_at/admissionDate nulos
@@ -72,6 +72,8 @@ interface EvolutionTimelineProps {
   allergiesOverride?: string;
   /** Exibe a seção Dispositivos/Culturas/ATB (só UTI/UCI nas evoluções de rotina). */
   showDevices?: boolean;
+  /** Setor UTI/UCI/monitorado: exibe tambem a previsao de alta da UTI (igual a evolucao nova). */
+  showUtiPrediction?: boolean;
   onUpdate: (id: string, updates: any) => Promise<boolean>;
   onValidate: (id: string) => Promise<boolean>;
   onSuspend: (id: string, reason: string) => Promise<boolean>;
@@ -89,7 +91,7 @@ const STATUS_CONFIG = {
 };
 
 export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
-  evolutions, admissionDate, patientRecord, cidPrimary, cidSecondary, patientId, diagnosticsSlot, showDevices = true, onUpdate, onValidate, onSuspend, onDelete, onDuplicate, onLocalDirtyChange,
+  evolutions, admissionDate, patientRecord, cidPrimary, cidSecondary, patientId, diagnosticsSlot, showDevices = true, showUtiPrediction = false, onUpdate, onValidate, onSuspend, onDelete, onDuplicate, onLocalDirtyChange,
 }) => {
   const { user } = useAuth();
   const { currentHospital } = useHospital();
@@ -774,42 +776,39 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                       </div>
                       );
                     })() : (() => {
-                      const localDiagnosticsSlot = isEditable ? (
-                        <DiagnosticsPanel
-                          // CID editável por evolução: grava no soap DESTA evolução
-                          // (local.soap), que handleSave -> updateEvolution persiste.
-                          // Antes os handlers eram no-op (() => {}), então o CID
-                          // (primário E secundário) nunca salvava ao EDITAR uma
-                          // evolução — só o formulário de NOVA evolução gravava.
-                          cidPrimary={((data.soap as any).__cid_primary as string) ?? cidPrimary ?? ""}
-                          cidSecondary={(() => {
-                            const s = (data.soap as any).__cid_secondary;
-                            return Array.isArray(s) ? s : (typeof s === "string" && s ? [s] : []);
-                          })()}
-                          onCidPrimaryChange={(v) => updateLocal(evo.id, "soap", "__cid_primary", v)}
-                          onCidSecondaryChange={(vals) => updateLocal(evo.id, "soap", "__cid_secondary", vals)}
-                          diagnosticHypotheses={
-                            Array.isArray((data.soap as any).diagnosticHypotheses)
-                              ? (data.soap as any).diagnosticHypotheses
-                              : typeof (data.soap as any).diagnosticHypotheses === "string"
-                                ? (data.soap as any).diagnosticHypotheses : []
-                          }
-                          onDiagnosticHypothesesChange={(v) =>
-                            updateLocal(evo.id, "soap", "diagnosticHypotheses",
-                              Array.isArray(v) ? v : v.split("\n").filter(Boolean))
-                          }
-                          antecedentes={Array.isArray((data.soap as any).antecedentes) ? (data.soap as any).antecedentes : []}
-                          onAntecedentesChange={(items) => updateLocal(evo.id, "soap", "antecedentes", items)}
-                          hospitalDischargePrediction={diagCtx.hospitalDischargePrediction}
-                          onHospitalDischargePredictionChange={diagCtx.updateHospitalDischargePrediction}
-                          utiDischargePrediction={diagCtx.utiDischargePrediction}
-                          onUtiDischargePredictionChange={diagCtx.updateUtiDischargePrediction}
-                          isPalliative={diagCtx.isPalliative}
-                          onPalliativeChange={diagCtx.updateIsPalliative}
-                          isolationPrecautions={diagCtx.isolationPrecautions}
-                          onIsolationChange={diagCtx.updateIsolationPrecautions}
-                        />
-                      ) : diagnosticsSlot;
+                      // CID desta evolucao: snapshot no soap; sem snapshot, o do paciente.
+                      // Mesmo valor no campo e no check (antes o check lia so o do paciente).
+                      const evoCidPrimary = ((data.soap as any).__cid_primary as string) || cidPrimary || "";
+                      const evoCidSecondary: string[] = (() => {
+                        const s = (data.soap as any).__cid_secondary;
+                        return Array.isArray(s) ? s : (typeof s === "string" && s ? [s] : []);
+                      })();
+                      const evoHypotheses = toHypothesesList((data.soap as any).diagnosticHypotheses);
+                      const evoAntecedentes = toHypothesesList((data.soap as any).antecedentes);
+                      // Mesma segmentacao da evolucao nova (buildDiagnosticsSlots): Diagnosticos,
+                      // Hipoteses e Antecedentes em secoes proprias; Revisao com o painel completo.
+                      // CID/hipoteses/antecedentes gravam no soap DESTA evolucao (handleSave ->
+                      // updateEvolution); previsoes/paliativo/precaucao gravam na internacao.
+                      const localSlots = isEditable ? buildDiagnosticsSlots({
+                        cidPrimary: evoCidPrimary,
+                        cidSecondary: evoCidSecondary,
+                        onCidPrimaryChange: (v) => updateLocal(evo.id, "soap", "__cid_primary", v),
+                        onCidSecondaryChange: (vals) => updateLocal(evo.id, "soap", "__cid_secondary", vals),
+                        diagnosticHypotheses: evoHypotheses,
+                        onDiagnosticHypothesesChange: (v) =>
+                          updateLocal(evo.id, "soap", "diagnosticHypotheses", toHypothesesList(v)),
+                        antecedentes: evoAntecedentes,
+                        onAntecedentesChange: (items) => updateLocal(evo.id, "soap", "antecedentes", items),
+                        hospitalDischargePrediction: diagCtx.hospitalDischargePrediction,
+                        onHospitalDischargePredictionChange: diagCtx.updateHospitalDischargePrediction,
+                        utiDischargePrediction: diagCtx.utiDischargePrediction,
+                        onUtiDischargePredictionChange: diagCtx.updateUtiDischargePrediction,
+                        isPalliative: diagCtx.isPalliative,
+                        onPalliativeChange: diagCtx.updateIsPalliative,
+                        isolationPrecautions: diagCtx.isolationPrecautions,
+                        onIsolationChange: diagCtx.updateIsolationPrecautions,
+                        showUtiPrediction,
+                      }) : null;
                       return (
                         <EvolutionForm
                           hidePlan={isIntercurrence(evo)}
@@ -839,10 +838,14 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                           evo={evo}
                           patientId={patientId || null}
                           patientRecord={patientRecord || null}
-                          cidPrimary={cidPrimary || null}
+                          cidPrimary={isEditable ? evoCidPrimary || null : cidPrimary || null}
                           cidSecondary={cidSecondary || null}
-                          diagnosticsSlot={localDiagnosticsSlot}
-                          diagnosticsReviewSlot={localDiagnosticsSlot}
+                          diagnosticsSlot={localSlots ? localSlots.diagnosticsSlot : diagnosticsSlot}
+                          hypothesesSlot={localSlots?.hypothesesSlot}
+                          antecedentesSlot={localSlots?.antecedentesSlot}
+                          diagnosticsReviewSlot={localSlots ? localSlots.diagnosticsReviewSlot : diagnosticsSlot}
+                          diagnosticHypotheses={evoHypotheses}
+                          antecedentes={evoAntecedentes}
                           planItems={Array.isArray((data.soap as any).planItems) ? (data.soap as any).planItems : []}
                           onPlanItemsChange={(items) => updateLocal(evo.id, "soap", "planItems", items)}
                           pendenciasItems={Array.isArray((data.soap as any).pendenciasItems) ? (data.soap as any).pendenciasItems : []}

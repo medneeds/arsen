@@ -32,6 +32,7 @@ import { calculateNEWS2, news2RiskLabels, parseVitalNumber } from "@/lib/news2";
 import { ItemListEditor } from "@/components/ItemListEditor";
 import { EvolutionReadOnlyView } from "@/components/evolution/EvolutionReadOnlyView";
 import { AccordionSectionItem as SectionItem } from "@/components/shared/AccordionSectionItem";
+import { toHypothesesList } from "@/components/evolution/diagnosticsSlots";
 
 interface SOAPData {
   subjective: string;
@@ -69,6 +70,11 @@ interface EvolutionFormProps {
   antecedentesSlot?: React.ReactNode;
   /** Optional compact render of the diagnostics panel inside the Revisão (review) section. */
   diagnosticsReviewSlot?: React.ReactNode;
+  /** Hipoteses diagnosticas desta evolucao — alimentam o check da secao e a revisao.
+   *  Quando ausente, cai para soap.diagnosticHypotheses (rascunho reaberto). */
+  diagnosticHypotheses?: string | string[] | null;
+  /** Antecedentes desta evolucao — idem; fallback soap.antecedentes. */
+  antecedentes?: string[];
   /** CID primário ativo — usado para gatear validação (obrigatório). */
   cidPrimary?: string | null;
   cidSecondary?: string | string[] | null;
@@ -136,6 +142,8 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
   hypothesesSlot,
   antecedentesSlot,
   diagnosticsReviewSlot,
+  diagnosticHypotheses: diagnosticHypothesesProp,
+  antecedentes: antecedentesProp,
   showDevices = true,
   devices, onDevicesChange,
   culturesHtml, onCulturesChange,
@@ -157,6 +165,14 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
 }) => {
   const [openSections, setOpenSections] = useState<string[]>(['diagnostics', 'hypotheses', 'devices', 'evolucao', 'complementares', 'plan']);
   const [showPendencias, setShowPendencias] = useState(false);
+  // Fonte unica de hipoteses/antecedentes para check e revisao: a prop explicita
+  // (evolucao nova/duplicada, estado do formulario) ou o soap (rascunho reaberto).
+  const hypothesesList = toHypothesesList(
+    diagnosticHypothesesProp ?? (soap as { diagnosticHypotheses?: unknown }).diagnosticHypotheses,
+  );
+  const antecedentesList = toHypothesesList(
+    antecedentesProp ?? (soap as { antecedentes?: unknown }).antecedentes,
+  );
   const [autoSavedAt, setAutoSavedAt] = useState<Date | null>(null);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const { currentHospital } = useHospital();
@@ -198,6 +214,9 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
   // OPCIONAIS: Sinais Vitais, Exame Físico, Exames Complementares, Dispositivos/Culturas.
   const completion = useMemo(() => ({
     diagnostics: !!(cidPrimary && cidPrimary.trim()),
+    // Mesmo criterio da admissao: ao menos um item preenchido acende o check.
+    hypotheses: hypothesesList.length > 0,
+    antecedentes: antecedentesList.length > 0,
     vitals: Object.values(vitals).some(v => String(v ?? "").trim()),
     exam: Object.values(physicalExam).some(v => String(v ?? "").trim()),
     evolucao: richHtmlToPlainText(evolucaoText).length >= 10,
@@ -205,7 +224,8 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
     // Plano completo quando: RichText com 10+ chars OU planItems[] com ao menos 1 item não vazio
     plan: richHtmlToPlainText(soap.plan).length >= 10
       || (Array.isArray(planItems) && planItems.some(p => p.trim().length > 0)),
-  }), [cidPrimary, vitals, physicalExam, soap.objective, soap.plan, evolucaoText, planItems]);
+  }), [cidPrimary, vitals, physicalExam, soap.objective, soap.plan, evolucaoText, planItems,
+       hypothesesList.length, antecedentesList.length]);
 
   const requiredComplete = completion.diagnostics && completion.evolucao && completion.plan;
 
@@ -240,8 +260,8 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
           planItems={planItems}
           planText={soap.plan}
           pendenciasItems={pendenciasItems}
-          diagnosticHypotheses={(soap as { diagnosticHypotheses?: string | string[] | null }).diagnosticHypotheses ?? null}
-          antecedentes={Array.isArray((soap as { antecedentes?: unknown }).antecedentes) ? ((soap as { antecedentes?: unknown }).antecedentes as string[]) : []}
+          diagnosticHypotheses={hypothesesList}
+          antecedentes={antecedentesList}
           createdByName={evo?.created_by_name ?? null}
           validatedByName={evo?.validated_by_name ?? null}
           validatedAt={evo?.validated_at ?? null}
@@ -395,6 +415,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
             iconColor="text-foreground"
             label="Hipóteses Diagnósticas"
             hint="Um item por hipótese — sincroniza com o painel clínico"
+            complete={completion.hypotheses}
             required={false}
           >
             {hypothesesSlot}
@@ -409,6 +430,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
             iconColor="text-muted-foreground"
             label="Antecedentes mórbidos pessoais"
             hint="Acrescente um a um"
+            complete={completion.antecedentes}
             required={false}
           >
             {antecedentesSlot}
@@ -780,8 +802,8 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
               especialidadesHtml={especialidadesHtml}
               planItems={planItems}
               pendenciasItems={pendenciasItems}
-              diagnosticHypotheses={(soap as any).diagnosticHypotheses ?? null}
-              antecedentes={Array.isArray((soap as any).antecedentes) ? (soap as any).antecedentes : []}
+              diagnosticHypotheses={hypothesesList}
+              antecedentes={antecedentesList}
             />
           </div>
 
