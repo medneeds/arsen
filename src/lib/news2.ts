@@ -90,3 +90,70 @@ export function parseVitalNumber(raw: string | undefined | null): number | undef
   const n = parseFloat(match[0]);
   return Number.isFinite(n) ? n : undefined;
 }
+
+// ── NEWS2 com indicacao de completude (capitulo multiprofissional) ─────────
+// O escore so e "completo" com os 7 parametros, inclusive se ha O2 suplementar
+// (sem esse dado a pontuacao pode subestimar em 2 pontos). Sem eles, a tela
+// mostra "NEWS2 parcial" — nunca um numero como se fosse completo.
+// calculateNEWS2 acima fica INTACTA (preserva o historico clinico).
+
+export type News2Param =
+  | "respiratoryRate" | "spo2" | "supplementalOxygen" | "temperature"
+  | "systolicBp" | "heartRate" | "consciousnessLevel";
+
+export const NEWS2_PARAM_LABELS: Record<News2Param, string> = {
+  respiratoryRate: "FR",
+  spo2: "SpO₂",
+  supplementalOxygen: "O₂ suplementar",
+  temperature: "Temperatura",
+  systolicBp: "PAS",
+  heartRate: "FC",
+  consciousnessLevel: "Consciência",
+};
+
+export interface News2Status {
+  score: number;
+  risk: News2Risk;
+  parcial: boolean;
+  faltando: News2Param[];
+  /** Algum parametro isolado pontuou 3 (gatilho de resposta urgente). */
+  parametroCritico: boolean;
+  /** Escore >= 5 ou parametro isolado = 3: avisar o enfermeiro do setor. */
+  alertaEnfermeiro: boolean;
+}
+
+export function news2Status(params: News2Params): News2Status {
+  const { score, risk } = calculateNEWS2(params);
+  const faltando: News2Param[] = [];
+  if (params.respiratoryRate == null) faltando.push("respiratoryRate");
+  if (params.spo2 == null) faltando.push("spo2");
+  if (typeof params.supplementalOxygen !== "boolean") faltando.push("supplementalOxygen");
+  if (params.temperature == null) faltando.push("temperature");
+  if (params.systolicBp == null) faltando.push("systolicBp");
+  if (params.heartRate == null) faltando.push("heartRate");
+  if (!params.consciousnessLevel) faltando.push("consciousnessLevel");
+  const singles: News2Params[] = [
+    { respiratoryRate: params.respiratoryRate },
+    { spo2: params.spo2 },
+    { temperature: params.temperature },
+    { systolicBp: params.systolicBp },
+    { heartRate: params.heartRate },
+    { consciousnessLevel: params.consciousnessLevel },
+  ];
+  const parametroCritico = singles.some((p) => calculateNEWS2(p).score >= 3);
+  return {
+    score,
+    risk,
+    parcial: faltando.length > 0,
+    faltando,
+    parametroCritico,
+    alertaEnfermeiro: score >= 5 || parametroCritico,
+  };
+}
+
+/** "NEWS2 4" | "NEWS2 parcial 4 (sem O₂ suplementar)" */
+export function formatNews2(s: News2Status): string {
+  if (!s.parcial) return `NEWS2 ${s.score}`;
+  const falta = s.faltando.map((f) => NEWS2_PARAM_LABELS[f]).join(", ");
+  return `NEWS2 parcial ${s.score} (sem ${falta})`;
+}
