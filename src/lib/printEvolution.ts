@@ -458,14 +458,26 @@ export const printEvolution = async (
         return `<div class="ev-col"><div class="ev-h">Antibióticos em curso</div><div class="ev-box nz-rich">${html}</div></div>`;
       })();
 
-    // ── Dispositivos | Culturas | Antibioticos lado a lado (so as colunas com
-    // conteudo; nenhuma caixa vazia). O h2 oculto marca a linha para a quebra
-    // de pagina (sectionRows divide por h2) e o bloco nao se parte entre paginas.
-    const triCols = [devCol, culCol, atbCol].filter(Boolean);
-    const triWidths = triCols.length === 3 ? "1fr 1.25fr 1.15fr" : triCols.map(() => "1fr").join(" ");
-    const triGroupHtml = triCols.length > 0
-      ? `<h2 class="nz-section ev-hidden"></h2><div class="ev-g3" style="grid-template-columns:${triWidths}">${triCols.join("")}</div>`
-      : "";
+    // ── Dispositivos + Antibioticos | Culturas. Culturas costuma ser o campo
+    // mais longo (antibiograma, sitio e tipo de coleta), entao fica sozinha na
+    // coluna da direita com 60% da largura; dispositivos e antibioticos dividem
+    // a coluna da esquerda (40%), um embaixo do outro. So entram blocos com
+    // conteudo — nenhuma caixa vazia:
+    //   - sem culturas: dispositivos e antibioticos lado a lado (50/50);
+    //   - so culturas, ou so um dos outros: largura total.
+    // O h2 oculto marca a linha para a quebra de pagina (sectionRows divide por
+    // h2) e o bloco nao se parte entre paginas.
+    const leftCols = [devCol, atbCol].filter(Boolean);
+    let triGroupHtml = "";
+    if (culCol && leftCols.length > 0) {
+      triGroupHtml = `<div class="ev-g3" style="grid-template-columns:2fr 3fr">`
+        + `<div class="ev-stack">${leftCols.join("")}</div>${culCol}</div>`;
+    } else if (culCol) {
+      triGroupHtml = `<div class="ev-g3" style="grid-template-columns:1fr">${culCol}</div>`;
+    } else if (leftCols.length > 0) {
+      triGroupHtml = `<div class="ev-g3" style="grid-template-columns:${leftCols.map(() => "1fr").join(" ")}">${leftCols.join("")}</div>`;
+    }
+    if (triGroupHtml) triGroupHtml = `<h2 class="nz-section ev-hidden"></h2>${triGroupHtml}`;
 
 
     // Unifica Subjetivo + Avaliação em "Evolução" preservando HTML rico
@@ -638,6 +650,10 @@ export const printEvolution = async (
       h2.nz-section.ev-hidden { display: none; }
       .ev-g3 { display: grid; column-gap: 8pt; align-items: stretch; margin-top: 6pt; break-inside: avoid; }
       .ev-col { display: flex; flex-direction: column; }
+      /* Coluna da esquerda: dispositivos em cima, antibioticos embaixo; o ultimo
+         bloco estica para alinhar a base com a caixa de culturas. */
+      .ev-stack { display: flex; flex-direction: column; gap: 6pt; }
+      .ev-stack > .ev-col:last-child { flex: 1; }
       .ev-h { font-size: 8pt; font-weight: 700; text-transform: uppercase; letter-spacing: .5pt; color: #fff; background: #0054A6; padding: 2.5pt 6pt; border-radius: 3pt 3pt 0 0; }
       .ev-box { flex: 1; border: 1px solid #e2e8f0; border-top: none; background: #f8fafc; padding: 4pt 6pt; border-radius: 0 0 3pt 3pt; font-size: 8.3pt; line-height: 1.35; margin: 0; }
       .ev-ul { list-style: none; } .ev-ul li { margin: 0 0 1.5pt 0; padding-left: 7pt; text-indent: -7pt; }
