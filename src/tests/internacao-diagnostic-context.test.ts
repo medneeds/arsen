@@ -10,6 +10,12 @@ import {
   fromInternacaoRow,
   toColumnValue,
   toHypothesesList,
+  buildDiagnosticSnapshot,
+  readDiagnosticSnapshot,
+  resolveDiagnosticContextForDisplay,
+  diagnosticContextLines,
+  formatPredictionDate,
+  DIAGNOSTIC_SNAPSHOT_KEY,
 } from "../lib/internacaoDiagnosticContext.ts";
 
 test("UTI/UCI e hospitalar mapeiam para colunas diferentes", () => {
@@ -74,4 +80,81 @@ test("hipoteses: array, texto com quebras e lixo viram lista limpa", () => {
   assert.deepStrictEqual(toHypothesesList(undefined), []);
   assert.deepStrictEqual(toHypothesesList(42), []);
   assert.deepStrictEqual(toHypothesesList([null, undefined, ""]), []);
+});
+
+// ─── Snapshot da assinatura (evolucao validada e impresso) ─────────────────
+
+const LIVE_HOJE = {
+  utiDischargePrediction: "2026-12-20",
+  hospitalDischargePrediction: "2026-12-30",
+  isPalliative: false,
+  isolationPrecautions: "",
+};
+
+test("snapshot guarda os 4 campos vigentes e a hora da assinatura", () => {
+  const snap = buildDiagnosticSnapshot(
+    { previsao_alta: "2026-11-30", previsao_alta_hospitalar: "2026-12-10", paliativo: true, precaucao_isolamento: "Contato" },
+    "2026-11-25T10:00:00.000Z",
+  );
+  assert.deepStrictEqual(snap, {
+    utiDischargePrediction: "2026-11-30",
+    hospitalDischargePrediction: "2026-12-10",
+    isPalliative: true,
+    isolationPrecautions: "Contato",
+    captured_at: "2026-11-25T10:00:00.000Z",
+  });
+});
+
+test("validada mostra o snapshot da assinatura, nunca o valor de hoje", () => {
+  const soap = { [DIAGNOSTIC_SNAPSHOT_KEY]: buildDiagnosticSnapshot({ precaucao_isolamento: "Contato", paliativo: true }) };
+  const ctx = resolveDiagnosticContextForDisplay(true, soap, LIVE_HOJE);
+  assert.strictEqual(ctx?.isolationPrecautions, "Contato");
+  assert.strictEqual(ctx?.isPalliative, true);
+  assert.strictEqual(ctx?.utiDischargePrediction, "", "nao pode herdar a previsao de hoje");
+});
+
+test("validada antiga (sem snapshot) nao inventa dado: retorna null", () => {
+  assert.strictEqual(resolveDiagnosticContextForDisplay(true, { __cid_primary: "J18" }, LIVE_HOJE), null);
+  assert.deepStrictEqual(diagnosticContextLines(null), []);
+});
+
+test("rascunho mostra o valor vivo da internacao (mesma fonte do mapa)", () => {
+  const soap = { [DIAGNOSTIC_SNAPSHOT_KEY]: buildDiagnosticSnapshot({ precaucao_isolamento: "Contato" }) };
+  assert.deepStrictEqual(resolveDiagnosticContextForDisplay(false, soap, LIVE_HOJE), LIVE_HOJE);
+  // sem valor vivo disponivel, cai no snapshot
+  assert.strictEqual(resolveDiagnosticContextForDisplay(false, soap, null)?.isolationPrecautions, "Contato");
+});
+
+test("snapshot corrompido ou de outro tipo e ignorado com seguranca", () => {
+  assert.strictEqual(readDiagnosticSnapshot(null), null);
+  assert.strictEqual(readDiagnosticSnapshot({ [DIAGNOSTIC_SNAPSHOT_KEY]: "texto" }), null);
+  const r = readDiagnosticSnapshot({ [DIAGNOSTIC_SNAPSHOT_KEY]: { isPalliative: "true", isolationPrecautions: 3 } });
+  assert.strictEqual(r?.isPalliative, false);
+  assert.strictEqual(r?.isolationPrecautions, "");
+});
+
+test("linhas: ordem UTI, hospitalar, precaucao, paliativo; datas em dd/MM/yyyy", () => {
+  const lines = diagnosticContextLines({
+    utiDischargePrediction: "2026-11-30",
+    hospitalDischargePrediction: "2026-12-10",
+    isPalliative: true,
+    isolationPrecautions: "Contato + Gotículas",
+  });
+  assert.deepStrictEqual(lines, [
+    { label: "Previsão de alta UTI/UCI", value: "30/11/2026" },
+    { label: "Previsão de alta hospitalar", value: "10/12/2026" },
+    { label: "Precaução / Isolamento", value: "Contato + Gotículas" },
+    { label: "Cuidados paliativos", value: "Sim" },
+  ]);
+});
+
+test("paliativo aparece sempre (Nao tambem e informacao); campos vazios somem", () => {
+  const lines = diagnosticContextLines({ utiDischargePrediction: "", hospitalDischargePrediction: " ", isPalliative: false, isolationPrecautions: "" });
+  assert.deepStrictEqual(lines, [{ label: "Cuidados paliativos", value: "Não" }]);
+});
+
+test("data legada em texto livre passa como esta", () => {
+  assert.strictEqual(formatPredictionDate("30/11/2026 (D+5)"), "30/11/2026 (D+5)");
+  assert.strictEqual(formatPredictionDate("2026-11-30T00:00:00Z"), "30/11/2026");
+  assert.strictEqual(formatPredictionDate(""), "");
 });

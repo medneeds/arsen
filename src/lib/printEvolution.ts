@@ -17,6 +17,13 @@ import { getSectorDisplayLabel } from "@/utils/bedNaming";
 import { formatDeviceLabel, deviceAlertTone } from "@/lib/devicesCatalog";
 import { calcDIH, parseAdmissionDate } from "@/lib/dihCalc";
 import type { EvolutionRecord } from "@/hooks/useEvolutions";
+import {
+  diagnosticContextLines,
+  fromInternacaoRow,
+  resolveDiagnosticContextForDisplay,
+  type InternacaoDiagRow,
+  type PatientDiagnosticContext,
+} from "@/lib/internacaoDiagnosticContext";
 
 /** Renderiza HTML rico (sanitizado) preservando formatação dos campos editáveis. */
 const renderRich = (value: string | null | undefined): string => {
@@ -232,7 +239,29 @@ export const printEvolution = async (
     : v == null ? "" : String(v);
   const cidPrimary = cidToStr(snapCid.__cid_primary).trim() || cidToStr(ctx?.cidPrimary).trim() || "";
   const cidSecondary = cidToStr(snapCid.__cid_secondary).trim() || cidToStr(ctx?.cidSecondary).trim() || "";
-  const hasDiagnostics = hypothesesText || cidPrimary || cidSecondary;
+  // Previsoes de alta (UTI/UCI e hospitalar), precaucao e paliativo — junto do CID.
+  // Validada: SO o snapshot da assinatura (soap.__diag_ctx), nunca o valor de hoje.
+  // Rascunho: valor vivo da internacao (mesma fonte do mapa de leitos).
+  let liveDiag: PatientDiagnosticContext | null = null;
+  if (evo.status !== "validated" && evo.patient_id) {
+    try {
+      const interRow = await withTimeout<InternacaoDiagRow | null>(
+        supabase
+          .from("internacoes")
+          .select("previsao_alta, previsao_alta_hospitalar, paliativo, precaucao_isolamento")
+          .eq("id", evo.patient_id)
+          .maybeSingle()
+          .then((r) => (r.data as InternacaoDiagRow | null) ?? null),
+        5000,
+        null,
+      );
+      liveDiag = interRow ? fromInternacaoRow(interRow) : null;
+    } catch { /* best-effort: imprime sem o bloco vivo */ }
+  }
+  const diagLines = diagnosticContextLines(
+    resolveDiagnosticContextForDisplay(evo.status === "validated", evo.soap_data, liveDiag),
+  );
+  const hasDiagnostics = hypothesesText || cidPrimary || cidSecondary || diagLines.length > 0;
 
   const diagnosticsHtml = hasDiagnostics
     ? `
@@ -240,6 +269,7 @@ export const printEvolution = async (
       <table class="nz" style="font-size:8.5pt;margin-bottom:3pt"><tbody>
         ${cidPrimary ? `<tr><th style="width:140px">CID-10 Primário</th><td>${escape(cidPrimary)}</td></tr>` : ""}
         ${cidSecondary ? `<tr><th>CID-10 Secundário</th><td>${escape(cidSecondary)}</td></tr>` : ""}
+        ${diagLines.map((l) => `<tr><th>${escape(l.label)}</th><td>${escape(l.value)}</td></tr>`).join("")}
         ${hypothesesText ? `<tr><th>Hipóteses Diagnósticas</th><td>${escape(hypothesesText)}</td></tr>` : ""}
       </tbody></table>
     `

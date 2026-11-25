@@ -78,6 +78,7 @@ export function usePatientDiagnosticContext(patientId: string | null) {
         if (t && t !== true) clearTimeout(t);
       }
       pendingRef.current = {};
+      queuedRef.current = {};
       setData({ ...EMPTY });
       void load(patientId);
     }
@@ -111,6 +112,17 @@ export function usePatientDiagnosticContext(patientId: string | null) {
     }
   }, [load]);
 
+  // Valores aguardando o debounce e gravacoes em voo — usados por flush().
+  const queuedRef = useRef<Partial<Record<Field, { id: string; value: string | boolean }>>>({});
+  const inflightRef = useRef<Set<Promise<void>>>(new Set());
+
+  const run = useCallback((id: string, field: Field, value: string | boolean) => {
+    delete queuedRef.current[field];
+    const p = persist(id, field, value).finally(() => { inflightRef.current.delete(p); });
+    inflightRef.current.add(p);
+    return p;
+  }, [persist]);
+
   const update = useCallback((field: Field, value: string | boolean, debounce = false) => {
     const id = lastPatientRef.current;
     setData((prev) => ({ ...prev, [field]: value }));
@@ -118,11 +130,24 @@ export function usePatientDiagnosticContext(patientId: string | null) {
     const prevTimer = pendingRef.current[field];
     if (prevTimer && prevTimer !== true) clearTimeout(prevTimer);
     if (debounce) {
-      pendingRef.current[field] = setTimeout(() => { void persist(id, field, value); }, TEXT_DEBOUNCE_MS);
+      queuedRef.current[field] = { id, value };
+      pendingRef.current[field] = setTimeout(() => { void run(id, field, value); }, TEXT_DEBOUNCE_MS);
     } else {
-      void persist(id, field, value);
+      void run(id, field, value);
     }
-  }, [persist]);
+  }, [run]);
+
+  /** Grava ja o que esta no debounce e espera as gravacoes em voo. Chamado antes
+   *  de assinar a evolucao, para o snapshot da validacao ler o valor recem-digitado. */
+  const flush = useCallback(async () => {
+    for (const f of Object.keys(queuedRef.current) as Field[]) {
+      const q = queuedRef.current[f];
+      const t = pendingRef.current[f];
+      if (t && t !== true) clearTimeout(t);
+      if (q) void run(q.id, f, q.value);
+    }
+    await Promise.all(Array.from(inflightRef.current));
+  }, [run]);
 
   const refresh = useCallback(async () => { await load(lastPatientRef.current); }, [load]);
 
@@ -139,5 +164,6 @@ export function usePatientDiagnosticContext(patientId: string | null) {
     updateIsPalliative,
     updateIsolationPrecautions,
     refresh,
+    flush,
   };
 }

@@ -202,6 +202,9 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
       });
       setLocalEdits(prev => { const n = { ...prev }; delete n[validateDialogId!]; return n; });
     }
+    // Previsoes/precaucao/paliativo gravam com debounce: garante que o que acabou
+    // de ser digitado esta no banco antes do snapshot da assinatura.
+    await diagCtx.flush();
     const success = await onValidate(validateDialogId);
     const validatedId = validateDialogId;
     setValidateDialogId(null);
@@ -846,6 +849,12 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                           diagnosticsReviewSlot={localSlots ? localSlots.diagnosticsReviewSlot : diagnosticsSlot}
                           diagnosticHypotheses={evoHypotheses}
                           antecedentes={evoAntecedentes}
+                          liveDiagnosticContext={{
+                            utiDischargePrediction: diagCtx.utiDischargePrediction,
+                            hospitalDischargePrediction: diagCtx.hospitalDischargePrediction,
+                            isPalliative: diagCtx.isPalliative,
+                            isolationPrecautions: diagCtx.isolationPrecautions,
+                          }}
                           planItems={Array.isArray((data.soap as any).planItems) ? (data.soap as any).planItems : []}
                           onPlanItemsChange={(items) => updateLocal(evo.id, "soap", "planItems", items)}
                           pendenciasItems={Array.isArray((data.soap as any).pendenciasItems) ? (data.soap as any).pendenciasItems : []}

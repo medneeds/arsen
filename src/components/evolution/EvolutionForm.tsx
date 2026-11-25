@@ -33,6 +33,7 @@ import { ItemListEditor } from "@/components/ItemListEditor";
 import { EvolutionReadOnlyView } from "@/components/evolution/EvolutionReadOnlyView";
 import { AccordionSectionItem as SectionItem } from "@/components/shared/AccordionSectionItem";
 import { toHypothesesList } from "@/components/evolution/diagnosticsSlots";
+import { resolveDiagnosticContextForDisplay, type PatientDiagnosticContext } from "@/lib/internacaoDiagnosticContext";
 
 interface SOAPData {
   subjective: string;
@@ -75,6 +76,9 @@ interface EvolutionFormProps {
   diagnosticHypotheses?: string | string[] | null;
   /** Antecedentes desta evolucao — idem; fallback soap.antecedentes. */
   antecedentes?: string[];
+  /** Previsoes/precaucao/paliativo VIVOS da internacao (rascunho em modo leitura).
+   *  Na validada a visualizacao usa o snapshot da assinatura gravado no soap. */
+  liveDiagnosticContext?: PatientDiagnosticContext | null;
   /** CID primário ativo — usado para gatear validação (obrigatório). */
   cidPrimary?: string | null;
   cidSecondary?: string | string[] | null;
@@ -144,6 +148,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
   diagnosticsReviewSlot,
   diagnosticHypotheses: diagnosticHypothesesProp,
   antecedentes: antecedentesProp,
+  liveDiagnosticContext,
   showDevices = true,
   devices, onDevicesChange,
   culturesHtml, onCulturesChange,
@@ -262,6 +267,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
           pendenciasItems={pendenciasItems}
           diagnosticHypotheses={hypothesesList}
           antecedentes={antecedentesList}
+          diagnosticContext={resolveDiagnosticContextForDisplay(isValidated, soap, liveDiagnosticContext)}
           createdByName={evo?.created_by_name ?? null}
           validatedByName={evo?.validated_by_name ?? null}
           validatedAt={evo?.validated_at ?? null}

@@ -4,6 +4,7 @@ import { deviceAlertTone, formatDeviceLabel, type EvolutionDevice } from "@/lib/
 import { EXAM_FIELDS, type PhysicalExam } from "@/lib/examFields";
 import { parsePendency } from "@/lib/pendencyMarker";
 import { cn } from "@/lib/utils";
+import { diagnosticContextLines, type PatientDiagnosticContext } from "@/lib/internacaoDiagnosticContext";
 
 /**
  * Visualizacao SOMENTE LEITURA da evolucao (validada ou de outro autor), no mesmo
@@ -36,6 +37,9 @@ interface Props {
   validatedByName?: string | null;
   validatedAt?: string | null;
   isValidated?: boolean;
+  /** Previsoes de alta, precaucao e paliativo ja resolvidos (snapshot da
+   *  assinatura na validada; valor vivo no rascunho). Ver resolveDiagnosticContextForDisplay. */
+  diagnosticContext?: PatientDiagnosticContext | null;
 }
 
 const rich = (h?: string): string => sanitizeRichHtml(toRichHtml(h || ""));
@@ -89,8 +93,9 @@ function fmtDateTime(iso?: string | null): string {
 export function EvolutionReadOnlyView({
   soap, vitals, physicalExam, devices = [], culturesHtml, antibioticosHtml,
   planItems = [], planText, pendenciasItems = [], diagnosticHypotheses, antecedentes = [],
-  createdByName, validatedByName, validatedAt, isValidated,
+  createdByName, validatedByName, validatedAt, isValidated, diagnosticContext,
 }: Props) {
+  const diagLines = diagnosticContextLines(diagnosticContext);
   const cid1 = toList(soap.__cid_primary);
   const cid2 = toList(soap.__cid_secondary);
   const hypotheses = toList(diagnosticHypotheses);
@@ -108,10 +113,12 @@ export function EvolutionReadOnlyView({
 
   return (
     <div className="space-y-8">
-      {(cid1.length > 0 || cid2.length > 0) && (
-        <Group title="Diagnóstico (CID-10)">
+      {(cid1.length > 0 || cid2.length > 0 || diagLines.length > 0) && (
+        <Group title="Diagnósticos">
           <Field label="CID primário" lines={cid1} />
           <Field label="CID secundário" lines={cid2} />
+          {/* Previsoes de alta, precaucao e paliativo — junto do CID, como no formulario. */}
+          {diagLines.map((l) => <Field key={l.label} label={l.label} value={l.value} />)}
         </Group>
       )}
 

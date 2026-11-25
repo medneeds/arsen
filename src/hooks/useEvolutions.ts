@@ -3,6 +3,7 @@ import { resolveProfissionalNome } from "@/lib/resolvePatientHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { buildDiagnosticSnapshot, DIAGNOSTIC_SNAPSHOT_KEY, type InternacaoDiagRow } from "@/lib/internacaoDiagnosticContext";
 import { parseDiagnosesText } from "@/lib/diagnosesText";
 import { toEvolucaoStatusDb, fromEvolucaoStatusDb } from "@/lib/evolucaoStatus";
 
@@ -460,11 +461,30 @@ export function useEvolutions(
       // preservados no JSON `soap`.
       const { data: existing } = await supabase
         .from("evolucoes")
-        .select("soap")
+        .select("soap, internacao_id")
         .eq("id", id)
         .maybeSingle();
       const mergedSoap: any = { ...(((existing as any)?.soap as any) || {}) };
-      mergedSoap.__validated_at = new Date().toISOString();
+      const validatedAt = new Date().toISOString();
+      mergedSoap.__validated_at = validatedAt;
+      // Snapshot de previsoes de alta (UTI/UCI e hospitalar), precaucao e paliativo
+      // VIGENTES NA ASSINATURA: sao estado vivo da internacao; a evolucao validada
+      // e o impresso leem este registro (nao o valor de hoje). Mesmo padrao do CID.
+      const internacaoId = (existing as { internacao_id?: string | null } | null)?.internacao_id;
+      if (internacaoId) {
+        const { data: inter, error: interErr } = await supabase
+          .from("internacoes")
+          .select("previsao_alta, previsao_alta_hospitalar, paliativo, precaucao_isolamento")
+          .eq("id", internacaoId)
+          .maybeSingle();
+        if (interErr) {
+          // Nao bloqueia a assinatura, mas nao deixa passar em silencio.
+          console.error("[useEvolutions] snapshot do contexto diagnostico falhou:", interErr);
+          toast.warning("Previsões/precaução não foram registradas nesta evolução", { description: interErr.message });
+        } else {
+          mergedSoap[DIAGNOSTIC_SNAPSHOT_KEY] = buildDiagnosticSnapshot(inter as InternacaoDiagRow | null, validatedAt);
+        }
+      }
       mergedSoap.__validated_by = user.id;
       mergedSoap.__validated_by_name = doctorName;
 

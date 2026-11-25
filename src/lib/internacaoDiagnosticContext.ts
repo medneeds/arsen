@@ -62,3 +62,75 @@ export function toHypothesesList(v: unknown): string[] {
   if (typeof v === "string") return v.split("\n").map((x) => x.trim()).filter(Boolean);
   return [];
 }
+
+// ─── Snapshot na evolucao ──────────────────────────────────────────────────
+// Previsoes, precaucao e paliativo sao ESTADO VIVO da internacao (mudam ao longo
+// dos dias). A evolucao validada e documento clinico: guarda no soap o valor
+// vigente no momento da assinatura, como ja faz com o CID (__cid_*). Leitura:
+// validada -> snapshot (nunca o valor de hoje); rascunho -> valor vivo.
+
+export const DIAGNOSTIC_SNAPSHOT_KEY = "__diag_ctx";
+
+export interface DiagnosticContextSnapshot extends PatientDiagnosticContext {
+  captured_at: string;
+}
+
+export function buildDiagnosticSnapshot(
+  row: InternacaoDiagRow | null | undefined,
+  capturedAt: string = new Date().toISOString(),
+): DiagnosticContextSnapshot {
+  return { ...fromInternacaoRow(row), captured_at: capturedAt };
+}
+
+/** Le o snapshot do soap; null se ausente/invalido (evolucoes validadas antes desta versao). */
+export function readDiagnosticSnapshot(soap: unknown): PatientDiagnosticContext | null {
+  if (!soap || typeof soap !== "object") return null;
+  const raw = (soap as Record<string, unknown>)[DIAGNOSTIC_SNAPSHOT_KEY];
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+  const str = (v: unknown) => (typeof v === "string" ? v : "");
+  return {
+    utiDischargePrediction: str(r.utiDischargePrediction),
+    hospitalDischargePrediction: str(r.hospitalDischargePrediction),
+    isPalliative: r.isPalliative === true,
+    isolationPrecautions: str(r.isolationPrecautions),
+  };
+}
+
+/** Qual contexto exibir: validada usa SO o snapshot; rascunho usa o vivo (fallback snapshot). */
+export function resolveDiagnosticContextForDisplay(
+  isValidated: boolean,
+  soap: unknown,
+  live: PatientDiagnosticContext | null | undefined,
+): PatientDiagnosticContext | null {
+  const snap = readDiagnosticSnapshot(soap);
+  if (isValidated) return snap;
+  return live ?? snap;
+}
+
+/** ISO yyyy-MM-dd -> dd/MM/yyyy; outros formatos (legado livre) passam como estao. */
+export function formatPredictionDate(v: string): string {
+  const s = (v ?? "").trim();
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s);
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : s;
+}
+
+export interface DiagnosticContextLine { label: string; value: string }
+
+/**
+ * Linhas exibidas na evolucao validada e no impresso, na ordem do bloco
+ * Diagnosticos. Previsoes e precaucao so aparecem quando preenchidas;
+ * paliativo aparece sempre (Sim/Nao), pois "nao" tambem e informacao.
+ */
+export function diagnosticContextLines(ctx: PatientDiagnosticContext | null | undefined): DiagnosticContextLine[] {
+  if (!ctx) return [];
+  const lines: DiagnosticContextLine[] = [];
+  const uti = ctx.utiDischargePrediction.trim();
+  const hosp = ctx.hospitalDischargePrediction.trim();
+  const iso = ctx.isolationPrecautions.trim();
+  if (uti) lines.push({ label: "Previsão de alta UTI/UCI", value: formatPredictionDate(uti) });
+  if (hosp) lines.push({ label: "Previsão de alta hospitalar", value: formatPredictionDate(hosp) });
+  if (iso) lines.push({ label: "Precaução / Isolamento", value: iso });
+  lines.push({ label: "Cuidados paliativos", value: ctx.isPalliative ? "Sim" : "Não" });
+  return lines;
+}
