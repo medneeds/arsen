@@ -75,7 +75,12 @@ export function parseFrequencia(posology: string | null | undefined): Frequencia
   const low = base.toLowerCase();
   if (!base) return sn ? { tipo: "sn" } : { tipo: "desconhecida", bruto: raw };
   if (low === "acm") return { tipo: "acm" };
-  if (low.startsWith("contínuo") || low.startsWith("continuo")) return { tipo: "continuo" };
+  // Formatos reais da prescricao (banco de teste, 57 mil itens): "Contínuo",
+  // "contínuo", "Contínua (BIC)"; "SOS"; "Conforme glicemia capilar",
+  // "Conforme necessidade/demanda"; "Antes/após dieta e medicações"; "-".
+  if (/^cont[ií]nu/.test(low)) return { tipo: "continuo" };
+  if (low === "sos" || low.startsWith("conforme") || low.startsWith("antes/") || low.startsWith("se necess")) return { tipo: "sn" };
+  if (low === "-") return { tipo: "desconhecida", bruto: raw };
   if (low === "agora") return { tipo: "agora" };
   if (low === "dose única" || low === "dose unica") return { tipo: "dose_unica" };
   if (low === "1x/semana") return { tipo: "espacado", dias: 7 };

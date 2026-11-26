@@ -179,6 +179,7 @@ export const BH_CATEGORIAS: readonly CategoriaBH[] = [
   { key: "diluente", label: "Diluente de medicação", sentido: "ganho" },
   { key: "dieta_enteral", label: "Dieta enteral", sentido: "ganho" },
   { key: "oral", label: "Via oral", sentido: "ganho" },
+  { key: "agua_enteral", label: "Água por sonda/ostomia", sentido: "ganho" },
   { key: "hemoderivado", label: "Hemoderivado", sentido: "ganho" },
   { key: "diurese", label: "Diurese", sentido: "perda" },
   { key: "dreno", label: "Dreno", sentido: "perda" },

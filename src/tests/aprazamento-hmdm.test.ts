@@ -127,3 +127,13 @@ test("MAV: dupla checagem pelo marcador da prescricao", () => {
   assert.strictEqual(requiresDoubleCheck({ highAlert: "true" }), false);
   assert.strictEqual(requiresDoubleCheck(null), false);
 });
+
+test("formatos reais da prescricao: continuo, SOS, conforme, antes/apos", () => {
+  for (const v of ["Contínuo", "contínuo", "Contínua (BIC)", "continuo"]) assert.strictEqual(parseFrequencia(v).tipo, "continuo", v);
+  for (const v of ["SOS", "Conforme glicemia capilar", "Conforme necessidade", "Conforme demanda", "Antes/após dieta e medicações", "S/N"]) assert.strictEqual(parseFrequencia(v).tipo, "sn", v);
+  assert.strictEqual(parseFrequencia("-").tipo, "desconhecida");
+  assert.deepStrictEqual(parseFrequencia("6x/dia"), { tipo: "vezes_dia", vezes: 6, sn: false });
+  assert.strictEqual(gradeOptions(parseFrequencia("6x/dia"))[0].key, "4/4h:padrao");
+  assert.deepStrictEqual(parseScheduleHours("08:00"), [8]);
+  assert.deepStrictEqual(parseScheduleHours("Atrelado ao HGT"), []);
+});

@@ -430,6 +430,147 @@ export type Database = {
           },
         ]
       }
+      administracoes: {
+        Row: {
+          anulado_em: string | null
+          anulado_por: string | null
+          aprazamento_id: string | null
+          bh_categoria: string | null
+          criado_em: string
+          dupla_checagem_em: string | null
+          dupla_checagem_por: string | null
+          dupla_checagem_por_nome: string | null
+          id: string
+          internacao_id: string
+          item_id: string
+          item_nome: string
+          mav: boolean
+          motivo: string | null
+          motivo_anulacao: string | null
+          prescricao_id: string
+          realizado_em: string
+          registrado_por: string
+          registrado_por_nome: string | null
+          status: string
+          volume_ml: number | null
+        }
+        Insert: {
+          anulado_em?: string | null
+          anulado_por?: string | null
+          aprazamento_id?: string | null
+          bh_categoria?: string | null
+          criado_em?: string
+          dupla_checagem_em?: string | null
+          dupla_checagem_por?: string | null
+          dupla_checagem_por_nome?: string | null
+          id?: string
+          internacao_id: string
+          item_id: string
+          item_nome: string
+          mav?: boolean
+          motivo?: string | null
+          motivo_anulacao?: string | null
+          prescricao_id: string
+          realizado_em: string
+          registrado_por?: string
+          registrado_por_nome?: string | null
+          status: string
+          volume_ml?: number | null
+        }
+        Update: {
+          anulado_em?: string | null
+          anulado_por?: string | null
+          aprazamento_id?: string | null
+          bh_categoria?: string | null
+          criado_em?: string
+          dupla_checagem_em?: string | null
+          dupla_checagem_por?: string | null
+          dupla_checagem_por_nome?: string | null
+          id?: string
+          internacao_id?: string
+          item_id?: string
+          item_nome?: string
+          mav?: boolean
+          motivo?: string | null
+          motivo_anulacao?: string | null
+          prescricao_id?: string
+          realizado_em?: string
+          registrado_por?: string
+          registrado_por_nome?: string | null
+          status?: string
+          volume_ml?: number | null
+        }
+        Relationships: []
+      }
+      aprazamentos: {
+        Row: {
+          aprazado_em: string
+          aprazado_por: string
+          aprazado_por_nome: string | null
+          bh_categoria: string | null
+          cancelado_em: string | null
+          cancelado_por: string | null
+          cancelado_por_nome: string | null
+          horario: string
+          id: string
+          internacao_id: string
+          item_id: string
+          item_nome: string
+          item_resumo: string | null
+          janela_inicio: string
+          mav: boolean
+          modo: string
+          motivo: string | null
+          motivo_cancelamento: string | null
+          prescricao_id: string
+          volume_ml: number | null
+        }
+        Insert: {
+          aprazado_em?: string
+          aprazado_por?: string
+          aprazado_por_nome?: string | null
+          bh_categoria?: string | null
+          cancelado_em?: string | null
+          cancelado_por?: string | null
+          cancelado_por_nome?: string | null
+          horario: string
+          id?: string
+          internacao_id: string
+          item_id: string
+          item_nome: string
+          item_resumo?: string | null
+          janela_inicio: string
+          mav?: boolean
+          modo: string
+          motivo?: string | null
+          motivo_cancelamento?: string | null
+          prescricao_id: string
+          volume_ml?: number | null
+        }
+        Update: {
+          aprazado_em?: string
+          aprazado_por?: string
+          aprazado_por_nome?: string | null
+          bh_categoria?: string | null
+          cancelado_em?: string | null
+          cancelado_por?: string | null
+          cancelado_por_nome?: string | null
+          horario?: string
+          id?: string
+          internacao_id?: string
+          item_id?: string
+          item_nome?: string
+          item_resumo?: string | null
+          janela_inicio?: string
+          mav?: boolean
+          modo?: string
+          motivo?: string | null
+          motivo_cancelamento?: string | null
+          prescricao_id?: string
+          volume_ml?: number | null
+        }
+        Relationships: []
+      }
       balanco_hidrico_lancamentos: {
         Row: {
           anulado_em: string | null
