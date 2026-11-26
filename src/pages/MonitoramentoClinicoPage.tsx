@@ -178,6 +178,9 @@ function mapVital(row: any): VitalRecord {
     systolicBp: row.pressao_sistolica ?? undefined,
     heartRate: row.freq_cardiaca ?? undefined,
     consciousnessLevel: row.nivel_consciencia ?? undefined,
+    // Etapa 4c: o2_suplementar voltou a ser gravado (coluna nova). Registro
+    // antigo (null) segue sem o +2, como antes.
+    supplementalOxygen: row.o2_suplementar === true,
   });
   return {
     id: row.id,
@@ -188,9 +191,9 @@ function mapVital(row: any): VitalRecord {
     respiratory_rate: row.freq_respiratoria ?? null,
     spo2: row.spo2 ?? null,
     temperature: row.temperatura ?? null,
-    pvc: null,
+    pvc: row.pvc != null ? Number(row.pvc) : null,
     consciousness_level: row.nivel_consciencia ?? null,
-    supplemental_oxygen: null,
+    supplemental_oxygen: typeof row.o2_suplementar === "boolean" ? row.o2_suplementar : null,
     news2_score: score > 0 ? score : null,
     news2_risk: score > 0 ? risk : null,
     ph: null, pco2: null, po2: null, hco3: null, lactate: null, base_excess: null,
@@ -276,7 +279,7 @@ export default function MonitoramentoClinicoPage() {
     let cancelled = false;
 
     const SELECT =
-      "id, data_hora, pressao_sistolica, pressao_diastolica, freq_cardiaca, freq_respiratoria, spo2, temperatura, nivel_consciencia, observacoes, registrado_por, profissional:profissionais(nome)";
+      "id, data_hora, pressao_sistolica, pressao_diastolica, freq_cardiaca, freq_respiratoria, spo2, temperatura, nivel_consciencia, o2_suplementar, pvc, observacoes, registrado_por, profissional:profissionais(nome)";
 
     const load = async () => {
       setLoading(true);
@@ -372,6 +375,9 @@ export default function MonitoramentoClinicoPage() {
       spo2: toNum(form.spo2),
       temperatura: toNum(form.temperature),
       nivel_consciencia: form.consciousnessLevel,
+      // Etapa 4c: O2 suplementar e PVC agora tem coluna (NEWS2 completo).
+      o2_suplementar: !!form.supplementalOxygen,
+      pvc: toNum(form.pvc),
       observacoes: form.notes || null,
     } as any);
 

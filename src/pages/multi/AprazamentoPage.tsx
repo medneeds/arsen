@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
 import {
   ChevronLeft, ChevronRight, Printer, Lock, Loader2, CalendarClock, CheckCircle2, XCircle, AlertTriangle, ShieldAlert, Ban, Droplets,
 } from "lucide-react";
@@ -9,19 +8,18 @@ import { PageTransition } from "@/components/PageTransition";
 import { ModulePatientStrip, type StripTile } from "@/components/multi/ModulePatientStrip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { canWriteModule, visibleMultiModules } from "@/config/multiModules";
-import { useAprazamento, type AprazamentoRow, type AdministracaoRow, type NovoHorario } from "@/hooks/useAprazamento";
+import { useAprazamento, useMeuProfissionalId, type AprazamentoRow, type AdministracaoRow, type NovoHorario } from "@/hooks/useAprazamento";
+import { ChecagemDialog, type AlvoChecagem } from "@/components/multi/ChecagemDialog";
 import { prescriptionValidityWindow } from "@/lib/prescriptionValidity";
 import { gradeOptions } from "@/lib/aprazamentoHmdm";
 import {
-  itensAprazaveis, itensJaAprazados, planejarAprazamento, statusDose, horariosACancelar, horariosDaOpcao, validarLivre, instanteChecagem,
+  itensAprazaveis, itensJaAprazados, planejarAprazamento, statusDose, horariosACancelar, horariosDaOpcao, validarLivre,
   type ItemAprazavel, type StatusDose,
 } from "@/lib/aprazamentoItens";
 import { categoriaLabel } from "@/lib/fluidBalance";
@@ -56,7 +54,7 @@ type Escolha = { key: string; livre: string; marcado: boolean };
 export default function AprazamentoPage() {
   const [sp] = useSearchParams();
   const patientId = sp.get("patientId");
-  const { role, user } = useAuth();
+  const { role } = useAuth();
   const visivel = visibleMultiModules(role).some((m) => m.key === "enfermagem");
   const podeChecar = canWriteModule(role, "enfermagem");
   const ehEnfermeiro = role === "enfermeiro";
@@ -69,14 +67,7 @@ export default function AprazamentoPage() {
   const ehAtual = janela.start.getTime() === atual.start.getTime();
 
   const apz = useAprazamento(patientId, janela);
-  const meuProf = useQuery({
-    queryKey: ["meu-profissional", user?.id],
-    enabled: !!user?.id,
-    queryFn: async () => {
-      const { data } = await supabase.from("profissionais").select("id").eq("user_id", user!.id).maybeSingle();
-      return (data as { id?: string } | null)?.id ?? null;
-    },
-  });
+  const meuProf = useMeuProfissionalId();
 
   const itens = useMemo(() => itensAprazaveis(apz.prescricao?.itens, agora), [apz.prescricao, agora]);
   const itemPorId = useMemo(() => new Map(itens.map((i) => [i.itemId, i])), [itens]);
@@ -156,53 +147,15 @@ export default function AprazamentoPage() {
   const proximas = apz.horarios.filter((h) => statusDe(h) === "proxima").length;
   const duplaPendente = apz.checagens.filter((c) => c.mav && c.status === "realizado" && !c.anulado_em && !c.dupla_checagem_em).length;
 
-  // ── Dialogo de checagem ──
-  const [dlg, setDlg] = useState<{ apz: AprazamentoRow | null; item: ItemAprazavel | null; nomeSn?: string } | null>(null);
-  const [dlgStatus, setDlgStatus] = useState<"realizado" | "nao_realizado">("realizado");
-  const [dlgHora, setDlgHora] = useState("");
-  const [dlgMotivo, setDlgMotivo] = useState("");
-  const [dlgVolume, setDlgVolume] = useState("");
-  const [anulando, setAnulando] = useState<AdministracaoRow | null>(null);
-  const [motivoAnul, setMotivoAnul] = useState("");
+  // ── Dialogo de checagem (componente unico, mesmo do "Meu plantao") ──
+  const [alvo, setAlvo] = useState<AlvoChecagem | null>(null);
   const [cancelMotivo, setCancelMotivo] = useState("");
   const [cancelando, setCancelando] = useState<string[] | null>(null);
-
   const abrirChecagem = (h: AprazamentoRow | null, item: ItemAprazavel | null) => {
-    setDlg({ apz: h, item });
-    setDlgStatus("realizado");
-    setDlgHora(fmtHora(new Date()));
-    setDlgMotivo("");
-    const vol = h?.volume_ml ?? item?.volumeMl ?? null;
-    setDlgVolume(vol != null ? String(vol) : "");
+    if (!patientId || !apz.prescricao) return;
+    setAlvo({ internacaoId: patientId, prescricaoId: h?.prescricao_id ?? apz.prescricao.id, apz: h, item });
   };
-  const checagemAberta = dlg?.apz ? checagemPorApz.get(dlg.apz.id) ?? null : null;
-  const dlgInstante = dlg ? instanteChecagem(dlgHora, dlg.apz ? new Date(dlg.apz.horario) : new Date()) : null;
-  const dlgFuturo = !!dlgInstante && dlgInstante.getTime() > Date.now() + 5 * 60_000;
-  const dlgVolumeNum = dlgVolume.trim() ? Number(dlgVolume.replace(",", ".")) : null;
-  const dlgBhCategoria = dlg?.apz?.bh_categoria ?? dlg?.item?.bhCategoria ?? null;
-  // Dose checada mais de 60 min ANTES do horario aprazado exige justificativa.
-  const dlgAntecipada = !!dlg?.apz && dlgStatus === "realizado" && !!dlgInstante
-    && dlgInstante.getTime() < new Date(dlg.apz.horario).getTime() - 60 * 60_000;
-  const dlgPrecisaMotivo = dlgStatus === "nao_realizado" || !dlg?.apz || dlgAntecipada;
-  const dlgValido = !!dlgInstante && !dlgFuturo && (!dlgPrecisaMotivo || dlgMotivo.trim().length >= 3)
-    && (dlgVolumeNum == null || (Number.isFinite(dlgVolumeNum) && dlgVolumeNum > 0 && dlgVolumeNum < 10000));
-
-  const confirmarChecagem = () => {
-    if (!dlg || !dlgInstante || !apz.prescricao) return;
-    const item = dlg.item;
-    apz.checar.mutate({
-      aprazamentoId: dlg.apz?.id ?? null,
-      prescricaoId: dlg.apz?.prescricao_id ?? apz.prescricao.id,
-      itemId: dlg.apz?.item_id ?? item!.itemId,
-      itemNome: dlg.apz?.item_nome ?? item!.nome,
-      status: dlgStatus,
-      realizadoEm: dlgInstante,
-      motivo: dlg.apz ? (dlgStatus === "nao_realizado" ? dlgMotivo : dlgMotivo || undefined) : `${dlgStatus === "realizado" ? "Dose S/N/avulsa" : "Não realizada"}: ${dlgMotivo}`,
-      volumeMl: dlgBhCategoria ? dlgVolumeNum : null,
-      bhCategoria: dlgBhCategoria,
-      mav: dlg.apz?.mav ?? item?.mav ?? false,
-    }, { onSuccess: () => setDlg(null) });
-  };
+  const checagemAberta = alvo?.apz ? checagemPorApz.get(alvo.apz.id) ?? null : null;
 
   // ── Ocorrencias e impressao ──
   const ocorrencias: OcorrenciaDoc[] = useMemo(() => {
@@ -443,74 +396,7 @@ export default function AprazamentoPage() {
         )}
       </div>
 
-      {/* Checagem */}
-      <Dialog open={!!dlg} onOpenChange={(o) => !o && setDlg(null)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{dlg?.apz ? `${dlg.apz.item_nome} — ${fmtHora(new Date(dlg.apz.horario))}` : `${dlg?.item?.nome ?? ""} — dose S/N`}</DialogTitle>
-            <DialogDescription>{dlg?.apz?.item_resumo ?? dlg?.item?.resumo}</DialogDescription>
-          </DialogHeader>
-          {checagemAberta ? (
-            <div className="space-y-3 text-sm">
-              <div className={cn("rounded-md border px-3 py-2", STATUS_UI[checagemAberta.status === "realizado" ? "realizada" : "nao_realizada"].cls)}>
-                {checagemAberta.status === "realizado" ? "Realizada" : "Não realizada"} às {fmtHora(new Date(checagemAberta.realizado_em))} por {checagemAberta.registrado_por_nome ?? "—"}
-                {checagemAberta.motivo && <div className="text-xs">{checagemAberta.motivo}</div>}
-                {checagemAberta.volume_ml ? <div className="text-xs">{checagemAberta.volume_ml} mL lançados no balanço hídrico</div> : null}
-              </div>
-              {checagemAberta.mav && checagemAberta.status === "realizado" && (
-                checagemAberta.dupla_checagem_em
-                  ? <div className="text-xs text-muted-foreground">Dupla checagem MAV por {checagemAberta.dupla_checagem_por_nome} às {fmtHora(new Date(checagemAberta.dupla_checagem_em))}</div>
-                  : checagemAberta.registrado_por === meuProf.data
-                    ? <div className="flex items-center gap-1.5 text-xs font-medium text-warning-on-soft"><ShieldAlert className="h-3.5 w-3.5" /> Dupla checagem pendente: deve ser feita por outro profissional, no login dele.</div>
-                    : <Button size="sm" className="gap-2" disabled={apz.duplaChecagem.isPending} onClick={() => apz.duplaChecagem.mutate(checagemAberta.id, { onSuccess: () => setDlg(null) })}><ShieldAlert className="h-4 w-4" /> Confirmar dupla checagem</Button>
-              )}
-              {podeChecar && <Button size="sm" variant="ghost" className="text-destructive" onClick={() => { setAnulando(checagemAberta); setMotivoAnul(""); setDlg(null); }}>Anular checagem</Button>}
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {(dlg?.apz?.mav || dlg?.item?.mav) && (
-                <div className="flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs font-medium text-destructive"><ShieldAlert className="h-4 w-4 shrink-0" /> Alta vigilância: confira paciente, dose, via e diluição com outro profissional antes de administrar. A dupla checagem é registrada por ele, no login dele.</div>
-              )}
-              <div className="flex gap-2">
-                <Button type="button" size="sm" variant={dlgStatus === "realizado" ? "default" : "outline"} onClick={() => setDlgStatus("realizado")}>Realizado</Button>
-                <Button type="button" size="sm" variant={dlgStatus === "nao_realizado" ? "default" : "outline"} onClick={() => setDlgStatus("nao_realizado")}>Não realizado</Button>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div><Label htmlFor="chk-hora">Hora</Label><Input id="chk-hora" type="time" value={dlgHora} onChange={(e) => setDlgHora(e.target.value)} /></div>
-                {dlgStatus === "realizado" && dlgBhCategoria && (
-                  <div><Label htmlFor="chk-vol">Volume (mL)</Label><Input id="chk-vol" inputMode="decimal" value={dlgVolume} onChange={(e) => setDlgVolume(e.target.value)} /></div>
-                )}
-              </div>
-              {dlgFuturo && <p className="text-xs text-destructive">A hora não pode estar no futuro.</p>}
-              {dlgAntecipada && <p className="text-xs font-medium text-warning-on-soft">Dose mais de 1 h antes do horário aprazado: informe o motivo da antecipação.</p>}
-              {dlgStatus === "realizado" && dlgBhCategoria && dlgVolumeNum ? <p className="text-xs text-muted-foreground">{dlgVolumeNum} mL entram no balanço hídrico como {categoriaLabel(dlgBhCategoria)}.</p> : null}
-              <div>
-                <Label htmlFor="chk-motivo">{dlgStatus === "nao_realizado" || dlgAntecipada ? "Motivo (obrigatório)" : dlg?.apz ? "Observação" : "Indicação da dose (obrigatório)"}</Label>
-                <Textarea id="chk-motivo" rows={2} value={dlgMotivo} onChange={(e) => setDlgMotivo(e.target.value)}
-                  placeholder={dlgStatus === "nao_realizado" ? "Ex.: paciente em exame, recusa, jejum, acesso perdido" : dlg?.apz ? "" : "Ex.: dor 7/10, febre 38,5 °C"} />
-              </div>
-            </div>
-          )}
-          {!checagemAberta && (
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setDlg(null)}>Cancelar</Button>
-              <Button disabled={!dlgValido || apz.checar.isPending} onClick={confirmarChecagem}>{apz.checar.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Registrar</Button>
-            </DialogFooter>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Anular checagem */}
-      <Dialog open={!!anulando} onOpenChange={(o) => !o && setAnulando(null)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>Anular checagem</DialogTitle><DialogDescription>{anulando?.item_nome} — a checagem fica registrada como anulada; o ganho no balanço hídrico também é anulado.</DialogDescription></DialogHeader>
-          <Textarea rows={2} value={motivoAnul} onChange={(e) => setMotivoAnul(e.target.value)} placeholder="Motivo (obrigatório)" aria-label="Motivo da anulação" />
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setAnulando(null)}>Voltar</Button>
-            <Button variant="destructive" disabled={motivoAnul.trim().length < 3 || apz.anularChecagem.isPending} onClick={() => anulando && apz.anularChecagem.mutate({ id: anulando.id, motivo: motivoAnul }, { onSuccess: () => setAnulando(null) })}>Anular</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ChecagemDialog alvo={alvo} checagem={checagemAberta} meuProfissionalId={meuProf} podeChecar={podeChecar} onClose={() => setAlvo(null)} />
 
       {/* Cancelar / reaprazar horarios */}
       <Dialog open={!!cancelando} onOpenChange={(o) => !o && setCancelando(null)}>

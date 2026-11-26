@@ -2195,6 +2195,36 @@ export type Database = {
           },
         ]
       }
+      plantao_leitos: {
+        Row: {
+          criado_em: string
+          encerrado_em: string | null
+          id: string
+          internacao_id: string
+          profissional_id: string
+          profissional_nome: string | null
+          turno_inicio: string
+        }
+        Insert: {
+          criado_em?: string
+          encerrado_em?: string | null
+          id?: string
+          internacao_id: string
+          profissional_id?: string
+          profissional_nome?: string | null
+          turno_inicio: string
+        }
+        Update: {
+          criado_em?: string
+          encerrado_em?: string | null
+          id?: string
+          internacao_id?: string
+          profissional_id?: string
+          profissional_nome?: string | null
+          turno_inicio?: string
+        }
+        Relationships: []
+      }
       prescricoes: {
         Row: {
           assinatura_digital: Json | null
@@ -3027,6 +3057,11 @@ export type Database = {
       }
       sinais_vitais: {
         Row: {
+          dor_escala: number | null
+          fio2: number | null
+          glicemia_capilar: number | null
+          o2_suplementar: boolean | null
+          pvc: number | null
           criado_em: string
           data_hora: string
           freq_cardiaca: number | null
@@ -3042,6 +3077,11 @@ export type Database = {
           temperatura: number | null
         }
         Insert: {
+          dor_escala?: number | null
+          fio2?: number | null
+          glicemia_capilar?: number | null
+          o2_suplementar?: boolean | null
+          pvc?: number | null
           criado_em?: string
           data_hora?: string
           freq_cardiaca?: number | null
@@ -3057,6 +3097,11 @@ export type Database = {
           temperatura?: number | null
         }
         Update: {
+          dor_escala?: number | null
+          fio2?: number | null
+          glicemia_capilar?: number | null
+          o2_suplementar?: boolean | null
+          pvc?: number | null
           criado_em?: string
           data_hora?: string
           freq_cardiaca?: number | null

@@ -2,6 +2,7 @@ import { useEffect, useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import type { ValidityWindow } from "@/lib/prescriptionValidity";
 
 /**
@@ -35,6 +36,7 @@ export interface NovoHorario {
 }
 
 export interface NovaChecagem {
+  internacaoId: string;
   aprazamentoId: string | null; prescricaoId: string; itemId: string; itemNome: string;
   status: "realizado" | "nao_realizado"; realizadoEm: Date; motivo?: string; volumeMl: number | null;
   bhCategoria: string | null; mav: boolean;
@@ -158,10 +160,32 @@ export function useAprazamento(internacaoId: string | null, janela: ValidityWind
     onError: (e) => toast.error("Cancelamento não registrado", { description: errMsg(e) }),
   });
 
+  return {
+    prescricao: prescQ.data ?? null,
+    horarios: apzQ.data ?? [],
+    checagens: admQ.data ?? [],
+    carregando: prescQ.isLoading || apzQ.isLoading || admQ.isLoading,
+    erro: prescQ.error || apzQ.error || admQ.error,
+    aprazar, cancelar,
+  };
+}
+
+/**
+ * Checagem, anulacao e dupla checagem — usadas pela tela de aprazamento e pelo
+ * "Meu plantao" (varios pacientes). Invalida as telas de todos os pacientes.
+ */
+export function useChecagemAcoes() {
+  const qc = useQueryClient();
+  const invalidar = () => {
+    qc.invalidateQueries({ queryKey: ["apz-checagens"] });
+    qc.invalidateQueries({ queryKey: ["bh-lancamentos"] });
+    qc.invalidateQueries({ queryKey: ["plantao-setor"] });
+  };
+
   const checar = useMutation({
     mutationFn: async (c: NovaChecagem) => {
       const { data, error } = await supabase.from("administracoes").insert({
-        internacao_id: internacaoId as string,
+        internacao_id: c.internacaoId,
         aprazamento_id: c.aprazamentoId,
         prescricao_id: c.prescricaoId,
         item_id: c.itemId,
@@ -212,12 +236,19 @@ export function useAprazamento(internacaoId: string | null, janela: ValidityWind
     onError: (e) => toast.error("Dupla checagem não registrada", { description: errMsg(e) }),
   });
 
-  return {
-    prescricao: prescQ.data ?? null,
-    horarios: apzQ.data ?? [],
-    checagens: admQ.data ?? [],
-    carregando: prescQ.isLoading || apzQ.isLoading || admQ.isLoading,
-    erro: prescQ.error || apzQ.error || admQ.error,
-    aprazar, cancelar, checar, anularChecagem, duplaChecagem,
-  };
+  return { checar, anularChecagem, duplaChecagem };
+}
+
+/** Id do profissional logado (para saber quem nao pode fazer a propria dupla checagem). */
+export function useMeuProfissionalId() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ["meu-profissional", user?.id],
+    enabled: !!user?.id,
+    staleTime: 10 * 60_000,
+    queryFn: async () => {
+      const { data } = await supabase.from("profissionais").select("id").eq("user_id", user!.id).maybeSingle();
+      return (data as { id?: string } | null)?.id ?? null;
+    },
+  }).data ?? null;
 }

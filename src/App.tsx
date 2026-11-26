@@ -99,6 +99,8 @@ const ModuloPacientePage = lazy(() => import("./pages/multi/ModuloPacientePage")
 const ModuloSetorPage = lazy(() => import("./pages/multi/ModuloSetorPage"));
 const BalancoHidricoPage = lazy(() => import("./pages/multi/BalancoHidricoPage"));
 const AprazamentoPage = lazy(() => import("./pages/multi/AprazamentoPage"));
+const PainelEnfermeiroPage = lazy(() => import("./pages/multi/PainelEnfermeiroPage"));
+const MeuPlantaoPage = lazy(() => import("./pages/multi/MeuPlantaoPage"));
 const RequisicaoImagensPage = lazy(() => import("./pages/RequisicaoImagensPage"));
 const FichaAtendimentoPage = lazy(() => import("./pages/FichaAtendimentoPage"));
 const NirDashboardPage = lazy(() => import("./pages/NirDashboardPage"));
@@ -369,8 +371,8 @@ const App = () => {
                   <Route path="/enfermagem" element={<ProtectedRoute><MainLayout><ModuloPacientePage moduleKey="enfermagem" /></MainLayout></ProtectedRoute>} />
                   <Route path="/enfermagem/balanco" element={<ProtectedRoute><MainLayout><BalancoHidricoPage /></MainLayout></ProtectedRoute>} />
                   <Route path="/enfermagem/aprazamento" element={<ProtectedRoute><MainLayout><AprazamentoPage /></MainLayout></ProtectedRoute>} />
-                  <Route path="/enfermagem/setor" element={<ProtectedRoute><MainLayout><ModuloSetorPage moduleKey="enfermagem" /></MainLayout></ProtectedRoute>} />
-                  <Route path="/enfermagem/meu-plantao" element={<ProtectedRoute><MainLayout><ModuloSetorPage moduleKey="enfermagem" meuPlantao /></MainLayout></ProtectedRoute>} />
+                  <Route path="/enfermagem/setor" element={<ProtectedRoute><MainLayout><PainelEnfermeiroPage /></MainLayout></ProtectedRoute>} />
+                  <Route path="/enfermagem/meu-plantao" element={<ProtectedRoute><MainLayout><MeuPlantaoPage /></MainLayout></ProtectedRoute>} />
                 </>
               )}
               <Route path="/documentos" element={<ProtectedRoute><MainLayout><DocumentosPageWrapper /></MainLayout></ProtectedRoute>} />
