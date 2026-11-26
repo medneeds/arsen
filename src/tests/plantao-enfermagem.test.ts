@@ -109,3 +109,9 @@ test("itens sem aprazamento: novo item entra, sem dose restante e S/N nao", () =
   const tarde = L(27, 11);
   assert.deepStrictEqual(itensSemAprazamento(itens, prescriptionValidityWindow(tarde), tarde, ex).map((i) => i.itemId), ["c"]);
 });
+
+test("intercorrencia aberta conta como pendencia", () => {
+  const r = resumoLeito({ agora: L(26, 8), doses: [], duplaPendente: 0, semAprazamento: 0, ultimoSSVV: { ...base, data_hora: L(26, 7).toISOString(), o2_suplementar: false }, bhAnterior: "aberto", tecnicos: [], intercorrenciasAbertas: 2 });
+  assert.strictEqual(r.intercorrenciasAbertas, 2);
+  assert.strictEqual(r.pendencias, 2);
+});

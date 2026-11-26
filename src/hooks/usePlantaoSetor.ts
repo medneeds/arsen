@@ -8,6 +8,7 @@ import { itensAprazaveis, type ItemAprazavel } from "@/lib/aprazamentoItens";
 import { itensSemAprazamento, resumoLeito, type DoseFila, type ResumoLeito, type SituacaoBH } from "@/lib/plantaoEnfermagem";
 import type { ValidityWindow } from "@/lib/prescriptionValidity";
 import type { Periodo } from "@/lib/fluidBalance";
+import { fortalezaParts } from "@/lib/docPrefixes";
 
 /**
  * Dados de enfermagem de varios leitos (setor ou "meus leitos") — fonte do
@@ -26,7 +27,18 @@ export interface SinaisVitaisFullRow extends SinaisVitaisRow {
 export interface BhLancTurnoRow { internacao_id: string; data_hora: string; sentido: "ganho" | "perda"; categoria: string; volume_ml: number; origem: string; anulado_em: string | null }
 export interface BhFechRow { internacao_id: string; periodo_inicio: string; validado_em: string | null }
 
+export interface AnotacaoRow {
+  id: string; internacao_id: string; data_hora: string; tipo: "anotacao_tecnico" | "evolucao_enfermeiro" | "intercorrencia" | "sae";
+  conteudo: Record<string, unknown>; texto_gerado: string; status: string; registrado_por: string; registrado_por_nome: string | null;
+  validado_em: string | null; ciencia_em: string | null; ciencia_por_nome: string | null; ciencia_conduta: string | null;
+  doc_code: string | null; anulado_em: string | null; motivo_anulacao: string | null; criado_em: string;
+}
+export interface FugulinRow { id: string; internacao_id: string; data: string; escore: number; categoria: string; respostas: Record<string, number>; registrado_por_nome: string | null; atualizado_em: string }
+
 export interface DadosSetor {
+  /** anotacoes das ultimas 48h (anuladas excluidas) */
+  anotacoes: AnotacaoRow[];
+  fugulinHoje: Map<string, FugulinRow>;
   prescricoes: Map<string, PrescricaoAtiva>;
   horarios: AprazamentoRow[];
   checagens: AdministracaoRow[];
@@ -53,7 +65,8 @@ export function usePlantaoSetor(ids: string[], janela: ValidityWindow, turno: Tu
     queryFn: async (): Promise<DadosSetor> => {
       const lista = chave.split(",");
       const desde48h = new Date(Date.now() - 48 * HOUR_MS).toISOString();
-      const [presc, apz, adm, ssvv, fech, lanc, pl] = await Promise.all([
+      const hojeLocal = (() => { const p = fortalezaParts(new Date()); return `${p.year}-${String(p.month).padStart(2, "0")}-${String(p.day).padStart(2, "0")}`; })();
+      const [presc, apz, adm, ssvv, fech, lanc, pl, anot, fug] = await Promise.all([
         supabase.from("prescricoes").select("id, internacao_id, status, itens, criado_em, atualizado_em")
           .in("internacao_id", lista).neq("status", "draft").order("criado_em", { ascending: false }),
         supabase.from("aprazamentos").select("*").in("internacao_id", lista).eq("janela_inicio", janela.start.toISOString()),
@@ -66,8 +79,12 @@ export function usePlantaoSetor(ids: string[], janela: ValidityWindow, turno: Tu
         supabase.from("balanco_hidrico_lancamentos").select("internacao_id, data_hora, sentido, categoria, volume_ml, origem, anulado_em")
           .in("internacao_id", lista).gte("data_hora", turno.inicio.toISOString()).lt("data_hora", turno.fim.toISOString()),
         supabase.from("plantao_leitos").select("*").in("internacao_id", lista).eq("turno_inicio", turno.inicio.toISOString()).is("encerrado_em", null),
+        supabase.from("anotacoes_enfermagem").select("*").in("internacao_id", lista).is("anulado_em", null).gte("data_hora", desde48h).order("data_hora", { ascending: true }),
+        supabase.from("classificacoes_cuidado").select("id, internacao_id, data, escore, categoria, respostas, registrado_por_nome, atualizado_em").in("internacao_id", lista).eq("data", hojeLocal),
       ]);
-      for (const r of [presc, apz, adm, ssvv, fech, lanc, pl]) if (r.error) throw r.error;
+      for (const r of [presc, apz, adm, ssvv, fech, lanc, pl, anot, fug]) if (r.error) throw r.error;
+      const fugulinHoje = new Map<string, FugulinRow>();
+      for (const f of (fug.data ?? []) as FugulinRow[]) fugulinHoje.set(f.internacao_id, f);
       const prescricoes = new Map<string, PrescricaoAtiva>();
       for (const p of (presc.data ?? []) as (PrescricaoAtiva & { internacao_id: string })[]) {
         if (!prescricoes.has(p.internacao_id)) prescricoes.set(p.internacao_id, p);
@@ -77,6 +94,8 @@ export function usePlantaoSetor(ids: string[], janela: ValidityWindow, turno: Tu
       const fechamentosAnteriores = new Map<string, BhFechRow>();
       for (const f of (fech.data ?? []) as BhFechRow[]) fechamentosAnteriores.set(f.internacao_id, f);
       return {
+        anotacoes: (anot.data ?? []) as AnotacaoRow[],
+        fugulinHoje,
         prescricoes,
         horarios: (apz.data ?? []) as AprazamentoRow[],
         checagens: (adm.data ?? []) as AdministracaoRow[],
@@ -93,7 +112,7 @@ export function usePlantaoSetor(ids: string[], janela: ValidityWindow, turno: Tu
     if (!chave) return;
     const filtro = `internacao_id=in.(${chave})`;
     let ch = supabase.channel(`plantao-${Math.random().toString(36).slice(2, 10)}`);
-    for (const table of ["aprazamentos", "administracoes", "sinais_vitais", "balanco_hidrico_lancamentos", "balanco_hidrico_fechamentos", "plantao_leitos", "prescricoes"]) {
+    for (const table of ["aprazamentos", "administracoes", "sinais_vitais", "balanco_hidrico_lancamentos", "balanco_hidrico_fechamentos", "plantao_leitos", "prescricoes", "anotacoes_enfermagem", "classificacoes_cuidado"]) {
       ch = ch.on("postgres_changes", { event: "*", schema: "public", table, filter: filtro }, () => {
         qc.invalidateQueries({ queryKey: ["plantao-setor"] });
       });
@@ -180,9 +199,13 @@ export interface LeitoEnfermagem {
   plantao: PlantaoLeitoRow[];
   ssvv: SinaisVitaisFullRow | null;
   turno: { ganhos: number; perdas: number };
+  intercorrenciasAbertas: AnotacaoRow[];
+  /** anotacoes e intercorrencias desde o inicio do turno */
+  anotacoesTurno: AnotacaoRow[];
+  fugulin: FugulinRow | null;
 }
 
-export function derivarLeito(dados: DadosSetor, internacaoId: string, agora: Date, janela: ValidityWindow, janelaAtual: boolean): LeitoEnfermagem {
+export function derivarLeito(dados: DadosSetor, internacaoId: string, agora: Date, janela: ValidityWindow, janelaAtual: boolean, turnoInicio: Date = new Date(agora.getTime() - 12 * HOUR_MS)): LeitoEnfermagem {
   const presc = dados.prescricoes.get(internacaoId) ?? null;
   const itens = presc ? itensAprazaveis(presc.itens, agora) : [];
   const horarios = dados.horarios.filter((h) => h.internacao_id === internacaoId);
@@ -200,13 +223,18 @@ export function derivarLeito(dados: DadosSetor, internacaoId: string, agora: Dat
   const plantao = dados.plantao.filter((p) => p.internacao_id === internacaoId);
   const ssvv = dados.ultimoSSVV.get(internacaoId) ?? null;
   const lanc = dados.lancamentosTurno.filter((l) => l.internacao_id === internacaoId && !l.anulado_em);
+  const anot = dados.anotacoes.filter((a) => a.internacao_id === internacaoId);
+  const intercorrenciasAbertas = anot.filter((a) => a.tipo === "intercorrencia" && !a.ciencia_em);
+  const anotacoesTurno = anot.filter((a) => (a.tipo === "anotacao_tecnico" || a.tipo === "intercorrencia") && new Date(a.data_hora).getTime() >= turnoInicio.getTime());
+  const fugulin = dados.fugulinHoje.get(internacaoId) ?? null;
   const soma = (s: "ganho" | "perda") => Math.round(lanc.filter((l) => l.sentido === s).reduce((a, l) => a + l.volume_ml, 0) * 10) / 10;
   return {
     internacaoId, prescricaoId: presc?.id ?? null, itens, doses, dcPendentes, semHorario, plantao, ssvv,
     turno: { ganhos: soma("ganho"), perdas: soma("perda") },
+    intercorrenciasAbertas, anotacoesTurno, fugulin,
     resumo: resumoLeito({
       agora, doses, duplaPendente: dcPendentes.length, semAprazamento: semHorario.length, ultimoSSVV: ssvv,
-      bhAnterior, tecnicos: plantao.map((p) => (p.profissional_nome ?? "").split(/\s+/).slice(0, 2).join(" ")).filter(Boolean),
+      bhAnterior, intercorrenciasAbertas: intercorrenciasAbertas.length, tecnicos: plantao.map((p) => (p.profissional_nome ?? "").split(/\s+/).slice(0, 2).join(" ")).filter(Boolean),
     }),
   };
 }

@@ -1,6 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Lock, Loader2, AlertTriangle, ShieldAlert, CalendarClock, Droplets, Activity, Users } from "lucide-react";
+import { Lock, Loader2, AlertTriangle, ShieldAlert, CalendarClock, Droplets, Activity, Users, AlertOctagon, ClipboardList, FileText } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { useAnotacoesAcoes } from "@/hooks/useAnotacoesEnfermagem";
+import type { AnotacaoRow } from "@/hooks/usePlantaoSetor";
+import { FUGULIN_CATEGORIAS, horasNecessarias, type FugulinCategoria } from "@/lib/fugulin";
+import { fortalezaParts } from "@/lib/docPrefixes";
 import { AppHeader } from "@/components/AppHeader";
 import { PageTransition } from "@/components/PageTransition";
 import { Switch } from "@/components/ui/switch";
@@ -45,7 +52,7 @@ export default function PainelEnfermeiroPage() {
   const ids = useMemo(() => ocupados.map((p) => p.id), [ocupados]);
   const { dados, carregando, erro } = usePlantaoSetor(ids, janela, turno, periodoAnterior);
 
-  const linhas = useMemo(() => (dados ? ocupados.map((p) => ({ p, l: derivarLeito(dados, p.id, agora, janela, true) })) : []), [dados, ocupados, agora, janela]);
+  const linhas = useMemo(() => (dados ? ocupados.map((p) => ({ p, l: derivarLeito(dados, p.id, agora, janela, true, turno.inicio) })) : []), [dados, ocupados, agora, janela, turno.inicio]);
   const tecnicos = useMemo(() => [...new Set(linhas.flatMap(({ l }) => l.resumo.tecnicos))].sort(), [linhas]);
   const [soPendencia, setSoPendencia] = useState(false);
   const [tecnico, setTecnico] = useState("todos");
@@ -58,7 +65,17 @@ export default function PainelEnfermeiroPage() {
     semHorario: a.semHorario + l.resumo.semAprazamento,
     news2: a.news2 + (l.resumo.news2?.alertaEnfermeiro ? 1 : 0),
     semTecnico: a.semTecnico + (l.resumo.tecnicos.length === 0 ? 1 : 0),
-  }), { atrasadas: 0, dc: 0, semHorario: 0, news2: 0, semTecnico: 0 });
+    intercorrencias: a.intercorrencias + l.intercorrenciasAbertas.length,
+    semFugulin: a.semFugulin + (l.fugulin ? 0 : 1),
+  }), { atrasadas: 0, dc: 0, semHorario: 0, news2: 0, semTecnico: 0, intercorrencias: 0, semFugulin: 0 });
+  const horasFugulin = horasNecessarias(linhas.map(({ l }) => (l.fugulin?.categoria as FugulinCategoria | undefined) ?? null));
+
+  // Ciencia da intercorrencia (so enfermeiro; o banco confere)
+  const anot = useAnotacoesAcoes();
+  const ehEnfermeiro = role === "enfermeiro";
+  const [ciencia, setCiencia] = useState<{ a: AnotacaoRow; leito: string } | null>(null);
+  const [conduta, setConduta] = useState("");
+  const hhmm = (iso: string) => { const q = fortalezaParts(new Date(iso)); return `${String(q.hour).padStart(2, "0")}:${String(q.minute).padStart(2, "0")}`; };
 
   const abrir = (p: (typeof ocupados)[number], path: string) => {
     const qs = new URLSearchParams({ patientId: p.id, patientName: p.name, patientBed: String(p.bedNumber ?? ""), patientSector: String(p.sector ?? "") });
@@ -88,19 +105,25 @@ export default function PainelEnfermeiroPage() {
           <div className="rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">Nenhum leito ocupado neste setor.</div>
         ) : (
           <>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-8">
               <Tile label="Leitos" value={ocupados.length} alerta={false} />
               <Tile label="Doses atrasadas" value={tot.atrasadas} alerta />
               <Tile label="Dupla checagem MAV" value={tot.dc} alerta />
               <Tile label="Itens sem horário" value={tot.semHorario} alerta />
               <Tile label="NEWS2 em alerta" value={tot.news2} alerta />
               <Tile label="Leitos sem técnico" value={tot.semTecnico} alerta />
+              <Tile label="Intercorrências abertas" value={tot.intercorrencias} alerta />
+              <div className="rounded-lg border border-border bg-background px-3 py-2 text-muted-foreground" title={`${tot.semFugulin} leito(s) sem Fugulin hoje — não entram na soma`}>
+                <div className="text-[11px] font-semibold uppercase tracking-wide">Horas enf. (Fugulin)</div>
+                <div className="text-lg font-bold tabular-nums text-foreground">{horasFugulin} h<span className="ml-1 text-xs font-normal text-muted-foreground">{tot.semFugulin ? `· ${tot.semFugulin} sem` : ""}</span></div>
+              </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-3 text-sm">
               <span className="font-semibold text-foreground">{turno.label}</span>
               <span className="text-xs text-muted-foreground">Vigência da prescrição 12h → 12h · atualiza em tempo real</span>
-              <label className="ml-auto flex items-center gap-2 text-xs text-muted-foreground"><Switch checked={soPendencia} onCheckedChange={setSoPendencia} aria-label="Só leitos com pendência" /> Só com pendência</label>
+              <Button size="sm" variant="outline" className="ml-auto gap-1.5" onClick={() => navigate("/enfermagem/sbar")}><FileText className="h-4 w-4" /> Passagem SBAR</Button>
+              <label className="flex items-center gap-2 text-xs text-muted-foreground"><Switch checked={soPendencia} onCheckedChange={setSoPendencia} aria-label="Só leitos com pendência" /> Só com pendência</label>
               <Select value={tecnico} onValueChange={setTecnico}>
                 <SelectTrigger className="h-8 w-48 text-xs" aria-label="Filtrar por técnico"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -112,7 +135,7 @@ export default function PainelEnfermeiroPage() {
             </div>
 
             <section className="overflow-x-auto rounded-lg border border-border bg-card">
-              <table className="w-full min-w-[56rem] text-sm">
+              <table className="w-full min-w-[72rem] text-sm">
                 <thead className="border-b border-border bg-muted/50 text-left text-[11px] uppercase tracking-wide text-muted-foreground">
                   <tr>
                     <th className="px-3 py-2">Leito · paciente</th>
@@ -123,6 +146,8 @@ export default function PainelEnfermeiroPage() {
                     <th className="px-3 py-2">NEWS2 · SSVV</th>
                     <th className="px-3 py-2">BH de ontem</th>
                     <th className="px-3 py-2">Turno (BH)</th>
+                    <th className="px-3 py-2">Intercorrência</th>
+                    <th className="px-3 py-2">Fugulin</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -165,6 +190,23 @@ export default function PainelEnfermeiroPage() {
                         <td className="px-3 py-2 text-xs tabular-nums">
                           <span className="inline-flex items-center gap-1 text-muted-foreground"><Droplets className="h-3 w-3" />+{l.turno.ganhos.toLocaleString("pt-BR")} / −{l.turno.perdas.toLocaleString("pt-BR")} mL</span>
                         </td>
+                        <td className="px-3 py-2 text-xs">
+                          {l.intercorrenciasAbertas.length
+                            ? l.intercorrenciasAbertas.map((a) => (
+                                <button key={a.id} type="button" disabled={!ehEnfermeiro} onClick={() => { setCiencia({ a, leito: String(p.bedNumber) }); setConduta(""); }}
+                                  className="mb-1 flex max-w-[14rem] items-start gap-1 rounded border border-destructive/40 bg-destructive/10 px-1.5 py-0.5 text-left font-semibold text-destructive hover:bg-destructive/20 disabled:cursor-default"
+                                  title={a.texto_gerado}>
+                                  <AlertOctagon className="mt-0.5 h-3 w-3 shrink-0" /><span className="truncate">{hhmm(a.data_hora)} {String((a.conteudo as { tipo?: string }).tipo ?? "Intercorrência")}</span>
+                                </button>
+                              ))
+                            : "—"}
+                        </td>
+                        <td className="px-3 py-2 text-xs">
+                          <button type="button" onClick={() => abrir(p, "/enfermagem/evolucao")} className={cn("rounded px-1 text-left hover:underline", l.fugulin ? "text-foreground" : "text-muted-foreground")}>
+                            {l.fugulin ? `${l.fugulin.escore} · ${FUGULIN_CATEGORIAS[l.fugulin.categoria as FugulinCategoria]?.label ?? l.fugulin.categoria}` : "não classificado"}
+                          </button>
+                          <button type="button" onClick={() => abrir(p, "/enfermagem/evolucao")} className="mt-0.5 flex items-center gap-1 text-primary hover:underline"><ClipboardList className="h-3 w-3" /> Evolução</button>
+                        </td>
                       </tr>
                     );
                   })}
@@ -172,10 +214,25 @@ export default function PainelEnfermeiroPage() {
               </table>
               {filtradas.length === 0 && <p className="px-4 py-6 text-sm text-muted-foreground">Nenhum leito com os filtros atuais.</p>}
             </section>
-            <p className="flex items-center gap-1.5 text-xs text-muted-foreground"><Users className="h-3.5 w-3.5" /> O técnico aparece quando assume o leito em “Meu plantão”. Fugulin do dia e escala entram na etapa de SAE.</p>
+            <p className="flex items-center gap-1.5 text-xs text-muted-foreground"><Users className="h-3.5 w-3.5" /> O técnico aparece quando assume o leito em “Meu plantão”. Horas de enfermagem pela COFEN 543/2017 (só leitos com Fugulin de hoje); a escala da equipe ainda não está no sistema.</p>
           </>
         )}
       </div>
+
+      <Dialog open={!!ciencia} onOpenChange={(o) => !o && setCiencia(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Intercorrência — leito {ciencia?.leito}</DialogTitle>
+            <DialogDescription>{ciencia ? `${hhmm(ciencia.a.data_hora)} · registrada por ${ciencia.a.registrado_por_nome ?? "—"}` : ""}</DialogDescription>
+          </DialogHeader>
+          <p className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm">{ciencia?.a.texto_gerado}</p>
+          <Textarea rows={3} value={conduta} onChange={(e) => setConduta(e.target.value)} placeholder="Conduta do enfermeiro (obrigatório)" aria-label="Conduta do enfermeiro" />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCiencia(null)}>Voltar</Button>
+            <Button disabled={conduta.trim().length < 3 || anot.ciencia.isPending} onClick={() => ciencia && anot.ciencia.mutate({ id: ciencia.a.id, conduta }, { onSuccess: () => setCiencia(null) })}>Registrar ciência</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PageTransition>
   );
 }

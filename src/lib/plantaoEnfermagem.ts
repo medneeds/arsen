@@ -122,6 +122,8 @@ export interface ResumoLeitoInput {
   /** situacao do BH do periodo 07->07 que JA terminou */
   bhAnterior: SituacaoBH;
   tecnicos: string[];
+  /** intercorrencias registradas sem ciencia do enfermeiro */
+  intercorrenciasAbertas?: number;
 }
 
 export interface ResumoLeito {
@@ -137,6 +139,7 @@ export interface ResumoLeito {
   /** BH de ontem ainda sem validacao depois das 09h. */
   bhPendente: boolean;
   tecnicos: string[];
+  intercorrenciasAbertas: number;
   pendencias: number;
 }
 
@@ -158,11 +161,12 @@ export function resumoLeito(i: ResumoLeitoInput): ResumoLeito {
   const ssvvAtrasado = ssvvHaHoras == null || ssvvHaHoras > SSVV_MAX_HORAS;
   const hora = fortalezaParts(i.agora).hour;
   const bhPendente = i.bhAnterior !== "validado" && hora >= 9;
-  const pendencias = atrasadas + i.duplaPendente + i.semAprazamento
+  const intercorrenciasAbertas = i.intercorrenciasAbertas ?? 0;
+  const pendencias = atrasadas + i.duplaPendente + i.semAprazamento + intercorrenciasAbertas
     + (news2?.alertaEnfermeiro ? 1 : 0) + (ssvvAtrasado ? 1 : 0) + (bhPendente ? 1 : 0);
   return {
     atrasadas, proximaHora, duplaPendente: i.duplaPendente, semAprazamento: i.semAprazamento,
-    news2, ssvvHaHoras, ssvvAtrasado, bhAnterior: i.bhAnterior, bhPendente, tecnicos: i.tecnicos, pendencias,
+    news2, ssvvHaHoras, ssvvAtrasado, bhAnterior: i.bhAnterior, bhPendente, tecnicos: i.tecnicos, intercorrenciasAbertas, pendencias,
   };
 }
 

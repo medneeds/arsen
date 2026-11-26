@@ -1,5 +1,5 @@
 import { useSearchParams, Link } from "react-router-dom";
-import { Construction, Eye, PenLine, Lock, Droplets, ChevronRight, CalendarClock } from "lucide-react";
+import { Construction, Eye, PenLine, Lock, Droplets, ChevronRight, CalendarClock, ClipboardList } from "lucide-react";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
 import { PageTransition } from "@/components/PageTransition";
 import { ModulePatientStrip } from "@/components/multi/ModulePatientStrip";
@@ -11,7 +11,7 @@ import { canWriteModule, getMultiModule, visibleMultiModules, type MultiModuleKe
 const ROADMAP: Record<MultiModuleKey, string[]> = {
   nutricao: ["Avaliação (NRS-2002, antropometria, GET, metas)", "Monitoramento diário em terapia intensiva", "Curva de kcal e proteína ofertadas × meta", "PDF Norma Zero NUT-AVA"],
   fisioterapia: ["Evolução com procedimento SIGTAP", "Bundle PAV por turno", "Dias de VM a partir dos dispositivos", "PDF Norma Zero FIS-EVO"],
-  enfermagem: ["Ambiente do técnico (Meu plantão) e painel do setor", "Prescrição e evolução de enfermagem, SAE e SBAR", "PDFs Norma Zero ENF-EVO, ENF-SBAR"],
+  enfermagem: ["Prescrição de enfermagem com checagem de cuidados", "Dispositivos no SBAR (tabela de dispositivos)"],
 };
 
 /**
@@ -63,6 +63,19 @@ export default function ModuloPacientePage({ moduleKey }: { moduleKey: MultiModu
                 <span className="min-w-0 flex-1">
                   <span className="block text-sm font-semibold text-foreground">Aprazamento e checagem</span>
                   <span className="block text-xs text-muted-foreground">Vigência 12h → 12h · grade HMDM, checagem, dupla checagem MAV e PDF ENF-APZ</span>
+                </span>
+                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+              </Link>
+            )}
+            {moduleKey === "enfermagem" && (
+              <Link
+                to={`/enfermagem/evolucao${qs ? `?${qs}` : ""}`}
+                className="flex items-center gap-3 rounded-lg border border-border bg-card p-4 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <ClipboardList className="h-5 w-5 shrink-0 text-primary" aria-hidden />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-semibold text-foreground">Evolução de enfermagem e Fugulin</span>
+                  <span className="block text-xs text-muted-foreground">Exame por sistemas, Braden, Morse, SAE, anotações do turno · PDF ENF-EVO</span>
                 </span>
                 <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
               </Link>

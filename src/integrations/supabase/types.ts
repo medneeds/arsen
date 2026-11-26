@@ -502,6 +502,114 @@ export type Database = {
         }
         Relationships: []
       }
+      anotacoes_enfermagem: {
+        Row: {
+          anulado_em: string | null
+          anulado_por: string | null
+          ciencia_conduta: string | null
+          ciencia_em: string | null
+          ciencia_por: string | null
+          ciencia_por_nome: string | null
+          conteudo: Json
+          criado_em: string
+          data_hora: string
+          doc_code: string | null
+          id: string
+          internacao_id: string
+          motivo_anulacao: string | null
+          registrado_por: string
+          registrado_por_nome: string | null
+          status: string
+          texto_gerado: string
+          tipo: string
+          validado_em: string | null
+          validado_por: string | null
+        }
+        Insert: {
+          anulado_em?: string | null
+          anulado_por?: string | null
+          ciencia_conduta?: string | null
+          ciencia_em?: string | null
+          ciencia_por?: string | null
+          ciencia_por_nome?: string | null
+          conteudo: Json
+          criado_em?: string
+          data_hora: string
+          doc_code?: string | null
+          id?: string
+          internacao_id: string
+          motivo_anulacao?: string | null
+          registrado_por?: string
+          registrado_por_nome?: string | null
+          status?: string
+          texto_gerado: string
+          tipo: string
+          validado_em?: string | null
+          validado_por?: string | null
+        }
+        Update: {
+          anulado_em?: string | null
+          anulado_por?: string | null
+          ciencia_conduta?: string | null
+          ciencia_em?: string | null
+          ciencia_por?: string | null
+          ciencia_por_nome?: string | null
+          conteudo?: Json
+          criado_em?: string
+          data_hora?: string
+          doc_code?: string | null
+          id?: string
+          internacao_id?: string
+          motivo_anulacao?: string | null
+          registrado_por?: string
+          registrado_por_nome?: string | null
+          status?: string
+          texto_gerado?: string
+          tipo?: string
+          validado_em?: string | null
+          validado_por?: string | null
+        }
+        Relationships: []
+      }
+      classificacoes_cuidado: {
+        Row: {
+          atualizado_em: string
+          categoria: string
+          criado_em: string
+          data: string
+          escore: number
+          id: string
+          internacao_id: string
+          registrado_por: string
+          registrado_por_nome: string | null
+          respostas: Json
+        }
+        Insert: {
+          atualizado_em?: string
+          categoria: string
+          criado_em?: string
+          data: string
+          escore: number
+          id?: string
+          internacao_id: string
+          registrado_por?: string
+          registrado_por_nome?: string | null
+          respostas: Json
+        }
+        Update: {
+          atualizado_em?: string
+          categoria?: string
+          criado_em?: string
+          data?: string
+          escore?: number
+          id?: string
+          internacao_id?: string
+          registrado_por?: string
+          registrado_por_nome?: string | null
+          respostas?: Json
+        }
+        Relationships: []
+      }
       aprazamentos: {
         Row: {
           aprazado_em: string
@@ -922,6 +1030,90 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      documentos_medicos: {
+        Row: {
+          assinado_por: string | null
+          assinado_por_nome: string | null
+          atualizado_em: string
+          cid: string | null
+          corpo: string
+          criado_em: string
+          crm_assinatura: string | null
+          dias: number | null
+          hospital_id: string | null
+          id: string
+          internacao_id: string | null
+          numero_atendimento: string | null
+          paciente_cns: string | null
+          paciente_cpf: string | null
+          paciente_data_nascimento: string | null
+          paciente_endereco: string | null
+          paciente_id: string | null
+          paciente_leito: string | null
+          paciente_nome: string
+          paciente_nome_mae: string | null
+          paciente_prontuario: string | null
+          paciente_setor: string | null
+          paciente_sexo: string | null
+          paciente_telefone: string | null
+          tipo: string
+        }
+        Insert: {
+          assinado_por?: string | null
+          assinado_por_nome?: string | null
+          atualizado_em?: string
+          cid?: string | null
+          corpo?: string
+          criado_em?: string
+          crm_assinatura?: string | null
+          dias?: number | null
+          hospital_id?: string | null
+          id?: string
+          internacao_id?: string | null
+          numero_atendimento?: string | null
+          paciente_cns?: string | null
+          paciente_cpf?: string | null
+          paciente_data_nascimento?: string | null
+          paciente_endereco?: string | null
+          paciente_id?: string | null
+          paciente_leito?: string | null
+          paciente_nome: string
+          paciente_nome_mae?: string | null
+          paciente_prontuario?: string | null
+          paciente_setor?: string | null
+          paciente_sexo?: string | null
+          paciente_telefone?: string | null
+          tipo: string
+        }
+        Update: {
+          assinado_por?: string | null
+          assinado_por_nome?: string | null
+          atualizado_em?: string
+          cid?: string | null
+          corpo?: string
+          criado_em?: string
+          crm_assinatura?: string | null
+          dias?: number | null
+          hospital_id?: string | null
+          id?: string
+          internacao_id?: string | null
+          numero_atendimento?: string | null
+          paciente_cns?: string | null
+          paciente_cpf?: string | null
+          paciente_data_nascimento?: string | null
+          paciente_endereco?: string | null
+          paciente_id?: string | null
+          paciente_leito?: string | null
+          paciente_nome?: string
+          paciente_nome_mae?: string | null
+          paciente_prontuario?: string | null
+          paciente_setor?: string | null
+          paciente_sexo?: string | null
+          paciente_telefone?: string | null
+          tipo?: string
+        }
+        Relationships: []
       }
       evolucoes: {
         Row: {

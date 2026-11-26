@@ -101,6 +101,8 @@ const BalancoHidricoPage = lazy(() => import("./pages/multi/BalancoHidricoPage")
 const AprazamentoPage = lazy(() => import("./pages/multi/AprazamentoPage"));
 const PainelEnfermeiroPage = lazy(() => import("./pages/multi/PainelEnfermeiroPage"));
 const MeuPlantaoPage = lazy(() => import("./pages/multi/MeuPlantaoPage"));
+const EvolucaoEnfermagemPage = lazy(() => import("./pages/multi/EvolucaoEnfermagemPage"));
+const SbarPage = lazy(() => import("./pages/multi/SbarPage"));
 const RequisicaoImagensPage = lazy(() => import("./pages/RequisicaoImagensPage"));
 const FichaAtendimentoPage = lazy(() => import("./pages/FichaAtendimentoPage"));
 const NirDashboardPage = lazy(() => import("./pages/NirDashboardPage"));
@@ -373,6 +375,8 @@ const App = () => {
                   <Route path="/enfermagem/aprazamento" element={<ProtectedRoute><MainLayout><AprazamentoPage /></MainLayout></ProtectedRoute>} />
                   <Route path="/enfermagem/setor" element={<ProtectedRoute><MainLayout><PainelEnfermeiroPage /></MainLayout></ProtectedRoute>} />
                   <Route path="/enfermagem/meu-plantao" element={<ProtectedRoute><MainLayout><MeuPlantaoPage /></MainLayout></ProtectedRoute>} />
+                  <Route path="/enfermagem/evolucao" element={<ProtectedRoute><MainLayout><EvolucaoEnfermagemPage /></MainLayout></ProtectedRoute>} />
+                  <Route path="/enfermagem/sbar" element={<ProtectedRoute><MainLayout><SbarPage /></MainLayout></ProtectedRoute>} />
                 </>
               )}
               <Route path="/documentos" element={<ProtectedRoute><MainLayout><DocumentosPageWrapper /></MainLayout></ProtectedRoute>} />

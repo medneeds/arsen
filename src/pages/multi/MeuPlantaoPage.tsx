@@ -15,6 +15,8 @@ import { usePatients } from "@/hooks/usePatients";
 import { usePlantaoSetor, usePlantaoAcoes, derivarLeito, type LeitoEnfermagem, type DoseLeito } from "@/hooks/usePlantaoSetor";
 import { useMeuProfissionalId, type AdministracaoRow } from "@/hooks/useAprazamento";
 import { ChecagemDialog, type AlvoChecagem } from "@/components/multi/ChecagemDialog";
+import { AnotacaoTecnicoForm, IntercorrenciaForm } from "@/components/multi/AnotacoesTecnico";
+import type { AnotacaoRow } from "@/hooks/usePlantaoSetor";
 import { prescriptionValidityWindow } from "@/lib/prescriptionValidity";
 import { periodoBH, formatMl } from "@/lib/fluidBalance";
 import { turnoAtual, tarefasAgora, news2DeSinaisVitais, validarSSVV, type CampoSSVV } from "@/lib/plantaoEnfermagem";
@@ -91,9 +93,11 @@ export default function MeuPlantaoPage() {
   const meusIds = useMemo(() => new Set(meus.map((m) => m.internacao_id)), [meus]);
   const leitos = useMemo(() => {
     if (!dados) return [] as { p: (typeof ocupados)[number]; l: LeitoEnfermagem }[];
-    return ocupados.filter((p) => meusIds.has(p.id)).map((p) => ({ p, l: derivarLeito(dados, p.id, agora, janela, true) }));
-  }, [dados, ocupados, meusIds, agora, janela]);
+    return ocupados.filter((p) => meusIds.has(p.id)).map((p) => ({ p, l: derivarLeito(dados, p.id, agora, janela, true, turno.inicio) }));
+  }, [dados, ocupados, meusIds, agora, janela, turno.inicio]);
   const pacientePorId = useMemo(() => new Map(ocupados.map((p) => [p.id, p])), [ocupados]);
+
+  const leitosOpcao = leitos.map(({ p }) => ({ internacaoId: p.id, rotulo: `${p.bedNumber} · ${p.name}` }));
 
   // ── Escolha de leitos ──
   const [escolha, setEscolha] = useState<Set<string>>(new Set());
@@ -241,6 +245,8 @@ export default function MeuPlantaoPage() {
                 <TabsTrigger value="agora">Agora {fila.length ? `(${fila.length})` : ""}</TabsTrigger>
                 <TabsTrigger value="controles">Controles da hora</TabsTrigger>
                 <TabsTrigger value="balanco">Balanço do turno</TabsTrigger>
+                <TabsTrigger value="anotacao">Anotação</TabsTrigger>
+                <TabsTrigger value="intercorrencia">Intercorrência</TabsTrigger>
               </TabsList>
 
               <TabsContent value="agora" className="space-y-3">
@@ -366,12 +372,39 @@ export default function MeuPlantaoPage() {
                   </ul>
                 </section>
               </TabsContent>
+              <TabsContent value="anotacao">
+                <AnotacaoTecnicoForm leitos={leitosOpcao} online={online} />
+                <AnotacoesDoTurno leitos={leitos.map(({ p, l }) => ({ rotulo: String(p.bedNumber), anotacoes: l.anotacoesTurno }))} />
+              </TabsContent>
+              <TabsContent value="intercorrencia">
+                <IntercorrenciaForm leitos={leitosOpcao} online={online} />
+              </TabsContent>
             </Tabs>
-            <p className="text-xs text-muted-foreground">Anotação e intercorrência entram na etapa de anotações/SAE.</p>
           </>
         )}
       </div>
       <ChecagemDialog alvo={alvo} checagem={alvoChecagem} meuProfissionalId={meuProf} podeChecar={online} onClose={() => { setAlvo(null); setAlvoChecagem(null); }} />
     </PageTransition>
+  );
+}
+
+/** Anotacoes e intercorrencias registradas no turno nos meus leitos (leitura). */
+function AnotacoesDoTurno({ leitos }: { leitos: { rotulo: string; anotacoes: AnotacaoRow[] }[] }) {
+  const itens = leitos.flatMap((l) => l.anotacoes.map((a) => ({ ...a, leito: l.rotulo }))).sort((a, b) => b.data_hora.localeCompare(a.data_hora));
+  if (!itens.length) return null;
+  return (
+    <section className="mt-3 rounded-lg border border-border bg-card">
+      <header className="border-b border-border px-4 py-2.5 text-sm font-semibold text-foreground">Registrado neste turno</header>
+      <ul className="divide-y divide-border text-sm">
+        {itens.map((a) => (
+          <li key={a.id} className="flex flex-wrap gap-x-3 px-4 py-2">
+            <span className="tabular-nums text-muted-foreground">{fmtHora(new Date(a.data_hora))}</span>
+            <b className="text-primary">{a.leito}</b>
+            <span className={cn("flex-1", a.tipo === "intercorrencia" && "font-medium text-destructive")}>{a.texto_gerado}</span>
+            <span className="text-xs text-muted-foreground">{a.registrado_por_nome}{a.tipo === "intercorrencia" ? (a.ciencia_em ? ` · ciência: ${a.ciencia_por_nome}` : " · aguardando ciência") : ""}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
