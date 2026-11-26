@@ -119,7 +119,7 @@ export function usePatientSpecialRequests(
     if (!patientId) return;
     // MIGRAÇÃO: realtime filtrado por internacao_id nas tabelas novas.
     const channel = supabase
-      .channel(`patient-special-${patientId}`)
+      .channel(`patient-special-${patientId}-${Math.random().toString(36).slice(2, 8)}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "solicitacoes_exame", filter: `internacao_id=eq.${patientId}` },

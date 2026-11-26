@@ -141,7 +141,7 @@ export function useTodaysPrescriptions(hospitalUnitId: string | null) {
     // MIGRAÇÃO: canal prescriptions → prescricoes. Sem filtro por hospital
     // (coluna inexistente) → assina todas as mudanças e refaz o fetch (escopo RLS).
     const channel = supabase
-      .channel(`prescricoes-today-${hospitalUnitId}`)
+      .channel(`prescricoes-today-${hospitalUnitId}-${Math.random().toString(36).slice(2, 8)}`)
       .on("postgres_changes", {
         event: "*",
         schema: "public",

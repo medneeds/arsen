@@ -8676,7 +8676,7 @@ const PrescricaoPage = () => {
       // Realtime na tabela de cadastro (pacientes), filtrada pelo paciente_id resolvido.
       if (allergiesPacienteIdRef.current) {
         channel = supabase
-          .channel(`prescricao-allergies-${allergiesPacienteIdRef.current}`)
+          .channel(`prescricao-allergies-${allergiesPacienteIdRef.current}-${Math.random().toString(36).slice(2, 8)}`)
           .on('postgres_changes',
             { event: 'UPDATE', schema: 'public', table: 'pacientes', filter: `id=eq.${allergiesPacienteIdRef.current}` },
             (payload) => applyRemote((payload.new as any)?.alergias))

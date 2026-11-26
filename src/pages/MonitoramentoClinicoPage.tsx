@@ -316,7 +316,7 @@ export default function MonitoramentoClinicoPage() {
 
       // Realtime segue o mesmo critério da busca.
       channel = supabase
-        .channel(`vitals-${selectedPatientId}`)
+        .channel(`vitals-${selectedPatientId}-${Math.random().toString(36).slice(2, 8)}`)
         .on("postgres_changes", {
           event: "INSERT",
           schema: "public",

@@ -151,7 +151,10 @@ export function usePatientIdentifiers(
     const invalidate = () =>
       queryClient.invalidateQueries({ queryKey: ["patient-identifiers", patientId, patientName] });
     const channel = supabase
-      .channel(`patient-identifiers-${patientId}`)
+      // Sufixo por instancia: o mesmo paciente pode ter este hook montado em mais de
+      // um componente ao mesmo tempo (ex.: Prescricao). Com nome fixo, supabase.channel()
+      // devolvia o canal ja inscrito e o .on() lancava erro, derrubando a tela.
+      .channel(`patient-identifiers-${patientId}-${Math.random().toString(36).slice(2, 8)}`)
       .on("postgres_changes",
         { event: "*", schema: "public", table: "internacoes", filter: `id=eq.${patientId}` },
         invalidate)

@@ -91,7 +91,7 @@ export function usePatientNirRequest(patientId: string | null) {
   useEffect(() => {
     if (!patientId) return;
     const channel = supabase
-      .channel(`patient-nir-${patientId}`)
+      .channel(`patient-nir-${patientId}-${Math.random().toString(36).slice(2, 8)}`)
       // MIGRAÇÃO: realtime em "solicitacoes_leito" filtrando por internacao_id.
       .on(
         "postgres_changes",

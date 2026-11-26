@@ -85,7 +85,7 @@ export function useLatestVitalSigns(patientId: string | null, patientName?: stri
   useEffect(() => {
     if (!patientId) return;
     const channel = supabase
-      .channel(`patient-vitals-${patientId}`)
+      .channel(`patient-vitals-${patientId}-${Math.random().toString(36).slice(2, 8)}`)
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "sinais_vitais", filter: `internacao_id=eq.${patientId}` },

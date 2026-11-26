@@ -330,7 +330,7 @@ export function ReceptionDailyDashboard({
     // encounter_code no payload — a detecção de "Sala Vermelha" (som + toast) foi
     // degradada; apenas recarregamos o painel a cada nova internação.
     const channel = supabase
-      .channel(`reception-dash-${hospitalId}`)
+      .channel(`reception-dash-${hospitalId}-${Math.random().toString(36).slice(2, 8)}`)
       .on(
         "postgres_changes",
         {

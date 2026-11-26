@@ -74,7 +74,7 @@ export function useLatestRoundSession(patientId: string | null) {
   useEffect(() => {
     if (!patientId) return;
     const channel = supabase
-      .channel(`patient-round-${patientId}`)
+      .channel(`patient-round-${patientId}-${Math.random().toString(36).slice(2, 8)}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "sessoes_visita", filter: `internacao_id=eq.${patientId}` },

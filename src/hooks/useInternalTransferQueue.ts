@@ -118,7 +118,7 @@ export function useInternalTransferQueue(sectorCode?: string | null) {
   useEffect(() => {
     if (!currentHospital?.id) return;
     const ch = supabase
-      .channel(`itr-${currentHospital.id}-${sectorCode ?? "all"}`)
+      .channel(`itr-${currentHospital.id}-${sectorCode ?? "all"}-${Math.random().toString(36).slice(2, 8)}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "logs_auditoria" }, () => refreshRef.current())
       .subscribe();
     return () => { supabase.removeChannel(ch); };

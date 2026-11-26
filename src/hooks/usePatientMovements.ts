@@ -95,7 +95,7 @@ export function usePatientMovements(
     // MIGRAÇÃO: realtime em logs_auditoria; match por internacao_id (=patientId).
     if (!patientId) return;
     const channel = supabase
-      .channel(`patient-movements-${patientId}`)
+      .channel(`patient-movements-${patientId}-${Math.random().toString(36).slice(2, 8)}`)
       .on("postgres_changes",
         { event: "*", schema: "public", table: "logs_auditoria" },
         (payload) => {

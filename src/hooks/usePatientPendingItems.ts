@@ -107,7 +107,7 @@ export function usePatientPendingItems(
     if (!patientId) return;
     // MIGRAÇÃO: realtime filtrado por internacao_id nas tabelas novas.
     const channel = supabase
-      .channel(`patient-pending-${patientId}`)
+      .channel(`patient-pending-${patientId}-${Math.random().toString(36).slice(2, 8)}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "solicitacoes_exame", filter: `internacao_id=eq.${patientId}` },

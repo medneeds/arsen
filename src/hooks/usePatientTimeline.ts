@@ -93,7 +93,7 @@ export function usePatientTimeline(opts: UsePatientTimelineOptions) {
   useEffect(() => {
     if (!enabled || (!patientRegistryId && !patientId)) return;
 
-    const channel = supabase.channel(`timeline-${patientRegistryId ?? patientId}`);
+    const channel = supabase.channel(`timeline-${patientRegistryId ?? patientId}-${Math.random().toString(36).slice(2, 8)}`);
 
     TIMELINE_SOURCE_TABLES.forEach((table) => {
       channel.on(
