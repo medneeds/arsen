@@ -88,6 +88,7 @@ import { useIsCoordenador } from "@/hooks/useIsCoordenador";
 import { SidebarPatientSearch } from "@/components/SidebarPatientSearch";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { safeSetItem } from "@/lib/safeStorage";
+import { visibleMultiModules, MEU_PLANTAO_PATH } from "@/config/multiModules";
 
 function DevConsoleLink({ isCollapsed, onNavigate }: { isCollapsed: boolean; onNavigate: () => void }) {
   const { isDev } = useIsDev();
@@ -374,6 +375,18 @@ export function AppSidebar() {
     }
     // Equipe Multi: sidebar multiprofissional
     if (accessProfile === "multi") {
+      // Capitulo multiprofissional (staging): com a chave ligada, itens reais por
+      // papel (definicao unica em config/multiModules). Desligada, menu de antes.
+      const multiVisiveis = visibleMultiModules(role);
+      if (multiVisiveis.length > 0) {
+        const itens = multiVisiveis.map((m) => ({ name: m.sectorLabel, link: m.sectorPath, profiles: ["multi"] as string[], badge: "Novo" }));
+        if (role === "tecnico" || role === "enfermeiro") itens.unshift({ name: "Meu plantão", link: MEU_PLANTAO_PATH, profiles: ["multi"], badge: "Novo" });
+        return [
+          { title: "Mapa de Leitos", icon: LayoutDashboard, link: "/mapa", profiles: ["multi"] },
+          { title: "Equipe Multi", icon: HeartPulse, profiles: ["multi"], items: itens },
+          { title: "Round Multiprofissional", icon: ClipboardCheck, link: "/round", profiles: ["multi"] },
+        ];
+      }
       return [
         { title: "Mapa de Leitos", icon: LayoutDashboard, link: "/mapa", profiles: ["multi"] },
         { title: "Equipe Multi", icon: HeartPulse, profiles: ["multi"], items: [

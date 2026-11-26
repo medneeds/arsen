@@ -29,6 +29,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
 const LandingPage = lazy(() => import("./pages/LandingPage"));
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { FEATURE_MULTIPROFISSIONAL } from "@/config/featureFlags";
 const SetupPage = lazy(() => import("./pages/SetupPage"));
 
 // Demais páginas: lazy para reduzir bundle inicial e uso de memória
@@ -93,6 +94,9 @@ const AdminDashboardPage = lazy(() => import("./pages/AdminDashboardPage"));
 const AltaDesfechoPage = lazy(() => import("./pages/AltaDesfechoPage"));
 const EmergenciaSectorPage = lazy(() => import("./pages/EmergenciaSectorPage"));
 const MonitoramentoClinicoPage = lazy(() => import("./pages/MonitoramentoClinicoPage"));
+// Capitulo multiprofissional (staging) — so registrado com FEATURE_MULTIPROFISSIONAL.
+const ModuloPacientePage = lazy(() => import("./pages/multi/ModuloPacientePage"));
+const ModuloSetorPage = lazy(() => import("./pages/multi/ModuloSetorPage"));
 const RequisicaoImagensPage = lazy(() => import("./pages/RequisicaoImagensPage"));
 const FichaAtendimentoPage = lazy(() => import("./pages/FichaAtendimentoPage"));
 const NirDashboardPage = lazy(() => import("./pages/NirDashboardPage"));
@@ -354,6 +358,17 @@ const App = () => {
               <Route path="/requisicao/imagens" element={<ProtectedRoute><MainLayout><RequisicaoUnificadaPage /></MainLayout></ProtectedRoute>} />
               <Route path="/requisicao/parecer" element={<ProtectedRoute><MainLayout><RequisicaoUnificadaPage /></MainLayout></ProtectedRoute>} />
               <Route path="/monitoramento" element={<ProtectedRoute><MainLayout><MonitoramentoClinicoPage /></MainLayout></ProtectedRoute>} />
+              {FEATURE_MULTIPROFISSIONAL && (
+                <>
+                  <Route path="/nutricao" element={<ProtectedRoute><MainLayout><ModuloPacientePage moduleKey="nutricao" /></MainLayout></ProtectedRoute>} />
+                  <Route path="/nutricao/lista" element={<ProtectedRoute><MainLayout><ModuloSetorPage moduleKey="nutricao" /></MainLayout></ProtectedRoute>} />
+                  <Route path="/fisioterapia" element={<ProtectedRoute><MainLayout><ModuloPacientePage moduleKey="fisioterapia" /></MainLayout></ProtectedRoute>} />
+                  <Route path="/fisioterapia/mapa" element={<ProtectedRoute><MainLayout><ModuloSetorPage moduleKey="fisioterapia" /></MainLayout></ProtectedRoute>} />
+                  <Route path="/enfermagem" element={<ProtectedRoute><MainLayout><ModuloPacientePage moduleKey="enfermagem" /></MainLayout></ProtectedRoute>} />
+                  <Route path="/enfermagem/setor" element={<ProtectedRoute><MainLayout><ModuloSetorPage moduleKey="enfermagem" /></MainLayout></ProtectedRoute>} />
+                  <Route path="/enfermagem/meu-plantao" element={<ProtectedRoute><MainLayout><ModuloSetorPage moduleKey="enfermagem" meuPlantao /></MainLayout></ProtectedRoute>} />
+                </>
+              )}
               <Route path="/documentos" element={<ProtectedRoute><MainLayout><DocumentosPageWrapper /></MainLayout></ProtectedRoute>} />
               <Route path="/prescricao" element={<ProtectedRoute><MainLayout><PrescricaoPageWrapper /></MainLayout></ProtectedRoute>} />
               <Route path="/evolucao" element={<ProtectedRoute><MainLayout><EvolucaoPageWrapper /></MainLayout></ProtectedRoute>} />

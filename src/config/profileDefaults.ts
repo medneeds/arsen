@@ -174,6 +174,8 @@ export const PAPEL_TO_PROFILE: Record<string, AccessProfile> = {
   medico: "medico",
   enfermeiro: "multi",
   tecnico: "multi",
+  nutricionista: "multi",
+  fisioterapeuta: "multi",
   regulador: "nir",
   nir: "nir",
   farmacia: "farmacia",

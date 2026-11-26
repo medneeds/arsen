@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { Pill, Pencil, FileText, FolderOpen, Clock, Activity, AlertTriangle, Stethoscope, ArrowLeftRight } from "lucide-react";
+import { Pill, Pencil, FileText, FolderOpen, Clock, Activity, AlertTriangle, Stethoscope, ArrowLeftRight, Apple, Wind, ClipboardCheck, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUnsavedPrescription } from "@/contexts/UnsavedPrescriptionContext";
 import {
@@ -9,6 +9,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import { visibleMultiModules, MULTI_NEW_BADGE_UNTIL, type MultiModuleKey } from "@/config/multiModules";
 
 const MODULE_TABS = [
   { label: "Admissão", path: "/admissao", icon: Stethoscope },
@@ -20,6 +22,15 @@ const MODULE_TABS = [
   { label: "Movimentação", path: "/movimentar", icon: ArrowLeftRight },
   { label: "Histórico", path: "/historico-paciente", icon: Clock },
 ];
+
+/** Icones dos modulos multiprofissionais (definicao dos modulos em config/multiModules). */
+const MULTI_ICONS: Record<MultiModuleKey, LucideIcon> = {
+  nutricao: Apple,
+  fisioterapia: Wind,
+  enfermagem: ClipboardCheck,
+};
+
+interface TabDef { label: string; path: string; icon: LucideIcon; multi?: boolean; firstMulti?: boolean }
 
 interface ClinicalModuleTabsProps {
   variant?: "default" | "dark";
@@ -37,6 +48,15 @@ export function ClinicalModuleTabs({ variant = "dark", layout = "pill" }: Clinic
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { isDirty, onSaveDraft, dirtyLabel } = useUnsavedPrescription();
+  const { role } = useAuth();
+  // Modulos multiprofissionais: so com a chave ligada e para os papeis do modulo.
+  // Desligada, a lista e EXATAMENTE a de antes (cabecalho da prescricao inalterado).
+  const multiTabs: TabDef[] = visibleMultiModules(role).map((m, i) => ({
+    label: m.label, path: m.path, icon: MULTI_ICONS[m.key], multi: true, firstMulti: i === 0,
+  }));
+  const tabs: TabDef[] = [...MODULE_TABS, ...multiTabs];
+  const showNewBadge = Date.now() < MULTI_NEW_BADGE_UNTIL.getTime();
+  const isActivePath = (p: string) => location.pathname === p || location.pathname.startsWith(`${p}/`);
   const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
   const [pendingUrl, setPendingUrl] = useState<string | null>(null);
 
@@ -73,8 +93,8 @@ export function ClinicalModuleTabs({ variant = "dark", layout = "pill" }: Clinic
             variant === "dark" ? "border-white/25" : "border-border/60"
           )}
         >
-          {MODULE_TABS.map((tab, i) => {
-            const isActive = location.pathname === tab.path;
+          {tabs.map((tab, i) => {
+            const isActive = isActivePath(tab.path);
             return (
               <button
                 key={tab.path}
@@ -86,6 +106,9 @@ export function ClinicalModuleTabs({ variant = "dark", layout = "pill" }: Clinic
                   // divisoria discreta e CURTA (inset, centrada) entre as abas — nao full-height.
                   i > 0 && "before:absolute before:left-0 before:top-1/2 before:h-4 before:w-px before:-translate-y-1/2",
                   i > 0 && (variant === "dark" ? "before:bg-white/15" : "before:bg-border/50"),
+                  // divisor mais marcado antes do primeiro modulo multiprofissional
+                  tab.firstMulti && "before:h-6 before:w-0.5",
+                  tab.firstMulti && (variant === "dark" ? "before:bg-white/40" : "before:bg-border"),
                   variant === "dark"
                     ? isActive
                       ? "bg-white/15 text-white border-white"
@@ -97,6 +120,12 @@ export function ClinicalModuleTabs({ variant = "dark", layout = "pill" }: Clinic
               >
                 <tab.icon className="h-[13px] w-[13px] shrink-0" />
                 <span>{tab.label}</span>
+                {tab.multi && showNewBadge && (
+                  <span className={cn(
+                    "rounded px-1 py-px text-[9px] font-bold leading-none tracking-wider",
+                    variant === "dark" ? "bg-white/25 text-white" : "bg-accent text-accent-foreground",
+                  )}>NOVO</span>
+                )}
               </button>
             );
           })}
@@ -108,9 +137,11 @@ export function ClinicalModuleTabs({ variant = "dark", layout = "pill" }: Clinic
           ? "bg-white/10 border-white/30 shadow-inner"
           : "bg-muted border-border/60"
       )}>
-        {MODULE_TABS.map(tab => {
-          const isActive = location.pathname === tab.path;
+        {tabs.map(tab => {
+          const isActive = isActivePath(tab.path);
           return (
+            <React.Fragment key={tab.path}>
+            {tab.firstMulti && <span aria-hidden className={cn("mx-0.5 w-px self-stretch", variant === "dark" ? "bg-white/40" : "bg-border")} />}
             <button
               key={tab.path}
               onClick={() => handleTabClick(tab.path)}
@@ -128,6 +159,7 @@ export function ClinicalModuleTabs({ variant = "dark", layout = "pill" }: Clinic
               <tab.icon className={cn("h-3.5 w-3.5 shrink-0", variant === "dark" && !isActive && "text-white/90")} />
               <span className="hidden sm:inline">{tab.label}</span>
             </button>
+            </React.Fragment>
           );
         })}
       </div>
