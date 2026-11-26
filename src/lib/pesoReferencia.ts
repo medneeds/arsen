@@ -57,3 +57,44 @@ export function pesoRefFromRow(row: InternacaoPesoRow | null | undefined): PesoR
   const base = { kg, origem: kg != null ? origem : null, em };
   return { ...base, texto: formatPesoRef(base) };
 }
+
+/** Altura digitada em metros (1,70) ou centimetros (170) -> cm; invalida -> null. */
+export function parseAlturaCm(raw: unknown): number | null {
+  if (raw == null || raw === "") return null;
+  const n = typeof raw === "number" ? raw : Number(String(raw).trim().replace(",", "."));
+  if (!Number.isFinite(n) || n <= 0) return null;
+  const cm = n <= 3 ? n * 100 : n;
+  if (cm < 20 || cm > 260) return null;
+  return Math.round(cm * 10) / 10;
+}
+
+export interface PesoUpdate {
+  peso_kg?: number;
+  peso_origem?: PesoOrigem | null;
+  peso_aferido_em?: string;
+  altura_cm?: number;
+}
+
+/**
+ * Colunas de internacoes a gravar a partir do que foi digitado. So inclui o que
+ * e valido: peso/altura vazios ou absurdos NAO sobrescrevem o valor existente
+ * (ex.: admissao sem peso nao apaga o peso que a prescricao ja tinha).
+ * `origem` undefined = nao mexe na origem; null = origem desconhecida.
+ */
+export function buildPesoUpdate(
+  pesoStr: unknown,
+  alturaStr: unknown,
+  origem: PesoOrigem | null | undefined,
+  agora: Date = new Date(),
+): PesoUpdate {
+  const out: PesoUpdate = {};
+  const kg = parsePesoKg(pesoStr);
+  if (kg != null) {
+    out.peso_kg = kg;
+    out.peso_aferido_em = agora.toISOString();
+    if (origem !== undefined) out.peso_origem = origem;
+  }
+  const cm = parseAlturaCm(alturaStr);
+  if (cm != null) out.altura_cm = cm;
+  return out;
+}

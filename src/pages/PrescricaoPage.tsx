@@ -8763,7 +8763,12 @@ const PrescricaoPage = () => {
     const handle = setTimeout(async () => {
       const { error } = await supabase
         .from('internacoes')
-        .update({ peso_kg: canonical === '' ? null : Number(canonical) })
+        // Peso digitado na prescricao: registra o momento; a origem fica desconhecida
+        // (null) porque aqui nao se informa se foi aferido/estimado/referido — evita
+        // herdar a origem de um peso anterior que nao e mais o vigente.
+        .update(canonical === ''
+          ? { peso_kg: null, peso_origem: null, peso_aferido_em: null }
+          : { peso_kg: Number(canonical), peso_origem: null, peso_aferido_em: new Date().toISOString() })
         .eq('id', internacaoId);
       if (!error) lastSyncedWeightRef.current = canonical;
       else console.error('Peso nao sincronizado (internacoes.peso_kg):', error.message);

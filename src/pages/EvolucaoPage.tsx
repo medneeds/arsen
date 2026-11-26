@@ -30,6 +30,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { useEvolutions, EvolutionRecord } from "@/hooks/useEvolutions";
 import { buildDiagnosticsSlots, toHypothesesList } from "@/components/evolution/diagnosticsSlots";
+import { usePesoReferencia } from "@/hooks/usePesoReferencia";
 import { usePatientCid } from "@/hooks/usePatientCid";
 import { usePatientLive } from "@/hooks/usePatientLive";
 import { mergeLiveIntoLocal, diffPendencyToggles, pendencyKeys } from "@/lib/pendenciasSync";
@@ -294,11 +295,11 @@ const EvolucaoPage = () => {
   // paciente real, esses campos ficavam SEMPRE vazios no cabeçalho impresso,
   // não só às vezes. Busca dedicada de peso, mesmo padrão do
   // PrescricaoPage.tsx (patients.uti_weight_kg).
-  // MIGRAÇÃO: patients.uti_weight_kg não tem equivalente no schema novo
-  // (pacientes não guarda peso; sinais_vitais é por evento). Peso degradado:
-  // sempre "" e considerado carregado (não bloqueia o aviso de impressão).
-  const [utiWeightKg] = useState<string>("");
-  const [weightLoaded] = useState(true);
+  // Peso: fonte unica internacoes.peso_kg (mesma da prescricao e dos impressos),
+  // via usePesoReferencia — antes ficava degradado (sempre "") desde a migracao.
+  const { peso: pesoRef, loading: pesoLoading } = usePesoReferencia(initialPatientId || null);
+  const utiWeightKg = pesoRef.kg != null ? String(pesoRef.kg).replace(".", ",") : "";
+  const weightLoaded = !initialPatientId || !pesoLoading;
 
   // hasPatient ancora no patientId (fonte da verdade), nao so no patientName da
   // URL: uma navegacao que passa patientId sem patientName (ou com o nome ainda

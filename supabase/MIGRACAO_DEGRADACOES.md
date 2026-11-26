@@ -438,8 +438,9 @@ DEGRADAÇÕES (campo antigo → sem coluna nova):
   Nova query única: última prescricoes por internacao_id (criado_em DESC).
 - ensureEncounterCode: DEGRADADO para no-op — internacoes não tem código de atendimento
   auto-gerado. O nº de atendimento no cabeçalho passa a vir só de usePatientIdentifiers.
-- Sincronização de PESO (patients.uti_weight_kg): DEGRADADA por completo — não há coluna
-  equivalente (pacientes não guarda peso; sinais_vitais é por evento). Peso vira só estado local.
+- Sincronização de PESO (patients.uti_weight_kg): ~~DEGRADADA~~ RESOLVIDA — a prescrição lê e
+  grava internacoes.peso_kg; desde 26/11/2026 (migration 20261126100000) grava também
+  peso_aferido_em e zera peso_origem (origem desconhecida quando digitado na prescrição).
 - Alergias: patients.uti_allergies → pacientes.alergias (resolve paciente_id via internacoes;
   realtime passou a assinar a tabela `pacientes` filtrada por paciente_id).
 - pre_admissoes não tem chief_complaint/vital_signs (bloco de queixa/sinais na pré-admissão
@@ -1136,9 +1137,9 @@ Convenção de evolucoes: campos dedicados do modelo antigo preservados dentro d
   Sem outra mudança de shape.
 
 ### src/pages/EvolucaoPage.tsx (patients → DEGRADADO)
-- patients.uti_weight_kg (peso no cabeçalho impresso) sem coluna equivalente
-  (pacientes não guarda peso; sinais_vitais é por evento) → peso sempre "" e
-  weightLoaded=true. A sincronização patients.uti_devices após criar evolução foi
+- patients.uti_weight_kg (peso no cabeçalho impresso): ~~peso sempre ""~~ RESOLVIDO em
+  26/11/2026 — lê internacoes.peso_kg via usePesoReferencia (fonte única com a prescrição,
+  os impressos e os módulos multiprofissionais). A sincronização patients.uti_devices após criar evolução foi
   REMOVIDA (bloco uti_* sem coluna); dispositivos ficam em soap.devices da própria evolução.
   Import de supabase removido (não havia mais uso).
 
@@ -1559,7 +1560,7 @@ verificada (sem tabela morta ativa; ver seção "módulo requisições/exames").
   user_id. Prefill médico: profiles→profissionais (nome/numero_conselho). Hidratação do cabeçalho:
   patients/patient_registry mortos → resolvePatientHeader (já migrado) + internacoes
   (hipotese_diagnostica) + pacientes (tipo_sanguineo). DEGRADADOS: patient_race (raça — sem
-  coluna), patient_weight (uti_weight_kg — sem coluna equivalente) → não hidratados; nome/CRM/
+  coluna), patient_weight (uti_weight_kg — hoje existe internacoes.peso_kg; hidratação pendente) → não hidratados; nome/CRM/
   setores vão em observacoes; document_payload sem coluna (impresso diferenciado não reimprimível
   pelo histórico); patient_name/bed/sector, hospital_unit_id/state_id, requested_by_name sem coluna.
 

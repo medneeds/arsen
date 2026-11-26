@@ -909,6 +909,7 @@ export type Database = {
         Row: {
           admissao_validada_em: string | null
           agenda: string | null
+          altura_cm: number | null
           atualizado_em: string
           conduta_inicial: string | null
           criado_em: string
@@ -923,7 +924,9 @@ export type Database = {
           paciente_id: string
           paliativo: boolean
           pendencias: string | null
+          peso_aferido_em: string | null
           peso_kg: number | null
+          peso_origem: string | null
           precaucao_isolamento: string | null
           previsao_alta: string | null
           previsao_alta_hospitalar: string | null
@@ -935,6 +938,7 @@ export type Database = {
         Insert: {
           admissao_validada_em?: string | null
           agenda?: string | null
+          altura_cm?: number | null
           atualizado_em?: string
           conduta_inicial?: string | null
           criado_em?: string
@@ -949,7 +953,9 @@ export type Database = {
           paciente_id: string
           paliativo?: boolean
           pendencias?: string | null
+          peso_aferido_em?: string | null
           peso_kg?: number | null
+          peso_origem?: string | null
           precaucao_isolamento?: string | null
           previsao_alta?: string | null
           previsao_alta_hospitalar?: string | null
@@ -961,6 +967,7 @@ export type Database = {
         Update: {
           admissao_validada_em?: string | null
           agenda?: string | null
+          altura_cm?: number | null
           atualizado_em?: string
           conduta_inicial?: string | null
           criado_em?: string
@@ -975,7 +982,9 @@ export type Database = {
           paciente_id?: string
           paliativo?: boolean
           pendencias?: string | null
+          peso_aferido_em?: string | null
           peso_kg?: number | null
+          peso_origem?: string | null
           precaucao_isolamento?: string | null
           previsao_alta?: string | null
           previsao_alta_hospitalar?: string | null

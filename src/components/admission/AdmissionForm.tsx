@@ -39,6 +39,7 @@ import {
   Plus, X, ChevronUp, ChevronDown, Lock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { buildPesoUpdate, type PesoOrigem } from "@/lib/pesoReferencia";
 import { printAdmissionNormaZero } from "@/lib/printAdmission";
 import { resolveCurrentBedSector, resolveCurrentPatientName, resolveProfissionalNome } from "@/lib/resolvePatientHeader";
 import { pickPrintName } from "@/lib/printPatientName";
@@ -595,6 +596,9 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
   const [allergyMode, setAllergyMode] = useState<"nao" | "sim" | null>(null);
   const [weight, setWeight] = useState("");
   const [height, setHeight] = useState("");
+  // Origem do peso (fonte unica internacoes.peso_origem). Nunca presumida: sem
+  // escolha fica nula e o peso aparece sem origem.
+  const [pesoOrigem, setPesoOrigem] = useState<PesoOrigem | "">("");
   // PA separada em sistolica/diastolica (antes era um unico campo `pa`).
   const [paSys, setPaSys] = useState("");
   const [paDia, setPaDia] = useState("");
@@ -810,7 +814,7 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
   const resetForm = () => {
     setHda(""); setMuc(""); setAllergies(""); setAllergyMode(null);
     setAntecedentesItems([]);
-    setWeight(""); setHeight("");
+    setWeight(""); setHeight(""); setPesoOrigem("");
     setPaSys(""); setPaDia(""); setFc(""); setFr(""); setSpo2(""); setTax(""); setDx("");
     setGlasgowEye(null); setGlasgowVerbal(null); setGlasgowMotor(null);
     setSedoanalgesia(false); setRass(null);
@@ -1366,6 +1370,11 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
           // existente, lida como relevantExams pelo mapa/painel). Texto limpo
           // do editor, line-based como o restante de exames_relevantes.
           exames_relevantes: richHtmlToPlainText(complementares).trim() || null,
+          // Peso/altura -> internacoes (fonte unica do peso: prescricao, impressos,
+          // nutricao, BH). Antes o peso da admissao ficava so no soap e a internacao
+          // seguia sem peso ate alguem digitar na prescricao. Vazio/invalido nao
+          // sobrescreve o peso ja registrado.
+          ...buildPesoUpdate(weight, height, pesoOrigem || null),
           // Previsao de alta -> coluna propria internacoes.previsao_alta (lida pelo
           // mapa como utiDischargePrediction e exibida no card). Antes so ia pro
           // texto do SOAP, entao o chip "Previsao de Alta" do card ficava "—".
@@ -1877,6 +1886,17 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
           <AccordionSectionItem id="em-antropometria" complete={completion.antropometria} icon={Activity} iconColor="text-muted-foreground" label="Antropometria e dextro">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               <div><Label className="text-xs">Peso (kg)</Label><Input value={weight} onChange={e => setWeight(e.target.value)} placeholder="kg" className="mt-1" inputMode="decimal" /></div>
+              <div>
+                <Label className="text-xs">Origem do peso</Label>
+                <Select value={pesoOrigem || undefined} onValueChange={(v) => setPesoOrigem(v as PesoOrigem)}>
+                  <SelectTrigger className="mt-1" aria-label="Origem do peso"><SelectValue placeholder="—" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="aferido">Aferido (balança)</SelectItem>
+                    <SelectItem value="estimado">Estimado</SelectItem>
+                    <SelectItem value="referido">Referido</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <div><Label className="text-xs">Altura (m ou cm)</Label><Input value={height} onChange={e => setHeight(e.target.value)} placeholder="1,70 ou 170" className="mt-1" inputMode="decimal" /></div>
               <div>
                 <Label className="text-xs">IMC</Label>
@@ -2146,6 +2166,17 @@ export function AdmissionForm({ patient, onClose, onSuccess, embedded = false, s
                 <div><Label className="text-xs">Temperatura (°C)</Label><Input value={tax} onChange={e => setTax(e.target.value)} placeholder="°C" className="mt-1" inputMode="decimal" /></div>
                 <div><Label className="text-xs">SpO₂ (%)</Label><Input value={spo2} onChange={e => setSpo2(e.target.value)} placeholder="%" className="mt-1" inputMode="numeric" /></div>
                 <div><Label className="text-xs">Peso (kg)</Label><Input value={weight} onChange={e => setWeight(e.target.value)} placeholder="kg" className="mt-1" inputMode="decimal" /></div>
+              <div>
+                <Label className="text-xs">Origem do peso</Label>
+                <Select value={pesoOrigem || undefined} onValueChange={(v) => setPesoOrigem(v as PesoOrigem)}>
+                  <SelectTrigger className="mt-1" aria-label="Origem do peso"><SelectValue placeholder="—" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="aferido">Aferido (balança)</SelectItem>
+                    <SelectItem value="estimado">Estimado</SelectItem>
+                    <SelectItem value="referido">Referido</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
                 <div><Label className="text-xs">Dextro (mg/dL)</Label><Input value={dx} onChange={e => setDx(e.target.value)} placeholder="mg/dL" className="mt-1" inputMode="numeric" /></div>
               </div>
             </AccordionSectionItem>

@@ -1,7 +1,7 @@
 /** Peso de referencia, dispositivos/VM, NEWS2 parcial, prefixos Norma Zero e Fugulin. */
 import { test } from "node:test";
 import assert from "node:assert";
-import { pesoRefFromRow, parsePesoKg } from "../lib/pesoReferencia.ts";
+import { pesoRefFromRow, parsePesoKg, parseAlturaCm, buildPesoUpdate } from "../lib/pesoReferencia.ts";
 import { getActiveDevices, ventilationDayLabel, daysOn, type Dispositivo } from "../lib/devicesActive.ts";
 import { news2Status, formatNews2 } from "../lib/news2.ts";
 import { DOC_PREFIXES, formatDocCode, isValidDocCode, fortalezaLocal } from "../lib/docPrefixes.ts";
@@ -18,6 +18,24 @@ test("peso: aferido com data, estimado sem data, sem peso -> '—'", () => {
 test("peso: valores absurdos sao rejeitados; origem desconhecida e ignorada", () => {
   for (const v of [0, -5, 900, "abc", ""]) assert.strictEqual(parsePesoKg(v), null, String(v));
   assert.strictEqual(pesoRefFromRow({ peso_kg: 70, peso_origem: "chute" }).texto, "70 kg");
+});
+
+test("altura: metros ou centimetros viram cm; absurdos sao rejeitados", () => {
+  assert.strictEqual(parseAlturaCm("1,70"), 170);
+  assert.strictEqual(parseAlturaCm("170"), 170);
+  assert.strictEqual(parseAlturaCm(1.655), 165.5);
+  for (const v of ["", "0", "abc", "5", "400"]) assert.strictEqual(parseAlturaCm(v), null, v);
+});
+
+test("gravacao do peso: so campos validos; vazio nao apaga o peso existente", () => {
+  const agora = fortalezaLocal(2026, 11, 26, 9);
+  assert.deepStrictEqual(buildPesoUpdate("72,5", "1,70", "aferido", agora), {
+    peso_kg: 72.5, peso_aferido_em: agora.toISOString(), peso_origem: "aferido", altura_cm: 170,
+  });
+  assert.deepStrictEqual(buildPesoUpdate("", "", "aferido", agora), {}, "admissao sem peso nao sobrescreve");
+  assert.deepStrictEqual(buildPesoUpdate("900", "", "aferido", agora), {}, "peso absurdo nao grava");
+  assert.deepStrictEqual(buildPesoUpdate("70", "", undefined, agora), { peso_kg: 70, peso_aferido_em: agora.toISOString() }, "origem undefined nao mexe");
+  assert.strictEqual(buildPesoUpdate("70", "", null, agora).peso_origem, null, "prescricao: origem desconhecida");
 });
 
 // ── Dispositivos ────────────────────────────────────────────────────────────
