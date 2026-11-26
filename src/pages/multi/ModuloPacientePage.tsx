@@ -1,5 +1,5 @@
 import { useSearchParams, Link } from "react-router-dom";
-import { Construction, Eye, PenLine, Lock } from "lucide-react";
+import { Construction, Eye, PenLine, Lock, Droplets, ChevronRight } from "lucide-react";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
 import { PageTransition } from "@/components/PageTransition";
 import { ModulePatientStrip } from "@/components/multi/ModulePatientStrip";
@@ -11,7 +11,7 @@ import { canWriteModule, getMultiModule, visibleMultiModules, type MultiModuleKe
 const ROADMAP: Record<MultiModuleKey, string[]> = {
   nutricao: ["Avaliação (NRS-2002, antropometria, GET, metas)", "Monitoramento diário em terapia intensiva", "Curva de kcal e proteína ofertadas × meta", "PDF Norma Zero NUT-AVA"],
   fisioterapia: ["Evolução com procedimento SIGTAP", "Bundle PAV por turno", "Dias de VM a partir dos dispositivos", "PDF Norma Zero FIS-EVO"],
-  enfermagem: ["Balanço hídrico 24h (07→07) com fechamento e validação", "Aprazamento HMDM e checagem pelo técnico", "Prescrição e evolução de enfermagem, SAE e SBAR", "PDFs Norma Zero ENF-BH, ENF-APZ, ENF-EVO, ENF-SBAR"],
+  enfermagem: ["Aprazamento HMDM e checagem pelo técnico", "Prescrição e evolução de enfermagem, SAE e SBAR", "PDFs Norma Zero ENF-APZ, ENF-EVO, ENF-SBAR"],
 };
 
 /**
@@ -22,6 +22,7 @@ const ROADMAP: Record<MultiModuleKey, string[]> = {
 export default function ModuloPacientePage({ moduleKey }: { moduleKey: MultiModuleKey }) {
   const mod = getMultiModule(moduleKey);
   const [searchParams] = useSearchParams();
+  const qs = searchParams.toString();
   const patientId = searchParams.get("patientId");
   const { role } = useAuth();
   const { peso } = usePesoReferencia(patientId);
@@ -53,6 +54,19 @@ export default function ModuloPacientePage({ moduleKey }: { moduleKey: MultiModu
                 ? <><PenLine className="h-3.5 w-3.5" /> Você registra neste módulo.</>
                 : <><Eye className="h-3.5 w-3.5" /> Modo leitura — o registro é feito pela equipe de {mod.label.toLowerCase()}.</>}
             </div>
+            {moduleKey === "enfermagem" && (
+              <Link
+                to={`/enfermagem/balanco${qs ? `?${qs}` : ""}`}
+                className="flex items-center gap-3 rounded-lg border border-border bg-card p-4 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <Droplets className="h-5 w-5 shrink-0 text-primary" aria-hidden />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-semibold text-foreground">Balanço hídrico 24h</span>
+                  <span className="block text-xs text-muted-foreground">07h → 07h · lançamentos, fechamento, validação e PDF ENF-BH</span>
+                </span>
+                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+              </Link>
+            )}
             <section className="rounded-lg border border-border bg-card p-4">
               <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
                 <Construction className="h-4 w-4 text-muted-foreground" /> Módulo em construção no ambiente de testes

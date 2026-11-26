@@ -97,6 +97,7 @@ const MonitoramentoClinicoPage = lazy(() => import("./pages/MonitoramentoClinico
 // Capitulo multiprofissional (staging) — so registrado com FEATURE_MULTIPROFISSIONAL.
 const ModuloPacientePage = lazy(() => import("./pages/multi/ModuloPacientePage"));
 const ModuloSetorPage = lazy(() => import("./pages/multi/ModuloSetorPage"));
+const BalancoHidricoPage = lazy(() => import("./pages/multi/BalancoHidricoPage"));
 const RequisicaoImagensPage = lazy(() => import("./pages/RequisicaoImagensPage"));
 const FichaAtendimentoPage = lazy(() => import("./pages/FichaAtendimentoPage"));
 const NirDashboardPage = lazy(() => import("./pages/NirDashboardPage"));
@@ -365,6 +366,7 @@ const App = () => {
                   <Route path="/fisioterapia" element={<ProtectedRoute><MainLayout><ModuloPacientePage moduleKey="fisioterapia" /></MainLayout></ProtectedRoute>} />
                   <Route path="/fisioterapia/mapa" element={<ProtectedRoute><MainLayout><ModuloSetorPage moduleKey="fisioterapia" /></MainLayout></ProtectedRoute>} />
                   <Route path="/enfermagem" element={<ProtectedRoute><MainLayout><ModuloPacientePage moduleKey="enfermagem" /></MainLayout></ProtectedRoute>} />
+                  <Route path="/enfermagem/balanco" element={<ProtectedRoute><MainLayout><BalancoHidricoPage /></MainLayout></ProtectedRoute>} />
                   <Route path="/enfermagem/setor" element={<ProtectedRoute><MainLayout><ModuloSetorPage moduleKey="enfermagem" /></MainLayout></ProtectedRoute>} />
                   <Route path="/enfermagem/meu-plantao" element={<ProtectedRoute><MainLayout><ModuloSetorPage moduleKey="enfermagem" meuPlantao /></MainLayout></ProtectedRoute>} />
                 </>

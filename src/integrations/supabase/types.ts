@@ -359,6 +359,139 @@ export type Database = {
           },
         ]
       }
+      balanco_hidrico_fechamentos: {
+        Row: {
+          balanco_ml: number
+          criado_em: string
+          diurese_ml_kg_h: number | null
+          doc_code: string | null
+          fechado_em: string
+          fechado_por: string
+          id: string
+          incluir_insensiveis: boolean
+          internacao_id: string
+          periodo_fim: string
+          periodo_inicio: string
+          perdas_insensiveis_ml: number | null
+          peso_usado_kg: number | null
+          snapshot: Json
+          total_ganhos_ml: number
+          total_perdas_ml: number
+          validado_em: string | null
+          validado_por: string | null
+        }
+        Insert: {
+          balanco_ml: number
+          criado_em?: string
+          diurese_ml_kg_h?: number | null
+          doc_code?: string | null
+          fechado_em?: string
+          fechado_por?: string
+          id?: string
+          incluir_insensiveis?: boolean
+          internacao_id: string
+          periodo_fim: string
+          periodo_inicio: string
+          perdas_insensiveis_ml?: number | null
+          peso_usado_kg?: number | null
+          snapshot: Json
+          total_ganhos_ml: number
+          total_perdas_ml: number
+          validado_em?: string | null
+          validado_por?: string | null
+        }
+        Update: {
+          balanco_ml?: number
+          criado_em?: string
+          diurese_ml_kg_h?: number | null
+          doc_code?: string | null
+          fechado_em?: string
+          fechado_por?: string
+          id?: string
+          incluir_insensiveis?: boolean
+          internacao_id?: string
+          periodo_fim?: string
+          periodo_inicio?: string
+          perdas_insensiveis_ml?: number | null
+          peso_usado_kg?: number | null
+          snapshot?: Json
+          total_ganhos_ml?: number
+          total_perdas_ml?: number
+          validado_em?: string | null
+          validado_por?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "balanco_hidrico_fechamentos_internacao_id_fkey"
+            columns: ["internacao_id"]
+            isOneToOne: false
+            referencedRelation: "internacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      balanco_hidrico_lancamentos: {
+        Row: {
+          anulado_em: string | null
+          anulado_por: string | null
+          categoria: string
+          criado_em: string
+          data_hora: string
+          descricao: string | null
+          dispositivo_id: string | null
+          id: string
+          internacao_id: string
+          motivo_anulacao: string | null
+          origem: string
+          origem_id: string | null
+          registrado_por: string
+          sentido: string
+          volume_ml: number
+        }
+        Insert: {
+          anulado_em?: string | null
+          anulado_por?: string | null
+          categoria: string
+          criado_em?: string
+          data_hora: string
+          descricao?: string | null
+          dispositivo_id?: string | null
+          id?: string
+          internacao_id: string
+          motivo_anulacao?: string | null
+          origem?: string
+          origem_id?: string | null
+          registrado_por?: string
+          sentido: string
+          volume_ml: number
+        }
+        Update: {
+          anulado_em?: string | null
+          anulado_por?: string | null
+          categoria?: string
+          criado_em?: string
+          data_hora?: string
+          descricao?: string | null
+          dispositivo_id?: string | null
+          id?: string
+          internacao_id?: string
+          motivo_anulacao?: string | null
+          origem?: string
+          origem_id?: string | null
+          registrado_por?: string
+          sentido?: string
+          volume_ml?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "balanco_hidrico_lancamentos_internacao_id_fkey"
+            columns: ["internacao_id"]
+            isOneToOne: false
+            referencedRelation: "internacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       catalogo_medicamentos: {
         Row: {
           alta_vigilancia: boolean

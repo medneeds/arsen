@@ -169,3 +169,34 @@ export function computeInfusedEnteral(
   const horas = (b - a - pausado) / HOUR_MS;
   return round1(vazaoMlH * horas);
 }
+
+// ── Categorias (dado unico: tela, PDF ENF-BH, fechamento) ───────────────────
+export interface CategoriaBH { key: string; label: string; sentido: Sentido }
+
+export const BH_CATEGORIAS: readonly CategoriaBH[] = [
+  { key: "ev_continuo", label: "EV contínuo", sentido: "ganho" },
+  { key: "ev_intermitente", label: "EV intermitente", sentido: "ganho" },
+  { key: "diluente", label: "Diluente de medicação", sentido: "ganho" },
+  { key: "dieta_enteral", label: "Dieta enteral", sentido: "ganho" },
+  { key: "oral", label: "Via oral", sentido: "ganho" },
+  { key: "hemoderivado", label: "Hemoderivado", sentido: "ganho" },
+  { key: "diurese", label: "Diurese", sentido: "perda" },
+  { key: "dreno", label: "Dreno", sentido: "perda" },
+  { key: "sng_aberta", label: "SNG aberta", sentido: "perda" },
+  { key: "evacuacao", label: "Evacuação", sentido: "perda" },
+  { key: "vomito", label: "Vômito", sentido: "perda" },
+  { key: "sangramento", label: "Sangramento", sentido: "perda" },
+  { key: "dialise", label: "Diálise (UF)", sentido: "perda" },
+];
+
+export function categoriaLabel(key: string): string {
+  return BH_CATEGORIAS.find((c) => c.key === key)?.label ?? key;
+}
+
+/** "-150 mL" / "+1.200 mL" com sinal e milhar pt-BR. */
+export function formatMl(v: number, comSinal = false): string {
+  const n = Math.round(v * 10) / 10;
+  const txt = Math.abs(n).toLocaleString("pt-BR", { maximumFractionDigits: 1 });
+  if (!comSinal) return `${n < 0 ? "-" : ""}${txt} mL`;
+  return `${n > 0 ? "+" : n < 0 ? "-" : ""}${txt} mL`;
+}
