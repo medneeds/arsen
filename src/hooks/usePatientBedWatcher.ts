@@ -26,7 +26,7 @@ export function usePatientBedWatcher(
   useEffect(() => {
     if (!patientId) return;
     const channel = supabase
-      .channel(`patient-bed-watch-${patientId}`)
+      .channel(`patient-bed-watch-${patientId}-${Math.random().toString(36).slice(2, 8)}`)
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "patients", filter: `id=eq.${patientId}` },

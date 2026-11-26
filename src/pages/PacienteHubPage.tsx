@@ -215,7 +215,7 @@ export default function PacienteHubPage() {
       if (debounce) clearTimeout(debounce);
       debounce = setTimeout(() => setRefreshTick((t) => t + 1), 400);
     };
-    const ch = supabase.channel(`hub-status-${id}`);
+    const ch = supabase.channel(`hub-status-${id}-${Math.random().toString(36).slice(2, 8)}`);
     for (const table of ["evolucoes", "prescricoes", "solicitacoes_exame", "sinais_vitais"] as const) {
       ch.on("postgres_changes", { event: "*", schema: "public", table, filter: `internacao_id=eq.${id}` }, bump);
     }

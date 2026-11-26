@@ -211,7 +211,7 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
     // MIGRAÇÃO: realtime pre_admissions → pre_admissoes. Sem coluna hospital_unit_id →
     // filtro por hospital REMOVIDO (escopo por RLS).
     const channel = supabase
-      .channel(`pre_admissoes_${currentHospital.id}_${sectorFilterLabel || "all"}`)
+      .channel(`pre_admissoes_${currentHospital.id}_${sectorFilterLabel || "all"}-${Math.random().toString(36).slice(2, 8)}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "pre_admissoes" },

@@ -43,7 +43,7 @@ export function useActiveEncounterId(patientId: string | null): {
 
     // MIGRAÇÃO: realtime em "internacoes" (antes "patient_encounters"/"patients").
     const channel = supabase
-      .channel(`active-encounter-${patientId}`)
+      .channel(`active-encounter-${patientId}-${Math.random().toString(36).slice(2, 8)}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "internacoes", filter: `id=eq.${patientId}` },

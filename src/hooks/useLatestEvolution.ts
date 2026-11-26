@@ -174,7 +174,7 @@ export function useLatestEvolution(
     // MIGRAÇÃO: realtime em "evolucoes" (antes "clinical_evolutions"),
     // filtrado por internacao_id.
     const channel = supabase
-      .channel(`patient-evolution-${patientId}`)
+      .channel(`patient-evolution-${patientId}-${Math.random().toString(36).slice(2, 8)}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "evolucoes", filter: `internacao_id=eq.${patientId}` },

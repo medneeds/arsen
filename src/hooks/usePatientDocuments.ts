@@ -410,7 +410,7 @@ export function usePatientDocuments({
   useEffect(() => {
     if (!realtime || !validId) return;
     const channel = supabase
-      .channel(`patient-docs-${validId}`)
+      .channel(`patient-docs-${validId}-${Math.random().toString(36).slice(2, 8)}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "solicitacoes_exame" }, fetchAll)
       .on("postgres_changes", { event: "*", schema: "public", table: "resultados_cultura" }, fetchAll)
       .on("postgres_changes", { event: "*", schema: "public", table: "evolucoes" }, fetchAll)

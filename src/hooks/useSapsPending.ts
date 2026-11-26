@@ -42,7 +42,7 @@ export function useSapsPending(internacaoId?: string | null): SapsPendingInfo | 
     fetchPending();
 
     const channel = supabase
-      .channel(`saps-pending-${internacaoId}`)
+      .channel(`saps-pending-${internacaoId}-${Math.random().toString(36).slice(2, 8)}`)
       .on(
         "postgres_changes" as never,
         { event: "*", schema: "public", table: "avaliacoes_saps3", filter: `internacao_id=eq.${internacaoId}` },

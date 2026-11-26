@@ -109,7 +109,7 @@ export function useActivePrescription(
     if (!patientId) return;
     // MIGRAÇÃO: realtime em "prescricoes" filtrado por internacao_id.
     const channel = supabase
-      .channel(`prescription-live-${patientId}`)
+      .channel(`prescription-live-${patientId}-${Math.random().toString(36).slice(2, 8)}`)
       .on(
         "postgres_changes",
         {

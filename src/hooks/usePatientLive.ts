@@ -161,7 +161,10 @@ export function usePatientLive(patientId: string | null) {
     // cada evento, mantendo o view-model consistente no cache compartilhado.
     const invalidate = () => queryClient.invalidateQueries({ queryKey: ["patient-live", patientId] });
     const channel = supabase
-      .channel(`patient-live-${patientId}`)
+      // Sufixo por instancia: o mesmo paciente pode ter este hook montado em mais de
+      // um componente ao mesmo tempo (ex.: Prescricao). Com nome fixo, supabase.channel()
+      // devolvia o canal ja inscrito e o .on() lancava erro, derrubando a tela.
+      .channel(`patient-live-${patientId}-${Math.random().toString(36).slice(2, 8)}`)
       .on("postgres_changes",
         { event: "*", schema: "public", table: "internacoes", filter: `id=eq.${patientId}` },
         invalidate)
