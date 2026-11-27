@@ -250,6 +250,14 @@ export function useEvolutions(
     antecedentes?: string[],
     planItems?: string[],
     pendenciasItems?: string[],
+    opts?: {
+      /**
+       * true: a lista de pendencias do formulario foi carregada da fonte e deve
+       * substituir internacoes.pendencias MESMO VAZIA (excluir tudo precisa gravar).
+       * false: nao toca na fonte. Omitido: comportamento antigo (so grava se houver item).
+       */
+      syncPendencias?: boolean;
+    },
   ): Promise<EvolutionRecord | null> => {
     if (!user) {
       toast.error("Contexto de usuário não disponível");
@@ -336,16 +344,30 @@ export function useEvolutions(
           interUpdates.conduta_inicial = planItems.filter(Boolean).join("\n");
         }
         // Pendências → internacoes.pendencias
-        if (pendenciasItems && pendenciasItems.length > 0) {
-          interUpdates.pendencias = pendenciasItems.filter(Boolean).join("\n");
+        // Antes so gravava com lista NAO vazia: excluir todas as pendencias e salvar
+        // nao gravava nada, e elas voltavam na evolucao do dia seguinte. Com
+        // syncPendencias a lista do formulario substitui a fonte, inclusive vazia.
+        const pendList = (pendenciasItems ?? []).filter((l) => l && l.trim());
+        const syncPend = opts?.syncPendencias ?? pendList.length > 0;
+        if (syncPend && pendenciasItems !== undefined) {
+          interUpdates.pendencias = pendList.length > 0 ? pendList.join("\n") : null;
         }
 
         if (Object.keys(interUpdates).length > 0) {
+          // Falha aqui nao desfaz a evolucao (ja gravada), mas NAO pode ser
+          // silenciosa: sem ela, pendencias/hipoteses/plano do painel ficam velhos.
           try {
-            await supabase
+            const { data: upd, error: updErr } = await supabase
               .from("internacoes")
               .update(interUpdates as any)
-              .eq("id", safePatientId);
+              .eq("id", safePatientId)
+              .select("id");
+            if (updErr || !upd || upd.length === 0) {
+              console.warn("[useEvolutions] sync internação não gravou", updErr);
+              toast.warning("Evolução salva, mas o painel do paciente não foi atualizado", {
+                description: updErr?.message || "Sem permissão ou internação não encontrada. Confira as pendências no Painel Clínico.",
+              });
+            }
           } catch (syncErr) {
             console.warn("[useEvolutions] sync internação error", syncErr);
           }

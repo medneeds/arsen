@@ -1,3 +1,4 @@
+import { pruneStaleDonePendencies } from "@/lib/pendencyMarker";
 import { useState, useEffect } from "react";
 import { resolveSectorCode } from "@/config/sectorCoverage";
 import { MainLayout } from "@/components/MainLayout";
@@ -506,7 +507,8 @@ export default function EmergenciaSectorPage() {
           diagnoses: active.hipotese_diagnostica || "",
           medical_history: active.historia_clinica || "",
           relevant_exams: active.exames_relevantes || "",
-          pendencies: active.pendencias || "",
+          // Concluidas em dia anterior somem (regra do dia seguinte, ver pendencyMarker).
+          pendencies: pruneStaleDonePendencies((active.pendencias || "").split("\n").filter(Boolean)).join("\n"),
           schedule: active.agenda || "",
           admission_date: active.data_entrada || undefined,
           medical_record: pac.prontuario || undefined,

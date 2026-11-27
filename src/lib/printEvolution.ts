@@ -15,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toRichHtml, richHtmlToPlainText } from "@/components/ui/rich-text-editor";
 import { getSectorDisplayLabel } from "@/utils/bedNaming";
 import { formatDeviceLabel, deviceAlertTone } from "@/lib/devicesCatalog";
+import { parsePendency } from "@/lib/pendencyMarker";
 import { calcDIH, parseAdmissionDate } from "@/lib/dihCalc";
 import type { EvolutionRecord } from "@/hooks/useEvolutions";
 import {
@@ -334,9 +335,7 @@ export const printEvolution = async (
     : [];
   const pendenciasHtml = pendItems.length > 0
     ? `<h2 class="nz-section">Programações e Pendências</h2><ul class="nz-list">${pendItems.map((p, i) => {
-        const m = /^\s*\[( |x|X)\]\s?/.exec(p);
-        const done = m ? m[1].toLowerCase() === "x" : false;
-        const text = m ? p.replace(/^\s*\[( |x|X)\]\s?/, "") : p;
+        const { done, text } = parsePendency(p);
         const box = done ? "☑" : "☐";
         const style = done ? 'style="text-decoration:line-through;color:#64748b"' : '';
         return `<li ${style}>${i + 1}. ${box} ${text}</li>`;
@@ -528,9 +527,7 @@ export const printEvolution = async (
         const pendArr: string[] = Array.isArray((s as any).pendenciasItems) ? (s as any).pendenciasItems.filter(Boolean) : [];
         if (pendArr.length === 0) return "";
         const rows = pendArr.map((item, i) => {
-          const m = /^\s*\[( |x|X)\]\s?/.exec(item);
-          const done = m ? m[1].toLowerCase() === "x" : false;
-          const text = m ? item.replace(/^\s*\[( |x|X)\]\s?/, "") : item;
+          const { done, text } = parsePendency(item);
           const box = done ? "☑" : "☐";
           const textStyle = done ? "padding:2pt 4pt;font-size:8.5pt;line-height:1.35;text-decoration:line-through;color:#64748b" : "padding:2pt 4pt;font-size:8.5pt;line-height:1.35";
           return `<tr><td style="width:18pt;padding:2pt 4pt;font-weight:700;color:#c2410c;vertical-align:top;font-size:8pt">${i+1}.</td><td style="width:14pt;padding:2pt 2pt;font-size:10pt;vertical-align:top">${box}</td><td style="${textStyle}">${escape(text)}</td></tr>`;

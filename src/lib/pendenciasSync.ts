@@ -5,7 +5,7 @@
  * pendencia pelo TEXTO (nao pelo indice), para que duas telas com listas em ordens
  * ou tamanhos diferentes nao marquem o item errado.
  */
-import { parsePendency, setPendencyDone } from "./pendencyMarker.ts";
+import { parsePendency, setPendencyDone, setPendencyText } from "./pendencyMarker.ts";
 
 const norm = (t: string): string => t.trim().replace(/\s+/g, " ").toLowerCase();
 
@@ -39,10 +39,12 @@ export function mergeLiveIntoLocal(local: string[], live: string[], alreadySeen?
   const merged = local.map((l) => {
     const m = liveByText.get(norm(parsePendency(l).text));
     if (m === undefined) return l;
-    const wanted = parsePendency(m).done;
-    if (parsePendency(l).done === wanted) return l;
+    const live = parsePendency(m);
+    if (parsePendency(l).done === live.done) return l;
     changed = true;
-    return setPendencyDone(l, wanted);
+    // Adota o marcador da fonte inteiro (estado e DATA da conclusao), mantendo o
+    // texto local: carimbar hoje por cima faria uma concluida antiga reviver.
+    return setPendencyText(m, parsePendency(l).text);
   });
   const localKeys = new Set(local.map((l) => norm(parsePendency(l).text)));
   for (const l of liveClean) {

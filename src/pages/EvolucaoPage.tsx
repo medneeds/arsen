@@ -34,6 +34,7 @@ import { usePesoReferencia } from "@/hooks/usePesoReferencia";
 import { usePatientCid } from "@/hooks/usePatientCid";
 import { usePatientLive } from "@/hooks/usePatientLive";
 import { mergeLiveIntoLocal, diffPendencyToggles, pendencyKeys } from "@/lib/pendenciasSync";
+import { pruneStaleDonePendencies } from "@/lib/pendencyMarker";
 import { togglePendencyRemote } from "@/lib/pendenciasRemote";
 import { usePatientIdentifiers } from "@/hooks/usePatientIdentifiers";
 import { usePatientDiagnosticContext } from "@/hooks/usePatientDiagnosticContext";
@@ -380,6 +381,9 @@ const EvolucaoPage = () => {
       antecedentes.filter(Boolean),
       planItems.filter(Boolean),
       pendenciasItems.filter(Boolean),
+      // So substitui a fonte (inclusive com lista vazia) quando a lista foi
+      // carregada dela; sem isso, salvar antes do carregamento apagaria tudo.
+      { syncPendencias: !!livePatient },
     );
     // Reseta baseline após salvar para que isDirty volte a false
     baselineRef.current = serializeForm();
@@ -413,6 +417,9 @@ const EvolucaoPage = () => {
       antecedentes.filter(Boolean),
       planItems.filter(Boolean),
       pendenciasItems.filter(Boolean),
+      // So substitui a fonte (inclusive com lista vazia) quando a lista foi
+      // carregada dela; sem isso, salvar antes do carregamento apagaria tudo.
+      { syncPendencias: !!livePatient },
     );
     setCreating(false);
     if (result) {
@@ -506,7 +513,15 @@ const EvolucaoPage = () => {
 
     // Plano — da admissao: itens estruturados ou quebrados do texto (via normalizador).
     setPlanItems(norm ? norm.planItems : (Array.isArray(srcPlanItems) ? srcPlanItems.filter(Boolean) : []));
-    setPendenciasItems(Array.isArray(srcPendencias) ? srcPendencias : []);
+    // Pendencias: a fonte unica e internacoes.pendencias (livePatient, ja sem as
+    // concluidas em dia anterior). Copiar a lista da evolucao de ONTEM trazia de
+    // volta as concluidas e as excluidas depois dela — era o que as fazia voltar
+    // todo dia. Sem a fonte carregada, cai na lista da origem, tambem podada.
+    setPendenciasItems(
+      livePatient
+        ? (livePatient.pendencies ?? []).filter(Boolean)
+        : Array.isArray(srcPendencias) ? pruneStaleDonePendencies(srcPendencias) : [],
+    );
 
     // Hipóteses diagnósticas.
     if (norm) {

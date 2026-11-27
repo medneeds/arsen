@@ -1,7 +1,7 @@
 import React, { useRef, KeyboardEvent } from "react";
 import { Plus, Trash2, GripVertical, ChevronUp, ChevronDown } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
-import { parsePendency, setPendencyDone } from "@/lib/pendencyMarker";
+import { parsePendency, setPendencyDone, setPendencyText } from "@/lib/pendencyMarker";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import {
@@ -90,8 +90,8 @@ export function ItemListEditor({
   const update = (i: number, val: string) => {
     const next = [...items];
     if (checkable) {
-      const { done } = parsePendency(items[i] ?? "");
-      next[i] = setPendencyDone(val, done);
+      // Editar o texto preserva o estado e a DATA da conclusao (regra do dia seguinte).
+      next[i] = setPendencyText(items[i] ?? "", val);
     } else {
       next[i] = val;
     }

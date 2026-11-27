@@ -13,6 +13,7 @@ import { resolveSectorCode, bedBelongsToSector } from "@/config/sectorCoverage";
 import { ADMISSION_STATUS } from "@/lib/admissionStatus";
 import { fetchPendingInternalTransferInternacaoIds, fetchLatestSectorEntryByInternacao } from "@/lib/internalTransfer";
 import { sectorRequiresSaps } from "@/lib/sectorComplexity";
+import { pruneStaleDonePendencies } from "@/lib/pendencyMarker";
 
 export const GHOST_PREFIXES = ['ARQ-', 'ARCHIVED-', '_GHOST_'];
 
@@ -81,7 +82,8 @@ export function usePatients(department?: Department, sector?: string) {
       diagnoses: splitLines(active?.hipotese_diagnostica),
       medicalHistory: splitLines(active?.historia_clinica),
       relevantExams: splitLines(active?.exames_relevantes),
-      pendencies: splitLines(active?.pendencias),
+      // Concluidas em dia anterior somem (regra do dia seguinte, ver pendencyMarker).
+      pendencies: pruneStaleDonePendencies(splitLines(active?.pendencias)),
       // Plano Terapeutico: fonte canonica e conduta_inicial (o que a Evolucao
       // grava/le). O antigo utiDailyConducts era hardcoded [] — sempre vazio.
       therapeuticPlan: splitLines(active?.conduta_inicial),

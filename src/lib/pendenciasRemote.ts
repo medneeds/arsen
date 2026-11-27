@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { applyPendencyDone } from "./pendenciasSync";
+import { pruneStaleDonePendencies } from "./pendencyMarker";
 
 /**
  * Marca/desmarca UMA pendencia na fonte unica (internacoes.pendencias).
@@ -18,9 +19,12 @@ export async function togglePendencyRemote(
     .eq("id", internacaoId)
     .single();
   if (error) throw error;
-  const current = ((data as { pendencias?: string | null } | null)?.pendencias ?? "")
-    .split("\n")
-    .filter((l) => l.trim());
+  // Concluidas em dia anterior saem da fonte na primeira regravacao (regra do dia seguinte).
+  const current = pruneStaleDonePendencies(
+    ((data as { pendencias?: string | null } | null)?.pendencias ?? "")
+      .split("\n")
+      .filter((l) => l.trim()),
+  );
   const next = applyPendencyDone(current, text, done);
   if (next === null) return current;
   const { data: upd, error: updErr } = await supabase

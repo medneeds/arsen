@@ -5,6 +5,7 @@ import type { Patient } from "@/types/patient";
 import { formatAge } from "@/lib/patientAge";
 import { ADMISSION_STATUS } from "@/lib/admissionStatus";
 import { fetchPendingInternalTransferInternacaoIds } from "@/lib/internalTransfer";
+import { pruneStaleDonePendencies } from "@/lib/pendencyMarker";
 
 /**
  * Deriva a tarja de sinalizacao (admissionStatus) a partir da MESMA fonte que o
@@ -69,7 +70,8 @@ function rowToPatient(row: any): Patient {
     diagnoses: splitLines(row.hipotese_diagnostica),
     medicalHistory: splitLines(row.historia_clinica),
     relevantExams: splitLines(row.exames_relevantes),
-    pendencies: splitLines(row.pendencias),
+    // Concluidas em dia anterior somem (regra do dia seguinte, ver pendencyMarker).
+    pendencies: pruneStaleDonePendencies(splitLines(row.pendencias)),
     // Plano Terapeutico: conduta_inicial (fonte canonica da Evolucao).
     therapeuticPlan: splitLines(row.conduta_inicial),
     schedule: splitLines(row.agenda),

@@ -34,6 +34,7 @@ import { EvolutionReadOnlyView } from "@/components/evolution/EvolutionReadOnlyV
 import { AccordionSectionItem as SectionItem } from "@/components/shared/AccordionSectionItem";
 import { toHypothesesList } from "@/components/evolution/diagnosticsSlots";
 import { resolveDiagnosticContextForDisplay, type PatientDiagnosticContext } from "@/lib/internacaoDiagnosticContext";
+import { parsePendency } from "@/lib/pendencyMarker";
 
 interface SOAPData {
   subjective: string;
@@ -1106,9 +1107,7 @@ const ReadOnlyView: React.FC<{
           <strong className="text-warning">Programações e Pendências:</strong>
           <ol className="ml-4 mt-1 text-foreground/90 list-decimal space-y-1">
             {pendenciasItems.filter(Boolean).map((p, i) => {
-              const m = /^\s*\[( |x|X)\]\s?/.exec(p);
-              const done = m ? m[1].toLowerCase() === "x" : false;
-              const text = m ? p.replace(/^\s*\[( |x|X)\]\s?/, "") : p;
+              const { done, text } = parsePendency(p);
               return (
                 <li key={i} className={done ? "line-through text-muted-foreground" : undefined}>
                   <span className="mr-1">{done ? "" : ""}</span>{text}
